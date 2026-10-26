@@ -2,7 +2,7 @@ import {OBJECTS,objectState,environmentTarget,environmentCheck,interactEnvironme
 import {selectD20} from './vendor/dnd5e-advantage.js';
 // Authoritative game plugin, shared by PartyFrame and the labeled solo mode.
 import {Rng} from './vendor/partyframe-rng.js';
-export const VERSION = '0.3.0-beta.1';
+export const VERSION = '0.3.0-beta.2';
 export const ROLES = {
   rogue: { name: 'Rogue', icon: '◆', description: 'Quick hands. Questionable intentions.', skills: ['steal', 'sneak'], color: '#ba9dff' },
   bard: { name: 'Bard', icon: '♫', description: 'Every disaster deserves a soundtrack.', skills: ['social', 'dance'], color: '#f9bd6c' },
@@ -151,11 +151,12 @@ const hurt=(p,n)=>{const before=p.hp;p.hp=clamp(p.hp-n,0,p.maxHp);return before-
 const heal=(p,n)=>{const before=p.hp;p.hp=clamp(p.hp+n,0,p.maxHp);return p.hp-before;};
 function resolve(r,now) {
   const t=r.turn,p=r.players.find(x=>x.id===t.actorId); if(!p) return;
+  if(t.ai?.status==='thinking')t.ai={...t.ai,status:'fallback',reason:'The turn resolved before local AI finished. Game rules were used.'};
   const sorted=[...t.reactions].sort((a,b)=>a.id-b.id);
   const helpers=sorted.filter(x=>x.kind==='assist'||(x.kind==='custom'&&!/\b(stop|prevent|block|intervene)\b/i.test(x.text)));
   const blockers=sorted.filter(x=>x.kind==='intervene'||(x.kind==='custom'&&/\b(stop|prevent|block|intervene)\b/i.test(x.text)));
   const hostile=['attack','steal','magic','break'].includes(t.intent);
-  const check=environmentCheck(r.world,t.target,t.intent,t.action);
+  const check=environmentCheck(r.world,t.target,t.intent,t.rulesText||t.action);
   const automatic=!!check?.automatic;
   const situation=[];
   let advantage=check?.advantage||0;
@@ -184,7 +185,7 @@ function resolve(r,now) {
   const target=r.players.find(x=>x.id===t.target.id);
   const damageNpc=n=>{if(!['guard','bartender','goblin'].includes(t.target.kind))return;const npcs=r.world.npcs||={},npc=npcs[t.target.kind]||={hp:8,maxHp:8};npc.hp=Math.max(0,npc.hp-n);add(`${t.target.name} ${npc.hp}/8 HP`);if(!npc.hp){npc.status='knocked out';add(`${t.target.name} KNOCKED OUT`);if(t.target.kind==='guard')r.world.guards='distracted';}};
   const props=r.world.props||(r.world.props={rug:true});
-  const environmental=interactEnvironment(r.world,t.target,t.intent,success,p,{text:t.action});
+  const environmental=interactEnvironment(r.world,t.target,t.intent,success,p,{text:t.rulesText||t.action});
   if(environmental){success=environmental.success;narration=environmental.text;if(environmental.change)add(environmental.change);fx(({break:'impact',ignite:'fire',extinguish:'smoke',take:'steal',repair:'hearts',push:'impact'})[environmental.verb]||'inspect');r.chaos+=environmental.chaos;if(environmental.damage)damage(p,environmental.damage);if(environmental.cover){p.status='hiding';p.cover=true;}}
   else switch(t.intent) {
     case 'heal':
@@ -218,7 +219,7 @@ function resolve(r,now) {
       break;
     case 'magic':
       fx('spell');r.chaos+=2;
-      if(success) {const offensive=/\b(fire|fireball|lightning|bolt|blast|zap|freeze)\b/i.test(t.action);narration=offensive?`${p.name}'s spell strikes ${t.target.name}. The impact leaves a very real mark.`:pick(r,[`${p.name} bends reality just enough to make everyone extremely uncomfortable.`,`${p.name} casts it. The goblin briefly glows. He charges extra for that.`,`${p.name} makes magic happen. Three guards immediately blame each other.`]);if(offensive){if(target)damage(target,critical?4:2);else damageNpc(critical?4:2);}else if(target)recovery(target,1);if(t.target.kind==='guard'){r.world.guards='distracted';add('GUARDS DISTRACTED');}}
+      if(success) {const offensive=/\b(fire|fireball|lightning|bolt|blast|zap|freeze)\b/i.test(t.rulesText||t.action);narration=offensive?`${p.name}'s spell strikes ${t.target.name}. The impact leaves a very real mark.`:pick(r,[`${p.name} bends reality just enough to make everyone extremely uncomfortable.`,`${p.name} casts it. The goblin briefly glows. He charges extra for that.`,`${p.name} makes magic happen. Three guards immediately blame each other.`]);if(offensive){if(target)damage(target,critical?4:2);else damageNpc(critical?4:2);}else if(target)recovery(target,1);if(t.target.kind==='guard'){r.world.guards='distracted';add('GUARDS DISTRACTED');}}
       else {damage(p,2);fx('fire','self');narration=pick(r,[`${p.name} summons a very small problem with very large eyebrows. It explodes.`,`${p.name} gets the spell mostly right. “Mostly” is doing a lot of work here.`,`${p.name} accidentally enchants their own boots. The boots are furious.`]);}
       break;
     case 'break':
@@ -279,7 +280,7 @@ function resolve(r,now) {
   for(const rp of r.players) if(rp.hp===0)rp.status='knocked out';
   if(r.quest.crown)r.world.guards='searching';
   r.lastActorId=p.id;r.priorityUntil=now+12500;
-  r.result={id:t.id,playerId:p.id,name:p.name,action:t.action,intent:t.intent,target:t.target,
+  r.result={id:t.id,playerId:p.id,name:p.name,action:t.action,intent:t.intent,target:t.target,ai:t.ai?structuredClone(t.ai):null,
     roll,rerolled,modifier,skill,charm,assistance,interference,total:automatic?0:roll+modifier,dc,success,critical:critical&&success,automatic,dice,advantage,situation,check:check?.ability||t.intent,blocked:!!environmental?.blocked||unsupported,
     narration,changes,effects,reactions:sorted.map(x=>({playerId:x.playerId,kind:x.kind,text:x.text,seq:x.id})),at:now};
   r.phase='reveal';r.deadline=now+6500;

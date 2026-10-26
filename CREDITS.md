@@ -1,5 +1,9 @@
 # Credits and licenses — Chaos Party 0.3 beta
 
+## Optional local model connection
+
+The server can interpret actions with a separately installed **Qwen3 1.7B** local model, from the Qwen team, Apache 2.0 open weights: https://github.com/QwenLM/Qwen3 . No Qwen weights or inference runner are bundled. Actual-model installation, quality and speed remain unverified in this cloud session because model download is blocked; HTTP fixture tests validate only the integration. See `docs/LOCAL_AI.md`.
+
 ## Reused gameplay mechanics
 
 **Dungeonz**, copyright 2021 Johnathan "Arcan" Fisher, MIT. https://github.com/Gamessystem/dungeonz at `4f16ab19093ae4ce07d754d2e10690eeb202807b`. The production environment executes the original `WoodDoor.interaction` and `Entity.onDamage` code through authoritative-state adapters. Original entity inheritance and damage model are bundled in `public/vendor/dungeonz.js`; original sources remain in `experiments/dungeonz-world/upstream/`. Full notice: `public/vendor/Dungeonz-LICENSE.txt`. No mixed-license Dungeonz world artwork ships in the production tavern; its authored map is only in the isolated local extraction experiment.

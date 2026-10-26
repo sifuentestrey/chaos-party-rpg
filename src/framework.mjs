@@ -2373,7 +2373,7 @@ var Rng2 = class {
 };
 
 // public/core.js
-var VERSION = "0.3.0-beta.1";
+var VERSION = "0.3.0-beta.2";
 var ROLES = {
   rogue: { name: "Rogue", icon: "\u25C6", description: "Quick hands. Questionable intentions.", skills: ["steal", "sneak"], color: "#ba9dff" },
   bard: { name: "Bard", icon: "\u266B", description: "Every disaster deserves a soundtrack.", skills: ["social", "dance"], color: "#f9bd6c" },
@@ -2629,11 +2629,12 @@ var heal = (p, n) => {
 function resolve(r, now) {
   const t = r.turn, p = r.players.find((x) => x.id === t.actorId);
   if (!p) return;
+  if (t.ai?.status === "thinking") t.ai = { ...t.ai, status: "fallback", reason: "The turn resolved before local AI finished. Game rules were used." };
   const sorted = [...t.reactions].sort((a, b) => a.id - b.id);
   const helpers = sorted.filter((x) => x.kind === "assist" || x.kind === "custom" && !/\b(stop|prevent|block|intervene)\b/i.test(x.text));
   const blockers = sorted.filter((x) => x.kind === "intervene" || x.kind === "custom" && /\b(stop|prevent|block|intervene)\b/i.test(x.text));
   const hostile = ["attack", "steal", "magic", "break"].includes(t.intent);
-  const check = environmentCheck(r.world, t.target, t.intent, t.action);
+  const check = environmentCheck(r.world, t.target, t.intent, t.rulesText || t.action);
   const automatic = !!check?.automatic;
   const situation = [];
   let advantage = check?.advantage || 0;
@@ -2704,7 +2705,7 @@ function resolve(r, now) {
     }
   };
   const props = r.world.props || (r.world.props = { rug: true });
-  const environmental = interactEnvironment(r.world, t.target, t.intent, success, p, { text: t.action });
+  const environmental = interactEnvironment(r.world, t.target, t.intent, success, p, { text: t.rulesText || t.action });
   if (environmental) {
     success = environmental.success;
     narration = environmental.text;
@@ -2789,7 +2790,7 @@ function resolve(r, now) {
       fx("spell");
       r.chaos += 2;
       if (success) {
-        const offensive = /\b(fire|fireball|lightning|bolt|blast|zap|freeze)\b/i.test(t.action);
+        const offensive = /\b(fire|fireball|lightning|bolt|blast|zap|freeze)\b/i.test(t.rulesText || t.action);
         narration = offensive ? `${p.name}'s spell strikes ${t.target.name}. The impact leaves a very real mark.` : pick(r, [`${p.name} bends reality just enough to make everyone extremely uncomfortable.`, `${p.name} casts it. The goblin briefly glows. He charges extra for that.`, `${p.name} makes magic happen. Three guards immediately blame each other.`]);
         if (offensive) {
           if (target) damage(target, critical ? 4 : 2);
@@ -2939,6 +2940,7 @@ function resolve(r, now) {
     action: t.action,
     intent: t.intent,
     target: t.target,
+    ai: t.ai ? structuredClone(t.ai) : null,
     roll,
     rerolled,
     modifier,
@@ -3042,6 +3044,43 @@ function hostCommand(r, command, now = Date.now()) {
     r.reactionMs = clamp(Number(command.ms) || 8e3, 4e3, 12e3);
   } else fail("COMMAND", "Unknown host action.");
   touch(r, now);
+}
+
+// public/ai-plan.js
+var AI_VERBS = ["inspect", "take", "break", "open", "close", "push", "ignite", "extinguish", "repair", "hide", "climb", "pour", "attack", "social", "heal", "dance", "sneak", "flee", "magic", "unsupported"];
+var names = { guard: "Captain Brick", bartender: "Marnie", goblin: "the fiddler", room: "the tavern" };
+var mapping = { inspect: ["inspect", "Inspect"], take: ["steal", "Steal"], break: ["break", "Smash"], open: ["interact", "Open"], close: ["interact", "Close"], push: ["interact", "Push"], ignite: ["interact", "Ignite"], extinguish: ["interact", "Extinguish"], repair: ["interact", "Repair"], hide: ["sneak", "Hide behind"], climb: ["interact", "Climb onto"], pour: ["interact", "Spill"], attack: ["attack", "Attack"], social: ["social", "Talk to"], heal: ["heal", "Heal"], dance: ["dance", "Dance for"], sneak: ["sneak", "Sneak past"], flee: ["flee", "Flee through"], magic: ["magic", "Cast a spell at"], unsupported: ["weird", "Unsupported attempt at"] };
+function validateAIPlan(raw, room, actorId) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw) || Object.keys(raw).some((k) => !["verb", "target", "summary"].includes(k))) throw new Error("Invalid interpretation fields");
+  if (!AI_VERBS.includes(raw.verb) || typeof raw.target !== "string" || typeof raw.summary !== "string" || raw.summary.length > 160) throw new Error("Invalid interpretation");
+  const player = room.players.find((p) => p.id === raw.target || raw.target === "self" && p.id === actorId);
+  let target;
+  if (player) target = { kind: "player", id: player.id, name: player.name };
+  else if (Object.hasOwn(OBJECTS, raw.target)) target = { kind: raw.target, name: OBJECTS[raw.target].name };
+  else if (Object.hasOwn(names, raw.target)) target = { kind: raw.target, name: names[raw.target] };
+  else throw new Error("Unknown interpretation target");
+  let [intent, verb] = mapping[raw.verb];
+  if (raw.verb === "ignite" && ["guard", "bartender", "goblin", "player"].includes(target.kind)) {
+    intent = "magic";
+    verb = "Cast fire at";
+  }
+  if (raw.verb === "flee" && target.kind !== "door") throw new Error("Escape must target the door");
+  if (raw.verb === "heal" && target.kind !== "player") throw new Error("Healing must target a character");
+  return { verb: raw.verb, intent, target, rulesText: `${verb} ${target.name}`, summary: raw.summary.replace(/[\u0000-\u001f\u007f]/g, " ").trim() };
+}
+function applyAIPlan(room, turnId, raw, model, now = Date.now()) {
+  const t = room.turn;
+  if (room.phase !== "react" || room.paused || !t || t.id !== turnId || now >= t.deadline - 800) return false;
+  const plan = validateAIPlan(raw, room, t.actorId);
+  const actor = room.players.find((p) => p.id === t.actorId);
+  if (actor.hp <= 0 && plan.intent !== "heal") throw new Error("Knocked out characters must recover");
+  t.intent = plan.intent;
+  t.target = plan.target;
+  t.rulesText = plan.rulesText;
+  t.ai = { status: "applied", model, summary: plan.summary, verb: plan.verb };
+  room.revision++;
+  room.updatedAt = now;
+  return true;
 }
 
 // vendor/partyframe/packages/kit/src/net/clock.ts
@@ -3227,6 +3266,8 @@ var currentRooms = () => liveRooms;
 var ChaosPartyRoom = class extends PartySessionRoom {
   constructor() {
     super(...arguments);
+    this.interpretedTurn = null;
+    this.aiDisposed = false;
     this.savedRevision = -1;
     this.projectedRevision = -1;
     this.lastSaved = null;
@@ -3246,6 +3287,8 @@ var ChaosPartyRoom = class extends PartySessionRoom {
       if (services.store.rooms[this.state.publicCode]) this.state.publicCode = await generateUniqueRoomCode(async (code) => !!services.store.rooms[code] || liveRooms.has(code));
       room = createRoom({ code: this.state.publicCode, seed: randomInt2(1, 4294967295), reactionMs: options.reactionMs || 1e4 });
     }
+    room.ai = services.ai.status();
+    if (room.turn?.ai?.status === "thinking") room.turn.ai = { status: "fallback", reason: "The local model was interrupted by a restart." };
     this.gameState = { room, seatMap: {}, receipts: {}, errors: {} };
     this.rng.restore(room.seed);
     this.gameOptions = { reactionMs: room.reactionMs };
@@ -3314,6 +3357,7 @@ var ChaosPartyRoom = class extends PartySessionRoom {
     this.pushAllControllerStates();
   }
   onDispose() {
+    this.aiDisposed = true;
     this.checkpoint();
     liveRooms.delete(this.state.publicCode);
     super.onDispose();
@@ -3369,6 +3413,19 @@ var ChaosPartyRoom = class extends PartySessionRoom {
         const name = payload.name, data = payload.data || {}, auth = client.userData || {};
         if (name === "whoami") return reply({ ok: true, ...this.identity(client), room: this.snapshot(), network: services.network() });
         if (name === "room:sync") return reply({ ok: true, room: this.snapshot(), network: services.network() });
+        if (name === "host:ai") {
+          if (auth.role !== "host") error("HOST", "Only the host can check the local model.");
+          if (!this.sessionLimiter.tryConsume(client.sessionId, Date.now())) error("SLOW_DOWN", "Give the local model a moment.");
+          void services.ai.check().then((status) => {
+            if (!this.aiDisposed && this.tavern) {
+              this.tavern.ai = status;
+              this.tavern.revision++;
+              this.finishTick(this.buildContext(Date.now()));
+            }
+          }).catch(() => {
+          });
+          return reply({ ok: true, status: services.ai.status() });
+        }
         if (name === "host:command") {
           if (auth.role !== "host") error("HOST", "Only the host can do that.");
           if (!this.sessionLimiter.tryConsume(client.sessionId, Date.now())) error("SLOW_DOWN", "Give the tavern a moment.");
@@ -3395,12 +3452,38 @@ var ChaosPartyRoom = class extends PartySessionRoom {
           const handled = this.applyGameAction(client.sessionId, validated.value, Date.now());
           const wrapped = this.gameState;
           if (!handled) return reply({ ok: false, ...wrapped.errors[client.sessionId] || { code: "BUSY", error: "The story is not accepting that action." }, room: this.snapshot() });
+          if (!wrapped.receipts[client.sessionId]?.duplicate && wrapped.receipts[client.sessionId]?.kind === "action") this.interpretAcceptedTurn();
           return reply({ ok: true, ...wrapped.receipts[client.sessionId], room: this.snapshot() });
         }
         error("COMMAND", "Unknown game request.");
       } catch (e) {
         reply({ ok: false, code: e.code || "SERVER", error: e instanceof RuleError ? e.message : "The tavern could not save that change. Please try again." });
       }
+    });
+  }
+  interpretAcceptedTurn() {
+    const room = this.tavern, turn = room.turn, status = services.ai.status();
+    if (!turn || this.interpretedTurn === turn.id) return;
+    this.interpretedTurn = turn.id;
+    if (!status.available) {
+      turn.ai = { status: "fallback", reason: status.message };
+      room.revision++;
+      this.finishTick(this.buildContext(Date.now()));
+      return;
+    }
+    turn.ai = { status: "thinking", model: status.model };
+    room.revision++;
+    this.finishTick(this.buildContext(Date.now()));
+    const id = turn.id, budget = Math.min(5500, turn.deadline - Date.now() - 1e3);
+    void services.ai.interpret(structuredClone(room), turn.actorId, budget).then(({ plan, model }) => {
+      if (this.aiDisposed || this.tavern !== room || room.turn?.id !== id || room.phase !== "react") return;
+      if (!applyAIPlan(room, id, plan, model)) throw new Error("Interpretation arrived after its animation deadline");
+      this.finishTick(this.buildContext(Date.now()));
+    }).catch(() => {
+      if (this.aiDisposed || this.tavern !== room || room.turn?.id !== id || room.phase !== "react") return;
+      turn.ai = { status: "fallback", model: status.model, reason: "Local AI was unavailable, slow, or returned an unsupported plan. Using the game rules." };
+      room.revision++;
+      this.finishTick(this.buildContext(Date.now()));
     });
   }
   character(client) {

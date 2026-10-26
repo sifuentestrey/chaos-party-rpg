@@ -1,5 +1,7 @@
 # Beta acceptance audit — October 26, 2026
 
+Beta.2 adds the optional local Qwen connection. Its 42-test suite and current real-model download blocker are documented in [LOCAL_AI.md](LOCAL_AI.md). The original playable-beta audit below is retained; it does not claim real Qwen inference was verified.
+
 This is a playable **0.3 beta candidate**, not a claim that every original hardware/subjective acceptance gate is complete.
 
 | Owner requirement | Implemented and observed | Remaining limit |

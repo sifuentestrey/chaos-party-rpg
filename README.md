@@ -2,6 +2,8 @@
 
 Private project for a family TV-and-phones, AI-assisted, chaotic fantasy party game.
 
+**Local Qwen integration:** the multiplayer server now has an optional local AI action interpreter. [Connection, test evidence and current model-download blocker](docs/LOCAL_AI.md). The model itself has not been installed or verified in this cloud session.
+
 **Status: 0.3 beta candidate — one tavern and a complete cooperative crown heist.** The scene has 46 addressable objects with persistent changes, material-based checks, cover, hazards, NPC health and situational advantage/disadvantage. [Beta notes](docs/BETA.md) explain what is playable and what still needs real hardware testing. Source provenance remains in [docs/PROTOTYPE_IMPORT.md](docs/PROTOTYPE_IMPORT.md).
 
 Use Node 22+, run `npm ci`, then `npm start`. Open the host screen on the server machine at port 4747 and join from phone browsers on the same LAN. For a real phone test without the Mac, use the [Codespaces live-game instructions](docs/PHONE_REAL_GAME.md). `npm test` exercises multiplayer and saves; `npm run build` produces the separate static solo preview. No paid API is required, though Codespaces may use an account’s included quota or billable minutes.

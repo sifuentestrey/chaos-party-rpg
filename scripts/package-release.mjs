@@ -34,7 +34,7 @@ addLicenses(path.join(root,'node_modules'));
 notices+='\nPartyFrame — '+fs.readFileSync(path.join(root,'vendor/partyframe/LICENSE'),'utf8');
 fs.writeFileSync(path.join(out,'licenses','THIRD_PARTY_NOTICES.txt'),notices);
 for(const name of ['README.md','CREDITS.md','TEST_REPORT.md','RESEARCH.md','FOUNDATION_AUDIT.md'])if(fs.existsSync(path.join(root,name)))fs.copyFileSync(path.join(root,name),path.join(out,name));
-for(const name of ['BETA.md','BETA_AUDIT.md'])if(fs.existsSync(path.join(root,'docs',name)))fs.copyFileSync(path.join(root,'docs',name),path.join(out,name));
+for(const name of ['BETA.md','BETA_AUDIT.md','LOCAL_AI.md'])if(fs.existsSync(path.join(root,'docs',name)))fs.copyFileSync(path.join(root,'docs',name),path.join(out,name));
 const launcher=`#!/bin/bash
 set -eu
 game_dir="$(cd "$(dirname "$0")" && pwd)"

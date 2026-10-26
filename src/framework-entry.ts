@@ -9,6 +9,7 @@ import {Rng,validateSync} from '@partyframe/game-core';
 import {PartySessionRoom,SessionSchema,install,bindRuntime,runtimeHost,setIfChanged,RateLimiter,generateUniqueRoomCode} from '@partyframe/runtime';
 import {JoinOptionsSchema,PlayerNameSchema,AVATARS,PLAYER_COLORS,PARTY_ROOM} from '@partyframe/protocol';
 import {createRoom,addPlayer,editPlayer,publicRoom,submit,advance,startGame,hostCommand,RuleError,withGameRng} from '../public/core.js';
+import {applyAIPlan} from '../public/ai-plan.js';
 
 export {PartySessionRoom,bindRuntime,install,Rng,RateLimiter};
 export {ClockSync} from '../vendor/partyframe/packages/kit/src/net/clock.js';
@@ -76,6 +77,8 @@ export function configureChaosRuntime(next:any){
 export const currentRooms=()=>liveRooms;
 
 export class ChaosPartyRoom extends PartySessionRoom {
+  private interpretedTurn:string|null=null;
+  private aiDisposed=false;
   private savedRevision=-1;
   private projectedRevision=-1;
   private lastSaved:any=null;
@@ -92,6 +95,8 @@ export class ChaosPartyRoom extends PartySessionRoom {
       if(services.store.rooms[this.state.publicCode])this.state.publicCode=await generateUniqueRoomCode(async code=>!!services.store.rooms[code]||liveRooms.has(code));
       room=createRoom({code:this.state.publicCode,seed:randomInt(1,0xffffffff),reactionMs:options.reactionMs||10000});
     }
+    room.ai=services.ai.status();
+    if(room.turn?.ai?.status==='thinking')room.turn.ai={status:'fallback',reason:'The local model was interrupted by a restart.'};
     this.gameState={room,seatMap:{},receipts:{},errors:{}};this.rng.restore(room.seed);
     this.gameOptions={reactionMs:room.reactionMs};
     this.setStatus(room.phase==='lobby'?'LOBBY':room.phase==='ended'?'GAME_OVER':room.phase==='reveal'?'ROUND_END':'PLAYING');
@@ -134,7 +139,7 @@ export class ChaosPartyRoom extends PartySessionRoom {
     }
     this.checkpoint();this.projectGameState(Date.now());this.pushAllControllerStates();
   }
-  override onDispose(){this.checkpoint();liveRooms.delete(this.state.publicCode);super.onDispose();}
+  override onDispose(){this.aiDisposed=true;this.checkpoint();liveRooms.delete(this.state.publicCode);super.onDispose();}
   protected override handleSessionAction(client:any,action:any){
     if(client.userData?.role==='controller'&&client.userData?.characterId){try{this.character(client);}catch{this.sendError(client,'NOT_ALLOWED');return;}}
     if(!['set-profile','set-ready','leave'].includes(action.type)&&client.userData?.role!=='host'){this.sendError(client,'NOT_ALLOWED');return;}
@@ -165,6 +170,12 @@ export class ChaosPartyRoom extends PartySessionRoom {
         const name=payload.name,data=payload.data||{},auth=client.userData||{};
         if(name==='whoami')return reply({ok:true,...this.identity(client),room:this.snapshot(),network:services.network()});
         if(name==='room:sync')return reply({ok:true,room:this.snapshot(),network:services.network()});
+        if(name==='host:ai'){
+          if(auth.role!=='host')error('HOST','Only the host can check the local model.');
+          if(!this.sessionLimiter.tryConsume(client.sessionId,Date.now()))error('SLOW_DOWN','Give the local model a moment.');
+          void services.ai.check().then((status:any)=>{if(!this.aiDisposed&&this.tavern){this.tavern.ai=status;this.tavern.revision++;this.finishTick(this.buildContext(Date.now()));}}).catch(()=>{});
+          return reply({ok:true,status:services.ai.status()});
+        }
         if(name==='host:command'){
           if(auth.role!=='host')error('HOST','Only the host can do that.');
           if(!this.sessionLimiter.tryConsume(client.sessionId,Date.now()))error('SLOW_DOWN','Give the tavern a moment.');
@@ -187,10 +198,27 @@ export class ChaosPartyRoom extends PartySessionRoom {
           const handled=this.applyGameAction(client.sessionId,validated.value,Date.now());
           const wrapped:any=this.gameState;
           if(!handled)return reply({ok:false,...(wrapped.errors[client.sessionId]||{code:'BUSY',error:'The story is not accepting that action.'}),room:this.snapshot()});
+          if(!wrapped.receipts[client.sessionId]?.duplicate&&wrapped.receipts[client.sessionId]?.kind==='action')this.interpretAcceptedTurn();
           return reply({ok:true,...wrapped.receipts[client.sessionId],room:this.snapshot()});
         }
         error('COMMAND','Unknown game request.');
       }catch(e:any){reply({ok:false,code:e.code||'SERVER',error:e instanceof RuleError?e.message:'The tavern could not save that change. Please try again.'});}
+    });
+  }
+  private interpretAcceptedTurn(){
+    const room=this.tavern,turn=room.turn,status=services.ai.status();
+    if(!turn||this.interpretedTurn===turn.id)return;
+    this.interpretedTurn=turn.id;
+    if(!status.available){turn.ai={status:'fallback',reason:status.message};room.revision++;this.finishTick(this.buildContext(Date.now()));return;}
+    turn.ai={status:'thinking',model:status.model};room.revision++;this.finishTick(this.buildContext(Date.now()));
+    const id=turn.id,budget=Math.min(5500,turn.deadline-Date.now()-1000);
+    void services.ai.interpret(structuredClone(room),turn.actorId,budget).then(({plan,model}:any)=>{
+      if(this.aiDisposed||this.tavern!==room||room.turn?.id!==id||room.phase!=='react')return;
+      if(!applyAIPlan(room,id,plan,model))throw new Error('Interpretation arrived after its animation deadline');
+      this.finishTick(this.buildContext(Date.now()));
+    }).catch(()=>{
+      if(this.aiDisposed||this.tavern!==room||room.turn?.id!==id||room.phase!=='react')return;
+      turn.ai={status:'fallback',model:status.model,reason:'Local AI was unavailable, slow, or returned an unsupported plan. Using the game rules.'};room.revision++;this.finishTick(this.buildContext(Date.now()));
     });
   }
   private character(client:any){

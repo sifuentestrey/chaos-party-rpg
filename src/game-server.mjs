@@ -9,6 +9,7 @@ import {WebSocketTransport} from '@colyseus/ws-transport';
 import {ChaosPartyRoom,configureChaosRuntime,currentRooms,PARTY_ROOM,GAME_ID} from './framework.mjs';
 import {openCampaignStore} from './campaign-store.mjs';
 import {VERSION} from '../public/core.js';
+import {createLocalGameMaster} from './local-game-master.mjs';
 
 const equal=(a,b)=>typeof a==='string'&&typeof b==='string'&&a.length===b.length&&timingSafeEqual(Buffer.from(a),Buffer.from(b));
 const local=a=>['127.0.0.1','::1','::ffff:127.0.0.1'].includes(a);
@@ -19,6 +20,7 @@ export async function createGameServer(options={}){
   const publicDir=options.publicDir||path.join(base,'public');
   const dataDir=options.dataDir||process.env.CHAOS_DATA_DIR||path.join(base,'data');
   const store=openCampaignStore(dataDir);if(options.hostKey)store.hostKey=options.hostKey;
+  const ai=options.ai||createLocalGameMaster();await ai.check();
   let port=0,closing=false;
   const addresses=()=>{try{return [...new Set(Object.values(os.networkInterfaces()).flat().filter(n=>n&&n.family==='IPv4'&&!n.internal&&!n.address.startsWith('169.254.')).map(n=>n.address))];}catch{return [];}};
   const publicBaseUrl=()=>{
@@ -74,7 +76,7 @@ export async function createGameServer(options={}){
       if(req.method==='HEAD')return res.end();fs.createReadStream(target).pipe(res);
     }catch(e){console.error('Game request failed:',e.message);if(!res.headersSent)json(500,{error:'The tavern could not load that request.'});else res.end();}
   });
-  configureChaosRuntime({store,network});
+  configureChaosRuntime({store,network,ai});
   const transport=new WebSocketTransport({server,pingInterval:6000,pingMaxRetries:4,maxPayload:16*1024});
   const gameServer=new Server({transport,greet:false,gracefullyShutdown:false});
   gameServer.define(PARTY_ROOM,ChaosPartyRoom);
@@ -83,6 +85,6 @@ export async function createGameServer(options={}){
   port=server.address().port;
   return {server,gameServer,port,hostKey:store.hostKey,network,store,
     rooms:()=>Object.fromEntries([...currentRooms()].map(([code,r])=>[code,structuredClone(r.tavern)])),
-    async close(){if(closing)return;closing=true;for(const r of currentRooms().values())store.checkpoint(r.tavern);await gameServer.gracefullyShutdown(false);}
+    async close(){if(closing)return;closing=true;ai.close();for(const r of currentRooms().values())store.checkpoint(r.tavern);await gameServer.gracefullyShutdown(false);}
   };
 }

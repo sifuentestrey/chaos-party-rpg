@@ -60,6 +60,9 @@ export class TavernScene {
   constructor(){this.canvas=null;this.state=null;this.lastFrame=0;this.resultId=null;this.fxAt=0;this.declarationId=null;this.declareAt=0;this.reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;this.on=true;this.loop=this.loop.bind(this);requestAnimationFrame(this.loop);}
   attach(canvas){if(this.canvas===canvas)return;this.canvas=canvas;if(canvas){canvas.width=960;canvas.height=540;}}
   setState(state){
+    const nextTarget=state?.turn?state.turn.id+':'+state.turn.target?.kind+':'+state.turn.target?.id:null;
+    if((this.state?.turn?.id===state?.turn?.id&&this.state?.turn?.ai?.status==='thinking'&&state?.turn?.ai?.status!=='thinking')||(this.targetKey&&nextTarget!==this.targetKey&&state?.turn?.ai?.status==='applied')){this.pathTurn=null;this.declareAt=performance.now();}
+    this.targetKey=nextTarget;
     this.state=state;
     if(state?.result&&state.result.id!==this.resultId){this.resultId=state.result.id;this.fxAt=performance.now();}
     if(state?.turn?.id!==this.declarationId){this.declarationId=state?.turn?.id;this.declareAt=performance.now();}
@@ -117,6 +120,7 @@ export class TavernScene {
       if(!this.escapePaths.has(p.id))this.escapePaths.set(p.id,[...approachPath(home,[480,500],r.world),[480,515]]);
       return pointOnPath(this.escapePaths.get(p.id),Math.max(0,(t-this.fxAt-i*70)/1800));
     }
+    if(turn?.actorId===p.id&&turn.ai?.status==='thinking')return home;
     if(turn?.actorId!==p.id)return home;
     const target=targetPosition(turn.target,r.players,home);
     if(this.reduced)return home;
