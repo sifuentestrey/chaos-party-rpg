@@ -1,6 +1,6 @@
 # Phone preview
 
-The repository now has a static solo preview workflow for phone-first review.
+The repository has a static solo preview workflow for visual phone-first review.
 It publishes the built `dist/` directory through GitHub Pages whenever `main`
 or `improve/tavern-presentation` changes. This preview contains the scripted
 solo heist and the current tavern presentation. It does not expose the
@@ -23,6 +23,7 @@ preview** manually on `improve/tavern-presentation`. The first run made before
 Pages was enabled cannot publish retroactively; a fresh run is required.
 
 For the full family game, use the Mac LAN workflow described in
-[TAVERN_PRESENTATION.md](TAVERN_PRESENTATION.md). The Pages preview is a visual
-and solo-gameplay feedback loop, not a replacement for physical-phone
-multiplayer testing.
+[TAVERN_PRESENTATION.md](TAVERN_PRESENTATION.md). The Pages preview is not the
+real multiplayer game. For actual host/controller gameplay from phones, use
+[PHONE_REAL_GAME.md](PHONE_REAL_GAME.md) with a Codespace, or run the Mac LAN
+workflow.

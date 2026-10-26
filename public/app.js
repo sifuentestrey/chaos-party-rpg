@@ -130,7 +130,13 @@ function updateTimers(){
   if(M.cooldownBlocked&&!blocked){M.cooldownBlocked=false;render();}
 }
 setInterval(updateTimers,100);
-function joinUrl(){const address=M.network?.addresses?.[0]||location.hostname;const port=M.network?.port||location.port;return `http://${address}${port?':'+port:''}/join?room=${encodeURIComponent(M.room?.code||'')}`;}
+function joinUrl(){
+  const room=encodeURIComponent(M.room?.code||'');
+  const publicBase=String(M.network?.publicBaseUrl||'').replace(/\/+$/,'');
+  if(publicBase)return `${publicBase}/join?room=${room}`;
+  const address=M.network?.addresses?.[0]||location.hostname;const port=M.network?.port||location.port;
+  return `http://${address}${port?':'+port:''}/join?room=${room}`;
+}
 function drawQR(){const el=document.getElementById('room-qr');if(!el||!window.qrcode)return;try{const q=window.qrcode(0,'M');q.addData(joinUrl());q.make();el.innerHTML=q.createSvgTag({cellSize:3,margin:1,scalable:true});}catch{el.textContent='Use code';}}
 
 async function ensureSocket(){

@@ -21,7 +21,14 @@ export async function createGameServer(options={}){
   const store=openCampaignStore(dataDir);if(options.hostKey)store.hostKey=options.hostKey;
   let port=0,closing=false;
   const addresses=()=>{try{return [...new Set(Object.values(os.networkInterfaces()).flat().filter(n=>n&&n.family==='IPv4'&&!n.internal&&!n.address.startsWith('169.254.')).map(n=>n.address))];}catch{return [];}};
-  const network=()=>({port,addresses:addresses(),version:VERSION,framework:'PartyFrame',serverNow:Date.now()});
+  const publicBaseUrl=()=>{
+    const configured=String(process.env.CHAOS_PUBLIC_URL||'').trim().replace(/\/+$/,'');
+    if(configured)return configured;
+    const codespace=String(process.env.CODESPACE_NAME||'').trim();
+    const domain=String(process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN||'').trim().replace(/^https?:\/\//,'').replace(/\/+$/,'');
+    return codespace&&domain&&port?`https://${codespace}-${port}.${domain}`:'';
+  };
+  const network=()=>({port,addresses:addresses(),publicBaseUrl:publicBaseUrl(),version:VERSION,framework:'PartyFrame',serverNow:Date.now()});
   const pendingLoads=new Map();
   async function lookup(code){
     if(currentRooms().has(code))return currentRooms().get(code);

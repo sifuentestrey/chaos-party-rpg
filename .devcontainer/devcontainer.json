@@ -1,0 +1,18 @@
+{
+  "name": "Chaos Party",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "forwardPorts": [4747],
+  "portsAttributes": {
+    "4747": {
+      "label": "Chaos Party host",
+      "onAutoForward": "notify",
+      "visibility": "private"
+    }
+  },
+  "containerEnv": {
+    "PORT": "4747",
+    "CHAOS_PREVIEW": "1"
+  },
+  "postCreateCommand": "npm ci --no-audit --no-fund",
+  "postStartCommand": "nohup npm start > /tmp/chaos-party.log 2>&1 &"
+}

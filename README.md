@@ -4,7 +4,7 @@ Private project for a family TV-and-phones, AI-assisted, chaotic fantasy party g
 
 **Status: recovered playable prototype, with an iterative tavern presentation pass.** Source and archive provenance are recorded in [docs/PROTOTYPE_IMPORT.md](docs/PROTOTYPE_IMPORT.md). See [docs/TAVERN_PRESENTATION.md](docs/TAVERN_PRESENTATION.md) for the current rendering work, actual checks, and remaining physical-device quality gates.
 
-Use Node 22+, run `npm ci`, then `npm start`. Open the host screen on the server machine at port 4747 and join from phone browsers on the same LAN. `npm test` exercises multiplayer and saves; `npm run build` produces the separate solo preview. No paid API or account is required.
+Use Node 22+, run `npm ci`, then `npm start`. Open the host screen on the server machine at port 4747 and join from phone browsers on the same LAN. For a real phone test without the Mac, use the [Codespaces live-game instructions](docs/PHONE_REAL_GAME.md). `npm test` exercises multiplayer and saves; `npm run build` produces the separate static solo preview. No paid API is required, though Codespaces may use an account’s included quota or billable minutes.
 
 ## Target experience
 - One shared full-screen 16:9 pixel-art tavern on TV; 12–20+ players connect from phone browsers using a QR or room code.
