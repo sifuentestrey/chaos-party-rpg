@@ -1358,7 +1358,7 @@ function createRoom({ code = "SOLO", seed = 12345, now = Date.now(), reactionMs 
     quest: { clues: 0, crown: false, carrierId: null, escaped: false },
     lastActorId: null,
     priorityUntil: 0,
-    world: { bartender: "wary", guards: "bored", facts: ["The Duke has terrible taste in hats."] },
+    world: { bartender: "wary", guards: "bored", facts: ["The Duke has terrible taste in hats."], props: { rug: true } },
     stats: { actions: 0, rolls: 0 }
   };
 }
@@ -1461,6 +1461,7 @@ function targetFor(r, actor, text) {
   if (other) return { kind: "player", id: other.id, name: other.name };
   if (/guard|captain|brick|soldier/.test(t)) return { kind: "guard", name: "Captain Brick" };
   if (/bartender|marnie|barkeep|barmaid/.test(t)) return { kind: "bartender", name: "Marnie" };
+  if (/rug|carpet|mat|runner|tapestry/.test(t)) return { kind: "rug", name: "the tavern rug" };
   if (/crown|chest|box|treasure|drawer/.test(t)) return { kind: "chest", name: "the locked chest" };
   if (/goblin|bard|musician/.test(t)) return { kind: "goblin", name: "the goblin fiddler" };
   if (/chandelier|ceiling/.test(t)) return { kind: "chandelier", name: "the chandelier" };
@@ -1581,6 +1582,7 @@ function resolve(r, now) {
   if (critical) p.nat20++;
   if (success) p.score += critical ? 5 : 2;
   const target = r.players.find((x) => x.id === t.target.id);
+  const props = r.world.props || (r.world.props = { rug: true });
   switch (t.intent) {
     case "heal":
       recovery(target || p, success ? 4 : 2);
@@ -1605,7 +1607,21 @@ function resolve(r, now) {
     case "steal":
       fx("steal");
       r.chaos += 2;
-      if (success) {
+      if (t.target.kind === "rug") {
+        if (!props.rug) {
+          narration = `${p.name} reaches for the rug, but the floor is bare. Someone already made off with it.`;
+          add("The rug is already gone");
+        } else if (success) {
+          props.rug = false;
+          p.inventory.push("The Tavern Rug");
+          add("RUG STOLEN");
+          narration = `${p.name} yanks the tavern rug free. The whole room lurches, the stools skid, and the rug is now very much somebody\u2019s problem.`;
+        } else {
+          damage(p, 1);
+          narration = `${p.name} gets one corner up. The rug snaps back and the tavern keeps its footing.`;
+          fx("hit", "self");
+        }
+      } else if (success) {
         if (r.quest.clues >= 3 && !r.quest.crown && ["chest", "bartender", "room"].includes(t.target.kind)) {
           r.quest.crown = true;
           r.quest.carrierId = p.id;
@@ -1829,6 +1845,7 @@ function hostCommand(r, command, now = Date.now()) {
     r.deadline = 0;
     r.chaos = 0;
     r.paused = false;
+    if (r.world?.props) r.world.props.rug = true;
     for (const p of r.players) {
       p.hp = Math.max(p.hp, 4);
       p.status = "ready";

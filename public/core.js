@@ -35,7 +35,7 @@ export function createRoom({ code='SOLO', seed=12345, now=Date.now(), reactionMs
     seed: (seed >>> 0) || 12345, phase:'lobby', paused:false, deadline:0, reactionMs:clamp(reactionMs,4000,12000),
     players:[], turn:null, result:null, events:[], requests:{}, round:0, chaos:0,
     quest:{ clues:0, crown:false, carrierId:null, escaped:false }, lastActorId:null, priorityUntil:0,
-    world:{ bartender:'wary', guards:'bored', facts:['The Duke has terrible taste in hats.'] }, stats:{ actions:0, rolls:0 } };
+    world:{ bartender:'wary', guards:'bored', facts:['The Duke has terrible taste in hats.'], props:{rug:true} }, stats:{ actions:0, rolls:0 } };
 }
 function touch(r, now) { r.revision++; r.updatedAt=now; }
 function event(r, type, text, now, extra={}) {
@@ -95,6 +95,7 @@ function targetFor(r,actor,text) {
   if(other) return {kind:'player',id:other.id,name:other.name};
   if(/guard|captain|brick|soldier/.test(t)) return {kind:'guard',name:'Captain Brick'};
   if(/bartender|marnie|barkeep|barmaid/.test(t)) return {kind:'bartender',name:'Marnie'};
+  if(/rug|carpet|mat|runner|tapestry/.test(t)) return {kind:'rug',name:'the tavern rug'};
   if(/crown|chest|box|treasure|drawer/.test(t)) return {kind:'chest',name:'the locked chest'};
   if(/goblin|bard|musician/.test(t)) return {kind:'goblin',name:'the goblin fiddler'};
   if(/chandelier|ceiling/.test(t)) return {kind:'chandelier',name:'the chandelier'};
@@ -160,6 +161,7 @@ function resolve(r,now) {
   p.actions++; r.stats.actions++; r.stats.rolls++; if(critical) p.nat20++;
   if(success) p.score+=critical?5:2;
   const target=r.players.find(x=>x.id===t.target.id);
+  const props=r.world.props||(r.world.props={rug:true});
   switch(t.intent) {
     case 'heal':
       recovery(target||p,success?4:2); fx('hearts',target?'player':'self');
@@ -172,7 +174,17 @@ function resolve(r,now) {
       break;
     case 'steal':
       fx('steal'); r.chaos+=2;
-      if(success) {
+      if(t.target.kind==='rug') {
+        if(!props.rug) {
+          narration=`${p.name} reaches for the rug, but the floor is bare. Someone already made off with it.`;
+          add('The rug is already gone');
+        } else if(success) {
+          props.rug=false;p.inventory.push('The Tavern Rug');add('RUG STOLEN');
+          narration=`${p.name} yanks the tavern rug free. The whole room lurches, the stools skid, and the rug is now very much somebody’s problem.`;
+        } else {
+          damage(p,1);narration=`${p.name} gets one corner up. The rug snaps back and the tavern keeps its footing.`;fx('hit','self');
+        }
+      } else if(success) {
         if(r.quest.clues>=3&&!r.quest.crown&&['chest','bartender','room'].includes(t.target.kind)) {
           r.quest.crown=true;r.quest.carrierId=p.id;p.inventory.push('The Duke’s Crown');p.score+=5;add('THE CROWN IS YOURS');
           narration=`${p.name} lifts the ridiculous golden crown. It jingles like cutlery. The guards have definitely noticed. Find a way out!`;fx('crown');
@@ -265,6 +277,7 @@ export function hostCommand(r,command,now=Date.now()) {
     const p=r.players.find(x=>x.id===command.playerId);if(!p)fail('PLAYER','No such player.');p.muted=!p.muted;
   } else if(command.type==='resetScene') {
     r.phase='open';r.turn=null;r.result=null;r.deadline=0;r.chaos=0;r.paused=false;
+    if(r.world?.props)r.world.props.rug=true;
     for(const p of r.players){p.hp=Math.max(p.hp,4);p.status='ready';}
     event(r,'story','Marnie claps her hands. “Everyone breathe. We’re starting that bit again.”',now);
   } else if(command.type==='redact') {

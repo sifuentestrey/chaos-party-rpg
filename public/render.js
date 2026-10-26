@@ -94,7 +94,12 @@ export class TavernScene {
     // deliberately patterned so it reads as a place in the tavern, not an
     // empty UI panel behind the characters.
     const rug=(x,y,w,h)=>{g.fillStyle='#21192566';g.fillRect(x-8,y+10,w+16,h+10);g.fillStyle='#382936';g.fillRect(x,y,w,h);g.fillStyle='#5f3e56';g.fillRect(x+6,y+5,w-12,h-10);g.strokeStyle='#b17b60';g.lineWidth=3;g.strokeRect(x+12,y+11,w-24,h-22);g.strokeStyle='#89606a';g.lineWidth=1;g.strokeRect(x+21,y+20,w-42,h-40);g.fillStyle='#d09a68';for(let n=0;n<7;n++){const xx=x+35+n*34;g.fillRect(xx,y+10,5,3);g.fillRect(xx,y+h-13,5,3);}for(let n=0;n<4;n++){const yy=y+38+n*32;g.fillRect(x+13,yy,3,5);g.fillRect(x+w-16,yy,3,5);}g.fillStyle='#c38b65';g.beginPath();g.moveTo(x+w/2,y+34);g.lineTo(x+w/2+15,y+h/2);g.lineTo(x+w/2,y+h-34);g.lineTo(x+w/2-15,y+h/2);g.closePath();g.fill();g.fillStyle='#5f3e56';g.fillRect(x+w/2-5,y+h/2-5,10,10);};
-    rug(346,290,270,175);
+    const rugTaken=r?.world?.props?.rug===false;
+    const rugPull=r?.result?.intent==='steal'&&r.result.target?.kind==='rug'&&t-this.fxAt<1200;
+    if(!rugTaken||rugPull){
+      const pull=rugPull?Math.min(1,(t-this.fxAt)/900):0;
+      g.save();g.globalAlpha=rugPull?Math.max(0,1-pull*.92):1;rug(346,290+Math.round(pull*165),270,175);g.restore();
+    }
     for(let y=309;y<453;y+=18){g.fillStyle='#9a705f';g.fillRect(358,y,4,4);g.fillRect(600,y,4,4);}
     for(const [x,y] of [[74,367],[850,365],[155,146],[750,149]]){tile(g,82,x,y,36);tile(g,113,x+7,y-9,24);}
     // Small candlelit sideboards and scattered mugs break up the empty floor.

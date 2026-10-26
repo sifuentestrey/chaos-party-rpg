@@ -5,7 +5,7 @@ export const seats = [
   [190,345],[310,345],[430,345],[550,345],[670,345],[790,345],
   [190,405],[310,405],[430,405],[550,405],[670,405],[790,405]
 ];
-export const landmarks={guard:[865,290],bartender:[480,145],chest:[665,145],goblin:[125,245],chandelier:[480,260],door:[480,495],room:[480,335]};
+export const landmarks={guard:[865,290],bartender:[480,145],chest:[665,145],rug:[480,378],goblin:[125,245],chandelier:[480,260],door:[480,495],room:[480,335]};
 export function targetPosition(target,players,home){
   if(target?.kind==='self')return home;
   if(target?.id){const i=players.findIndex(p=>p.id===target.id);if(i>=0)return seats[i%seats.length];}

@@ -5,6 +5,7 @@ test('presentation resolves saved character targets and tolerates missing charac
   const players=[{id:'one'},{id:'two'}];
   assert.deepEqual(targetPosition({id:'two'},players,seats[0]),seats[1]);
   assert.deepEqual(targetPosition({kind:'guard'},players,seats[0]),landmarks.guard);
+  assert.deepEqual(targetPosition({kind:'rug'},players,seats[0]),landmarks.rug);
   assert.deepEqual(targetPosition({kind:'self'},players,seats[0]),seats[0]);
   assert.deepEqual(targetPosition({id:'missing'},players,seats[0]),seats[0]);
 });

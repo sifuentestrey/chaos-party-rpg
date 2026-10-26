@@ -62,6 +62,16 @@ test('complete heist: gather clues, take the crown, escape with a party victory'
   }
   assert.equal(r.quest.clues,3);assert.equal(r.quest.crown,true);assert.equal(r.quest.escaped,true);assert.equal(r.phase,'ended');assert.equal(r.players[0].inventory.includes('The Duke’s Crown'),true);
 });
+test('stealing the rug targets a real environment prop and persists its removal',()=>{
+  const r=setup(1),p=r.players[0];p.role='rogue';let now=2000,stolen=false;
+  for(let i=0;i<80&&!stolen;i++){
+    action(r,p,'Steal the tavern rug',now,'rug-'+i);assert.equal(r.turn.target.kind,'rug');
+    advance(r,now+9000);stolen=!!r.result?.success&&r.result.target.kind==='rug';
+    if(!stolen){p.hp=p.maxHp;advance(r,now+16000);now+=17000;}
+  }
+  assert.equal(stolen,true);assert.equal(r.world.props.rug,false);assert.ok(p.inventory.includes('The Tavern Rug'));assert.ok(r.result.changes.includes('RUG STOLEN'));
+  const saved=publicRoom(r);assert.equal(saved.world.props.rug,false);
+});
 test('guard sweep is deterministic, protects fleeing reactors, and never makes HP negative',()=>{
   const r=setup();r.chaos=9;action(r,r.players[0],'Punch Captain Brick');react(r,r.players[1],'flee');const hp=r.players[1].hp;advance(r,10000);assert.equal(r.chaos,5);assert.equal(r.players[1].hp,hp);assert.ok(r.players.every(p=>p.hp>=0));assert.ok(r.result.changes.some(x=>x.includes('Guard sweep')));
 });
