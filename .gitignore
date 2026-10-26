@@ -21,6 +21,7 @@ secrets/
 # Original prototype runtime/build outputs
 release/
 data/
+artifacts/
 .openai/local/
 # Site deployment identity is deliberately not imported
 .openai/

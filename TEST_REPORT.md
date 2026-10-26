@@ -1,3 +1,7 @@
+# 0.3 beta candidate
+
+Current beta verification and remaining gates are recorded in [docs/BETA_AUDIT.md](docs/BETA_AUDIT.md). The earlier report below is preserved as historical evidence.
+
 # First playable prototype — v0.2 test report
 
 Tested October 25–26, 2026, in the managed development environment. The live multiplayer implementation is the actual adapted PartyFrame runtime, running Colyseus.

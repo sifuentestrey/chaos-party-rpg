@@ -1,0 +1,50 @@
+name: Mac beta build
+
+on:
+  push:
+    branches: [beta/reactive-tavern]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
+      - name: Fetch checksum-verified official Mac runtimes
+        shell: bash
+        run: |
+          for arch in x64 arm64; do
+            archive="node-v22.23.4-darwin-${arch}.tar.gz"
+            curl --fail --location --retry 2 "https://nodejs.org/dist/v22.23.4/${archive}" --output "$archive"
+            if [ "$arch" = x64 ]; then
+              expected=efcc2b0db6f94bf53eddb038fe2b370277a042bd29e4f19b8f8e23598795b819
+            else
+              expected=c9e1dbc748b33ed2d14f42445191ecaf14c56259c7a9a26d0042c49ec2b66428
+            fi
+            echo "$expected  $archive" | sha256sum --check
+            mkdir -p "runtime-downloads/darwin-${arch}"
+            tar -xzf "$archive" --strip-components=1 -C "runtime-downloads/darwin-${arch}"
+            cp "runtime-downloads/darwin-${arch}/bin/node" "runtime-downloads/darwin-${arch}/node"
+          done
+      - name: Package and smoke-test the standalone server
+        run: |
+          CHAOS_RUNTIME_DOWNLOADS="$PWD/runtime-downloads" node scripts/package-release.mjs
+          node tests/release-smoke.mjs
+          cd release
+          zip -qr Chaos_Party_Beta_Mac.zip Chaos_Party_Mac
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Chaos-Party-Mac-beta
+          path: release/Chaos_Party_Beta_Mac.zip
+          retention-days: 30
+          compression-level: 0

@@ -1,4 +1,12 @@
-# Credits and licenses — Chaos Party 0.2
+# Credits and licenses — Chaos Party 0.3 beta
+
+## Reused gameplay mechanics
+
+**Dungeonz**, copyright 2021 Johnathan "Arcan" Fisher, MIT. https://github.com/Gamessystem/dungeonz at `4f16ab19093ae4ce07d754d2e10690eeb202807b`. The production environment executes the original `WoodDoor.interaction` and `Entity.onDamage` code through authoritative-state adapters. Original entity inheritance and damage model are bundled in `public/vendor/dungeonz.js`; original sources remain in `experiments/dungeonz-world/upstream/`. Full notice: `public/vendor/Dungeonz-LICENSE.txt`. No mixed-license Dungeonz world artwork ships in the production tavern; its authored map is only in the isolated local extraction experiment.
+
+**Foundry D&D5e**, copyright 2021 Andrew Clayton, MIT. https://github.com/foundryvtt/dnd5e . The actual `BasicDie.advantage` selection body is extracted by `scripts/build-game-foundations.mjs`, made synchronous (it contains no awaits), and run against deterministic PartyFrame dice. Original source: `vendor/dnd5e/basic-die.mjs`. Full notice: `public/vendor/DnD5e-LICENSE.txt`. No proprietary Foundry runtime or D&D content compendium is shipped. The remaining tavern rules and integration are game-specific, not the entire Foundry/D&D engine.
+
+**ROT.js 2.2.1**, BSD-3-Clause, by Ondřej Žára and contributors. https://github.com/ondras/rot.js . Actual A* pathfinding routes actors around tavern furniture. Full notice: `public/vendor/ROT-LICENSE.txt`.
 
 ## Working framework code
 

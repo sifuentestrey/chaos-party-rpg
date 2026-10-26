@@ -14,7 +14,8 @@ fs.mkdirSync(path.join(out,'licenses'),{recursive:true});
 fs.copyFileSync(path.join(downloads,'darwin-x64','LICENSE'),path.join(out,'licenses','Node-LICENSE.txt'));
 fs.copyFileSync(path.join(root,'vendor/partyframe/LICENSE'),path.join(out,'licenses','PartyFrame-LICENSE.txt'));
 fs.copyFileSync(path.join(root,'public/assets/ninja/LICENSE.txt'),path.join(out,'licenses','Ninja-Adventure-CC0.txt'));
-let notices='THIRD-PARTY NOTICES — Chaos Party v0.2\n\n';
+for(const name of ['Dungeonz-LICENSE.txt','DnD5e-LICENSE.txt','ROT-LICENSE.txt'])fs.copyFileSync(path.join(root,'public/vendor',name),path.join(out,'licenses',name));
+let notices='THIRD-PARTY NOTICES — Chaos Party v0.3 beta\n\n';
 const seen=new Set();
 function addLicenses(dir){
   if(!fs.existsSync(dir))return;
@@ -33,6 +34,7 @@ addLicenses(path.join(root,'node_modules'));
 notices+='\nPartyFrame — '+fs.readFileSync(path.join(root,'vendor/partyframe/LICENSE'),'utf8');
 fs.writeFileSync(path.join(out,'licenses','THIRD_PARTY_NOTICES.txt'),notices);
 for(const name of ['README.md','CREDITS.md','TEST_REPORT.md','RESEARCH.md','FOUNDATION_AUDIT.md'])if(fs.existsSync(path.join(root,name)))fs.copyFileSync(path.join(root,name),path.join(out,name));
+for(const name of ['BETA.md','BETA_AUDIT.md'])if(fs.existsSync(path.join(root,'docs',name)))fs.copyFileSync(path.join(root,'docs',name),path.join(out,name));
 const launcher=`#!/bin/bash
 set -eu
 game_dir="$(cd "$(dirname "$0")" && pwd)"
@@ -52,5 +54,5 @@ if ! "$game_dir/runtime/$game_arch/node" "$game_dir/server.cjs"; then
 fi
 `;
 fs.writeFileSync(path.join(out,'Start Chaos Party.command'),launcher,{mode:0o755});
-fs.writeFileSync(path.join(out,'START_HERE.txt'),'CHAOS PARTY — FIRST PLAYABLE PROTOTYPE\n\n1. Double-click Start Chaos Party.command.\n2. Choose Host a party, then Create a private room.\n3. Show the browser on your TV. Friends join by scanning the QR on the same Wi-Fi.\n4. Start the heist when everyone has a character.\n\nNo installation, account, internet connection, or paid service is needed. Keep the launcher window open while playing.\n\nIf macOS blocks the downloaded launcher, right-click it and choose Open. Review Privacy & Security if your macOS version requires confirmation. Allow local network access for phones.\n\nRead README.md for recovery, troubleshooting, and honest test limits.\n');
+fs.writeFileSync(path.join(out,'START_HERE.txt'),'CHAOS PARTY — 0.3 BETA CANDIDATE\n\n1. Double-click Start Chaos Party.command.\n2. Choose Host a party, then Create a private room.\n3. Show the browser on your TV. Friends join by scanning the QR on the same Wi-Fi.\n4. Start the heist when everyone has a character.\n\nTry stealing the rug, smashing a table, spilling a barrel, hiding behind furniture, or extinguishing the fireplace. The controller lists the room objects. Find three clues, steal the crown, and escape together.\n\nNo installation, account, internet connection, or paid service is needed. Keep the launcher window open while playing.\n\nIf macOS blocks the downloaded launcher, right-click it and choose Open. Review Privacy & Security if your macOS version requires confirmation. Allow local network access for phones.\n\nRead BETA.md and BETA_AUDIT.md for supported mechanics and honest test limits. Physical Mac/phone acceptance is still pending.\n');
 console.log(JSON.stringify({release:out,files:fs.readdirSync(out),thirdPartyNotices:seen.size}));

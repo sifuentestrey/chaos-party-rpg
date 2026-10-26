@@ -1,3 +1,5 @@
+import {drawEnvironment} from './environment-render.js';
+import {approachPath,pointOnPath} from './navigation.js';
 import { seats as slots, landmarks as npcPositions, targetPosition, actorPosition, recoil } from './tavern-motion.js';
 import { SKIN, HAIR, CLOTHES, DEFAULT_AVATAR } from './core.js';
 import { ninjaAvatarFrame, drawNinjaEffect, ninjaAssetsReady } from './ninja.js';
@@ -76,53 +78,9 @@ export class TavernScene {
     g.restore();for(let x=24;x<936;x+=32){tile(g,14,x,21);tile(g,40,x,53);tile(g,14,x,85);}
     for(let y=113;y<514;y+=32){tile(g,14,22,y);tile(g,14,906,y);}
     g.fillStyle='#35252b';g.fillRect(24,16,912,9);g.fillRect(20,22,8,499);g.fillRect(930,22,9,499);
-    // Back wall shelves, bottles, and framed tavern sign.
-    for(const sx of [124,700]){g.fillStyle='#34242b';g.fillRect(sx,38,140,52);g.fillStyle='#9d7150';g.fillRect(sx-4,83,148,7);for(let n=0;n<5;n++)tile(g,113+(n%4),sx+n*27,49,28);}
-    g.fillStyle='#261d29';g.fillRect(350,34,260,53);g.strokeStyle='#a87c50';g.lineWidth=3;g.strokeRect(351,35,258,51);
-    g.font='bold 16px monospace';g.textAlign='center';g.fillStyle='#e0bd80';g.fillText('THE TIPSY WYVERN',480,57);g.font='10px monospace';g.fillStyle='#a48e7a';g.fillText('EST. BEFORE GOOD JUDGMENT',480,74);
-    // Tall oak beams, moonlit windows and a hearth give the room a lived-in silhouette.
+    // Building shell; interactive fixtures come from the shared object registry.
     for(const x of [48,302,650,900]){g.fillStyle='#30232a';g.fillRect(x,22,10,114);g.fillStyle='#916044';g.fillRect(x+2,22,3,110);}
-    for(const x of [76,822]){g.fillStyle='#211c30';g.fillRect(x,40,58,64);g.fillStyle='#675976';g.fillRect(x+5,45,48,52);g.fillStyle='#333c5a';g.fillRect(x+8,48,42,46);g.fillStyle='#b8c9b8';g.fillRect(x+36,51,8,8);g.fillStyle='#4f3840';g.fillRect(x+27,45,5,52);g.fillRect(x+5,70,48,5);g.fillStyle='#b18156';g.fillRect(x-3,100,64,6);}
-    g.fillStyle='#28222a';g.fillRect(54,260,76,87);g.fillStyle='#62515a';g.fillRect(50,252,84,12);g.fillRect(54,264,12,76);g.fillRect(118,264,12,76);g.fillStyle='#1f1922';g.fillRect(66,272,52,62);
-    for(let n=0;n<7;n++){g.fillStyle=n%2?'#f5bf66':'#c76c43';const h=18+Math.sin(second*7+n*2)*8;g.fillRect(70+n*6,328-h,5,h);}
-    g.fillStyle='#624333';g.fillRect(62,329,60,7);
-    const warmth=g.createRadialGradient(92,318,8,92,318,145);warmth.addColorStop(0,'#efa05235');warmth.addColorStop(1,'#efa05200');g.fillStyle=warmth;g.fillRect(30,200,220,240);
-    // Bunting and hanging ironwork are kept above the walkable floor.
-    g.strokeStyle='#30232b';g.lineWidth=2;g.beginPath();g.moveTo(320,25);g.quadraticCurveTo(480,34,640,25);g.stroke();
-    for(let n=0;n<11;n++){const x=330+n*29,y=16+Math.sin(n/10*Math.PI)*5;g.fillStyle=n%2?'#98704e':'#6c5961';g.beginPath();g.moveTo(x,y);g.lineTo(x+12,y+2);g.lineTo(x+5,y+16);g.fill();}
-    // Rugs and tables leave walkable gaps for a large party. The centre rug is
-    // deliberately patterned so it reads as a place in the tavern, not an
-    // empty UI panel behind the characters.
-    const rug=(x,y,w,h)=>{g.fillStyle='#21192566';g.fillRect(x-8,y+10,w+16,h+10);g.fillStyle='#382936';g.fillRect(x,y,w,h);g.fillStyle='#5f3e56';g.fillRect(x+6,y+5,w-12,h-10);g.strokeStyle='#b17b60';g.lineWidth=3;g.strokeRect(x+12,y+11,w-24,h-22);g.strokeStyle='#89606a';g.lineWidth=1;g.strokeRect(x+21,y+20,w-42,h-40);g.fillStyle='#d09a68';for(let n=0;n<7;n++){const xx=x+35+n*34;g.fillRect(xx,y+10,5,3);g.fillRect(xx,y+h-13,5,3);}for(let n=0;n<4;n++){const yy=y+38+n*32;g.fillRect(x+13,yy,3,5);g.fillRect(x+w-16,yy,3,5);}g.fillStyle='#c38b65';g.beginPath();g.moveTo(x+w/2,y+34);g.lineTo(x+w/2+15,y+h/2);g.lineTo(x+w/2,y+h-34);g.lineTo(x+w/2-15,y+h/2);g.closePath();g.fill();g.fillStyle='#5f3e56';g.fillRect(x+w/2-5,y+h/2-5,10,10);};
-    const rugTaken=r?.world?.props?.rug===false;
-    const rugPull=rugTaken&&r?.result?.success&&r?.result?.changes?.includes('RUG STOLEN')&&r?.result?.intent==='steal'&&r.result.target?.kind==='rug'&&t-this.fxAt<1200;
-    if(!rugTaken||rugPull){
-      const pull=rugPull?Math.min(1,(t-this.fxAt)/900):0;
-      g.save();g.globalAlpha=rugPull?Math.max(0,1-pull*.92):1;rug(346,290+Math.round(pull*165),270,175);g.restore();
-    }
-    if(!rugTaken)for(let y=309;y<453;y+=18){g.fillStyle='#9a705f';g.fillRect(358,y,4,4);g.fillRect(600,y,4,4);}
-    for(const [x,y] of [[74,367],[850,365],[155,146],[750,149]]){tile(g,82,x,y,36);tile(g,113,x+7,y-9,24);}
-    // Small candlelit sideboards and scattered mugs break up the empty floor.
-    for(const x of [140,758]){g.fillStyle='#3d2a2b';g.fillRect(x,175,62,20);g.fillStyle='#ad7951';g.fillRect(x-3,171,68,7);tile(g,114,x+9,151,27);tile(g,113,x+33,155,23);}
-    for(const x of [218,682]){g.fillStyle='#37262b';g.fillRect(x,305,5,17);g.fillStyle='#f3d497';g.fillRect(x,301,5,12);g.fillStyle='#ffd98a';g.fillRect(x+1,297+Math.round(Math.sin(second*6)),3,5);}
-    const table=(x,y)=>{g.fillStyle='#00000033';g.fillRect(x-42,y+24,84,16);g.fillStyle='#36262a';g.fillRect(x-36,y-9,72,46);g.fillStyle='#ae7850';g.fillRect(x-40,y-16,80,40);g.fillStyle='#bf8759';g.fillRect(x-36,y-16,72,5);g.fillStyle='#85563d';g.fillRect(x-36,y+3,72,2);tile(g,113,x-27,y-27,27);tile(g,114,x+7,y-25,27);g.fillStyle='#dec19b';g.fillRect(x+2,y+6,12,3);};
-    const furniture=[[245,335],[715,335],[245,445],[715,445]];
-    const layers=furniture.map(([x,y])=>({y,draw:()=>{tile(g,73,x-67,y+3,32);tile(g,73,x+35,y+3,32);if(x===245&&y===335&&r?.world?.props?.table==='broken'){g.fillStyle='#a57551';for(let n=0;n<7;n++)g.fillRect(x-32+n*9,y+10+(n%3)*5,24,5);}else table(x,y);}}));
-    // Counter and the crown chest, all from reusable licensed tiles.
-    for(let x=306;x<664;x+=32){tile(g,63,x,132);g.fillStyle='#bc885a';g.fillRect(x,130,32,6);}
-    tile(g,89,650,113,40);if(r?.world?.props?.barrel==='broken'){g.fillStyle='#b5823a88';g.beginPath();g.ellipse(846,167,42,15,0,0,Math.PI*2);g.fill();g.fillStyle='#ac7953';for(let n=0;n<5;n++)g.fillRect(820+n*10,150+(n%2)*8,24,5);}else tile(g,82,824,121,44);tile(g,82,865,143,40);tile(g,82,73,135,44);
-
-
-
-
-    // Doorway and a warm patch of light spilling out.
-    g.fillStyle='#35252e';g.fillRect(435,510,90,30);g.fillStyle='#cda374';g.fillRect(441,514,78,26);g.fillStyle=r?.world?.props?.door==='broken'?'#161927':'#9c7355';g.fillRect(449,518,62,22);if(r?.world?.props?.door==='broken'){g.fillStyle='#ad7951';g.fillRect(442,522,14,5);g.fillRect(501,531,20,4);}
-    this.label(g,'EXIT',480,533,'#ebc998',10);
-    const lamp=(x,y)=>{
-      const flicker=1+Math.sin(second*4+x)*.035;const glow=g.createRadialGradient(x,y,3,x,y,118*flicker);glow.addColorStop(0,'#f6b66c30');glow.addColorStop(1,'#f6b66c00');g.fillStyle=glow;g.fillRect(x-125,y-125,250,250);
-      g.fillStyle='#3d2a2b';g.fillRect(x-7,y-15,14,24);g.fillStyle='#d99855';g.fillRect(x-5,y-11,10,15);g.fillStyle='#ffe3a3';g.fillRect(x-2,y-9,4,12);
-    };
-    lamp(70,99);lamp(289,99);lamp(674,99);lamp(889,99);lamp(56,343);lamp(909,343);
+    const layers=drawEnvironment(g,r,this.reduced?0:t,sprites);
     // Render all 24 possible player slots; labels are separate from their sprite.
     const players=r?.players||[];
     if(!players.length){
@@ -135,7 +93,7 @@ export class TavernScene {
       patrons.forEach((a,i)=>{const pos=[[336,270],[624,270],[330,468],[630,468]][i];layers.push({y:pos[1],draw:()=>this.person(g,{id:'patron'+i,avatar:{...DEFAULT_AVATAR,...a},name:'PATRON',hp:10,connected:true,npc:true,ambient:true},pos,second,i,t)});});
     }else players.forEach((p,i)=>{const pos=this.position(p,i,t);layers.push({y:pos[1],draw:()=>this.person(g,p,pos,second,i,t)});});
     const npcs=[{id:'bartender',name:'MARNIE',avatar:{...DEFAULT_AVATAR,skin:3,hair:1,outfit:1,color:2}}, {id:'guard',name:'CAPTAIN BRICK',avatar:{...DEFAULT_AVATAR,outfit:3,hair:5,color:4,accessory:0}}, {id:'goblin',name:'THE FIDDLER',avatar:{...DEFAULT_AVATAR,body:'elf',hair:2,color:3,accessory:1}}];
-    for(const npc of npcs){const pos=[...npcPositions[npc.id]];const hit=r?.result?.success&&r.result.target?.kind===npc.id&&['attack','magic','break'].includes(r.result.intent);if(hit)pos[0]+=recoil(t-this.fxAt,this.reduced);layers.push({y:pos[1],draw:()=>this.person(g,{...npc,hp:10,connected:true,npc:true,hit:hit&&t-this.fxAt<650},pos,second,0,t)});}
+    for(const npc of npcs){const pos=[...npcPositions[npc.id]],saved=r?.world?.npcs?.[npc.id]||{hp:8,maxHp:8};const hit=r?.result?.success&&r.result.target?.kind===npc.id&&['attack','magic','break'].includes(r.result.intent);if(hit)pos[0]+=recoil(t-this.fxAt,this.reduced);layers.push({y:pos[1],draw:()=>this.person(g,{...npc,...saved,connected:true,npc:true,hit:hit&&t-this.fxAt<650},pos,second,0,t)});}
     layers.sort((a,b)=>a.y-b.y).forEach(layer=>layer.draw());
     // Foreground framing adds depth without hiding the central action.
     for(const x of [28,920]){g.fillStyle='#261e27';g.fillRect(x,114,12,410);g.fillStyle='#946246';g.fillRect(x+3,114,3,410);}
@@ -146,7 +104,7 @@ export class TavernScene {
       const i=players.findIndex(p=>p.id===r.turn.actorId),pos=this.position(players[i],Math.max(0,i),t);
       g.fillStyle='#f5dc9a';const w=130;g.fillRect(pos[0]-w/2,pos[1]-115,w,25);g.fillRect(pos[0]-3,pos[1]-91,6,7);g.font='bold 10px monospace';g.textAlign='center';g.fillStyle='#332836';g.fillText('IDEA LOCKED IN!',pos[0],pos[1]-99);
     }
-    if(r?.quest.crown){const i=players.findIndex(p=>p.id===r.quest.carrierId);if(i>=0){const pos=slots[i];this.crown(g,pos[0],pos[1]-97+Math.sin(second*3)*3,1.2);}}
+    if(r?.quest.crown&&!r.quest.escaped){const i=players.findIndex(p=>p.id===r.quest.carrierId);if(i>=0){const pos=this.position(players[i],i,t);this.crown(g,pos[0],pos[1]-97+Math.sin(second*3)*3,1.2);}}
     if(r?.paused){g.fillStyle='#100f1cbf';g.fillRect(0,0,960,540);g.fillStyle='#f1d7a4';g.font='bold 32px monospace';g.textAlign='center';g.fillText('THE TAVERN TAKES A BREATHER',480,262);g.font='16px monospace';g.fillText('The host has paused the story.',480,295);}
     // Subtle vignette uses one gradient instead of a full-screen image filter.
     const vignette=g.createRadialGradient(480,280,200,480,280,570);vignette.addColorStop(0,'#130e2000');vignette.addColorStop(1,'#130e2070');g.fillStyle=vignette;g.fillRect(0,0,960,540);
@@ -154,17 +112,31 @@ export class TavernScene {
   position(p,i,t){
     const home=slots[i%slots.length];if(!p)return home;
     const r=this.state,turn=r?.turn;
+    if(r?.quest.escaped){
+      if(this.escapeKey!==r.result?.id){this.escapeKey=r.result?.id;this.escapePaths=new Map();}
+      if(!this.escapePaths.has(p.id))this.escapePaths.set(p.id,[...approachPath(home,[480,500],r.world),[480,515]]);
+      return pointOnPath(this.escapePaths.get(p.id),Math.max(0,(t-this.fxAt-i*70)/1800));
+    }
     if(turn?.actorId!==p.id)return home;
     const target=targetPosition(turn.target,r.players,home);
-    return actorPosition(home,target,t-this.declareAt,r.result?.id===turn.id?t-this.fxAt:null,this.reduced);
+    if(this.reduced)return home;
+    if(this.pathTurn!==turn.id){this.pathTurn=turn.id;this.actorPath=approachPath(home,target,r.world);}
+    const age=t-this.declareAt,resultAge=r.result?.id===turn.id?t-this.fxAt:null;
+    let progress=Math.min(1,age/850);
+    if(resultAge!==null)progress=1-Math.min(1,Math.max(0,(resultAge-1000)/850));
+    const pos=pointOnPath(this.actorPath,progress);
+    if(resultAge!==null&&resultAge<500){const strike=Math.sin(Math.max(0,resultAge)/500*Math.PI)*10,dx=target[0]-pos[0],dy=target[1]-pos[1],len=Math.hypot(dx,dy)||1;return [pos[0]+dx/len*strike,pos[1]+dy/len*strike];}
+    return pos;
   }
   label(g,text,x,y,color='#f3e7cb',size=11){g.font=`bold ${size}px monospace`;g.textAlign='center';g.fillStyle='#1a1728';g.fillText(text,x+1,y+1);g.fillStyle=color;g.fillText(text,x,y);}
   person(g,p,pos,second,i,t){
     let [x,y]=pos;const r=this.state;const active=r?.turn?.actorId===p.id&&['react','reveal'].includes(r.phase);const reaction=r?.turn?.reactions.find(q=>q.playerId===p.id);
     const elapsed=t-this.fxAt;
+    const escapeAlpha=r?.quest.escaped&&!p.npc?Math.max(0,1-Math.max(0,(elapsed-i*70-1100)/700)):1;
+    if(!escapeAlpha)return;
     if(!p.npc&&r?.result?.success&&r.result.target?.id===p.id)y-=recoil(elapsed,this.reduced)*.4;
     const bob=this.reduced||p.hp===0?0:Math.floor(Math.sin(second*2+i)*1.4);
-    g.globalAlpha=p.connected===false?.48:1;
+    g.globalAlpha=(p.connected===false?.48:1)*escapeAlpha;
     g.fillStyle=active?'#dab97a55':'#100e203d';g.beginPath();g.ellipse(x,y-2,23,7,0,0,Math.PI*2);g.fill();
     if(active){g.strokeStyle='#f3c975';g.lineWidth=2;g.beginPath();g.ellipse(x,y-2,27,9,0,0,Math.PI*2);g.stroke();}
     const resultActor=r?.result?.playerId===p.id&&elapsed<1500;
@@ -185,7 +157,7 @@ export class TavernScene {
     const players=this.state?.players||[],i=players.findIndex(p=>p.id===res.playerId);const pos=this.position(players[i],Math.max(0,i),this.fxAt+elapsed);const f=Math.max(0,1-elapsed/3400);
     for(const effect of res.effects){
       const j=players.findIndex(p=>p.id===effect.actorId),from=this.position(players[j],Math.max(0,j),this.fxAt+elapsed);
-      const target=effect.target==='self'?from:effect.targetId?slots[Math.max(0,players.findIndex(p=>p.id===effect.targetId))]:(npcPositions[effect.target]||pos);
+      const target=effect.target==='self'?from:effect.targetId?slots[Math.max(0,players.findIndex(p=>p.id===effect.targetId))]:targetPosition({kind:effect.target},players,pos);
       const [x,y]=target;
       const licensed=drawNinjaEffect(g,effect.verb,x,y-35,elapsed,1.8);
       if(licensed&&!['crown','alarm','flee'].includes(effect.verb))continue;
@@ -203,6 +175,6 @@ export class TavernScene {
       if(effect.verb==='flee'&&elapsed<1600){g.strokeStyle='#b7d7b9';g.setLineDash([8,12]);g.lineWidth=2;g.beginPath();g.moveTo(from[0],from[1]);g.lineTo(480,520);g.stroke();g.setLineDash([]);}
       if(effect.verb==='sneak'){g.globalAlpha=f*.3;g.fillStyle='#c2c0dc';g.beginPath();g.ellipse(from[0],from[1]-25,35,30,0,0,Math.PI*2);g.fill();g.globalAlpha=1;}
     }
-    if(elapsed<2800){g.globalAlpha=f;this.label(g,res.critical?'NATURAL 20!':res.success?'SUCCESS':'BAD LUCK',pos[0],pos[1]-87-elapsed/120,res.success?'#b7e5bb':'#f1b8b4',17);g.globalAlpha=1;}
+    if(elapsed<2800){g.globalAlpha=f;this.label(g,res.blocked?'CANNOT DO THAT':res.automatic?'DONE':res.critical?'NATURAL 20!':res.success?'SUCCESS':'BAD LUCK',pos[0],pos[1]-87-elapsed/120,res.success?'#b7e5bb':'#f1b8b4',17);g.globalAlpha=1;}
   }
 }

@@ -1252,27 +1252,1075 @@ var PartySessionRoom = class extends Room {
   }
 };
 
-// public/environment.js
-var OBJECTS = {
-  table: { name: "the tavern table", position: [245, 335], pattern: /\b(table|tables)\b/i },
-  barrel: { name: "the ale barrel", position: [846, 165], pattern: /\b(barrel|barrels|cask|keg)\b/i },
-  door: { name: "the tavern door", position: [480, 495], pattern: /\b(door|gate)\b/i }
+// public/vendor/dungeonz.js
+var __create = Object.create;
+var __defProp2 = Object.defineProperty;
+var __getOwnPropDesc2 = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __commonJS = (cb, mod) => function __require() {
+  try {
+    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  } catch (e) {
+    throw mod = 0, e;
+  }
 };
-function environmentTarget(text) {
-  for (const [kind, o] of Object.entries(OBJECTS)) if (o.pattern.test(text)) return { kind, name: o.name };
-  return null;
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp2(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc2(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp2(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var require_fs = __commonJS({
+  "platform:fs"(exports, module) {
+    module.exports = { existsSync: () => true, writeFileSync: () => {
+    } };
+  }
+});
+var require_settings = __commonJS({
+  "platform:settings"(exports, module) {
+    module.exports = { IGNORE_WARNINGS: false };
+  }
+});
+var require_Utils = __commonJS({
+  "experiments/dungeonz-world/upstream/server/src/Utils.js"(exports, module) {
+    var fs = require_fs();
+    var settings = require_settings();
+    var Utils = class {
+      /**
+       * @class Creates a counter that will track it's own
+       * count and allow the next count to be retrieved.
+       * Useful for creating unique IDs.
+       */
+      Counter = class Counter {
+        constructor() {
+          this._count = 0;
+        }
+        getNext() {
+          this._count += 1;
+          return this._count;
+        }
+      };
+      /**
+       * Gets a random number between, and including, min and max.
+       * @param {Number} min
+       * @param {Number} max
+       * @returns {*}
+       */
+      getRandomIntInclusive(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+      /**
+       * Gets a random element from the given array.
+       * @param {Array} array
+       * @returns {*}
+       */
+      getRandomElement(array) {
+        return array[Math.floor(Math.random() * array.length)];
+      }
+      /**
+       * Creates an array of all permutations of a given array's elements.
+       * @param {Array.<*>} array
+       * @returns {Array.<Array.<*>>} An array of arrays.
+       */
+      getPermutations(array) {
+        let result = [];
+        const permute = (arr, m = []) => {
+          if (arr.length === 0) {
+            result.push(m);
+          } else {
+            for (let i = 0; i < arr.length; i += 1) {
+              let curr = arr.slice();
+              let next = curr.splice(i, 1);
+              permute(curr.slice(), m.concat(next));
+            }
+          }
+        };
+        permute(array);
+        return result;
+      }
+      /**
+       * @param {Array} array
+       * @param {String} nameKey - The name of each property key on the result object.
+       * @param {String} valueKey - The name of the property to use as each propety value.
+       * @returns {Object} The array as an object.
+       */
+      arrayToObject(array, nameKey, valueKey) {
+        if (Array.isArray(array) === false) return {};
+        return array.reduce((obj, item) => {
+          obj[item[nameKey]] = item[valueKey];
+          return obj;
+        }, {});
+      }
+      /**
+       * Push an item into an array multiple times.
+       * @param {Array} array - The array to push into.
+       * @param {*} item - The item to add.
+       * @param {Number} number - How many times the item should be added.
+       */
+      arrayMultiPush = (array, item, amount) => {
+        for (let i = 0; i < amount; i += 1) {
+          array.push(item);
+        }
+      };
+      /**
+       * Checks the location to write to exists. If not, creates it.
+       * @param {String} directory The directory to check for.
+       */
+      checkDirectoryExists(directory) {
+        if (fs.existsSync(directory) === false) {
+          fs.mkdirSync(directory);
+        }
+      }
+      /**
+       * Checks the client catalogues directory exists. If not, creates it.
+       */
+      checkClientCataloguesExists() {
+        this.checkDirectoryExists("../client/src/catalogues");
+      }
+      /**
+       * Prints a system message in the project format.
+       * Wrapper for console.log.
+       * @param {*} message
+       */
+      message(...args) {
+        args.unshift("*");
+        console.log.apply(console, args);
+      }
+      /**
+       * Prints a warning message.
+       * @param {*} message
+       */
+      warning(...args) {
+        if (!settings.IGNORE_WARNINGS) {
+          args.unshift("* WARNING:");
+          console.log.apply(console, args);
+        }
+      }
+      /**
+       * Stops the process and prints an error message.
+       * @param {*} message
+       */
+      error(...args) {
+        args.unshift("* ERROR:");
+        console.error.apply(console, args);
+        console.trace();
+        process.exit();
+      }
+    };
+    module.exports = new Utils();
+  }
+});
+var require_Damage = __commonJS({
+  "experiments/dungeonz-world/upstream/server/src/gameplay/Damage.js"(exports, module) {
+    var Damage = class {
+      /**
+       * A model of damage to be dealt.
+       * @param {Object} config
+       * @param {Number} config.amount How much damage to deal.
+       * @param {Array.<Number>} [config.types=[Damage.Types.Physical]] The types of damage to deal. A list of Damage.Types.
+       * @param {Number} [config.armourPiercing=0] How much armour this damage will ignore. 0 to 1.
+       */
+      constructor(config) {
+        if (config.amount) this.amount = config.amount;
+        if (config.types) this.types = config.types;
+        if (config.armourPiercing) this.armourPiercing = config.armourPiercing;
+      }
+      /**
+       * Checks if any of the types of this damage are not on a given entitys damage type immunity list.
+       * @param {Entity} entity
+       */
+      canAffectTarget(entity) {
+        if (entity.damageTypeImmunities) {
+          for (const type3 of this.types) {
+            if (entity.damageTypeImmunities.includes(type3)) {
+              continue;
+            }
+            return true;
+          }
+        } else {
+          return true;
+        }
+        return false;
+      }
+    };
+    module.exports = Damage;
+    Damage.Types = {
+      /**
+       * @type {Number} Solid objects, such as swords, arrows, melee attacks and spike traps.
+       */
+      Physical: 1,
+      /**
+       * @type {Number} Magic related things, like fire balls, wind blasts and curses.
+       */
+      Magical: 2,
+      /**
+       * @type {Number} Organic related things, such as disease, poison, and possibly
+       * environmental effects like heat and cold.
+       */
+      Biological: 3
+    };
+    Damage.prototype.amount = 0;
+    Damage.prototype.types = [
+      Damage.Types.Physical
+    ];
+    Damage.prototype.armourPiercing = 0;
+  }
+});
+var require_Heal = __commonJS({
+  "experiments/dungeonz-world/upstream/server/src/gameplay/Heal.js"(exports, module) {
+    var Heal = class {
+      /**
+       * A model of healing to be done.
+       * @param {Object} config
+       * @param {Number} config.amount How much hitpoints to restore.
+       */
+      constructor(amount) {
+        this.amount = amount || 0;
+      }
+      /**
+       * Override for same function in Damage. This will heal anything that can be healed.
+       */
+      canAffectTarget() {
+        return true;
+      }
+    };
+    module.exports = Heal;
+    Heal.prototype.amount = 0;
+  }
+});
+var require_DayPhases = __commonJS({
+  "experiments/dungeonz-world/upstream/server/src/DayPhases.js"(exports, module) {
+    module.exports = {
+      Dawn: 1,
+      Day: 2,
+      Dusk: 3,
+      Night: 4
+    };
+  }
+});
+var require_Directions = __commonJS({
+  "experiments/dungeonz-world/upstream/server/src/gameplay/Directions.js"(exports, module) {
+    var Utils = require_Utils();
+    var UP = "u";
+    var DOWN = "d";
+    var LEFT = "l";
+    var RIGHT = "r";
+    module.exports.Directions = {
+      UP,
+      DOWN,
+      LEFT,
+      RIGHT
+    };
+    module.exports.DirectionsValues = [
+      UP,
+      DOWN,
+      LEFT,
+      RIGHT
+    ];
+    module.exports.OppositeDirections = {
+      u: DOWN,
+      d: UP,
+      l: RIGHT,
+      r: LEFT
+    };
+    module.exports.SideDirections = {
+      u: [LEFT, RIGHT],
+      d: [RIGHT, LEFT],
+      l: [DOWN, UP],
+      r: [UP, DOWN]
+    };
+    module.exports.RowColOffsetsByDirection = {
+      u: { row: -1, col: 0 },
+      d: { row: 1, col: 0 },
+      l: { row: 0, col: -1 },
+      r: { row: 0, col: 1 }
+    };
+    module.exports.rowColOffsetToDirection = (rowOffset, colOffset) => {
+      if (rowOffset < 0) return UP;
+      if (rowOffset > 0) return DOWN;
+      if (colOffset < 0) return LEFT;
+      if (colOffset > 0) return RIGHT;
+      if (rowOffset === 0 && colOffset === 0) return UP;
+      Utils.error(`A valid offset wasn't given to rowColOffsetToDirection, row: ${rowOffset}, col: ${colOffset}`);
+      return void 0;
+    };
+    module.exports.getRowColsToSides = (direction, row, col) => {
+      if (direction === UP || direction === DOWN) {
+        return [
+          { row, col: col - 1 },
+          { row, col: col + 1 }
+        ];
+      }
+      return [
+        { row: row - 1, col },
+        { row: row + 1, col }
+      ];
+    };
+    module.exports.DirectionsPermutations = Utils.getPermutations(
+      Object.values(module.exports.Directions)
+    );
+    module.exports.DirectionsPermutationsAsRowColOffsets = module.exports.DirectionsPermutations.map((directions) => directions.map((direction) => module.exports.RowColOffsetsByDirection[direction]));
+  }
+});
+var require_events = __commonJS({
+  "platform:events"(exports, module) {
+    module.exports = { active_state: "active", inactive_state: "inactive", damage: "damage", heal: "heal" };
+  }
+});
+var require_Entity = __commonJS({
+  "experiments/dungeonz-world/upstream/server/src/entities/classes/Entity.js"(exports, module) {
+    var Utils = require_Utils();
+    var Damage = require_Damage();
+    var Heal = require_Heal();
+    var DayPhases = require_DayPhases();
+    var { Directions } = require_Directions();
+    var idCounter = new Utils.Counter();
+    var typeNumberCounter = new Utils.Counter();
+    var Entity = class {
+      /**
+       * @param {Object} config
+       * @param {Number} config.row
+       * @param {Number} config.col
+       * @param {Board} config.board
+       */
+      constructor(config) {
+        this.id = idCounter.getNext();
+        this.row = config.row;
+        this.col = config.col;
+        this.board = config.board;
+      }
+      static registerEntityType() {
+        this.prototype.typeNumber = typeNumberCounter.getNext();
+      }
+      /**
+       * Remove this entity from the game world completely, and allow it to be GCed.
+       * Any specific destruction functionality should be added to onDestroy, which is called from this method.
+       */
+      destroy() {
+        if (this._destroyed === true) return;
+        this._destroyed = true;
+        this.onDestroy();
+      }
+      /**
+       * Specific destruction functionality. If overridden, should still be chained from the overrider up to this.
+       */
+      onDestroy() {
+        this.board = null;
+      }
+      /**
+       * When another entity moves into the same tile as this entity.
+       * @param {Entity} otherEntity - The entity that moved.
+       */
+      onMovedInto(otherEntity) {
+      }
+      /**
+       * Change the hitpoints value of this entity, if it has the hitpoints property set (not null).
+       * Calls onDamage or onHeal based on the amount, and also onModHitPoints.
+       * @param {Damage|Heal} hitPointModifier - An object that details how much to increase or decrease the HP by.
+       * @param {Entity} [source] - The entity that caused this change.
+       */
+      modHitPoints(hitPointModifier, source) {
+        if (this._destroyed === true) return;
+        if (this.hitPoints === null) return;
+        const amount = Math.floor(hitPointModifier.amount);
+        if (Number.isInteger(amount) === false) return;
+        if (hitPointModifier instanceof Damage) {
+          this.onDamage(hitPointModifier, source);
+        } else if (hitPointModifier instanceof Heal) {
+          this.onHeal(hitPointModifier);
+        } else {
+          Utils.warning("Hitpoint modifier passed into Entity.modHitPoints is not an instance of either Damage or Heal. hitPointModifier:", hitPointModifier);
+        }
+        this.onModHitPoints();
+      }
+      /**
+       *
+       * @param {Heal} heal
+       * @param {Entity} source
+       */
+      heal(heal2, source) {
+        if (heal2 instanceof Heal === false) {
+          Utils.error("Entity.heal must be passed a Heal config object. Value of 'heal':", heal2);
+        }
+        if (heal2.amount === null) return;
+        this.modHitPoints(heal2, source);
+      }
+      /**
+       * Hitpoints are to be added to this entity.
+       * If overridden, should still be chained from the overrider up to this.
+       * @param {Heal} heal - A heal config object.
+       */
+      onHeal(heal2) {
+        const amount = Math.floor(heal2.amount);
+        const original = this.hitPoints;
+        this.hitPoints += amount;
+        if (this.hitPoints > this.maxHitPoints) {
+          this.hitPoints = this.maxHitPoints;
+        }
+        const difference = this.hitPoints - original;
+        this.board.emitToNearbyPlayers(
+          this.row,
+          this.col,
+          this.EventsList.heal,
+          { id: this.id, amount: difference }
+        );
+      }
+      /**
+       * Deal damage to this entity. Lowers the hitpoints. Used mainly by weapons and melee mobs when attacking.
+       * @param {Damage} damage - A damage config object.
+       * @param {Entity} [source] - The entity that caused this damage.
+       */
+      damage(damage, source) {
+        if (damage instanceof Damage === false) {
+          Utils.error("Entity.damage must be passed a Damage config object. Value of 'damage':", damage);
+        }
+        this.modHitPoints(damage, source);
+      }
+      /**
+       * Hitpoints are to be subtracted from this entity.
+       * If HP goes <0, then onAllHitPointsLost is called.
+       * This method does NOT destroy directly.
+       * If overridden, should still be chained from the overrider up to this.
+       * @param {Damage} damage
+       * @param {Entity} [source] - The entity that caused this damage.
+       */
+      onDamage(damage, source) {
+        damage.amount = Math.floor(damage.amount);
+        this.hitPoints -= damage.amount;
+        if (this.hitPoints <= 0) {
+          this.onAllHitPointsLost();
+        } else {
+          this.board.emitToNearbyPlayers(
+            this.row,
+            this.col,
+            this.EventsList.damage,
+            { id: this.id, amount: -damage.amount }
+          );
+        }
+      }
+      /**
+       * This entity has been taken to or below 0 hitpoints.
+       * If overridden, should still be chained from the overrider up to this.
+       */
+      onAllHitPointsLost() {
+      }
+      /**
+       * This entity has had its hitpoints changed.
+       * If overridden, should still be chained from the overrider up to this.
+       */
+      onModHitPoints() {
+      }
+      /**
+       * Get all of the properties of this entity that can be emitted to clients.
+       * This method should be overridden on each subclass (and any further subclasses), and
+       * then called on the superclass of every subclass, calling it's way back up to Entity.
+       * So if Player.getEmittableProperties is called, it adds the relevant properties from Player, then
+       * adds from Character, and so on until Entity, then returns the result back down the stack.
+       * @param {Object} properties - The properties of this entity that have been added so far. If this is the start of the chain, pass in an empty object.
+       * @returns {{}}
+       */
+      getEmittableProperties(properties) {
+        return properties;
+      }
+      /**
+       * Returns the board tile this entity is currently occupying.
+       * Shouldn't have to worry about the tile being valid, as they shouldn't be occupying an invalid tile.
+       * @returns {BoardTile}
+       */
+      getBoardTile() {
+        return this.board.grid[this.row][this.col];
+      }
+      /**
+       * Returns a random direction.
+       * @returns {String}
+       */
+      getRandomDirection() {
+        const keys = Object.keys(Directions);
+        return Directions[keys[keys.length * Math.random() << 0]];
+      }
+      /**
+       * When finished constructing this entity, use this to tell the nearby players to add this entity.
+       * @returns {Entity}
+       */
+      emitToNearbyPlayers() {
+        this.board.emitToNearbyPlayers(
+          this.row,
+          this.col,
+          this.EventsList.add_entity,
+          this.getEmittableProperties({})
+        );
+        return this;
+      }
+      /**
+       * Checks if another entity is cardinally adjacent to this one. Does NOT include if they are in the same position.
+       * @param {Entity} entity
+       * @returns {Boolean}
+       */
+      isAdjacentToEntity(entity) {
+        if (entity.row === this.row - 1 && entity.col === this.col) return true;
+        if (entity.row === this.row + 1 && entity.col === this.col) return true;
+        if (entity.row === this.row && entity.col === this.col - 1) return true;
+        if (entity.row === this.row && entity.col === this.col + 1) return true;
+        return false;
+      }
+      /**
+       * Checks if any entity of the given type is cardinally adjacent to this one. Does NOT include if they are in the same position.
+       * Useful for checking if a player is next to a bank chest, crafting station, etc. when attempting to bank/craft.
+       * @param {Number} typeNumber
+       * @returns {Boolean}
+       */
+      isAdjacentToStaticType(typeNumber) {
+        const { grid } = this.board;
+        if (grid[this.row - 1][this.col].static !== null) {
+          if (grid[this.row - 1][this.col].static.typeNumber === typeNumber) {
+            return true;
+          }
+        }
+        if (grid[this.row + 1][this.col].static !== null) {
+          if (grid[this.row + 1][this.col].static.typeNumber === typeNumber) {
+            return true;
+          }
+        }
+        if (grid[this.row][this.col - 1].static !== null) {
+          if (grid[this.row][this.col - 1].static.typeNumber === typeNumber) {
+            return true;
+          }
+        }
+        if (grid[this.row][this.col + 1].static !== null) {
+          if (grid[this.row][this.col + 1].static.typeNumber === typeNumber) {
+            return true;
+          }
+        }
+        return false;
+      }
+      /**
+       * Checks if another entity is diagonally adjacent to this one. Does NOT include if they are in the same position.
+       * @param {Entity} entity
+       * @returns {Boolean}
+       */
+      isDiagonalToEntity(entity) {
+        if (entity.row === this.row - 1 && entity.col === this.col - 1) return true;
+        if (entity.row === this.row - 1 && entity.col === this.col + 1) return true;
+        if (entity.row === this.row + 1 && entity.col === this.col - 1) return true;
+        if (entity.row === this.row + 1 && entity.col === this.col + 1) return true;
+        return false;
+      }
+      /**
+       * Checks whether this type of entity can be spawned on the given board tile.
+       * Useful for checking special criteria, such as time of day for certain creatures.
+       * @param {BoardTile} boardTile - The board tile to spawn the entity on.
+       * @param {Number} dayPhase - The time of day that the world is currently on.
+       * @returns {Boolean}
+       */
+      checkSpawnCriteria(boardTile, dayPhase) {
+        if (!this.spawnableDayPhases[dayPhase]) return false;
+        return true;
+      }
+    };
+    module.exports = Entity;
+    Entity.abstract = true;
+    Entity.prototype.EventsList = require_events();
+    Entity.prototype.typeNumber = null;
+    Entity.prototype._destroyed = false;
+    Entity.prototype.spawnRate = 6e4;
+    Entity.prototype.spawnableDayPhases = {
+      [DayPhases.Dawn]: true,
+      [DayPhases.Day]: true,
+      [DayPhases.Dusk]: true,
+      [DayPhases.Night]: true
+    };
+    Entity.prototype.maxHitPoints = null;
+    Entity.prototype.hitPoints = null;
+    Entity.prototype.taskIdKilled = null;
+    Entity.prototype.taskIdFrozen = null;
+    Entity.prototype.taskIdBurned = null;
+    Entity.prototype.taskIdInteracted = null;
+    Entity.prototype.gatherTaskId = null;
+    Entity.prototype.taskIdAnimated = null;
+  }
+});
+var require_Static = __commonJS({
+  "experiments/dungeonz-world/upstream/server/src/entities/classes/statics/Static.js"(exports, module) {
+    var Entity = require_Entity();
+    var Utils = require_Utils();
+    var Static = class extends Entity {
+      /**
+       * @param {Object} config
+       * @param {Number} config.row
+       * @param {Number} config.col
+       * @param {Board} config.board
+       */
+      constructor(config) {
+        super(config);
+        config.board.addStatic(this);
+        if (this._highBlocked === true) {
+          this._lowBlocked = true;
+        }
+        if (this._lowBlocked !== true && this._lowBlocked !== false) Utils.error("Low blocked is not boolean in Static.constructor:", this._lowBlocked);
+        if (this._highBlocked !== true && this._highBlocked !== false) Utils.error("High blocked is not boolean in Static.constructor:", this._highBlocked);
+        this.blocking = true;
+      }
+      onDestroy() {
+        this.board.removeStatic(this);
+        super.onDestroy();
+      }
+      /**
+       * Whether this static currently low blocking the tile it is on.
+       * @returns {Boolean}
+       */
+      isLowBlocked() {
+        if (this.blocking === false) return false;
+        return this._lowBlocked;
+      }
+      /**
+       * Whether this static currently high blocking the tile it is on.
+       * @returns {Boolean}
+       */
+      isHighBlocked() {
+        if (this.blocking === false) return false;
+        return this._highBlocked;
+      }
+    };
+    Static.prototype._lowBlocked = true;
+    Static.prototype._highBlocked = true;
+    module.exports = Static;
+  }
+});
+var require_Interactable = __commonJS({
+  "experiments/dungeonz-world/upstream/server/src/entities/classes/statics/interactables/Interactable.js"(exports, module) {
+    var Static = require_Static();
+    var Interactable = class extends Static {
+      /**
+       * @param {Object} config
+       * @param {Number} config.row
+       * @param {Number} config.col
+       * @param {Board} config.board
+       * @param {Number} [config.activeState=true] - Whether this entity is already active when created.
+       */
+      constructor(config) {
+        super(config);
+        this.activeState = true;
+        if (config.activeState === false) this.activeState = false;
+      }
+      onDestroy() {
+        clearTimeout(this.reactivationTimer);
+        super.onDestroy();
+      }
+      getEmittableProperties(properties) {
+        properties.row = this.row;
+        properties.col = this.col;
+        return properties;
+      }
+      /**
+       * @param {Character} interactedBy
+       * @param {Item} toolUsed
+       */
+      interaction(interactedBy, toolUsed) {
+      }
+      /**
+       * Activate this interactable.
+       */
+      activate() {
+        if (this.getBoardTile().containsAnyDestroyables() === false) {
+          this.activeState = true;
+          this.board.emitToNearbyPlayers(this.row, this.col, this.EventsList.active_state, `${this.row}-${this.col}`);
+        } else {
+          this.reactivationTimer = setTimeout(
+            this.activate.bind(this),
+            this.reactivationRate || 5e3
+            // Use some time in case it is null.
+          );
+        }
+      }
+      /**
+       * Deactivate this interactable.
+       */
+      deactivate() {
+        this.activeState = false;
+        if (this.reactivationRate !== null) {
+          this.reactivationTimer = setTimeout(this.activate.bind(this), this.reactivationRate);
+        }
+        this.board.emitToNearbyPlayers(this.row, this.col, this.EventsList.inactive_state, `${this.row}-${this.col}`);
+      }
+    };
+    module.exports = Interactable;
+    Interactable.prototype.activeState = true;
+    Interactable.prototype.warningEvent = null;
+    Interactable.prototype.interactionEnergyCost = 0;
+    Interactable.prototype.toolCategory = null;
+    Interactable.prototype.isToolRequired = false;
+    Interactable.prototype.reactivationRate = null;
+    Interactable.prototype.reactivationTimer = null;
+  }
+});
+var require_Breakable = __commonJS({
+  "experiments/dungeonz-world/upstream/server/src/entities/classes/statics/interactables/breakables/Breakable.js"(exports, module) {
+    var Interactable = require_Interactable();
+    var Breakable = class extends Interactable {
+      /**
+       * @param {Object} config
+       * @param {Number} config.row
+       * @param {Number} config.col
+       * @param {Board} config.board
+       * @param {Number} [config.activeState = true] - Whether this entity is already active when created.
+       */
+      constructor(config) {
+        super(config);
+      }
+      isLowBlocked() {
+        if (this.blocking === false) return false;
+        if (this._lowBlocked === true) return true;
+        return false;
+      }
+      isHighBlocked() {
+        if (this.blocking === false) return false;
+        if (this._highBlocked === true) return true;
+        return false;
+      }
+      /**
+       * Hitpoints are to be subtracted from this entity.
+       * If HP goes <0, then onAllHitPointsLost is called.
+       * Breakables are NEVER destroyed.
+       * This is the end of the call chain for breakables. Don't go up to Entity.
+       * @param {Number} amount - How much to decrease by.
+       * @param {Entity} [source] - The entity that caused this damage.
+       */
+      /* onDamage (amount, source) {
+                    console.log("breakable ondamage:", amount);
+
+                    this.hitPoints += amount;
+
+                    console.log("breakable hp:", this.hitPoints);
+
+                    // Check if this entity is destroyed.
+                    if(this.hitPoints <= 0){
+                        this.onAllHitPointsLost();
+                    }
+                    // Entity is still alive. Tell nearby players.
+                    else {
+                        this.board.emitToNearbyPlayers(this.row, this.col, this.EventsList.breakable_damaged, {id: this.row + "-" + this.col, amount: amount});
+                    }
+                } */
+      /**
+       * All hitpoints have been lost. This breakable is now broken.
+       */
+      /* onAllHitPointsLost () {
+                    console.log("breakable onallHPlost:");
+                    // The breakable might be waiting to reactive when broken. Deal with the timeout that would fire.
+                    clearTimeout(this.reactivationTimer);
+
+                    // Tell nearby players this entity is now broken.
+                    this.board.emitToNearbyPlayers(this.row, this.col, this.EventsList.breakable_broken, this.row + "-" + this.col);
+
+                    this.activeState = false;
+
+                    // If a repair rate is set, start a timer to reactivate this object.
+                    if(this.repairRate !== null){
+                        this.repairTimer = setTimeout(this.activate.bind(this), this.repairRate);
+                    }
+
+                }
+
+                getEmittableProperties (properties) {
+                    properties.brokenState = this.hitPoints <= 0;
+                    return super.getEmittableProperties(properties);
+                } */
+      /**
+       * @param {Character} interactedBy
+       * @param {Item} toolUsed
+       */
+      interaction(interactedBy, toolUsed) {
+      }
+      /**
+       * Make this breakable not broken any more.
+       */
+      /* repair () {
+                    // Check there are no obstructions on the object before repairing it.
+                    if(this.board.grid[this.row][this.col].containsAnyDestroyables() === false){
+                        // Nothing in the way. Repair this object.
+                        this.hitPoints = this.maxHitPoints;
+                        this.activeState = true;
+
+                        // Tell any nearby players that this object is now repaired.
+                        this.board.emitToNearbyPlayers(this.row, this.col, this.EventsList.breakable_repaired, this.row + "-" + this.col);
+                    }
+                    // Something in the way.
+                    else {
+                        // Restart the timer to activate this object.
+                        this.repairTimer = setTimeout(this.repair.bind(this), this.repairRate);
+                    }
+                } */
+    };
+    module.exports = Breakable;
+  }
+});
+var require_WoodDoor = __commonJS({
+  "experiments/dungeonz-world/upstream/server/src/entities/classes/statics/interactables/breakables/WoodDoor.js"(exports, module) {
+    var Breakable = require_Breakable();
+    var WoodDoor = class extends Breakable {
+      /**
+       * @param {Object} config
+       * @param {Number} config.row
+       * @param {Number} config.col
+       * @param {Board} config.board
+       * @param {Clan} config.clan
+       */
+      constructor(config) {
+        super(config);
+      }
+      interaction(interactedBy) {
+        if (this.activeState === false) return;
+        if (interactedBy.energy < this.interactionEnergyCost) return;
+        interactedBy.modEnergy(-this.interactionEnergyCost);
+        this.deactivate();
+        this.blocking = false;
+      }
+      activate() {
+        super.activate();
+        if (this.activeState === true) this.blocking = true;
+      }
+    };
+    module.exports = WoodDoor;
+    WoodDoor.prototype.interactionEnergyCost = 1;
+    WoodDoor.prototype.reactivationRate = 5e3;
+  }
+});
+var import_WoodDoor = __toESM(require_WoodDoor());
+var import_Damage = __toESM(require_Damage());
+var import_Entity = __toESM(require_Entity());
+var export_Damage = import_Damage.default;
+var export_Entity = import_Entity.default;
+var export_WoodDoor = import_WoodDoor.default;
+
+// public/environment.js
+var OBJECTS = {};
+var add = (id, name, family, x, y, aliases, extra = {}) => OBJECTS[id] = { name, family, position: [x, y], aliases, material: ["window", "bottle"].includes(family) ? "glass" : family === "hearth" ? "stone" : "wood", ...extra };
+add("rug", "the tavern rug", "rug", 480, 378, ["rug", "carpet", "runner"], { material: "cloth", portable: true });
+for (const [i, [x, y]] of [[245, 335], [715, 335], [245, 445], [715, 445]].entries()) {
+  const direction = ["upper left", "upper right", "lower left", "lower right"][i];
+  add(i ? "table" + (i + 1) : "table", `the ${direction} table`, "table", x, y, [`${direction} table`, `table ${i + 1}`, ...i === 0 ? ["table"] : []]);
 }
-function interactEnvironment(world, target, intent, success, actor) {
-  const object = OBJECTS[target.kind];
-  if (!object || !["break", "attack", "inspect", "steal"].includes(intent)) return null;
-  const props = world.props || (world.props = { rug: true });
-  const state = props[target.kind] || "intact";
-  if (intent === "inspect") return { text: `${actor} examines ${object.name}. ${state === "broken" ? "It is broken, with debris still on the floor." : "It is solid wood, worn by years of tavern trouble."}`, change: null };
-  if (state === "broken") return { text: `${actor} approaches ${object.name}, but it is already broken. The debris remains.`, change: null };
-  if (intent === "steal") return { text: `${actor} tries to pocket ${object.name}. It is much too large to carry away intact.`, change: null };
-  if (!success) return { text: `${actor} strikes ${object.name}. It shudders but holds together.`, change: null };
-  props[target.kind] = "broken";
-  return { text: `${actor} breaks ${object.name}. ${target.kind === "barrel" ? "Ale pours across the floor." : target.kind === "door" ? "Splintered boards leave the doorway open." : "The tabletop collapses into a pile of planks."}`, change: `${target.kind.toUpperCase()} BROKEN` };
+for (const [i, [x, y]] of [[846, 165], [885, 180], [95, 170], [92, 403], [868, 401], [173, 182], [768, 185]].entries()) add(i ? "barrel" + (i + 1) : "barrel", `ale barrel ${i + 1}`, "barrel", x, y, [`barrel ${i + 1}`, ...i === 0 ? ["barrel", "keg", "cask"] : []]);
+add("door", "the tavern door", "door", 480, 500, ["door", "gate"]);
+add("chest", "the locked chest", "chest", 670, 145, ["chest", "treasure", "crown", "box"]);
+add("chandelier", "the chandelier", "chandelier", 480, 260, ["chandelier", "hanging light"], { material: "metal", lit: true });
+add("hearth", "the fireplace", "hearth", 92, 330, ["fireplace", "hearth"], { lit: true });
+add("sign", "the tavern sign", "sign", 480, 88, ["sign"], { portable: true });
+add("counter", "the bar counter", "counter", 480, 160, ["counter", "bar"]);
+add("floor", "the floorboards", "floor", 480, 400, ["floor", "floorboards"], { material: "wood" });
+add("wall", "the back wall", "wall", 600, 110, ["wall", "back wall"], { material: "stone" });
+add("beam", "the oak beam", "beam", 307, 135, ["beam", "beams"], { material: "wood" });
+add("bunting", "the hanging bunting", "bunting", 480, 112, ["bunting", "banner", "banners"], { material: "cloth", portable: true });
+for (const [i, x] of [105, 851].entries()) add(i ? "window2" : "window", `the ${i ? "right" : "left"} window`, "window", x, 105, [`${i ? "right" : "left"} window`, `window ${i + 1}`, ...i === 0 ? ["window"] : []]);
+for (const [i, x] of [194, 770].entries()) add(i ? "shelf2" : "shelf", `the ${i ? "right" : "left"} shelf`, "shelf", x, 90, [`${i ? "right" : "left"} shelf`, `shelf ${i + 1}`, ...i === 0 ? ["shelf", "shelves"] : []]);
+for (const [i, x] of [171, 789].entries()) add(i ? "sideboard2" : "sideboard", `the ${i ? "right" : "left"} sideboard`, "sideboard", x, 195, [`${i ? "right" : "left"} sideboard`, ...i === 0 ? ["sideboard"] : []]);
+for (const [i, x] of [160, 780].entries()) add(i ? "bottle2" : "bottle", `the ${i ? "right" : "left"} bottle`, "bottle", x, 174, [`${i ? "right" : "left"} bottle`, `bottle ${i + 1}`, ...i === 0 ? ["bottle", "mug"] : []], { portable: true });
+for (const [i, x] of [220, 684].entries()) add(i ? "candle2" : "candle", `the ${i ? "right" : "left"} candle`, "candle", x, 315, [`${i ? "right" : "left"} candle`, `candle ${i + 1}`, ...i === 0 ? ["candle"] : []], { portable: true, lit: true });
+for (const [i, [x, y]] of [[70, 99], [289, 99], [674, 99], [889, 99], [56, 343], [909, 343]].entries()) add("lamp" + i, `wall lantern ${i + 1}`, "lamp", x, y, [`lantern ${i + 1}`, ...i === 0 ? ["lamp", "lantern", "torch"] : []], { material: "metal", lit: true });
+for (const [i, [x, y]] of [[194, 360], [296, 360], [664, 360], [766, 360], [194, 470], [296, 470], [664, 470], [766, 470]].entries()) add("chair" + i, `chair ${i + 1}`, "chair", x, y, [`chair ${i + 1}`, ...i === 0 ? ["chair", "stool", "barstool"] : []], { portable: true });
+function environmentTarget(text) {
+  const matches = Object.entries(OBJECTS).flatMap(([kind2, o]) => o.aliases.filter((a) => new RegExp("\\b" + a + "\\b", "i").test(text)).map((a) => ({ kind: kind2, name: o.name, length: a.length })));
+  matches.sort((a, b) => b.length - a.length);
+  if (!matches.length) return null;
+  const { kind, name } = matches[0];
+  return { kind, name };
+}
+function objectState(world, id) {
+  const o = OBJECTS[id];
+  if (!o) return null;
+  const legacy = world?.props?.[id];
+  return { condition: legacy === false ? "taken" : legacy === "broken" ? "broken" : "intact", lit: !!o.lit, open: false, offset: [0, 0], ...world?.objects?.[id] };
+}
+function environmentVerb(text, intent) {
+  for (const [verb, pattern] of Object.entries({ extinguish: /\b(extinguish|douse|quench|put out|blow out)\b/i, repair: /\b(repair|fix|mend|restore)\b/i, ignite: /\b(ignite|light|burn|fireball|set.*on fire)\b/i, close: /\b(close|shut|lock)\b/i, open: /\b(unlock|pick.*lock|open)\b/i, push: /\b(push|shove|drag|move|pull|flip)\b/i, climb: /\b(sit|stand on|climb|jump on|dance on)\b/i, pour: /\b(pour|spill|empty|drink)\b/i, hide: /\b(hide|duck|crawl under)\b/i })) if (pattern.test(text) && !(verb === "push" && intent === "steal")) return verb;
+  return { attack: "break", break: "break", steal: "take" }[intent] || intent;
+}
+function environmentCheck(world, target, intent, text) {
+  const o = OBJECTS[target?.kind];
+  if (!o) return null;
+  if (intent === "flee") return null;
+  if (target.kind === "chest" && intent === "steal") return { verb: "take", automatic: false, dc: 13, ability: "Sleight of hand", advantage: 0 };
+  const state = objectState(world, target.kind), verb = environmentVerb(text, intent);
+  const impossible = verb === "take" && !o.portable || state.condition === "taken" && verb !== "inspect" || state.condition === "broken" && !["inspect", "repair", "flee"].includes(verb) || verb === "ignite" && ["stone", "metal", "glass"].includes(o.material) && !o.lit;
+  return { verb, automatic: impossible || ["inspect", "extinguish", "close", "pour", "hide"].includes(verb) || verb === "open" && o.family === "door", dc: verb === "take" ? o.portable ? 11 : 18 : verb === "open" ? 13 : { glass: 8, cloth: 9, wood: 11, metal: 16, stone: 18 }[o.material], ability: ["take", "open"].includes(verb) ? "Sleight of hand" : ["break", "push", "climb"].includes(verb) ? "Athletics" : verb === "repair" ? "Craft" : verb === "ignite" ? "Arcana" : "Interaction", advantage: state.condition === "burning" && verb === "break" ? 1 : 0 };
+}
+function interactEnvironment(world, target, intent, success, actor, context = {}) {
+  const o = OBJECTS[target.kind];
+  if (!o) return null;
+  if (intent === "flee") return null;
+  if (intent === "heal" && !/\b(drink|pour|spill|empty)\b/i.test(context.text || "")) return null;
+  if (target.kind === "chest" && ["steal", "inspect"].includes(intent) && !context.text?.match(/\b(close|repair|extinguish|burn|light)\b/i)) return null;
+  if (target.kind === "rug" && intent === "steal") return null;
+  const id = target.kind, s = objectState(world, id), verb = environmentVerb(context.text || "", intent), who = typeof actor === "string" ? actor : actor.name;
+  const out = { text: "", change: null, verb, success, chaos: 0, damage: 0, cover: false };
+  const say = (t) => {
+    out.text = `${who} ${t}`;
+    return out;
+  };
+  const change = (key, value, label) => {
+    s[key] = value;
+    (world.objects ||= {})[id] = s;
+    out.change = label;
+  };
+  const blocked = (t) => {
+    out.success = false;
+    out.blocked = true;
+    return say(t);
+  };
+  if (verb === "inspect") {
+    out.success = true;
+    return say(`examines ${o.name}: ${s.condition}${s.lit ? ", lit" : ""}${s.open ? ", open" : ""}. ${o.portable ? "It can be carried." : "It is part of the tavern furniture."}`);
+  }
+  if (s.condition === "taken") return blocked(`reaches for ${o.name}, but it is already gone.`);
+  if (s.condition === "broken" && verb !== "repair") return blocked(`finds ${o.name} already broken. The debris is still there.`);
+  if (verb === "take") {
+    if (!o.portable) return blocked(`cannot carry ${o.name} intact. Try moving or breaking it.`);
+    if (!success) return say(`gets a grip on ${o.name}, but Marnie spots the attempt.`);
+    change("condition", "taken", `${id.toUpperCase()} TAKEN`);
+    if (typeof actor === "object") actor.inventory.push(o.name);
+    out.chaos = 1;
+    return say(`takes ${o.name}. Its place in the room is now empty.`);
+  }
+  if (verb === "open" || verb === "close") {
+    if (!["door", "chest", "window", "barrel"].includes(o.family)) return blocked(`cannot ${verb} ${o.name}. Try another approach.`);
+    if (!success) return say(`tries the lock on ${o.name}. It holds.`);
+    if (o.family === "door" && verb === "open") {
+      const door = Object.create(export_WoodDoor.prototype);
+      Object.assign(door, { activeState: true, blocking: true, row: 0, col: 0, reactivationRate: null, board: { emitToNearbyPlayers() {
+      } } });
+      door.interaction({ energy: 1, modEnergy() {
+      } });
+      s.open = !door.blocking;
+    } else s.open = verb === "open";
+    change("open", s.open, `${id.toUpperCase()} ${s.open ? "OPEN" : "CLOSED"}`);
+    return say(`${s.open ? "opens" : "closes"} ${o.name}.`);
+  }
+  if (verb === "extinguish") {
+    if (!s.lit && s.condition !== "burning") return blocked(`finds no flame on ${o.name}.`);
+    s.lit = false;
+    if (s.condition === "burning") s.condition = "intact";
+    change("lit", false, `${id.toUpperCase()} EXTINGUISHED`);
+    out.success = true;
+    out.chaos = -1;
+    return say(`puts out ${o.name}. The flame and its light disappear.`);
+  }
+  if (verb === "ignite") {
+    if (["stone", "metal", "glass"].includes(o.material) && !o.lit) return blocked(`cannot set ${o.material} on fire.`);
+    if (!success) return say(`tries to light ${o.name}. The spark fizzles.`);
+    if (o.lit) change("lit", true, `${id.toUpperCase()} LIT`);
+    else {
+      change("condition", "burning", `${id.toUpperCase()} BURNING`);
+      out.chaos = 2;
+    }
+    return say(`${o.lit ? "lights" : "sets fire to"} ${o.name}.`);
+  }
+  if (verb === "break") {
+    if (!success) {
+      out.damage = 1;
+      return say(`strikes ${o.name}. It shudders but holds together.`);
+    }
+    const entity = { hitPoints: 3, board: { emitToNearbyPlayers() {
+    } }, onAllHitPointsLost() {
+      this.broken = true;
+    } };
+    export_Entity.prototype.onDamage.call(entity, new export_Damage({ amount: 3 }));
+    if (entity.broken) {
+      change("condition", "broken", `${id.toUpperCase()} BROKEN`);
+      s.lit = false;
+      (world.props ||= {})[id] = "broken";
+    }
+    if (o.family === "barrel") s.spilled = true;
+    out.chaos = 2;
+    return say(`breaks ${o.name}. ${o.family === "barrel" ? "Ale spills across the floor." : o.material === "glass" ? "Glass scatters into a visible hazard." : "Debris remains where it stood."}`);
+  }
+  if (verb === "push") {
+    if (["hearth", "counter", "shelf", "window", "lamp", "floor", "wall", "beam"].includes(o.family)) return blocked(`finds ${o.name} fixed to the building. It will not slide.`);
+    if (!success) return say(`pushes ${o.name}, but cannot shift it.`);
+    change("offset", [Math.min(54, s.offset[0] + 27), 0], `${id.toUpperCase()} MOVED`);
+    out.chaos = 1;
+    return say(`shoves ${o.name} aside. The space it occupied is clear.`);
+  }
+  if (verb === "repair") {
+    if (!success) return say(`tries to repair ${o.name}. It needs another attempt.`);
+    change("condition", "intact", `${id.toUpperCase()} REPAIRED`);
+    if (world.props) delete world.props[id];
+    s.spilled = false;
+    s.offset = [0, 0];
+    return say(`repairs ${o.name}. It can be used again.`);
+  }
+  if (verb === "pour") {
+    if (!["bottle", "barrel"].includes(o.family)) return blocked(`finds nothing to pour from ${o.name}.`);
+    if (s.spilled) return blocked(`finds ${o.name} already empty.`);
+    change("spilled", true, `${id.toUpperCase()} SPILLED`);
+    out.success = true;
+    out.chaos = 1;
+    return say(`empties ${o.name}. Ale pools on the floor; footing nearby is slippery.`);
+  }
+  if (verb === "hide" || verb === "climb") {
+    if (!["table", "chair", "barrel", "counter", "sideboard"].includes(o.family)) return blocked(`cannot find a safe foothold or cover on ${o.name}.`);
+    out.cover = verb === "hide";
+    out.success = out.cover || success;
+    if (out.cover) out.chaos = -1;
+    return say(`${out.cover ? "takes cover behind" : success ? "climbs onto" : "fails to climb onto"} ${o.name}. ${out.cover ? "The next guard sweep will miss them." : ""}`);
+  }
+  return blocked(`cannot do that with ${o.name} yet. Try inspect, move, take, break, light, extinguish, open, or repair.`);
+}
+function advanceEnvironment(world) {
+  const changes = [];
+  for (const [id, state] of Object.entries(world.objects || {})) if (state.condition === "burning") {
+    state.heat = (state.heat || 0) + 1;
+    if (state.heat >= 3) {
+      state.condition = "broken";
+      state.lit = false;
+      (world.props ||= {})[id] = "broken";
+      changes.push(`${OBJECTS[id]?.name || id} BURNED THROUGH`);
+    }
+  }
+  return changes;
+}
+
+// public/vendor/dnd5e-advantage.js
+function select() {
+  const expansion = this.options.pending?.advantage;
+  if (!expansion) return;
+  const { count, adv, size } = expansion;
+  const sets = Array(count + 1);
+  let targetTotal = adv ? -Infinity : Infinity;
+  const selectedResults = this.results.filter((r) => r.active);
+  for (const index of sets.keys()) {
+    const startIndex = size * index;
+    sets[index] = { results: selectedResults.slice(startIndex, startIndex + size) };
+    sets[index].total = sets[index].results.reduce((total, { result }) => total + result, 0);
+    targetTotal = Math[adv ? "max" : "min"](targetTotal, sets[index].total);
+  }
+  let kept = false;
+  for (const { results, total } of sets) {
+    if (!kept && total === targetTotal) kept = true;
+    else results.forEach((r) => {
+      r.discarded = true;
+      r.active = false;
+    });
+  }
+  delete this.options.pending.advantage;
+}
+function selectD20(values, mode) {
+  const term = { options: { pending: { advantage: { count: 1, adv: mode > 0, size: 1 } } }, results: values.map((result) => ({ result, active: true })) };
+  select.call(term);
+  return term.results.find((r) => r.active).result;
 }
 
 // public/vendor/partyframe-rng.js
@@ -1325,7 +2373,7 @@ var Rng2 = class {
 };
 
 // public/core.js
-var VERSION = "0.2.0";
+var VERSION = "0.3.0-beta.1";
 var ROLES = {
   rogue: { name: "Rogue", icon: "\u25C6", description: "Quick hands. Questionable intentions.", skills: ["steal", "sneak"], color: "#ba9dff" },
   bard: { name: "Bard", icon: "\u266B", description: "Every disaster deserves a soundtrack.", skills: ["social", "dance"], color: "#f9bd6c" },
@@ -1466,6 +2514,7 @@ function startGame(r, now = Date.now()) {
 }
 function classify(text) {
   const t = text.toLowerCase();
+  if (environmentTarget(t) && /\b(extinguish|douse|quench|put out|blow out|repair|fix|mend|restore|ignite|light|close|shut|unlock|open|push|shove|drag|move|pull|sit|climb|pour|spill|empty)\b/i.test(t)) return "interact";
   if (/\b(heal|bandage|revive|mend|rest|nap|sleep|drink|eat|snack|potion)\b/.test(t)) return "heal";
   if (/\b(leave|escape|flee|run|exit|outside|sprint)\b/.test(t)) return "flee";
   if (/\b(steal|pickpocket|snatch|loot|grab|take|swipe|rob|pocket)\b/.test(t)) return "steal";
@@ -1480,15 +2529,20 @@ function classify(text) {
 }
 function targetFor(r, actor, text) {
   const t = text.toLowerCase();
+  if (classify(text) === "flee") return { kind: "door", name: "the tavern exit" };
   const other = r.players.find((p) => p.id !== actor.id && t.includes(p.name.toLowerCase()));
   if (other) return { kind: "player", id: other.id, name: other.name };
+  const environmental = environmentTarget(text);
+  const objectIndex = environmental ? Math.min(...OBJECTS[environmental.kind].aliases.map((a) => t.indexOf(a)).filter((i) => i >= 0)) : Infinity;
+  const npcIndex = t.search(/guard|captain|brick|soldier|bartender|marnie|barkeep|barmaid|goblin|fiddler/);
+  if (environmental && (npcIndex < 0 || objectIndex < npcIndex)) return environmental;
   if (/guard|captain|brick|soldier/.test(t)) return { kind: "guard", name: "Captain Brick" };
   if (/bartender|marnie|barkeep|barmaid/.test(t)) return { kind: "bartender", name: "Marnie" };
   if (/rug|carpet|mat|runner|tapestry/.test(t)) return { kind: "rug", name: "the tavern rug" };
   if (/crown|chest|box|treasure|drawer/.test(t)) return { kind: "chest", name: "the locked chest" };
   if (/goblin|bard|musician/.test(t)) return { kind: "goblin", name: "the goblin fiddler" };
   if (/chandelier|ceiling/.test(t)) return { kind: "chandelier", name: "the chandelier" };
-  return environmentTarget(text) || { kind: "room", name: "the tavern" };
+  return environmental || { kind: "room", name: "the tavern" };
 }
 function submit(r, playerId, input, now = Date.now()) {
   const p = r.players.find((x) => x.id === playerId);
@@ -1535,6 +2589,7 @@ function submit(r, playerId, input, now = Date.now()) {
   r.deadline = r.turn.deadline;
   r.result = null;
   p.status = "committed";
+  p.cover = false;
   const ack = { ok: true, accepted: true, kind: "action", seq: e.id, at: now, turnId: r.turn.id };
   r.requests[key] = ack;
   const keys = Object.keys(r.requests);
@@ -1576,42 +2631,78 @@ function resolve(r, now) {
   const helpers = sorted.filter((x) => x.kind === "assist" || x.kind === "custom" && !/\b(stop|prevent|block|intervene)\b/i.test(x.text));
   const blockers = sorted.filter((x) => x.kind === "intervene" || x.kind === "custom" && /\b(stop|prevent|block|intervene)\b/i.test(x.text));
   const hostile = ["attack", "steal", "magic", "break"].includes(t.intent);
-  let roll = 1 + Math.floor(random(r) * 20), rerolled = null;
-  if (p.perk === "lucky" && roll <= 3) {
+  const check = environmentCheck(r.world, t.target, t.intent, t.action);
+  const automatic = !!check?.automatic;
+  const situation = [];
+  let advantage = check?.advantage || 0;
+  if (t.intent === "sneak" && r.world.bartender === "friendly") {
+    advantage = 1;
+    situation.push("Marnie covers for you");
+  }
+  if (t.intent === "flee" && r.world.guards === "distracted") {
+    advantage = 1;
+    situation.push("Guards distracted");
+  }
+  if (t.intent === "flee" && ["open", "broken"].includes(r.world.props?.door)) {
+    advantage = 1;
+    situation.push("Exit cleared");
+  }
+  if (t.intent === "steal" && r.world.guards === "distracted") {
+    advantage = 1;
+    situation.push("Guards distracted");
+  }
+  if (["sneak", "steal"].includes(t.intent) && Object.entries(r.world.objects || {}).filter(([id, s]) => OBJECTS[id]?.lit && s.lit === false).length >= 3) {
+    advantage = 1;
+    situation.push("Room dimmed");
+  }
+  if (["dance", "flee", "attack", "break"].includes(t.intent) && Object.values(r.world.objects || {}).some((s) => s.spilled)) {
+    advantage = -1;
+    situation.push("Slippery floor");
+  }
+  const dice = automatic ? [] : [1 + Math.floor(random(r) * 20)];
+  if (!automatic && advantage) dice.push(1 + Math.floor(random(r) * 20));
+  let roll = automatic ? 0 : advantage ? selectD20(dice, advantage) : dice[0], rerolled = null;
+  if (!automatic && p.perk === "lucky" && roll <= 3) {
     rerolled = roll;
     roll = 1 + Math.floor(random(r) * 20);
   }
-  const skill = ROLES[p.role].skills.includes(t.intent) ? 3 : 0;
+  const skill = ROLES[p.role].skills.includes(t.intent) || t.intent === "interact" && (check?.ability === "Athletics" && p.role === "knight" || check?.ability === "Arcana" && p.role === "wizard" || check?.ability === "Sleight of hand" && p.role === "rogue") ? 3 : 0;
   const charm = p.perk === "charming" && ["social", "dance"].includes(t.intent) ? 2 : 0;
   const assistance = Math.min(4, helpers.length), interference = hostile ? Math.min(4, blockers.length) : 0;
   const modifier = skill + charm + assistance - interference;
-  const dc = { heal: 6, flee: r.quest.crown ? 12 : 8, inspect: 9, social: 10, dance: 9, sneak: 10, steal: 13, magic: 12, attack: 12, break: 11, weird: 10 }[t.intent];
-  const critical = roll === 20, success = critical || roll !== 1 && roll + modifier >= dc;
+  const dc = automatic ? 0 : check?.dc ?? { heal: 6, flee: r.quest.crown ? 12 : 8, inspect: 9, social: 10, dance: 9, sneak: 10, steal: 13, magic: 12, attack: 12, break: 11, weird: 10, interact: 10 }[t.intent];
+  const critical = roll === 20;
+  let success = automatic || critical || roll !== 1 && roll + modifier >= dc;
   const effects = [], changes = [];
-  let narration = "";
-  const add = (s) => changes.push(s);
+  let narration = "", unsupported = false;
+  const add2 = (s) => changes.push(s);
   const fx = (verb, target2 = t.target.kind) => effects.push({ verb, actorId: p.id, target: target2, targetId: t.target.id || null });
   const damage = (who, n) => {
     let d = hurt(who, n);
-    if (d) add(`${who.name} \u2212${d} HP`);
+    if (d) add2(`${who.name} \u2212${d} HP`);
   };
   const recovery = (who, n) => {
     let h = heal(who, n);
-    if (h) add(`${who.name} +${h} HP`);
+    if (h) add2(`${who.name} +${h} HP`);
   };
   p.actions++;
   r.stats.actions++;
-  r.stats.rolls++;
+  if (!automatic) r.stats.rolls++;
   if (critical) p.nat20++;
-  if (success) p.score += critical ? 5 : 2;
   const target = r.players.find((x) => x.id === t.target.id);
   const props = r.world.props || (r.world.props = { rug: true });
-  const environmental = interactEnvironment(r.world, t.target, t.intent, success, p.name);
+  const environmental = interactEnvironment(r.world, t.target, t.intent, success, p, { text: t.action });
   if (environmental) {
+    success = environmental.success;
     narration = environmental.text;
-    if (environmental.change) add(environmental.change);
-    fx(["attack", "break"].includes(t.intent) ? "impact" : "inspect");
-    if (["attack", "break"].includes(t.intent)) r.chaos += 2;
+    if (environmental.change) add2(environmental.change);
+    fx({ break: "impact", ignite: "fire", extinguish: "smoke", take: "steal", repair: "hearts", push: "impact" }[environmental.verb] || "inspect");
+    r.chaos += environmental.chaos;
+    if (environmental.damage) damage(p, environmental.damage);
+    if (environmental.cover) {
+      p.status = "hiding";
+      p.cover = true;
+    }
   } else switch (t.intent) {
     case "heal":
       recovery(target || p, success ? 4 : 2);
@@ -1624,9 +2715,17 @@ function resolve(r, now) {
       r.chaos += success ? 2 : 1;
       if (success) {
         if (target) damage(target, critical ? 3 : 2);
-        p.gold++;
-        add(`${p.name} +1 coin`);
-        narration = pick(r, [`${p.name} lands it. ${t.target.name} looks personally offended by the physics.`, `${p.name} connects. A barstool flies past. Nobody admits owning it.`, `${p.name} wins this exchange. The goblin starts playing fight music.`]);
+        if (["guard", "bartender", "goblin"].includes(t.target.kind)) {
+          const npcs = r.world.npcs ||= {}, npc = npcs[t.target.kind] ||= { hp: 8, maxHp: 8 };
+          npc.hp = Math.max(0, npc.hp - (critical ? 4 : 2));
+          add2(`${t.target.name} ${npc.hp}/8 HP`);
+          if (!npc.hp) {
+            npc.status = "knocked out";
+            add2(`${t.target.name} KNOCKED OUT`);
+            if (t.target.kind === "guard") r.world.guards = "distracted";
+          }
+        }
+        narration = pick(r, [`${p.name} lands it. ${t.target.name} looks personally offended by the physics.`, `${p.name} connects. A barstool rattles.`, `${p.name} wins this exchange. The goblin starts playing fight music.`]);
       } else {
         damage(p, 2);
         fx("hit", "self");
@@ -1637,14 +2736,17 @@ function resolve(r, now) {
       fx("steal");
       r.chaos += 2;
       if (t.target.kind === "rug") {
-        if (!props.rug) {
+        if (objectState(r.world, "rug").condition === "taken") {
+          success = false;
+          unsupported = true;
           narration = `${p.name} reaches for the rug, but the floor is bare. Someone already made off with it.`;
-          add("The rug is already gone");
+          add2("The rug is already gone");
         } else if (success) {
           props.rug = false;
+          (r.world.objects ||= {}).rug = { ...objectState(r.world, "rug"), condition: "taken" };
           p.inventory.push("The Tavern Rug");
-          add("RUG STOLEN");
-          narration = `${p.name} yanks the tavern rug free. The whole room lurches, the stools skid, and the rug is now very much somebody\u2019s problem.`;
+          add2("RUG STOLEN");
+          narration = `${p.name} pulls the tavern rug free and rolls it under one arm. Bare floorboards remain where it stood.`;
         } else {
           damage(p, 1);
           narration = `${p.name} gets one corner up. The rug snaps back and the tavern keeps its footing.`;
@@ -1656,12 +2758,12 @@ function resolve(r, now) {
           r.quest.carrierId = p.id;
           p.inventory.push("The Duke\u2019s Crown");
           p.score += 5;
-          add("THE CROWN IS YOURS");
+          add2("THE CROWN IS YOURS");
           narration = `${p.name} lifts the ridiculous golden crown. It jingles like cutlery. The guards have definitely noticed. Find a way out!`;
           fx("crown");
         } else {
           p.gold += 2;
-          add(`${p.name} +2 coins`);
+          add2(`${p.name} +2 coins`);
           narration = pick(r, [`${p.name} pockets two coins and a deeply unnecessary amount of confidence.`, `${p.name} has very quick hands. The room suddenly checks its pockets.`, `${p.name} makes a clean getaway. The stolen spoons are, technically, treasure.`]);
         }
       } else {
@@ -1676,6 +2778,10 @@ function resolve(r, now) {
       if (success) {
         narration = pick(r, [`${p.name} bends reality just enough to make everyone extremely uncomfortable.`, `${p.name} casts it. The goblin briefly glows. He charges extra for that.`, `${p.name} makes magic happen. Three guards immediately blame each other.`]);
         if (target) recovery(target, 1);
+        if (t.target.kind === "guard") {
+          r.world.guards = "distracted";
+          add2("GUARDS DISTRACTED");
+        }
       } else {
         damage(p, 2);
         fx("fire", "self");
@@ -1688,7 +2794,7 @@ function resolve(r, now) {
       if (success) {
         narration = `${p.name} makes an entrance. Or an exit. The building no longer has an opinion.`;
         p.gold++;
-        add(`${p.name} +1 coin`);
+        add2(`${p.name} +1 coin`);
       } else {
         damage(p, 2);
         narration = `${p.name} tests the tavern\u2019s structural integrity. The tavern wins.`;
@@ -1702,12 +2808,12 @@ function resolve(r, now) {
         r.quest.escapedBy = p.id;
         p.score += 5;
         narration = `${p.name} kicks open the door. The whole party spills into the night with the crown, the goblin, and a truly impressive bar tab. HEIST COMPLETE.`;
-        add("PARTY VICTORY");
+        add2("PARTY VICTORY");
       } else if (success) {
         p.status = "hiding";
         r.chaos = Math.max(0, r.chaos - 2);
         narration = `${p.name} escapes to the doorway. Excellent survival instincts. Unfortunately, the crown is still inside.`;
-        add("Chaos \u22122");
+        add2("Chaos \u22122");
       } else {
         damage(p, 1);
         narration = `${p.name} makes for the door. Captain Brick is already standing in it. Awkward.`;
@@ -1716,9 +2822,11 @@ function resolve(r, now) {
     case "dance":
       fx("dance");
       if (success) {
+        r.world.guards = "distracted";
         r.chaos = Math.max(0, r.chaos - 2);
         p.gold++;
-        add(`${p.name} +1 coin`);
+        add2(`${p.name} +1 coin`);
+        add2("GUARDS DISTRACTED");
         narration = pick(r, [`${p.name} steals the show. One guard forgets why he works here.`, `${p.name} performs. The goblin sheds a single professional tear.`, `${p.name} gets the whole tavern involved. Captain Brick has surprisingly good rhythm.`]);
       } else {
         r.chaos++;
@@ -1730,6 +2838,10 @@ function resolve(r, now) {
       if (success) {
         r.chaos = Math.max(0, r.chaos - 1);
         r.world.bartender = "friendly";
+        if (t.target.kind === "guard") {
+          r.world.guards = "distracted";
+          add2("GUARDS DISTRACTED");
+        }
         narration = pick(r, [`${p.name} talks their way into everyone\u2019s good graces. Suspiciously effective.`, `${p.name} says exactly the right thing. Marnie pretends she isn\u2019t impressed.`, `${p.name} wins the room over. The guards lower their guard, which feels redundant.`]);
       } else {
         narration = `${p.name} gives it a shot. Marnie raises one eyebrow and the price of everything.`;
@@ -1752,23 +2864,25 @@ function resolve(r, now) {
       break;
     default:
       fx("weird");
-      if (success) {
-        p.gold++;
-        add(`${p.name} +1 coin`);
-        narration = pick(r, [`${p.name} does something nobody prepared for. Against all good judgment, it works.`, `${p.name} commits to the bit. The universe, briefly, commits back.`, `${p.name} makes an extremely specific choice. The goblin is already writing a song about it.`]);
-      } else {
-        narration = pick(r, [`${p.name} tries it. The tavern goes quiet. Somewhere, a spoon falls over.`, `${p.name} follows the idea to its natural, deeply inconvenient conclusion.`, `${p.name} discovers a new way to disappoint Captain Brick.`]);
-        damage(p, 1);
-      }
+      success = false;
+      unsupported = true;
+      narration = `${p.name} tries \u201C${t.action}\u201D. This attempt is not supported yet. Name a person or object and try inspecting, moving, taking, breaking, talking, hiding, or casting a spell.`;
       break;
   }
-  if (success && !environmental && !r.quest.crown && ["inspect", "social", "dance", "sneak", "weird", "magic"].includes(t.intent)) {
+  if (success && !automatic && !environmental?.blocked) p.score += critical ? 5 : 2;
+  for (const change of advanceEnvironment(r.world)) add2(change);
+  if (Object.values(r.world.objects || {}).some((s) => s.condition === "burning")) r.chaos++;
+  if (!success && ["dance", "flee", "attack", "break"].includes(t.intent) && Object.entries(r.world.objects || {}).some(([id, s]) => s.spilled || OBJECTS[id]?.material === "glass" && s.condition === "broken")) {
+    damage(p, 1);
+    add2("HAZARD: slippery ale or broken glass");
+  }
+  if (success && (!environmental || t.intent === "inspect" && t.target.kind === "counter") && !r.quest.crown && ["inspect", "social", "dance", "sneak", "weird", "magic"].includes(t.intent)) {
     if (r.quest.clues < 3) {
       r.quest.clues++;
       const facts = ["Marnie saw the Duke hide something behind the bar.", "The goblin\u2019s song mentions a chest and a golden hat.", "The crown is in the chest behind the bar. Steal it!"];
       const fact = facts[r.quest.clues - 1];
       r.world.facts.push(fact);
-      add(`Clue ${r.quest.clues}/3`);
+      add2(`Clue ${r.quest.clues}/3`);
       narration += " " + fact;
     }
   }
@@ -1793,7 +2907,7 @@ function resolve(r, now) {
     for (const rp of exposed) hurt(rp, 1);
     r.chaos = 5;
     r.world.guards = "alert";
-    add("Guard sweep: exposed players \u22121 HP");
+    add2("Guard sweep: exposed players \u22121 HP");
     narration += " The guards sweep the room. Anyone who stayed in the open takes a hit.";
     effects.push({ verb: "alarm", actorId: p.id, target: "guard" });
   }
@@ -1815,10 +2929,16 @@ function resolve(r, now) {
     charm,
     assistance,
     interference,
-    total: roll + modifier,
+    total: automatic ? 0 : roll + modifier,
     dc,
     success,
-    critical,
+    critical: critical && success,
+    automatic,
+    dice,
+    advantage,
+    situation,
+    check: check?.ability || t.intent,
+    blocked: !!environmental?.blocked || unsupported,
     narration,
     changes,
     effects,
@@ -1839,7 +2959,7 @@ function advance(r, now = Date.now()) {
   if (r.phase === "reveal" && now >= r.deadline) {
     r.phase = r.quest.escaped ? "ended" : "open";
     r.deadline = 0;
-    for (const p of r.players) if (p.hp > 0) p.status = "ready";
+    for (const p of r.players) if (p.hp > 0) p.status = p.cover ? "hiding" : "ready";
     touch(r, now);
     return true;
   }
@@ -1875,9 +2995,13 @@ function hostCommand(r, command, now = Date.now()) {
     r.chaos = 0;
     r.paused = false;
     r.world.props = { rug: true };
+    r.world.objects = {};
+    r.world.npcs = {};
+    r.world.guards = "bored";
     for (const p of r.players) {
       p.hp = Math.max(p.hp, 4);
       p.status = "ready";
+      p.cover = false;
     }
     event(r, "story", "Marnie claps her hands. \u201CEveryone breathe. We\u2019re starting that bit again.\u201D", now);
   } else if (command.type === "redact") {
@@ -1894,7 +3018,7 @@ function hostCommand(r, command, now = Date.now()) {
     }
   } else if (command.type === "newStory") {
     const fresh = createRoom({ code: r.code, seed: r.seed, now, reactionMs: r.reactionMs });
-    const players = r.players.map((p) => ({ ...p, hp: p.maxHp, gold: 3, inventory: ["Bent spoon"], actions: 0, assists: 0, score: 0, nat20: 0, status: "ready" }));
+    const players = r.players.map((p) => ({ ...p, hp: p.maxHp, gold: 3, inventory: ["Bent spoon"], actions: 0, assists: 0, score: 0, nat20: 0, status: "ready", cover: false }));
     Object.assign(r, fresh, { players, seq: r.seq, revision: r.revision, requests: r.requests });
     event(r, "story", "A fresh night. The same terrible judgment.", now);
   } else if (command.type === "window") {

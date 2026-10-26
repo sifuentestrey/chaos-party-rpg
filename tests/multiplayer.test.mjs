@@ -23,7 +23,7 @@ test('actual PartyFrame room: 20 clients, race, reactions, reconnection, PIN rec
     assert.equal((await host.request('host:command',{command:{type:'start'}})).ok,true);
     app.gameServer.simulateLatency(250);
     const started=performance.now();
-    const declarations=await Promise.all(joins.map((x,i)=>x.request('player:submit',{requestId:'race-'+i,text:'I inspect barrel '+i})));
+    const declarations=await Promise.all(joins.map((x,i)=>x.request('player:submit',{requestId:'race-'+i,text:'I smash barrel '+i})));
     const raceMs=Math.round(performance.now()-started);
     assert.equal(declarations.filter(x=>x.accepted&&x.kind==='action').length,1);
     const winner=declarations.findIndex(x=>x.accepted),first=declarations[winner];
@@ -43,9 +43,16 @@ test('actual PartyFrame room: 20 clients, race, reactions, reconnection, PIN rec
     await host.request('host:command',{command:{type:'resolve'}});const resolved=app.rooms()[code];assert.equal(resolved.result.reactions.length,19);assert.equal(resolved.stats.rolls,1);
     const snapshot=(await host.request('room:sync')).room;assert.equal(snapshot.players[0].token,undefined);assert.equal(snapshot.players[0].pin,undefined);assert.equal(snapshot.seed,undefined);
     await pause(70);const projected=JSON.parse(host.room.state.game.json);assert.equal(projected.result.id,resolved.result.id);assert.equal(projected.framework.name,'PartyFrame');
+    await host.request('host:command',{command:{type:'resolve'}});
+    const next=joins.find((_,i)=>i!==winner&&i!==joins.indexOf(reconnect));
+    const opened=await next.request('player:submit',{requestId:'real-door',text:'Open the tavern door'});assert.equal(opened.accepted,true);
+    await host.request('host:command',{command:{type:'resolve'}});
+    assert.equal(app.rooms()[code].world.objects.door.open,true);assert.equal(app.rooms()[code].stats.rolls,1);
+    assert.equal((await recovered.request('room:sync')).room.world.objects.door.open,true);
+    const finalResult=app.rooms()[code].result.id;
     const key=app.hostKey;await Promise.all(clients.map(x=>x.room.connection?.isOpen?x.room.leave(true).catch(()=>{}):Promise.resolve()));await host.room.leave(true);await app.close();
     app=await createGameServer({port:0,dataDir:dir});assert.equal(app.hostKey,key);
-    host=await createHost(app,{resumeCode:code});assert.equal(host.identity.room.players.length,20);assert.equal(host.identity.room.result.id,resolved.result.id);assert.equal(host.identity.room.players.every(p=>!p.connected),true);
+    host=await createHost(app,{resumeCode:code});assert.equal(host.identity.room.players.length,20);assert.equal(host.identity.room.result.id,finalResult);assert.equal(host.identity.room.players.every(p=>!p.connected),true);assert.equal(host.identity.room.world.objects.door.open,true);
     const after=await joinPlayer(app,host.room.roomId,{token:recovered.identity.token});clients.push(after);assert.equal(after.identity.playerId,persistentId);assert.equal(after.identity.room.players.length,20);
     const unauthorized=await fetch('http://127.0.0.1:'+app.port+'/api/host-key',{headers:{Origin:'http://untrusted.example','Sec-Fetch-Site':'cross-site'}});assert.equal(unauthorized.status,403);
     console.log(JSON.stringify({framework:'PartyFrame',transport:'Colyseus',clients:20,reactions:19,initiators:1,raceMs,reconnectSameSeat:true,recovery:true,restart:true}));
