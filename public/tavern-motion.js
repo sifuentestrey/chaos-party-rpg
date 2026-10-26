@@ -8,6 +8,7 @@ export const seats = [
 ];
 export const landmarks={guard:[865,290],bartender:[480,145],chest:[665,145],rug:[480,378],goblin:[125,245],chandelier:[480,260],door:[480,495],room:[480,335]};
 export function targetPosition(target,players,home){
+  if(target?.position)return target.position;
   if(target?.kind==='self')return home;
   if(target?.id){const i=players.findIndex(p=>p.id===target.id);if(i>=0)return seats[i%seats.length];}
   return OBJECTS[target?.kind]?.position||landmarks[target?.kind]||home;

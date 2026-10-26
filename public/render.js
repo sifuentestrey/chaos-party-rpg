@@ -1,3 +1,5 @@
+import {currentLocation,visibleItems} from './world-items.js';
+import {drawItemGlyph,drawGeneratedLocation} from './world-render.js';
 import {drawEnvironment} from './environment-render.js';
 import {approachPath,pointOnPath} from './navigation.js';
 import { seats as slots, landmarks as npcPositions, targetPosition, actorPosition, recoil } from './tavern-motion.js';
@@ -45,11 +47,12 @@ export function avatarCanvas(avatar=DEFAULT_AVATAR,animation='idle',timeMs=0) {
   if(a.accessory===5){r(3,1,2,5,'#e4d6b8');r(4,4,2,3,'#e4d6b8');r(15,1,2,5,'#e4d6b8');r(14,4,2,3,'#e4d6b8');}
   if(avatarCache.size>200)avatarCache.clear();avatarCache.set(key,c);return c;
 }
-export function drawPortrait(canvas,avatar,large=false) {
+export function drawPortrait(canvas,avatar,large=false,worn=null) {
   if(!canvas)return;const g=canvas.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,canvas.width,canvas.height);
   const sprite=avatarCanvas(avatar),s=Math.floor(Math.min(canvas.width/24,canvas.height/30));
   g.fillStyle='#080b1433';g.beginPath();g.ellipse(canvas.width/2,canvas.height-5,s*7,s*2,0,0,Math.PI*2);g.fill();
   g.drawImage(sprite,Math.floor((canvas.width-20*s)/2),canvas.height-28*s-7,20*s,28*s);
+  if(worn)drawItemGlyph(g,worn,canvas.width/2+(worn.slot==='hand'?10*s:0),canvas.height-(worn.slot==='body'?10:worn.slot==='hand'?9:20)*s-7,Math.max(1,s*.8));
 }
 
 function tile(g,id,x,y,size=32,img=sprites) {
@@ -72,6 +75,8 @@ export class TavernScene {
     const g=this.canvas.getContext('2d');g.imageSmoothingEnabled=false;const r=this.state;
     const second=this.reduced?0:t/1000;
     // Background is composed at native pixel scale. No physics engine or WebGL required.
+    const outdoors=currentLocation(r||{world:{}})!=='tavern';
+    if(!outdoors){
     g.fillStyle='#201b25';g.fillRect(0,0,960,540);
     g.fillStyle='#69483c';g.fillRect(46,112,868,403);g.save();g.beginPath();g.rect(46,112,868,403);g.clip();
     for(let y=112;y<516;y+=20)for(let x=46;x<914;x+=80){
@@ -83,7 +88,10 @@ export class TavernScene {
     g.fillStyle='#35252b';g.fillRect(24,16,912,9);g.fillRect(20,22,8,499);g.fillRect(930,22,9,499);
     // Building shell; interactive fixtures come from the shared object registry.
     for(const x of [48,302,650,900]){g.fillStyle='#30232a';g.fillRect(x,22,10,114);g.fillStyle='#916044';g.fillRect(x+2,22,3,110);}
-    const layers=drawEnvironment(g,r,this.reduced?0:t,sprites);
+    }
+    if(outdoors)drawGeneratedLocation(g,r);
+    const layers=outdoors?[]:drawEnvironment(g,r,this.reduced?0:t,sprites);
+    if(r)for(const item of visibleItems(r).filter(i=>!i.ownerId))layers.push({y:item.position[1],draw:()=>{drawItemGlyph(g,item,...item.position,2);this.label(g,item.name,item.position[0],item.position[1]+25,'#e5d0a3',10);}});
     // Render all 24 possible player slots; labels are separate from their sprite.
     const players=r?.players||[];
     if(!players.length){
@@ -96,10 +104,10 @@ export class TavernScene {
       patrons.forEach((a,i)=>{const pos=[[336,270],[624,270],[330,468],[630,468]][i];layers.push({y:pos[1],draw:()=>this.person(g,{id:'patron'+i,avatar:{...DEFAULT_AVATAR,...a},name:'PATRON',hp:10,connected:true,npc:true,ambient:true},pos,second,i,t)});});
     }else players.forEach((p,i)=>{const pos=this.position(p,i,t);layers.push({y:pos[1],draw:()=>this.person(g,p,pos,second,i,t)});});
     const npcs=[{id:'bartender',name:'MARNIE',avatar:{...DEFAULT_AVATAR,skin:3,hair:1,outfit:1,color:2}}, {id:'guard',name:'CAPTAIN BRICK',avatar:{...DEFAULT_AVATAR,outfit:3,hair:5,color:4,accessory:0}}, {id:'goblin',name:'THE FIDDLER',avatar:{...DEFAULT_AVATAR,body:'elf',hair:2,color:3,accessory:1}}];
-    for(const npc of npcs){const pos=[...npcPositions[npc.id]],saved=r?.world?.npcs?.[npc.id]||{hp:8,maxHp:8};const hit=r?.result?.success&&r.result.target?.kind===npc.id&&['attack','magic','break'].includes(r.result.intent);if(hit)pos[0]+=recoil(t-this.fxAt,this.reduced);layers.push({y:pos[1],draw:()=>this.person(g,{...npc,...saved,connected:true,npc:true,hit:hit&&t-this.fxAt<650},pos,second,0,t)});}
+    for(const npc of outdoors?[]:npcs){const pos=[...npcPositions[npc.id]],saved=r?.world?.npcs?.[npc.id]||{hp:8,maxHp:8};const hit=r?.result?.success&&r.result.target?.kind===npc.id&&['attack','magic','break'].includes(r.result.intent);if(hit)pos[0]+=recoil(t-this.fxAt,this.reduced);layers.push({y:pos[1],draw:()=>this.person(g,{...npc,...saved,connected:true,npc:true,hit:hit&&t-this.fxAt<650},pos,second,0,t)});}
     layers.sort((a,b)=>a.y-b.y).forEach(layer=>layer.draw());
     // Foreground framing adds depth without hiding the central action.
-    for(const x of [28,920]){g.fillStyle='#261e27';g.fillRect(x,114,12,410);g.fillStyle='#946246';g.fillRect(x+3,114,3,410);}
+    for(const x of outdoors?[]:[28,920]){g.fillStyle='#261e27';g.fillRect(x,114,12,410);g.fillStyle='#946246';g.fillRect(x+3,114,3,410);}
 
     const elapsed=t-this.fxAt;
     if(r?.result&&elapsed<3400)this.effects(g,r.result,elapsed);
@@ -151,6 +159,7 @@ export class TavernScene {
     const crowded=(this.state?.players.length||0)>12&&!p.npc;
     const scale=crowded?2:2.5;
     g.drawImage(sprite,Math.round(x-10*scale),Math.round(y-28*scale+bob),20*scale,28*scale);
+    if(!p.npc&&r){const carried=visibleItems(r).filter(item=>item.ownerId===p.id);for(const item of carried.filter(i=>i.equipped))drawItemGlyph(g,item,x+(item.slot==='hand'?23:0),y-(item.slot==='body'?10:item.slot==='hand'?9:20)*scale+bob,item.slot==='head'?2:1.5);const held=carried.find(i=>!i.equipped);if(held)drawItemGlyph(g,held,x+23,y-24+bob,1.5);}
     if(!p.ambient)this.label(g,p.name?.slice(0,crowded&&!active?12:16)||'Adventurer',x,p.id==='guard'?y-77:y+14,active?'#ffe4a2':p.isBot?'#bdb4cb':'#f5e7cf',crowded?9:11);
     if(p.maxHp&&p.hp<p.maxHp){g.fillStyle='#261e2e';g.fillRect(x-17,y+19,34,3);g.fillStyle=p.hp<4?'#d96d7e':'#86b89b';g.fillRect(x-17,y+19,34*p.hp/p.maxHp,3);}
     if(reaction){const glyph={assist:'+',intervene:'!',flee:'»',custom:'?'}[reaction.kind];g.fillStyle='#221b30';g.fillRect(x+17,y-69,18,18);this.label(g,glyph,x+26,y-55,'#c2afe9',14);}
@@ -161,7 +170,7 @@ export class TavernScene {
     const players=this.state?.players||[],i=players.findIndex(p=>p.id===res.playerId);const pos=this.position(players[i],Math.max(0,i),this.fxAt+elapsed);const f=Math.max(0,1-elapsed/3400);
     for(const effect of res.effects){
       const j=players.findIndex(p=>p.id===effect.actorId),from=this.position(players[j],Math.max(0,j),this.fxAt+elapsed);
-      const target=effect.target==='self'?from:effect.targetId?slots[Math.max(0,players.findIndex(p=>p.id===effect.targetId))]:targetPosition({kind:effect.target},players,pos);
+      const target=effect.target==='self'?from:effect.targetId?slots[Math.max(0,players.findIndex(p=>p.id===effect.targetId))]:targetPosition(effect.target===res.target?.kind?res.target:{kind:effect.target},players,pos);
       const [x,y]=target;
       const licensed=drawNinjaEffect(g,effect.verb,x,y-35,elapsed,1.8);
       if(licensed&&!['crown','alarm','flee'].includes(effect.verb))continue;

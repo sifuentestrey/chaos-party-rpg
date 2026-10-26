@@ -19,7 +19,7 @@ export function validateAIPlan(raw,room,actorId){
 // Called only on the authoritative server. Client submissions cannot contain a plan.
 export function applyAIPlan(room,turnId,raw,model,now=Date.now()){
   const t=room.turn;
-  if(room.phase!=='react'||room.paused||!t||t.id!==turnId||now>=t.deadline-800)return false;
+  if(room.phase!=='react'||room.paused||!t||t.worldAction||t.id!==turnId||now>=t.deadline-800)return false;
   const plan=validateAIPlan(raw,room,t.actorId);
   const actor=room.players.find(p=>p.id===t.actorId);
   if(actor.hp<=0&&plan.intent!=='heal')throw new Error('Knocked out characters must recover');

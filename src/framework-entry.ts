@@ -207,7 +207,7 @@ export class ChaosPartyRoom extends PartySessionRoom {
   }
   private interpretAcceptedTurn(){
     const room=this.tavern,turn=room.turn,status=services.ai.status();
-    if(!turn||this.interpretedTurn===turn.id)return;
+    if(!turn||turn.worldAction||this.interpretedTurn===turn.id)return;
     this.interpretedTurn=turn.id;
     if(!status.available){turn.ai={status:'fallback',reason:status.message};room.revision++;this.finishTick(this.buildContext(Date.now()));return;}
     turn.ai={status:'thinking',model:status.model};room.revision++;this.finishTick(this.buildContext(Date.now()));

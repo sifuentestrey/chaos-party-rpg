@@ -7,7 +7,7 @@ export function approachPath(home,target,world){
   const pass=(x,y)=>{
     if(x<3||x>44||y<9||y>24)return false;
     if(x===start[0]&&y===start[1])return true;
-    for(const [id,o] of Object.entries(OBJECTS)){
+    for(const [id,o] of Object.entries(world.expedition?.current&&world.expedition.current!=='tavern'?{}:OBJECTS)){
       if(!['table','barrel','sideboard','hearth'].includes(o.family))continue;
       const s=objectState(world,id);if(['broken','taken'].includes(s.condition))continue;
       const [ox,oy]=o.position,dx=x*cell-ox-s.offset[0],dy=y*cell-oy-s.offset[1];

@@ -1252,6 +1252,220 @@ var PartySessionRoom = class extends Room {
   }
 };
 
+// public/vendor/partyframe-rng.js
+var Rng2 = class {
+  constructor(seed) {
+    this.state = seed >>> 0;
+  }
+  /** Chaos Party persistence extension: the exact PRNG state, not a new random seed. */
+  snapshot() {
+    return this.state;
+  }
+  restore(state) {
+    this.state = state >>> 0;
+  }
+  /** Uniform float in [0, 1). */
+  next() {
+    this.state = this.state + 1831565813 >>> 0;
+    let t = this.state;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+  /** Uniform integer in [min, max], inclusive on both ends. */
+  int(min, max) {
+    if (max < min) throw new RangeError(`Rng.int: max ${max} < min ${min}`);
+    return min + Math.floor(this.next() * (max - min + 1));
+  }
+  /** Uniform float in [min, max). */
+  float(min, max) {
+    return min + this.next() * (max - min);
+  }
+  /** True with the given probability. */
+  chance(probability) {
+    return this.next() < probability;
+  }
+  /** Uniformly picks one element. Throws on an empty list rather than returning undefined. */
+  pick(items) {
+    if (items.length === 0) throw new RangeError("Rng.pick: empty list");
+    return items[this.int(0, items.length - 1)];
+  }
+  /** Returns a shuffled copy, leaving the input untouched (Fisher-Yates). */
+  shuffle(items) {
+    const out = items.slice();
+    for (let i = out.length - 1; i > 0; i -= 1) {
+      const j = this.int(0, i);
+      [out[i], out[j]] = [out[j], out[i]];
+    }
+    return out;
+  }
+};
+
+// public/world-items.js
+var ITEM_TYPES = {
+  fragment: { portable: true, wearable: false, shape: "shard" },
+  wearable: { portable: true, wearable: true, shape: "band" },
+  tool: { portable: true, wearable: false, shape: "rod" },
+  container: { portable: true, wearable: false, shape: "cup" }
+};
+var MATERIALS = { cloth: { color: "#bd88cf", hardness: 7 }, wood: { color: "#b88955", hardness: 10 }, glass: { color: "#7dc7cf", hardness: 8 }, stone: { color: "#a3adbb", hardness: 14 }, metal: { color: "#dfc16e", hardness: 16 } };
+var norm = (s) => s.trim().toLowerCase().replace(/^(?:a|an|the)\s+/, "");
+var currentLocation = (r) => r.world.expedition?.current || "tavern";
+function ensureItems(r) {
+  if (r.world.expedition) return r.world.expedition;
+  const rng = new Rng2(r.seed), locations = { tavern: { id: "tavern", name: "The Tipsy Wyvern", kind: "tavern", exits: ["clearing"] } };
+  for (const [id, kind, exits] of [["clearing", "clearing", ["tavern", "ruins"]], ["ruins", "ruins", ["clearing"]]]) locations[id] = { id, kind, name: rng.pick(["Mossy", "Amber", "Moonlit"]) + " " + (kind === "clearing" ? "Clearing" : "Ruins"), exits, decor: Array.from({ length: 12 }, () => [rng.int(90, 870), rng.int(170, 470), rng.int(0, 2)]) };
+  const state = r.world.expedition = { version: 1, current: "tavern", locations, items: {}, nextId: 1 };
+  for (const location of Object.keys(locations)) for (const [name, material, type3] of [["cloth strip", "cloth", "fragment"], ["wood splinter", "wood", "tool"], ["blue bottle", "glass", "container"], ["smooth stone", "stone", "fragment"]]) {
+    const id = "item-" + state.nextId++;
+    state.items[id] = { id, name, type: type3, material, condition: "intact", ownerId: null, location, position: [240 + state.nextId % 4 * 150, 390], components: [], equipped: false, appearance: { shape: ITEM_TYPES[type3].shape, color: MATERIALS[material].color }, history: [] };
+  }
+  return state;
+}
+function findItem(s, r, text) {
+  const matches = Object.values(s.items).filter((i) => !i.parentId && (i.ownerId || i.location === s.current) && (i.id === text.trim() || norm(i.name) === norm(text)));
+  return matches.length === 1 ? matches[0] : null;
+}
+function parseItemAttempt(text) {
+  let m;
+  if (m = text.match(/^(?:travel|go) to (.+)$/i)) return { verb: "travel", destination: norm(m[1]) };
+  if (m = text.match(/^(?:make|craft|create) (.+?) from (.+)$/i)) return { verb: "craft", name: m[1].replace(/^(a|an|the)\s+/i, "").trim(), sources: m[2].split(/\s+and\s+|\s*\+\s*/i) };
+  if (m = text.match(/^attach (.+?) to (.+)$/i)) return { verb: "attach", sources: [m[1], m[2]] };
+  if (m = text.match(/^give (.+?) to (.+)$/i)) return { verb: "give", item: m[1], recipient: m[2] };
+  if (m = text.match(/^use (.+?) on (.+)$/i)) return { verb: "use", item: m[1], target: m[2] };
+  if (m = text.match(/^(take|drop|equip|wear|unequip|separate|inspect|break|smash) (.+)$/i)) return { verb: { wear: "equip", smash: "break" }[m[1].toLowerCase()] || m[1].toLowerCase(), item: m[2] };
+  return null;
+}
+function itemPlan(r, actor, text) {
+  if (currentLocation(r) !== "tavern" && /^(?:rest|rest and heal|heal myself)$/i.test(text.trim())) return { verb: "rest", automatic: false, dc: 6, ability: "Recovery" };
+  const attempt = parseItemAttempt(text);
+  if (!attempt) return currentLocation(r) === "tavern" ? null : { verb: "unsupported", error: "Try taking, crafting, equipping, giving, separating, or using an object here, or travel to a connected place.", automatic: true, dc: 0, ability: "Interaction" };
+  const isExplicit = ["travel", "craft", "attach", "give", "use", "equip", "unequip", "separate", "drop"].includes(attempt.verb);
+  const s = ensureItems(r), item = attempt.item ? findItem(s, r, attempt.item) : null;
+  if (!isExplicit && !item) {
+    if (s.current === "tavern" && !/^item-\d+$/i.test(attempt.item || "")) return null;
+  }
+  const blocked = (message) => ({ ...attempt, itemId: item?.id, error: message, automatic: true, dc: 0, ability: "Interaction" });
+  if (attempt.verb === "travel") {
+    const dest = Object.values(s.locations).find((l) => l.id === attempt.destination || norm(l.name) === attempt.destination);
+    if (!dest || !s.locations[s.current].exits.includes(dest.id)) return blocked("That place is not connected to this location.");
+    return { ...attempt, destination: dest.id, automatic: true, ability: "Travel" };
+  }
+  if (["craft", "attach"].includes(attempt.verb)) {
+    if (attempt.verb === "craft" && (!attempt.name || attempt.name.length > 48 || /[<>]/.test(attempt.name))) return blocked("Use an item name of 1\u201348 plain characters.");
+    const sources = attempt.sources.map((name) => findItem(s, r, name));
+    if (sources.length < 2 || sources.length > 4 || sources.some((i) => !i || i.ownerId !== actor.id || i.condition !== "intact") || new Set(sources.map((i) => i.id)).size !== sources.length) return blocked("Choose two to four different intact items from your own pockets. Use item IDs if names repeat.");
+    if (Object.keys(s.items).length >= 256) return blocked("This campaign has reached its 256-object crafting limit.");
+    return { ...attempt, sourceIds: sources.map((i) => i.id), automatic: false, dc: 10, ability: "Craft" };
+  }
+  if (!item) return blocked("No unique item matches that name here. Choose a visible item ID.");
+  const plan = { ...attempt, itemId: item.id, automatic: true, dc: 0, ability: "Interaction" };
+  if (attempt.verb === "inspect") return plan;
+  if (attempt.verb === "take") return !item.ownerId ? plan : blocked("That item is already carried; its owner must give or drop it.");
+  if (item.ownerId !== actor.id) return blocked("You must carry that item first.");
+  if (attempt.verb === "give") {
+    const recipient = r.players.find((p) => norm(p.name) === norm(attempt.recipient) && p.id !== actor.id);
+    return recipient ? { ...plan, recipientId: recipient.id } : blocked("Choose another adventurer by their full name.");
+  }
+  if (["equip", "use"].includes(attempt.verb) && item.condition !== "intact") return blocked("That item is broken. Separate its components or use another item.");
+  if (attempt.verb === "equip" && !ITEM_TYPES[item.type]?.wearable) return blocked("Only wearable objects can be equipped. Craft a wearable from carried components.");
+  if (attempt.verb === "separate" && !item.components.length) return blocked("That item has no attached components to separate.");
+  if (attempt.verb === "break") return item.condition === "broken" ? blocked("That item is already broken.") : { ...plan, automatic: false, dc: MATERIALS[item.material].hardness, ability: "Athletics" };
+  if (attempt.verb === "use") {
+    const target = findItem(s, r, attempt.target);
+    if (item.type !== "tool") return blocked("This action needs a tool. Wearables can be equipped; containers can be carried or combined.");
+    if (!target || target.id === item.id || target.ownerId && target.ownerId !== actor.id || target.condition !== "intact") return blocked("Choose an intact object here or in your own pockets.");
+    return { ...plan, targetId: target.id, automatic: false, dc: Math.max(5, MATERIALS[target.material].hardness - 2), ability: "Athletics" };
+  }
+  return plan;
+}
+function remember(item, verb, actor, location) {
+  item.history.push({ verb, actorId: actor.id, location });
+  item.history = item.history.slice(-12);
+}
+function resolveItem(r, actor, plan, success) {
+  const s = ensureItems(r), item = s.items[plan.itemId];
+  const out = { success: success && !plan.error, blocked: !!plan.error, text: "", change: null };
+  if (plan.error) return { ...out, text: plan.error };
+  if (!success) return { ...out, text: plan.verb === "rest" ? `${actor.name} cannot settle down yet. Try resting again.` : `${actor.name} tries, but the materials resist. Nothing is consumed or changed.` };
+  if (plan.verb === "rest") {
+    actor.hp = Math.min(actor.maxHp, actor.hp + 4);
+    return { ...out, text: `${actor.name} rests and recovers.`, change: "+4 HP (up to maximum)" };
+  }
+  if (plan.verb === "travel") {
+    s.current = plan.destination;
+    return { ...out, text: `The party travels to ${s.locations[s.current].name}. Carried objects come along.`, change: "LOCATION: " + s.locations[s.current].name };
+  }
+  if (["craft", "attach"].includes(plan.verb)) {
+    const sources = plan.sourceIds.map((id2) => s.items[id2]), name = plan.name || `${sources[1].name} with ${sources[0].name}`.slice(0, 48);
+    const type3 = plan.verb === "attach" ? sources[1].type : /\b(hat|crown|ring|cape|mask|belt|amulet|badge|necklace|helmet|wearable)\b/i.test(name) ? "wearable" : /\b(bottle|cup|bowl|container|flask)\b/i.test(name) ? "container" : "tool";
+    const id = "item-" + s.nextId++, material = sources[0].material;
+    const slot = type3 !== "wearable" ? null : plan.verb === "attach" ? sources[1].slot || "head" : /\b(ring)\b/i.test(name) ? "hand" : /\b(cape|belt|amulet|badge|necklace)\b/i.test(name) ? "body" : "head";
+    const palette = { red: "#d87878", blue: "#7ea7d4", green: "#83b48a", gold: "#dfc16e", purple: "#bd88cf", white: "#e4dcc8", black: "#484552" };
+    const namedColor = Object.keys(palette).find((c) => new RegExp("\\b" + c + "\\b", "i").test(name));
+    const made = s.items[id] = { id, name, type: type3, material, slot, condition: "intact", ownerId: actor.id, location: null, position: [480, 390], components: plan.sourceIds, equipped: false, appearance: { shape: ITEM_TYPES[type3].shape, color: namedColor ? palette[namedColor] : sources[0].appearance.color, accent: sources[1].appearance.color }, history: [] };
+    for (const source of sources) {
+      source.parentId = id;
+      source.ownerId = null;
+      source.location = null;
+      source.equipped = false;
+      remember(source, "combined", actor, s.current);
+    }
+    remember(made, "created", actor, s.current);
+    return { ...out, text: `${actor.name} creates ${name} (${id}) from ${sources.map((i) => i.name).join(" and ")}.`, change: "CREATED: " + name };
+  }
+  switch (plan.verb) {
+    case "inspect":
+      return { ...out, text: `${item.name} (${item.id}): ${item.condition} ${item.material} ${item.type}; ${item.components.length} components. ${item.ownerId ? "Carried by " + r.players.find((p) => p.id === item.ownerId)?.name : "On the ground"}.` };
+    case "take":
+      item.ownerId = actor.id;
+      item.location = null;
+      break;
+    case "drop":
+      item.ownerId = null;
+      item.location = s.current;
+      item.equipped = false;
+      break;
+    case "give":
+      item.ownerId = plan.recipientId;
+      item.equipped = false;
+      break;
+    case "equip":
+      for (const other of Object.values(s.items)) if (other.ownerId === actor.id && other.slot === item.slot) other.equipped = false;
+      item.equipped = true;
+      break;
+    case "unequip":
+      item.equipped = false;
+      break;
+    case "break":
+      item.condition = "broken";
+      item.equipped = false;
+      break;
+    case "use": {
+      const target = s.items[plan.targetId];
+      target.condition = "broken";
+      target.equipped = false;
+      remember(target, "broken with " + item.id, actor, s.current);
+      break;
+    }
+    case "separate":
+      for (const id of item.components) {
+        const part = s.items[id];
+        delete part.parentId;
+        part.ownerId = actor.id;
+        remember(part, "separated", actor, s.current);
+      }
+      item.components = [];
+      item.ownerId = null;
+      item.location = null;
+      item.condition = "disassembled";
+      item.equipped = false;
+      break;
+  }
+  remember(item, plan.verb, actor, s.current);
+  return { ...out, text: `${actor.name}: ${plan.verb} ${item.name}${plan.recipientId ? " \u2192 " + r.players.find((p) => p.id === plan.recipientId).name : ""}${plan.targetId ? " breaks " + s.items[plan.targetId].name : ""}.`, change: plan.verb.toUpperCase() + ": " + item.name };
+}
+
 // public/vendor/dungeonz.js
 var __create = Object.create;
 var __defProp2 = Object.defineProperty;
@@ -2323,55 +2537,6 @@ function selectD20(values, mode) {
   return term.results.find((r) => r.active).result;
 }
 
-// public/vendor/partyframe-rng.js
-var Rng2 = class {
-  constructor(seed) {
-    this.state = seed >>> 0;
-  }
-  /** Chaos Party persistence extension: the exact PRNG state, not a new random seed. */
-  snapshot() {
-    return this.state;
-  }
-  restore(state) {
-    this.state = state >>> 0;
-  }
-  /** Uniform float in [0, 1). */
-  next() {
-    this.state = this.state + 1831565813 >>> 0;
-    let t = this.state;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  }
-  /** Uniform integer in [min, max], inclusive on both ends. */
-  int(min, max) {
-    if (max < min) throw new RangeError(`Rng.int: max ${max} < min ${min}`);
-    return min + Math.floor(this.next() * (max - min + 1));
-  }
-  /** Uniform float in [min, max). */
-  float(min, max) {
-    return min + this.next() * (max - min);
-  }
-  /** True with the given probability. */
-  chance(probability) {
-    return this.next() < probability;
-  }
-  /** Uniformly picks one element. Throws on an empty list rather than returning undefined. */
-  pick(items) {
-    if (items.length === 0) throw new RangeError("Rng.pick: empty list");
-    return items[this.int(0, items.length - 1)];
-  }
-  /** Returns a shuffled copy, leaving the input untouched (Fisher-Yates). */
-  shuffle(items) {
-    const out = items.slice();
-    for (let i = out.length - 1; i > 0; i -= 1) {
-      const j = this.int(0, i);
-      [out[i], out[j]] = [out[j], out[i]];
-    }
-    return out;
-  }
-};
-
 // public/core.js
 var VERSION = "0.3.0-beta.2";
 var ROLES = {
@@ -2507,6 +2672,7 @@ function publicRoom(r) {
 function startGame(r, now = Date.now()) {
   if (r.phase !== "lobby") fail("PHASE", "This story has already started.");
   if (!r.players.length) fail("EMPTY", "At least one adventurer needs to join first.");
+  ensureItems(r);
   r.phase = "open";
   r.deadline = 0;
   event(r, "story", OPENING, now);
@@ -2572,7 +2738,8 @@ function submit(r, playerId, input, now = Date.now()) {
   }
   if (r.phase !== "open") fail("BUSY", r.phase === "react" ? "Someone got there first. You can still react!" : "Wait for the next opening.");
   if (r.lastActorId === p.id && now < r.priorityUntil && r.players.filter((x) => x.connected && !x.muted && !x.isBot).length > 1) fail("COOLDOWN", "Give someone else a shot \u2014 your opening returns in a few seconds.");
-  const intent = classify(text);
+  const dynamic = itemPlan(r, p, text);
+  const intent = dynamic ? dynamic.verb === "rest" ? "heal" : "world" : classify(text);
   if (p.hp <= 0 && intent !== "heal") fail("KNOCKED_OUT", "You\u2019re on the floor. Rest, eat, or drink to get back up.");
   const e = event(r, "declaration", text, now, { playerId: p.id, name: p.name });
   r.round++;
@@ -2587,6 +2754,11 @@ function submit(r, playerId, input, now = Date.now()) {
     deadline: now + r.reactionMs,
     reactions: []
   };
+  if (dynamic) {
+    r.turn.worldAction = true;
+    const item = r.world.expedition.items[dynamic.targetId || dynamic.itemId || dynamic.sourceIds?.[0]];
+    r.turn.target = { kind: "world", name: item?.name || dynamic.destination || "materials", position: item?.ownerId ? [480, 335] : item?.position || [480, 490] };
+  }
   r.phase = "react";
   r.deadline = r.turn.deadline;
   r.result = null;
@@ -2633,8 +2805,9 @@ function resolve(r, now) {
   const sorted = [...t.reactions].sort((a, b) => a.id - b.id);
   const helpers = sorted.filter((x) => x.kind === "assist" || x.kind === "custom" && !/\b(stop|prevent|block|intervene)\b/i.test(x.text));
   const blockers = sorted.filter((x) => x.kind === "intervene" || x.kind === "custom" && /\b(stop|prevent|block|intervene)\b/i.test(x.text));
-  const hostile = ["attack", "steal", "magic", "break"].includes(t.intent);
-  const check = environmentCheck(r.world, t.target, t.intent, t.rulesText || t.action);
+  const hostile = t.worldAction || ["attack", "steal", "magic", "break"].includes(t.intent);
+  const dynamic = t.worldAction ? itemPlan(r, p, t.action) : null;
+  const check = dynamic || environmentCheck(r.world, t.target, t.intent, t.rulesText || t.action);
   const automatic = !!check?.automatic;
   const situation = [];
   let advantage = check?.advantage || 0;
@@ -2705,8 +2878,15 @@ function resolve(r, now) {
     }
   };
   const props = r.world.props || (r.world.props = { rug: true });
-  const environmental = interactEnvironment(r.world, t.target, t.intent, success, p, { text: t.rulesText || t.action });
-  if (environmental) {
+  const environmental = dynamic ? null : interactEnvironment(r.world, t.target, t.intent, success, p, { text: t.rulesText || t.action });
+  if (dynamic) {
+    const outcome = resolveItem(r, p, dynamic, success);
+    success = outcome.success;
+    unsupported = outcome.blocked;
+    narration = outcome.text;
+    if (outcome.change) add2(outcome.change);
+    fx(dynamic.verb === "break" || dynamic.verb === "use" ? "impact" : "inspect");
+  } else if (environmental) {
     success = environmental.success;
     narration = environmental.text;
     if (environmental.change) add2(environmental.change);
@@ -2888,7 +3068,7 @@ function resolve(r, now) {
       break;
   }
   if (success && !automatic && !environmental?.blocked) p.score += critical ? 5 : 2;
-  for (const change of advanceEnvironment(r.world)) add2(change);
+  if (currentLocation(r) === "tavern") for (const change of advanceEnvironment(r.world)) add2(change);
   if (Object.values(r.world.objects || {}).some((s) => s.condition === "burning")) r.chaos++;
   if (!success && ["dance", "flee", "attack", "break"].includes(t.intent) && Object.entries(r.world.objects || {}).some(([id, s]) => s.spilled || OBJECTS[id]?.material === "glass" && s.condition === "broken")) {
     damage(p, 1);
@@ -2920,7 +3100,7 @@ function resolve(r, now) {
   if (helpers.length) narration += ` ${helpers.length === 1 ? r.players.find((x) => x.id === helpers[0].playerId)?.name : helpers.length + " accomplices"} ${helpers.length === 1 ? "helps" : "help"} sell it.`;
   if (blockers.length) narration += ` ${blockers.length === 1 ? "One voice of reason tries" : "The voices of reason try"} to rein things in.`;
   r.chaos = clamp(r.chaos, 0, 10);
-  if (r.chaos >= 10 && !r.quest.escaped) {
+  if (currentLocation(r) === "tavern" && r.chaos >= 10 && !r.quest.escaped) {
     const exposed = r.players.filter((x) => x.connected && x.status !== "hiding");
     for (const rp of exposed) hurt(rp, 1);
     r.chaos = 5;
@@ -3070,7 +3250,7 @@ function validateAIPlan(raw, room, actorId) {
 }
 function applyAIPlan(room, turnId, raw, model, now = Date.now()) {
   const t = room.turn;
-  if (room.phase !== "react" || room.paused || !t || t.id !== turnId || now >= t.deadline - 800) return false;
+  if (room.phase !== "react" || room.paused || !t || t.worldAction || t.id !== turnId || now >= t.deadline - 800) return false;
   const plan = validateAIPlan(raw, room, t.actorId);
   const actor = room.players.find((p) => p.id === t.actorId);
   if (actor.hp <= 0 && plan.intent !== "heal") throw new Error("Knocked out characters must recover");
@@ -3463,7 +3643,7 @@ var ChaosPartyRoom = class extends PartySessionRoom {
   }
   interpretAcceptedTurn() {
     const room = this.tavern, turn = room.turn, status = services.ai.status();
-    if (!turn || this.interpretedTurn === turn.id) return;
+    if (!turn || turn.worldAction || this.interpretedTurn === turn.id) return;
     this.interpretedTurn = turn.id;
     if (!status.available) {
       turn.ai = { status: "fallback", reason: status.message };

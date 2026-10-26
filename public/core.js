@@ -1,3 +1,4 @@
+import {ensureItems,itemPlan,resolveItem,currentLocation} from './world-items.js';
 import {OBJECTS,objectState,environmentTarget,environmentCheck,interactEnvironment,advanceEnvironment} from './environment.js';
 import {selectD20} from './vendor/dnd5e-advantage.js';
 // Authoritative game plugin, shared by PartyFrame and the labeled solo mode.
@@ -75,7 +76,7 @@ export function publicRoom(r) {
 export function startGame(r,now=Date.now()) {
   if(r.phase!=='lobby') fail('PHASE','This story has already started.');
   if(!r.players.length) fail('EMPTY','At least one adventurer needs to join first.');
-  r.phase='open'; r.deadline=0; event(r,'story',OPENING,now); touch(r,now);
+  ensureItems(r);r.phase='open'; r.deadline=0; event(r,'story',OPENING,now); touch(r,now);
 }
 export function classify(text) {
   const t=text.toLowerCase();
@@ -132,11 +133,13 @@ export function submit(r, playerId, input, now=Date.now()) {
   }
   if(r.phase!=='open') fail('BUSY',r.phase==='react'?'Someone got there first. You can still react!':'Wait for the next opening.');
   if(r.lastActorId===p.id && now<r.priorityUntil && r.players.filter(x=>x.connected&&!x.muted&&!x.isBot).length>1) fail('COOLDOWN','Give someone else a shot — your opening returns in a few seconds.');
-  const intent=classify(text);
+  const dynamic=itemPlan(r,p,text);
+  const intent=dynamic?(dynamic.verb==='rest'?'heal':'world'):classify(text);
   if(p.hp<=0 && intent!=='heal') fail('KNOCKED_OUT','You’re on the floor. Rest, eat, or drink to get back up.');
   const e=event(r,'declaration',text,now,{playerId:p.id,name:p.name});
   r.round++; r.turn={id:uid(),seq:e.id,actorId:p.id,action:text,intent,target:targetFor(r,p,text),at:now,
     deadline:now+r.reactionMs,reactions:[]};
+  if(dynamic){r.turn.worldAction=true;const item=r.world.expedition.items[dynamic.targetId||dynamic.itemId||dynamic.sourceIds?.[0]];r.turn.target={kind:'world',name:item?.name||dynamic.destination||'materials',position:item?.ownerId?[480,335]:item?.position||[480,490]};}
   r.phase='react'; r.deadline=r.turn.deadline; r.result=null; p.status='committed';p.cover=false;
   const ack={ok:true,accepted:true,kind:'action',seq:e.id,at:now,turnId:r.turn.id};
   r.requests[key]=ack;
@@ -155,8 +158,9 @@ function resolve(r,now) {
   const sorted=[...t.reactions].sort((a,b)=>a.id-b.id);
   const helpers=sorted.filter(x=>x.kind==='assist'||(x.kind==='custom'&&!/\b(stop|prevent|block|intervene)\b/i.test(x.text)));
   const blockers=sorted.filter(x=>x.kind==='intervene'||(x.kind==='custom'&&/\b(stop|prevent|block|intervene)\b/i.test(x.text)));
-  const hostile=['attack','steal','magic','break'].includes(t.intent);
-  const check=environmentCheck(r.world,t.target,t.intent,t.rulesText||t.action);
+  const hostile=t.worldAction||['attack','steal','magic','break'].includes(t.intent);
+  const dynamic=t.worldAction?itemPlan(r,p,t.action):null;
+  const check=dynamic||environmentCheck(r.world,t.target,t.intent,t.rulesText||t.action);
   const automatic=!!check?.automatic;
   const situation=[];
   let advantage=check?.advantage||0;
@@ -185,8 +189,9 @@ function resolve(r,now) {
   const target=r.players.find(x=>x.id===t.target.id);
   const damageNpc=n=>{if(!['guard','bartender','goblin'].includes(t.target.kind))return;const npcs=r.world.npcs||={},npc=npcs[t.target.kind]||={hp:8,maxHp:8};npc.hp=Math.max(0,npc.hp-n);add(`${t.target.name} ${npc.hp}/8 HP`);if(!npc.hp){npc.status='knocked out';add(`${t.target.name} KNOCKED OUT`);if(t.target.kind==='guard')r.world.guards='distracted';}};
   const props=r.world.props||(r.world.props={rug:true});
-  const environmental=interactEnvironment(r.world,t.target,t.intent,success,p,{text:t.rulesText||t.action});
-  if(environmental){success=environmental.success;narration=environmental.text;if(environmental.change)add(environmental.change);fx(({break:'impact',ignite:'fire',extinguish:'smoke',take:'steal',repair:'hearts',push:'impact'})[environmental.verb]||'inspect');r.chaos+=environmental.chaos;if(environmental.damage)damage(p,environmental.damage);if(environmental.cover){p.status='hiding';p.cover=true;}}
+  const environmental=dynamic?null:interactEnvironment(r.world,t.target,t.intent,success,p,{text:t.rulesText||t.action});
+  if(dynamic){const outcome=resolveItem(r,p,dynamic,success);success=outcome.success;unsupported=outcome.blocked;narration=outcome.text;if(outcome.change)add(outcome.change);fx(dynamic.verb==='break'||dynamic.verb==='use'?'impact':'inspect');}
+  else if(environmental){success=environmental.success;narration=environmental.text;if(environmental.change)add(environmental.change);fx(({break:'impact',ignite:'fire',extinguish:'smoke',take:'steal',repair:'hearts',push:'impact'})[environmental.verb]||'inspect');r.chaos+=environmental.chaos;if(environmental.damage)damage(p,environmental.damage);if(environmental.cover){p.status='hiding';p.cover=true;}}
   else switch(t.intent) {
     case 'heal':
       recovery(target||p,success?4:2); fx('hearts',target?'player':'self');
@@ -251,7 +256,7 @@ function resolve(r,now) {
       success=false;unsupported=true;narration=`${p.name} tries “${t.action}”. This attempt is not supported yet. Name a person or object and try inspecting, moving, taking, breaking, talking, hiding, or casting a spell.`;break;
   }
   if(success&&!automatic&&!environmental?.blocked)p.score+=critical?5:2;
-  for(const change of advanceEnvironment(r.world))add(change);
+  if(currentLocation(r)==='tavern')for(const change of advanceEnvironment(r.world))add(change);
   if(Object.values(r.world.objects||{}).some(s=>s.condition==='burning'))r.chaos++;
   // Physical hazards are persisted; risky stunts near spilled ale or glass have consequences.
   if(!success&&['dance','flee','attack','break'].includes(t.intent)&&Object.entries(r.world.objects||{}).some(([id,s])=>s.spilled||(OBJECTS[id]?.material==='glass'&&s.condition==='broken'))){damage(p,1);add('HAZARD: slippery ale or broken glass');}
@@ -271,7 +276,7 @@ function resolve(r,now) {
   if(helpers.length) narration+=` ${helpers.length===1?r.players.find(x=>x.id===helpers[0].playerId)?.name:helpers.length+' accomplices'} ${helpers.length===1?'helps':'help'} sell it.`;
   if(blockers.length) narration+=` ${blockers.length===1?'One voice of reason tries':'The voices of reason try'} to rein things in.`;
   r.chaos=clamp(r.chaos,0,10);
-  if(r.chaos>=10&&!r.quest.escaped) {
+  if(currentLocation(r)==='tavern'&&r.chaos>=10&&!r.quest.escaped) {
     const exposed=r.players.filter(x=>x.connected&&x.status!=='hiding');
     for(const rp of exposed) hurt(rp,1);
     r.chaos=5;r.world.guards='alert';add('Guard sweep: exposed players −1 HP');
