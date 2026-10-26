@@ -1,3 +1,4 @@
+import {OBJECTS} from './environment.js';
 // Presentation only: authoritative targets and outcomes remain server-owned.
 export const seats = [
   [430,285],[550,285],[190,225],[310,225],[430,225],[550,225],
@@ -9,7 +10,7 @@ export const landmarks={guard:[865,290],bartender:[480,145],chest:[665,145],rug:
 export function targetPosition(target,players,home){
   if(target?.kind==='self')return home;
   if(target?.id){const i=players.findIndex(p=>p.id===target.id);if(i>=0)return seats[i%seats.length];}
-  return landmarks[target?.kind]||home;
+  return OBJECTS[target?.kind]?.position||landmarks[target?.kind]||home;
 }
 const smooth=n=>{n=Math.max(0,Math.min(1,n));return n*n*(3-2*n);};
 export function actorPosition(home,target,age,resultAge,reduced=false){

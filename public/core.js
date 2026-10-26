@@ -1,3 +1,4 @@
+import {environmentTarget,interactEnvironment} from './environment.js';
 // Authoritative game plugin, shared by PartyFrame and the labeled solo mode.
 import {Rng} from './vendor/partyframe-rng.js';
 export const VERSION = '0.2.0';
@@ -99,7 +100,7 @@ function targetFor(r,actor,text) {
   if(/crown|chest|box|treasure|drawer/.test(t)) return {kind:'chest',name:'the locked chest'};
   if(/goblin|bard|musician/.test(t)) return {kind:'goblin',name:'the goblin fiddler'};
   if(/chandelier|ceiling/.test(t)) return {kind:'chandelier',name:'the chandelier'};
-  return {kind:'room',name:'the tavern'};
+  return environmentTarget(text)||{kind:'room',name:'the tavern'};
 }
 export function submit(r, playerId, input, now=Date.now()) {
   const p=r.players.find(x=>x.id===playerId); if(!p) fail('PLAYER','Rejoin the tavern first.');
@@ -162,7 +163,9 @@ function resolve(r,now) {
   if(success) p.score+=critical?5:2;
   const target=r.players.find(x=>x.id===t.target.id);
   const props=r.world.props||(r.world.props={rug:true});
-  switch(t.intent) {
+  const environmental=interactEnvironment(r.world,t.target,t.intent,success,p.name);
+  if(environmental){narration=environmental.text;if(environmental.change)add(environmental.change);fx(['attack','break'].includes(t.intent)?'impact':'inspect');if(['attack','break'].includes(t.intent))r.chaos+=2;}
+  else switch(t.intent) {
     case 'heal':
       recovery(target||p,success?4:2); fx('hearts',target?'player':'self');
       narration=success?pick(r,[`${p.name} discovers the ancient healing art of sitting down. It works.`,`${p.name} administers tavern medicine. Marnie refuses to list the ingredients.`,`${p.name} takes a well-earned breather. Even the guards respect snack time.`]):`${p.name} drops half the remedy. The remaining half does its best.`;
@@ -225,7 +228,7 @@ function resolve(r,now) {
       if(success) {p.gold++;add(`${p.name} +1 coin`);narration=pick(r,[`${p.name} does something nobody prepared for. Against all good judgment, it works.`,`${p.name} commits to the bit. The universe, briefly, commits back.`,`${p.name} makes an extremely specific choice. The goblin is already writing a song about it.`]);}
       else {narration=pick(r,[`${p.name} tries it. The tavern goes quiet. Somewhere, a spoon falls over.`,`${p.name} follows the idea to its natural, deeply inconvenient conclusion.`,`${p.name} discovers a new way to disappoint Captain Brick.`]);damage(p,1);}break;
   }
-  if(success && !r.quest.crown && ['inspect','social','dance','sneak','weird','magic'].includes(t.intent)) {
+  if(success && !environmental && !r.quest.crown && ['inspect','social','dance','sneak','weird','magic'].includes(t.intent)) {
     if(r.quest.clues<3) {
       r.quest.clues++; const facts=['Marnie saw the Duke hide something behind the bar.','The goblin’s song mentions a chest and a golden hat.','The crown is in the chest behind the bar. Steal it!'];
       const fact=facts[r.quest.clues-1];r.world.facts.push(fact);add(`Clue ${r.quest.clues}/3`);narration+=' '+fact;
@@ -277,7 +280,7 @@ export function hostCommand(r,command,now=Date.now()) {
     const p=r.players.find(x=>x.id===command.playerId);if(!p)fail('PLAYER','No such player.');p.muted=!p.muted;
   } else if(command.type==='resetScene') {
     r.phase='open';r.turn=null;r.result=null;r.deadline=0;r.chaos=0;r.paused=false;
-    if(r.world?.props)r.world.props.rug=true;
+    r.world.props={rug:true};
     for(const p of r.players){p.hp=Math.max(p.hp,4);p.status='ready';}
     event(r,'story','Marnie claps her hands. “Everyone breathe. We’re starting that bit again.”',now);
   } else if(command.type==='redact') {

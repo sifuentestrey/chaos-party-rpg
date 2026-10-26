@@ -95,28 +95,28 @@ export class TavernScene {
     // empty UI panel behind the characters.
     const rug=(x,y,w,h)=>{g.fillStyle='#21192566';g.fillRect(x-8,y+10,w+16,h+10);g.fillStyle='#382936';g.fillRect(x,y,w,h);g.fillStyle='#5f3e56';g.fillRect(x+6,y+5,w-12,h-10);g.strokeStyle='#b17b60';g.lineWidth=3;g.strokeRect(x+12,y+11,w-24,h-22);g.strokeStyle='#89606a';g.lineWidth=1;g.strokeRect(x+21,y+20,w-42,h-40);g.fillStyle='#d09a68';for(let n=0;n<7;n++){const xx=x+35+n*34;g.fillRect(xx,y+10,5,3);g.fillRect(xx,y+h-13,5,3);}for(let n=0;n<4;n++){const yy=y+38+n*32;g.fillRect(x+13,yy,3,5);g.fillRect(x+w-16,yy,3,5);}g.fillStyle='#c38b65';g.beginPath();g.moveTo(x+w/2,y+34);g.lineTo(x+w/2+15,y+h/2);g.lineTo(x+w/2,y+h-34);g.lineTo(x+w/2-15,y+h/2);g.closePath();g.fill();g.fillStyle='#5f3e56';g.fillRect(x+w/2-5,y+h/2-5,10,10);};
     const rugTaken=r?.world?.props?.rug===false;
-    const rugPull=r?.result?.intent==='steal'&&r.result.target?.kind==='rug'&&t-this.fxAt<1200;
+    const rugPull=rugTaken&&r?.result?.success&&r?.result?.changes?.includes('RUG STOLEN')&&r?.result?.intent==='steal'&&r.result.target?.kind==='rug'&&t-this.fxAt<1200;
     if(!rugTaken||rugPull){
       const pull=rugPull?Math.min(1,(t-this.fxAt)/900):0;
       g.save();g.globalAlpha=rugPull?Math.max(0,1-pull*.92):1;rug(346,290+Math.round(pull*165),270,175);g.restore();
     }
-    for(let y=309;y<453;y+=18){g.fillStyle='#9a705f';g.fillRect(358,y,4,4);g.fillRect(600,y,4,4);}
+    if(!rugTaken)for(let y=309;y<453;y+=18){g.fillStyle='#9a705f';g.fillRect(358,y,4,4);g.fillRect(600,y,4,4);}
     for(const [x,y] of [[74,367],[850,365],[155,146],[750,149]]){tile(g,82,x,y,36);tile(g,113,x+7,y-9,24);}
     // Small candlelit sideboards and scattered mugs break up the empty floor.
     for(const x of [140,758]){g.fillStyle='#3d2a2b';g.fillRect(x,175,62,20);g.fillStyle='#ad7951';g.fillRect(x-3,171,68,7);tile(g,114,x+9,151,27);tile(g,113,x+33,155,23);}
     for(const x of [218,682]){g.fillStyle='#37262b';g.fillRect(x,305,5,17);g.fillStyle='#f3d497';g.fillRect(x,301,5,12);g.fillStyle='#ffd98a';g.fillRect(x+1,297+Math.round(Math.sin(second*6)),3,5);}
     const table=(x,y)=>{g.fillStyle='#00000033';g.fillRect(x-42,y+24,84,16);g.fillStyle='#36262a';g.fillRect(x-36,y-9,72,46);g.fillStyle='#ae7850';g.fillRect(x-40,y-16,80,40);g.fillStyle='#bf8759';g.fillRect(x-36,y-16,72,5);g.fillStyle='#85563d';g.fillRect(x-36,y+3,72,2);tile(g,113,x-27,y-27,27);tile(g,114,x+7,y-25,27);g.fillStyle='#dec19b';g.fillRect(x+2,y+6,12,3);};
     const furniture=[[245,335],[715,335],[245,445],[715,445]];
-    const layers=furniture.map(([x,y])=>({y,draw:()=>{tile(g,73,x-67,y+3,32);tile(g,73,x+35,y+3,32);table(x,y);}}));
+    const layers=furniture.map(([x,y])=>({y,draw:()=>{tile(g,73,x-67,y+3,32);tile(g,73,x+35,y+3,32);if(x===245&&y===335&&r?.world?.props?.table==='broken'){g.fillStyle='#a57551';for(let n=0;n<7;n++)g.fillRect(x-32+n*9,y+10+(n%3)*5,24,5);}else table(x,y);}}));
     // Counter and the crown chest, all from reusable licensed tiles.
     for(let x=306;x<664;x+=32){tile(g,63,x,132);g.fillStyle='#bc885a';g.fillRect(x,130,32,6);}
-    tile(g,89,650,113,40);tile(g,82,824,121,44);tile(g,82,865,143,40);tile(g,82,73,135,44);
+    tile(g,89,650,113,40);if(r?.world?.props?.barrel==='broken'){g.fillStyle='#b5823a88';g.beginPath();g.ellipse(846,167,42,15,0,0,Math.PI*2);g.fill();g.fillStyle='#ac7953';for(let n=0;n<5;n++)g.fillRect(820+n*10,150+(n%2)*8,24,5);}else tile(g,82,824,121,44);tile(g,82,865,143,40);tile(g,82,73,135,44);
 
 
 
 
     // Doorway and a warm patch of light spilling out.
-    g.fillStyle='#35252e';g.fillRect(435,510,90,30);g.fillStyle='#cda374';g.fillRect(441,514,78,26);g.fillStyle='#9c7355';g.fillRect(449,518,62,22);
+    g.fillStyle='#35252e';g.fillRect(435,510,90,30);g.fillStyle='#cda374';g.fillRect(441,514,78,26);g.fillStyle=r?.world?.props?.door==='broken'?'#161927':'#9c7355';g.fillRect(449,518,62,22);if(r?.world?.props?.door==='broken'){g.fillStyle='#ad7951';g.fillRect(442,522,14,5);g.fillRect(501,531,20,4);}
     this.label(g,'EXIT',480,533,'#ebc998',10);
     const lamp=(x,y)=>{
       const flicker=1+Math.sin(second*4+x)*.035;const glow=g.createRadialGradient(x,y,3,x,y,118*flicker);glow.addColorStop(0,'#f6b66c30');glow.addColorStop(1,'#f6b66c00');g.fillStyle=glow;g.fillRect(x-125,y-125,250,250);
