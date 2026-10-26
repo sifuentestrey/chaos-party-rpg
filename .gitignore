@@ -17,3 +17,10 @@ __pycache__/
 *.pyc
 **/private/
 secrets/
+
+# Original prototype runtime/build outputs
+release/
+data/
+.openai/local/
+# Site deployment identity is deliberately not imported
+.openai/

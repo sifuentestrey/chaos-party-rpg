@@ -1,0 +1,20 @@
+{
+  "dungeon": {
+    "packed_size": [
+      192,
+      176
+    ],
+    "tile_size": 16,
+    "gap": 0,
+    "columns": 12
+  },
+  "town": {
+    "packed_size": [
+      192,
+      176
+    ],
+    "tile_size": 16,
+    "gap": 0,
+    "columns": 12
+  }
+}

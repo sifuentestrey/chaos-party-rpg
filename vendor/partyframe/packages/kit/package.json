@@ -1,0 +1,38 @@
+{
+  "name": "@partyframe/kit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsc -b --watch --preserveWatchOutput",
+    "typecheck": "tsc -b --pretty",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@partyframe/i18n": "workspace:*",
+    "@partyframe/protocol": "workspace:*",
+    "colyseus.js": "0.16.22",
+    "phaser": "4.2.1",
+    "qrcode": "1.5.4",
+    "react": "19.2.8",
+    "react-router-dom": "7.18.2"
+  },
+  "devDependencies": {
+    "@types/qrcode": "1.5.6",
+    "@types/react": "19.2.18",
+    "vite": "8.2.2"
+  },
+  "files": [
+    "dist"
+  ]
+}
