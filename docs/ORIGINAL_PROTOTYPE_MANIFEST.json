@@ -1,0 +1,1607 @@
+{
+  "sourceCommit": "0c0dfed0571b1697e0a8541adaa83d50470b1c66",
+  "excluded": [
+    {
+      "path": ".openai/hosting.json",
+      "reason": "Old Site deployment binding; no game code"
+    }
+  ],
+  "files": [
+    {
+      "path": "docs/ORIGINAL_PROTOTYPE_GITIGNORE.txt",
+      "source_path": ".gitignore",
+      "size": 75,
+      "sha256": "00ee7afed38ba6040c0084f89670e42157c2f44a325a6db2ed64eb079b88186d",
+      "git_blob_sha": "bc2b3835af04bb8a140bba7c58e1e43fe2104942"
+    },
+    {
+      "path": "CREDITS.md",
+      "source_path": "CREDITS.md",
+      "size": 2508,
+      "sha256": "aa98a8d62b1f9f474d067f0b328a0048ce3131f3f5f685cf6a427fa04e6f7c67",
+      "git_blob_sha": "8ee4baffa9d0e90421e69aff06a6b207a5ca0739"
+    },
+    {
+      "path": "FOUNDATION_AUDIT.md",
+      "source_path": "FOUNDATION_AUDIT.md",
+      "size": 7648,
+      "sha256": "1d350c4e52e982f6f4fc03aff9f390f3a40d25e8c2f666849e37d39ea6880d42",
+      "git_blob_sha": "006c5b35d3e803fb35fcfb9eda55f204670b6b4d"
+    },
+    {
+      "path": "docs/ORIGINAL_PROTOTYPE_README.md",
+      "source_path": "README.md",
+      "size": 6470,
+      "sha256": "f84249772f0af3037b400fcd6572e3f0dcda9527e362824053ec61f7e0a4bcc6",
+      "git_blob_sha": "d0e08088dae5c8989b014d70a8d3d326defa9689"
+    },
+    {
+      "path": "RESEARCH.md",
+      "source_path": "RESEARCH.md",
+      "size": 1175,
+      "sha256": "f89de94feab866e5d97febac63ae35d5072c1b252013cba9106fedc4788b337c",
+      "git_blob_sha": "19b9e2f0a754e2e3b0587f9bfee0edc7edb02c7e"
+    },
+    {
+      "path": "TEST_REPORT.md",
+      "source_path": "TEST_REPORT.md",
+      "size": 5338,
+      "sha256": "768ddedb3e00c453e16b95e3f21bf2f95be79783a0ed34b8793e3f6bc5fd3495",
+      "git_blob_sha": "64160db2ddf1317e90f12a6e3a45db8f429eb690"
+    },
+    {
+      "path": "package-lock.json",
+      "source_path": "package-lock.json",
+      "size": 35448,
+      "sha256": "60585f3bae5108dcf58baa2cd723117a28c2e11688e11cea7d2e8c1e633c1886",
+      "git_blob_sha": "9ac24004277ba76cc9ac9127fcba588882bf3b86"
+    },
+    {
+      "path": "package.json",
+      "source_path": "package.json",
+      "size": 815,
+      "sha256": "08495d0a6205bf8c83ae71cfab663d10bb92dea4f480de66d00aba413797e021",
+      "git_blob_sha": "9912241545aed7ef4c7a482f22412214e4dbf31b"
+    },
+    {
+      "path": "public/__qa.html",
+      "source_path": "public/__qa.html",
+      "size": 1144,
+      "sha256": "381ab2da0d57b60939fdf2b78c3adf78b2506b4764ea17a763c67b795d1093ea",
+      "git_blob_sha": "8c6aec4e6ec7ab6920bfbcbcc936ba0d6fe8b1fc"
+    },
+    {
+      "path": "public/__qa.js",
+      "source_path": "public/__qa.js",
+      "size": 395,
+      "sha256": "fca09e882ce05cf07eb92f39a95d8786e1938e001965469191ef09331f2e7636",
+      "git_blob_sha": "43a022a5801c77a80a837ec671c99c791e8581be"
+    },
+    {
+      "path": "public/app.js",
+      "source_path": "public/app.js",
+      "size": 55116,
+      "sha256": "bc74dbff7a367adee342541603e2f2bc1d2f869748b071b0c5c74ac494e65a92",
+      "git_blob_sha": "bb8939ae321c1a7839f0ee29642fe07e0dc8a34b"
+    },
+    {
+      "path": "public/assets/dice.svg",
+      "source_path": "public/assets/dice.svg",
+      "size": 348,
+      "sha256": "93393f4e20ddded3d51fade4820f05b796f72f08628b6a78879090243fa027c5",
+      "git_blob_sha": "cd37aeca2554ab767459c28ed3c806a6e4de41bc"
+    },
+    {
+      "path": "public/assets/kenney/SOURCES.md",
+      "source_path": "public/assets/kenney/SOURCES.md",
+      "size": 885,
+      "sha256": "eb8cfdca0f4804dc3b4eb31fb2523a66978f40d372f0d92c2cacf0bbbbc9bfa8",
+      "git_blob_sha": "c7aece5b0399e49e2d5ff55ac3c73e3d36b8cc54"
+    },
+    {
+      "path": "public/assets/kenney/dungeon-LICENSE.txt",
+      "source_path": "public/assets/kenney/dungeon-LICENSE.txt",
+      "size": 570,
+      "sha256": "9f574a2f1f636a3db8a0665ba90212f34e2b5e61ecb533d77c05237766374111",
+      "git_blob_sha": "1b269f6a34a6dd92aae10fdf7b2f795c26e6b181"
+    },
+    {
+      "path": "public/assets/kenney/dungeon-spaced.png",
+      "source_path": "public/assets/kenney/dungeon-spaced.png",
+      "size": 5533,
+      "sha256": "5653222ac495d89e942f9b636300759b3f38e85b26e9b888676f2e9ab834095a",
+      "git_blob_sha": "a893ccb09a0be133b3d4aedafcc660e912048b56"
+    },
+    {
+      "path": "public/assets/kenney/dungeon.png",
+      "source_path": "public/assets/kenney/dungeon.png",
+      "size": 5294,
+      "sha256": "d24e60a41e4ac7a745c0304dfde121143688557f40215f23221c29cfe683825f",
+      "git_blob_sha": "f6e8b937c99fe45b1b75490cc050ee5929954259"
+    },
+    {
+      "path": "public/assets/kenney/metadata.json",
+      "source_path": "public/assets/kenney/metadata.json",
+      "size": 243,
+      "sha256": "461272e526c585b86aa4de36ae83b6f7f1ad618ac777b0f47c3b381b4896376d",
+      "git_blob_sha": "496a75b5f823f58f1b95f15a7263b448dea5ef74"
+    },
+    {
+      "path": "public/assets/kenney/town-LICENSE.txt",
+      "source_path": "public/assets/kenney/town-LICENSE.txt",
+      "size": 567,
+      "sha256": "c483c167cc3bdfe17c15f957ff847d409f64d81b410b28783636cf3b2b7814c5",
+      "git_blob_sha": "21ea372913c86ce49a229c64b542b9c19f2820fa"
+    },
+    {
+      "path": "public/assets/kenney/town-spaced.png",
+      "source_path": "public/assets/kenney/town-spaced.png",
+      "size": 5392,
+      "sha256": "b9e9fb80b95d0b90b52f12d914f000cf16f8b22c1faa815aa94500abfa57bc50",
+      "git_blob_sha": "21b5a0f879a47c8e679b7a5e07c220f30b6f89ab"
+    },
+    {
+      "path": "public/assets/kenney/town.png",
+      "source_path": "public/assets/kenney/town.png",
+      "size": 5042,
+      "sha256": "3a54d99ecde790d4fdea207a3644cf130fc56fa838f1beb1507c185a95b8e902",
+      "git_blob_sha": "1655d1dfc918dbd450b192d95d8831b6f6155d89"
+    },
+    {
+      "path": "public/assets/ninja/LICENSE.txt",
+      "source_path": "public/assets/ninja/LICENSE.txt",
+      "size": 6722,
+      "sha256": "9bc2cd77030dd73fd2497c5729556a11524fa04099d8351bc527fd4d4c31b916",
+      "git_blob_sha": "09b6e4929651f36317e5d402f8a306bb007a36a2"
+    },
+    {
+      "path": "public/assets/ninja/README-source.md",
+      "source_path": "public/assets/ninja/README-source.md",
+      "size": 599,
+      "sha256": "6865198a6d7b052636269e9db0de966304737d5f8bacf683f2ac06ad60a68bd7",
+      "git_blob_sha": "f306bb0e8a79e7e4446d4b2e5a5c1e883499efbd"
+    },
+    {
+      "path": "public/assets/ninja/SOURCES.md",
+      "source_path": "public/assets/ninja/SOURCES.md",
+      "size": 4947,
+      "sha256": "061a182756dbd3937c6e3e57d4ab4bfced22577046415dab709f8642a758bdaa",
+      "git_blob_sha": "1e4239e125883e6ea84c9cfcdb764bf24a29d2f3"
+    },
+    {
+      "path": "public/assets/ninja/actors/Boy.png",
+      "source_path": "public/assets/ninja/actors/Boy.png",
+      "size": 5194,
+      "sha256": "d30facbd09de5521ec2152e8d9c291a90b35d93d9221514628b2f8d43dbfe6fe",
+      "git_blob_sha": "aa887189fd21be3fc7675f5e7bf7241693865a66"
+    },
+    {
+      "path": "public/assets/ninja/actors/Child.png",
+      "source_path": "public/assets/ninja/actors/Child.png",
+      "size": 3782,
+      "sha256": "671b433cedd0df0877141efba2f37d172458413a863dd43e56c0e2e74a6bf555",
+      "git_blob_sha": "3c21acaacc7bdff64096143dcf9bc7f48c62dec9"
+    },
+    {
+      "path": "public/assets/ninja/actors/FighterWhite.png",
+      "source_path": "public/assets/ninja/actors/FighterWhite.png",
+      "size": 7606,
+      "sha256": "4ae38aeb7740229d7dab037e2ff4fa0e3ea5753ffb1be26dbd2e437624b874e0",
+      "git_blob_sha": "cf99eb9964d1fe0ae581573db5a97d8e1f597c3a"
+    },
+    {
+      "path": "public/assets/ninja/actors/Hunter.png",
+      "source_path": "public/assets/ninja/actors/Hunter.png",
+      "size": 6558,
+      "sha256": "26af2137e450276687d308706519d6a57799e4a666d1a966076b1837c2032d81",
+      "git_blob_sha": "4812b070092ac067b016d812cf1f63e100c7dac7"
+    },
+    {
+      "path": "public/assets/ninja/actors/Knight.png",
+      "source_path": "public/assets/ninja/actors/Knight.png",
+      "size": 5739,
+      "sha256": "d20eacc1334abe43bd69c9298f55e383b86a1e71c726973240eb2bb0c4f5f08c",
+      "git_blob_sha": "f4bb453ecac9da579ed587def6f9e6e9ee83dec7"
+    },
+    {
+      "path": "public/assets/ninja/actors/KnightGold.png",
+      "source_path": "public/assets/ninja/actors/KnightGold.png",
+      "size": 5548,
+      "sha256": "6c1c16f9641d018d385cd128ec266a643c8612c21a08544240aaa6bebd113510",
+      "git_blob_sha": "ceb684c5b75030c52354f27cf980328d324fbb7d"
+    },
+    {
+      "path": "public/assets/ninja/actors/Monk.png",
+      "source_path": "public/assets/ninja/actors/Monk.png",
+      "size": 6112,
+      "sha256": "c64e7dd48325a10a9b7184227029ecd0708f8b6f0a4dbe9f10947f1e0049cfca",
+      "git_blob_sha": "51a9ffd19fa3b4fb2b646bb1e246385e36973d38"
+    },
+    {
+      "path": "public/assets/ninja/actors/NinjaBlue.png",
+      "source_path": "public/assets/ninja/actors/NinjaBlue.png",
+      "size": 6139,
+      "sha256": "f2dd61a264c251b81e63da7a28ab0fdccd261b807e5fa7d1832a468e14a21078",
+      "git_blob_sha": "943b76421027181b24ff19d647fbb92c5f5f293b"
+    },
+    {
+      "path": "public/assets/ninja/actors/NinjaGreen.png",
+      "source_path": "public/assets/ninja/actors/NinjaGreen.png",
+      "size": 5224,
+      "sha256": "c99c8142f4813562a4e76e96d93bbe8e0b04c22e0625c98b75cf564c99e36358",
+      "git_blob_sha": "aa8806f3246e784493651e05d91208a22ac77aeb"
+    },
+    {
+      "path": "public/assets/ninja/actors/NinjaMageBlack.png",
+      "source_path": "public/assets/ninja/actors/NinjaMageBlack.png",
+      "size": 5241,
+      "sha256": "580687eb3e16ba23a1f641cfba9606099fe38bc029f62afcba9cbdbb69ba6c64",
+      "git_blob_sha": "6353fb44b447a9c0e5ce56df5229a9a241582014"
+    },
+    {
+      "path": "public/assets/ninja/actors/Noble.png",
+      "source_path": "public/assets/ninja/actors/Noble.png",
+      "size": 5436,
+      "sha256": "44ed23ecd5d7e7fa324e38e28252369f2167943ec26a490f9a2f5787cc8cbab0",
+      "git_blob_sha": "c02495c9aa705686064bf7e45774c75d1a49842c"
+    },
+    {
+      "path": "public/assets/ninja/actors/OldMan.png",
+      "source_path": "public/assets/ninja/actors/OldMan.png",
+      "size": 5401,
+      "sha256": "3ec4d2d281a5a2fcc1b9d7b99c05bc5fa753a8c79124158ac8237f7e3623767b",
+      "git_blob_sha": "29040454f02e2898dae43ff483403aa72461ae96"
+    },
+    {
+      "path": "public/assets/ninja/actors/OldWoman.png",
+      "source_path": "public/assets/ninja/actors/OldWoman.png",
+      "size": 3720,
+      "sha256": "94181e3bd33ad204370b591a0224041db556fb7093ca27ec23e0b8169658d5ac",
+      "git_blob_sha": "959ad28d187aeb3bc99e93ecce70b721ba1135b5"
+    },
+    {
+      "path": "public/assets/ninja/actors/Princess.png",
+      "source_path": "public/assets/ninja/actors/Princess.png",
+      "size": 6207,
+      "sha256": "e9028fd04c481e0e5bd1cf63b044d023d9ecf7f621593d6e18e2a1b6a46b3ba6",
+      "git_blob_sha": "a39bbbbd8d4e891bb300efdbc74e54a9932367ad"
+    },
+    {
+      "path": "public/assets/ninja/actors/SamuraiBlue.png",
+      "source_path": "public/assets/ninja/actors/SamuraiBlue.png",
+      "size": 5536,
+      "sha256": "7307266f5a51c5a7446350bf5a5866930fccbebd67429f11dca213086f89e062",
+      "git_blob_sha": "62f0913c0411f9b760b11d9c78dde664dc229af2"
+    },
+    {
+      "path": "public/assets/ninja/actors/Shaman.png",
+      "source_path": "public/assets/ninja/actors/Shaman.png",
+      "size": 5590,
+      "sha256": "4ffbfc206d3b70df6cc6825e6cef75d4fb19d456b628d95c36b08362d7d99527",
+      "git_blob_sha": "9be260d590fa0c670bf86243350bc1c602665dce"
+    },
+    {
+      "path": "public/assets/ninja/actors/SorcererOrange.png",
+      "source_path": "public/assets/ninja/actors/SorcererOrange.png",
+      "size": 6019,
+      "sha256": "18aea3b2cf3fe7c2322bf8e19b5cf42516e7ca3907fdfdd2e6252c1b0b1bee57",
+      "git_blob_sha": "9f50303cbf77b583533bf7c8460a9d502fbe5688"
+    },
+    {
+      "path": "public/assets/ninja/actors/Villager.png",
+      "source_path": "public/assets/ninja/actors/Villager.png",
+      "size": 4969,
+      "sha256": "74f05629f3214b095abe8ce13d745235a39603caabd9978815db7cbedab3a3fe",
+      "git_blob_sha": "192cf094b086015f82ac8b328dd68498b22db863"
+    },
+    {
+      "path": "public/assets/ninja/actors/Villager2.png",
+      "source_path": "public/assets/ninja/actors/Villager2.png",
+      "size": 5804,
+      "sha256": "0f3e231bf9892843e9dce9994d92d3693c0d13c835b68cefd4d9a095b8ae526c",
+      "git_blob_sha": "2cd8d1723a400356736d5fa8f6cd0b4777f85ad1"
+    },
+    {
+      "path": "public/assets/ninja/actors/Villager3.png",
+      "source_path": "public/assets/ninja/actors/Villager3.png",
+      "size": 5723,
+      "sha256": "6bd45886f6d91516416d6848bbe9e4090270822e3106349c7d54da40f9247f8b",
+      "git_blob_sha": "5e053336f8ba381f1a3ee2f6d7e9a7527a7eb8dd"
+    },
+    {
+      "path": "public/assets/ninja/actors/Villager4.png",
+      "source_path": "public/assets/ninja/actors/Villager4.png",
+      "size": 5700,
+      "sha256": "98c376de5e7145e0389781da6a99efb826a0208b456e8becffa94b63990195ee",
+      "git_blob_sha": "e9100e452dca2403ad1d361b90340a155c4e4c12"
+    },
+    {
+      "path": "public/assets/ninja/actors/Villager5.png",
+      "source_path": "public/assets/ninja/actors/Villager5.png",
+      "size": 6131,
+      "sha256": "5268a923c9aeb386f30302d98c0acad45fb1a792f4f4c119cd1fe0666caefeb3",
+      "git_blob_sha": "cd2d4b42b2dcd03363969b3d1b1a178b174dc9d5"
+    },
+    {
+      "path": "public/assets/ninja/actors/Villager6.png",
+      "source_path": "public/assets/ninja/actors/Villager6.png",
+      "size": 6131,
+      "sha256": "5268a923c9aeb386f30302d98c0acad45fb1a792f4f4c119cd1fe0666caefeb3",
+      "git_blob_sha": "cd2d4b42b2dcd03363969b3d1b1a178b174dc9d5"
+    },
+    {
+      "path": "public/assets/ninja/actors/Woman.png",
+      "source_path": "public/assets/ninja/actors/Woman.png",
+      "size": 6169,
+      "sha256": "223c09c46ea77d50c3c2cdaaa1d285836d679f5faedb742b5081a1d2b5f8f4d0",
+      "git_blob_sha": "5d58d062cee5cd1ffa7eec45c14152d3c27e7130"
+    },
+    {
+      "path": "public/assets/ninja/animated/Attack.png",
+      "source_path": "public/assets/ninja/animated/Attack.png",
+      "size": 2411,
+      "sha256": "f4a1d75b7bfdb8a1f038d65d1a0b07ee7d38e1f97c9edf827341c0a94b6898b9",
+      "git_blob_sha": "4d1e16517bb5cea144b65b769b8c55703c4b83fc"
+    },
+    {
+      "path": "public/assets/ninja/animated/Dead.png",
+      "source_path": "public/assets/ninja/animated/Dead.png",
+      "size": 566,
+      "sha256": "3d14bec49e3c1ef58df5681a6f495d56c121fe9be7824607c543aa2e76040b4e",
+      "git_blob_sha": "b0ab6f67f7e04f60730c1ca25ccdb3f8659c80a0"
+    },
+    {
+      "path": "public/assets/ninja/animated/Hit.png",
+      "source_path": "public/assets/ninja/animated/Hit.png",
+      "size": 1406,
+      "sha256": "e296cec728ad53665a10a805e2e52324a542ee57675e6a9e68881e64af333f65",
+      "git_blob_sha": "8cf00a9c704242b41d5fcdd87448a897bcf38765"
+    },
+    {
+      "path": "public/assets/ninja/animated/Idle.png",
+      "source_path": "public/assets/ninja/animated/Idle.png",
+      "size": 1560,
+      "sha256": "58375e9f65d40403aded184328456204c8008df05bafab7a74b846e68b6a657b",
+      "git_blob_sha": "ee411e294630221e059907cb3b57835547290aa4"
+    },
+    {
+      "path": "public/assets/ninja/animated/Item.png",
+      "source_path": "public/assets/ninja/animated/Item.png",
+      "size": 529,
+      "sha256": "37de68f8651dd10f79f43343871dc58d4120d5394128f1e87a54b0a009cac13f",
+      "git_blob_sha": "03ca298b408f40261aaa2726b1b6b5152c59135f"
+    },
+    {
+      "path": "public/assets/ninja/animated/Pickup.png",
+      "source_path": "public/assets/ninja/animated/Pickup.png",
+      "size": 624,
+      "sha256": "5f4893622947733beb063dc5a8d8d68cebdea5e42290e7a44a1e5b58206cb03c",
+      "git_blob_sha": "87cb7ed824727d740bcb0cd5ec5b4e7429d2c6e1"
+    },
+    {
+      "path": "public/assets/ninja/animated/Roll.png",
+      "source_path": "public/assets/ninja/animated/Roll.png",
+      "size": 1749,
+      "sha256": "35ac017bb7b8838a1fae633add9cc2b4b6c8076b4f69a22763fb00f6be207d0a",
+      "git_blob_sha": "d08669d5fbda41c82cb12b2b6093633bf9c49781"
+    },
+    {
+      "path": "public/assets/ninja/animated/Walk.png",
+      "source_path": "public/assets/ninja/animated/Walk.png",
+      "size": 1847,
+      "sha256": "d03702e8b5bd7e98c177c27f80acb00e09f339596269209df1b6594a39bb6c36",
+      "git_blob_sha": "791de59799379bf92d612e9c0c01f2142eedacd6"
+    },
+    {
+      "path": "public/assets/ninja/audio/coin.wav",
+      "source_path": "public/assets/ninja/audio/coin.wav",
+      "size": 51508,
+      "sha256": "0a28cb379c8b9ba2dc0a96ddc770aeaa648c013fb1f5db3be3535467ca928661",
+      "git_blob_sha": "cffe41011c8194e376443400997e2b05acd84d8d"
+    },
+    {
+      "path": "public/assets/ninja/audio/fire.wav",
+      "source_path": "public/assets/ninja/audio/fire.wav",
+      "size": 60794,
+      "sha256": "8a51ddab1add19c0d75beb1e015659e8a29cccaef3787ddabe57c63dc062fc34",
+      "git_blob_sha": "5d2c437c3ddc5d0473ea2850497025ce6a690e76"
+    },
+    {
+      "path": "public/assets/ninja/audio/heal.wav",
+      "source_path": "public/assets/ninja/audio/heal.wav",
+      "size": 54816,
+      "sha256": "693dc7b572ab92a58f17d71f4866a82252841841426928c777d7aa52b39a8dee",
+      "git_blob_sha": "6890e18a3aed23028171cabb62b7438e6ba37d97"
+    },
+    {
+      "path": "public/assets/ninja/audio/hit.wav",
+      "source_path": "public/assets/ninja/audio/hit.wav",
+      "size": 60200,
+      "sha256": "56b206a2648109fa25761b7034c211903ef10f1a9b4ce2f6526f7a77a831328d",
+      "git_blob_sha": "c40dacbbf581934c21d0c428253c2d0bdc534530"
+    },
+    {
+      "path": "public/assets/ninja/audio/magic.wav",
+      "source_path": "public/assets/ninja/audio/magic.wav",
+      "size": 70608,
+      "sha256": "8e73ed5ac62f32e8f327a6e3d12c8dd90fb087e4b6ac4367e69a856ca43a6630",
+      "git_blob_sha": "cbe2318305adf9bc06fcc3e2f37af3a911e57fb6"
+    },
+    {
+      "path": "public/assets/ninja/audio/slash.wav",
+      "source_path": "public/assets/ninja/audio/slash.wav",
+      "size": 59344,
+      "sha256": "0617f09ebe05251353bd0bfe0c05b84fb774c3f7b51b4444b711f314798e917d",
+      "git_blob_sha": "b89b8bc4c24682f563e89e5f931af3d07a97ed28"
+    },
+    {
+      "path": "public/assets/ninja/audio/success.wav",
+      "source_path": "public/assets/ninja/audio/success.wav",
+      "size": 78838,
+      "sha256": "025ffc87feca7630e813eb1e4673c7db44b4ad1d51a58ff216ea58656266518c",
+      "git_blob_sha": "5c9c30d3a7d229db7d438142171f6e529cd74435"
+    },
+    {
+      "path": "public/assets/ninja/fx/aura.png",
+      "source_path": "public/assets/ninja/fx/aura.png",
+      "size": 1706,
+      "sha256": "55f3c93e7666be29780fedffab4e7eb5bf1a864ce329fd10e6c3970263394699",
+      "git_blob_sha": "39b13dd08775a77ccc3dec31f7f0000b36bafb92"
+    },
+    {
+      "path": "public/assets/ninja/fx/claw.png",
+      "source_path": "public/assets/ninja/fx/claw.png",
+      "size": 731,
+      "sha256": "fe0eeae77261956e4ee1bee3780482115d29a3bf985fac6ddd7960f7b51267a8",
+      "git_blob_sha": "debd64faaf80921c7fcf83999d20dfbfcd4a2c4f"
+    },
+    {
+      "path": "public/assets/ninja/fx/cut.png",
+      "source_path": "public/assets/ninja/fx/cut.png",
+      "size": 569,
+      "sha256": "c2d7ca44e0f637bdca3dd23e6124907a2ac8f8320c58a4cc8d0c50765e874979",
+      "git_blob_sha": "a8f47409adafce8dc892d49b3433522c5fc7b0d8"
+    },
+    {
+      "path": "public/assets/ninja/fx/explosion.png",
+      "source_path": "public/assets/ninja/fx/explosion.png",
+      "size": 2939,
+      "sha256": "98f3dfc6cdcdfaf122d7cf70b7cbc8e14c96f4e76f1e8f430099575d6b942219",
+      "git_blob_sha": "7f95592e86a1c16d72c944d706ad8eeed70006fc"
+    },
+    {
+      "path": "public/assets/ninja/fx/fire.png",
+      "source_path": "public/assets/ninja/fx/fire.png",
+      "size": 3010,
+      "sha256": "a46b49fdd9149cdee578acc9ebde50147f7c84faf8463ff265f3f54677e79e4d",
+      "git_blob_sha": "9116a259429cb6abf9bb5d96a5dc66dd575fa12e"
+    },
+    {
+      "path": "public/assets/ninja/fx/heal.png",
+      "source_path": "public/assets/ninja/fx/heal.png",
+      "size": 810,
+      "sha256": "dac0e257f7bd11b4208d1c309c5388ec0b54c671d487e2e2e0a4127c7313d063",
+      "git_blob_sha": "301a8d1256eaf7d5bffc2f17a35662875311c3cf"
+    },
+    {
+      "path": "public/assets/ninja/fx/magic-circle.png",
+      "source_path": "public/assets/ninja/fx/magic-circle.png",
+      "size": 592,
+      "sha256": "bdc3bbde08625fb615130846d430b53ca2200f06650268c7d05eb8f33218fc04",
+      "git_blob_sha": "64f737bdecc3a099bf357bbb4bf4fd355840aca9"
+    },
+    {
+      "path": "public/assets/ninja/fx/magic-spark.png",
+      "source_path": "public/assets/ninja/fx/magic-spark.png",
+      "size": 784,
+      "sha256": "fd88f439972415d13e069cf3791146e838e2079c28d5b7fbd7e3031cfd314672",
+      "git_blob_sha": "c36b1bee5daa3386b4890162a6ff709448bb2e83"
+    },
+    {
+      "path": "public/assets/ninja/fx/shield.png",
+      "source_path": "public/assets/ninja/fx/shield.png",
+      "size": 1523,
+      "sha256": "47efef506d7d00376f303662c4b43770d43e82989062a306bdd4b8c0e661ca0f",
+      "git_blob_sha": "56325889eafe5c779fbe4468225132121cba9a8a"
+    },
+    {
+      "path": "public/assets/ninja/fx/slash.png",
+      "source_path": "public/assets/ninja/fx/slash.png",
+      "size": 479,
+      "sha256": "5d5342f3a6b0824e4a6a135a4ca597fcc569535835dcd570e9b772ee4ab5fbea",
+      "git_blob_sha": "ed3b0f5871f09f20bc7b0e527ceab4ab2847cafa"
+    },
+    {
+      "path": "public/assets/ninja/fx/smoke.png",
+      "source_path": "public/assets/ninja/fx/smoke.png",
+      "size": 1446,
+      "sha256": "33b2fc9c855a3dfc620f3bc5e494ab08e559b29737d72ea0b80283b779e5023d",
+      "git_blob_sha": "491d9e402354ee0e9f0f193b760a54d40bc9e390"
+    },
+    {
+      "path": "public/assets/ninja/fx/spark.png",
+      "source_path": "public/assets/ninja/fx/spark.png",
+      "size": 1490,
+      "sha256": "cfd7d4cb3b4d1c0f1137543cbef0d32a07b3db77a08e876c16bbbcbbcd0695eb",
+      "git_blob_sha": "96c2f9b1130bad8dfc1e722f1946b008244a9ba5"
+    },
+    {
+      "path": "public/assets/ninja/fx/spirit.png",
+      "source_path": "public/assets/ninja/fx/spirit.png",
+      "size": 669,
+      "sha256": "75fb5220178594ef49ee6f47bee8a53c77760efac6580c6ec1669598557ed84b",
+      "git_blob_sha": "81d10b338963264d69e3c24b8564a359e5b5e5bb"
+    },
+    {
+      "path": "public/assets/ninja/fx/thunder.png",
+      "source_path": "public/assets/ninja/fx/thunder.png",
+      "size": 688,
+      "sha256": "a6563e86290a06e44e005733786a8576b991f7dfda83b613f145372af1d2fe7d",
+      "git_blob_sha": "22ecffdcff204f8b7b20729823c12df360862477"
+    },
+    {
+      "path": "public/assets/ninja/manifest.json",
+      "source_path": "public/assets/ninja/manifest.json",
+      "size": 65849,
+      "sha256": "ad3ef222a5e3251611adf5e56b239644dbef102a6b6096776390844f3169cc23",
+      "git_blob_sha": "f255d83218416982581cee21c1bd2da29c87bd62"
+    },
+    {
+      "path": "public/assets/ninja/palette.png",
+      "source_path": "public/assets/ninja/palette.png",
+      "size": 341,
+      "sha256": "769f5ae6be86f4e8c5f811d4f10f5a7ea4fe9e649316b3fcced2e0aa843437f9",
+      "git_blob_sha": "09c292ae2c0f35bb48eafe106520087a5e827993"
+    },
+    {
+      "path": "public/assets/ninja/portraits/Boy.png",
+      "source_path": "public/assets/ninja/portraits/Boy.png",
+      "size": 3265,
+      "sha256": "9a7c2fe87351f94c21994a1257a9ac451b958306b022ad33f18558e7dcedc442",
+      "git_blob_sha": "b7a3b222cb07c3551ba0794a74318b83b8b97bec"
+    },
+    {
+      "path": "public/assets/ninja/portraits/Child.png",
+      "source_path": "public/assets/ninja/portraits/Child.png",
+      "size": 3434,
+      "sha256": "ce3439411a1e254ece3fd6bd3d17d7ae2194f40e7d94e3ab6d8af6ee31f7cfb9",
+      "git_blob_sha": "c37f50f125e6e3516a3798145586f4f9d945c3f1"
+    },
+    {
+      "path": "public/assets/ninja/portraits/FighterWhite.png",
+      "source_path": "public/assets/ninja/portraits/FighterWhite.png",
+      "size": 860,
+      "sha256": "4262b8cc6d978b4db6cf9ddcff32ab26337ac96b314282e9c12fb9b44829e793",
+      "git_blob_sha": "58aa7cdb6aaa8d64f340a28beb5298ac2e59fda1"
+    },
+    {
+      "path": "public/assets/ninja/portraits/Hunter.png",
+      "source_path": "public/assets/ninja/portraits/Hunter.png",
+      "size": 3420,
+      "sha256": "c961b7d3aa9250616d6b648ff3ac702e93362e80058454fb049c91ed1f3f8555",
+      "git_blob_sha": "bd23d88a5c508396d23c6dd00f70d6507024b5de"
+    },
+    {
+      "path": "public/assets/ninja/portraits/Knight.png",
+      "source_path": "public/assets/ninja/portraits/Knight.png",
+      "size": 3324,
+      "sha256": "dc1f6d3d6eb9c5f6f03afb635304e3b7438d1fb0e9c337f03767298882a5e338",
+      "git_blob_sha": "78eeb7819b94fa6faa7ec3f3daef061a43b8470e"
+    },
+    {
+      "path": "public/assets/ninja/portraits/KnightGold.png",
+      "source_path": "public/assets/ninja/portraits/KnightGold.png",
+      "size": 3400,
+      "sha256": "96b9b3d8129b8d9b6b2be6a9ddaaa0a5501266abc63d0f245624e47a5722ddf1",
+      "git_blob_sha": "d8ff7e20f1669ba60d9271030df5cbdef9102843"
+    },
+    {
+      "path": "public/assets/ninja/portraits/Monk.png",
+      "source_path": "public/assets/ninja/portraits/Monk.png",
+      "size": 3368,
+      "sha256": "324c5c9ef0b222ffe3df8863c2277a31192eef4ed38ab4859ebf04c6abdc9947",
+      "git_blob_sha": "29252aad137d8bf20b27f4f5252b906567fd061e"
+    },
+    {
+      "path": "public/assets/ninja/portraits/NinjaBlue.png",
+      "source_path": "public/assets/ninja/portraits/NinjaBlue.png",
+      "size": 3337,
+      "sha256": "9d661484288e234490191931e5f98a9cebdb0cbec2dbd72cc3e572797f73db99",
+      "git_blob_sha": "6ee763458f7d41c43a22ab57e2cf7f54c84ea675"
+    },
+    {
+      "path": "public/assets/ninja/portraits/NinjaGreen.png",
+      "source_path": "public/assets/ninja/portraits/NinjaGreen.png",
+      "size": 3245,
+      "sha256": "d73020126261f52aa43e5109723985887ad27d0c259c378c8c94fc319c277309",
+      "git_blob_sha": "f79f6ea2cf8ab349f4d474aa623c223ffccd00b1"
+    },
+    {
+      "path": "public/assets/ninja/portraits/NinjaMageBlack.png",
+      "source_path": "public/assets/ninja/portraits/NinjaMageBlack.png",
+      "size": 697,
+      "sha256": "e8e1a2de4f3ae51a1345d18eb29c945061efe8ab8e2fa6e66c2d0607bacdfddf",
+      "git_blob_sha": "4e7c8ea6c9a365279d843ce930eaf606853b522a"
+    },
+    {
+      "path": "public/assets/ninja/portraits/Noble.png",
+      "source_path": "public/assets/ninja/portraits/Noble.png",
+      "size": 3241,
+      "sha256": "d4914d1774a7b857aa1321c4a410c77cda3680444851a3e602b643dd420a20b6",
+      "git_blob_sha": "b8bc552d9b86337a62b93299641e60915daa1b7e"
+    },
+    {
+      "path": "public/assets/ninja/portraits/OldMan.png",
+      "source_path": "public/assets/ninja/portraits/OldMan.png",
+      "size": 3284,
+      "sha256": "1fc8a30d27b6e324a733c5d13761a45fa90d88e8b47a130bbd96bbe348e83b04",
+      "git_blob_sha": "ca86bae57d321f5a88eeeae7458de3fa1dd52b74"
+    },
+    {
+      "path": "public/assets/ninja/portraits/OldWoman.png",
+      "source_path": "public/assets/ninja/portraits/OldWoman.png",
+      "size": 3379,
+      "sha256": "3a6e2abbb0fe828c341ca3bbcc3ddd2146d70e628a40411d2d34467d7b5e1bfd",
+      "git_blob_sha": "92dc63d76a37b3575bc69d10b9fc3ef3ee4f4856"
+    },
+    {
+      "path": "public/assets/ninja/portraits/Princess.png",
+      "source_path": "public/assets/ninja/portraits/Princess.png",
+      "size": 796,
+      "sha256": "89dde51ad712785f4d5aeadd6ad30c5679f0b51f900efd447219ab5b93e5ca20",
+      "git_blob_sha": "489db8655e263e333ff42b4fe3e7d86f7ba5d699"
+    },
+    {
+      "path": "public/assets/ninja/portraits/SamuraiBlue.png",
+      "source_path": "public/assets/ninja/portraits/SamuraiBlue.png",
+      "size": 874,
+      "sha256": "8e86854a240028e063d773561c62473e47a9a227e884a02a41a31d53ab68c942",
+      "git_blob_sha": "a0a4a59766d149a83f6f06d7df481a53b556f073"
+    },
+    {
+      "path": "public/assets/ninja/portraits/Shaman.png",
+      "source_path": "public/assets/ninja/portraits/Shaman.png",
+      "size": 3465,
+      "sha256": "9fcd06ea655062d9886c084718cb553d5156aac1c7976aa226cc738149e4e8e9",
+      "git_blob_sha": "21c20be602687fd29a55b4f078428c1dc86a398b"
+    },
+    {
+      "path": "public/assets/ninja/portraits/SorcererOrange.png",
+      "source_path": "public/assets/ninja/portraits/SorcererOrange.png",
+      "size": 908,
+      "sha256": "7b77d6eec074dc8720e2847b19e99fc42638a7a6b60d4508dfcee497bf2cbc12",
+      "git_blob_sha": "73d49faccfc8db1e99a4ea7b68874402178d5f2c"
+    },
+    {
+      "path": "public/assets/ninja/portraits/Villager.png",
+      "source_path": "public/assets/ninja/portraits/Villager.png",
+      "size": 3215,
+      "sha256": "e81afb1f5665ca7a1a43aa2352e9125f8a39974c0ef5a2bb287a29ef62eca201",
+      "git_blob_sha": "9ac0978c2bff418f7f99ad0ff2c5ff75b62a420f"
+    },
+    {
+      "path": "public/assets/ninja/portraits/Villager2.png",
+      "source_path": "public/assets/ninja/portraits/Villager2.png",
+      "size": 3430,
+      "sha256": "b153ef673e268fe702a1e54c052144777ad190a51283524fb3971c8ae0ad014d",
+      "git_blob_sha": "0bd80ae794847af8eff06664e11d39bbd4a946ea"
+    },
+    {
+      "path": "public/assets/ninja/portraits/Villager3.png",
+      "source_path": "public/assets/ninja/portraits/Villager3.png",
+      "size": 3240,
+      "sha256": "3f8f86a1a246fb0014378ee08c84f6ff7e3003dd841a4ca6e22dddac850ffc8c",
+      "git_blob_sha": "01b1952601a9dd626572eb58ea79b4f7b51e8b14"
+    },
+    {
+      "path": "public/assets/ninja/portraits/Villager4.png",
+      "source_path": "public/assets/ninja/portraits/Villager4.png",
+      "size": 732,
+      "sha256": "cedfa269e21e6712878d0955fc9dc6899bd4ed5962c06a0b306e8589a5f2561e",
+      "git_blob_sha": "4e0a9dd6e2433ce3a75a57e7b277cc0dcef3e1d8"
+    },
+    {
+      "path": "public/assets/ninja/portraits/Villager5.png",
+      "source_path": "public/assets/ninja/portraits/Villager5.png",
+      "size": 3326,
+      "sha256": "b7368f99b7bd10628c2ffa09aca1c25a2dd2846907174124b6e938aaaff00dc4",
+      "git_blob_sha": "ed26b8dbeea076524121fbdf3433f4b156a8de80"
+    },
+    {
+      "path": "public/assets/ninja/portraits/Villager6.png",
+      "source_path": "public/assets/ninja/portraits/Villager6.png",
+      "size": 3326,
+      "sha256": "b7368f99b7bd10628c2ffa09aca1c25a2dd2846907174124b6e938aaaff00dc4",
+      "git_blob_sha": "ed26b8dbeea076524121fbdf3433f4b156a8de80"
+    },
+    {
+      "path": "public/assets/ninja/portraits/Woman.png",
+      "source_path": "public/assets/ninja/portraits/Woman.png",
+      "size": 3363,
+      "sha256": "358744f38e355c57d00276aa546611e17b55523ff303e80544535ff69a9935d5",
+      "git_blob_sha": "5e830fd5e312bff006f6472bd86da67e8fe7fd19"
+    },
+    {
+      "path": "public/assets/ninja/tiles/camp.png",
+      "source_path": "public/assets/ninja/tiles/camp.png",
+      "size": 15642,
+      "sha256": "93440df0e9039a8f8cd6758da8a41d7405545c8444e1fb10c4ea9ea4746e1051",
+      "git_blob_sha": "bfec0be29587f158b951e8632752ec05be8b1e60"
+    },
+    {
+      "path": "public/assets/ninja/tiles/house.png",
+      "source_path": "public/assets/ninja/tiles/house.png",
+      "size": 58356,
+      "sha256": "acdec09ff389883a48af18ebd344cac4081db0388154d4d13be0089cd376d508",
+      "git_blob_sha": "fa89397ee7cdc6333b5fbdf5cddfb15095f9181b"
+    },
+    {
+      "path": "public/assets/ninja/tiles/interior-floor.png",
+      "source_path": "public/assets/ninja/tiles/interior-floor.png",
+      "size": 13012,
+      "sha256": "e281598e2d90f43b31fd557b94c2d2abb00d307758a053b7df301575bf535e3a",
+      "git_blob_sha": "10371122942cff37d809e191b57b702e7fdfb74b"
+    },
+    {
+      "path": "public/assets/ninja/tiles/interior-wall.png",
+      "source_path": "public/assets/ninja/tiles/interior-wall.png",
+      "size": 5149,
+      "sha256": "ad5eb80ab4d5e65dbcda9dc012f9981323b277717349cdab012fc65ce06e43b2",
+      "git_blob_sha": "f1c08fe1ceea5802c375108bf187884820556d44"
+    },
+    {
+      "path": "public/assets/ninja/tiles/interior.png",
+      "source_path": "public/assets/ninja/tiles/interior.png",
+      "size": 14493,
+      "sha256": "49b76b218b3fbb3308984f7579609822eb99d464557aaa6859296e11378f42ba",
+      "git_blob_sha": "0486fa10b00350c3b65cdf15f30d9de77bdd8bc2"
+    },
+    {
+      "path": "public/assets/ninja/tiles/props.png",
+      "source_path": "public/assets/ninja/tiles/props.png",
+      "size": 13884,
+      "sha256": "63d64985697d77033372256b9304ea85db7061f0fc19aafd0714492a9b57140e",
+      "git_blob_sha": "372b134baf26cfb77d894fccd49ea43a5d4ac398"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote1.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote1.png",
+      "size": 179,
+      "sha256": "0b787269cc6583b2cfd2020318d4a333d061d863bff526d263caae1feb402189",
+      "git_blob_sha": "2cce1ed479eee05c89e1571c51511f88bef3f19f"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote10.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote10.png",
+      "size": 175,
+      "sha256": "b51f7230fd57ecf701ff961bd5d08684e88a4e9dd96c320993af8a9e36c56124",
+      "git_blob_sha": "21e8262275f7a43eb0e3e804b7d89744de1b7442"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote11.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote11.png",
+      "size": 180,
+      "sha256": "6b5fc25dbef20230369d4a847b8621c04af84314de9cd9d08c03ef053da90d06",
+      "git_blob_sha": "5b01537548fd344d57105ad3f0d80f443ef145d8"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote12.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote12.png",
+      "size": 175,
+      "sha256": "a7e815b1b015e93da7e572f5f52585f24a474842224ff3acffd99115058fad65",
+      "git_blob_sha": "3f2c0fd7eb83caa3d6a057a3e8f23fb7d4a9b80c"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote13.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote13.png",
+      "size": 169,
+      "sha256": "01fa2a80b1e5401cd353244e229c019f1265755ceb1244bbfa02cf2654131a66",
+      "git_blob_sha": "e781f45110732091bdfc0a0a05bb731c26530e07"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote14.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote14.png",
+      "size": 166,
+      "sha256": "e200c3345e11323e7413ac7dcac105c39bf05fd3e1a0b735f572bc6073db55e7",
+      "git_blob_sha": "cd835cfb34d85bbb3605d1e4c45279cf3d387377"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote15.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote15.png",
+      "size": 198,
+      "sha256": "df814ba9f8a93fb035c559d69645649a1e7b38c16dad1ad2b599e240f609f137",
+      "git_blob_sha": "50966efa554b27ddfddfecd1ebd9a49d3077138b"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote16.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote16.png",
+      "size": 172,
+      "sha256": "5b3d983a91621b13797a3e972b91bc6c47f2408b6e9cf132b675f542b884de2f",
+      "git_blob_sha": "5ed7827f16bc5eefac6f74df1a805b3231ba7d94"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote17.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote17.png",
+      "size": 188,
+      "sha256": "c7e78a40aad37c6271c25671c78a35ccbc15d9bc91c9f0b48980648c987644da",
+      "git_blob_sha": "4c4e67045bf221bfdb104c80103959f90422e30b"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote18.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote18.png",
+      "size": 184,
+      "sha256": "49f38e75da41ac3ebcfb9c7204355e1b661016da708878dd50e5ca39d5a5dbad",
+      "git_blob_sha": "3df9c5f76c31a6e461fb31704c702849edc626cb"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote19.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote19.png",
+      "size": 186,
+      "sha256": "58f610d23ee5ace228b5590b6ec9ab00911fa0c238286a763718a1b94bdb4d50",
+      "git_blob_sha": "66113adcb86f91110a4d7c5cf86e554f8b5c38dc"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote2.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote2.png",
+      "size": 185,
+      "sha256": "91dbe0ecd9a7014578646470b032a4845203d13156a4149a403f5115a3a558f8",
+      "git_blob_sha": "9944172256317ced6a0f8807471c46643d954dd6"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote20.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote20.png",
+      "size": 158,
+      "sha256": "2687fcf383f9f6880909e6a066bf3bbf1c8f93ad5cbba44600234f3a00fd8dbb",
+      "git_blob_sha": "aed858a36b732f40140a1058ddd9d5d031bf6c86"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote21.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote21.png",
+      "size": 166,
+      "sha256": "832805e7c150e23b95212c9a3282f6cb643e58985eb2738b58c6aab54e54265b",
+      "git_blob_sha": "faa5e6682b6551c3396ec7c4826d9e7b124075a7"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote22.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote22.png",
+      "size": 166,
+      "sha256": "d132bef23f759d7a740bfedf8802083472776719d0a4bcc878fb162cbd075753",
+      "git_blob_sha": "0866e9ee4d8437c1b09574e999b43bb0ecad7486"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote23.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote23.png",
+      "size": 201,
+      "sha256": "a9298c965552e7afb2f812890f3dc7ce515d1b306b533f7e5312024219ff7aa6",
+      "git_blob_sha": "02210401575faa70ab0af5fae8705d5c96cec62e"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote24.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote24.png",
+      "size": 186,
+      "sha256": "4249d25e68ff8652c816ff1c5721ebd3e27ee544eda65d1c0900f69265f667bf",
+      "git_blob_sha": "1c11a020e678b8363c6865f7651cc3bac7775be8"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote25.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote25.png",
+      "size": 189,
+      "sha256": "c7e3bb9c75af574b970899942243101e1affc582324927770f6e1c6fdf88d81c",
+      "git_blob_sha": "3db48f14bf7413c3c15a67c9d926ece9615d6ca9"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote26.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote26.png",
+      "size": 206,
+      "sha256": "e1143e4690e482b2cb29bd8afbce0500fd1b91a93b89959f5df2c7ce7e44bd11",
+      "git_blob_sha": "c7cdcb5813ff8b17e17de614701779849a0087b7"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote27.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote27.png",
+      "size": 183,
+      "sha256": "393f8153c623f22b1136600391fc6406cb5a4ec697b183a3aece5a84306b0da5",
+      "git_blob_sha": "da8b1fa81788383f7c4685b1226ce8e22482e47a"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote28.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote28.png",
+      "size": 195,
+      "sha256": "3c0f004bbbc26ed9391978c1ce89cdb6cabed05cf5952fc49cfc0782923da67a",
+      "git_blob_sha": "ee212435d2efe4e711c85976730035520cdfc74b"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote29.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote29.png",
+      "size": 196,
+      "sha256": "fee7dfd994cb563b2e422f992a2d5a1b4652e8c04e633ea5cdf9977c0d94c561",
+      "git_blob_sha": "98e3d7cc169855f28c77cea73e98c280c4a622a8"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote3.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote3.png",
+      "size": 193,
+      "sha256": "efca2b7d293b16aa5a33c95750c885b4c430a20241db3bbe3bb2ed9c162c741b",
+      "git_blob_sha": "4ac6a068233844aef949a4c9a4fb58affddf0c66"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote30.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote30.png",
+      "size": 177,
+      "sha256": "42c52c61c00294541c0b4a429182632efbe9e6c722728750ae99c2f3c8a80d8f",
+      "git_blob_sha": "c9cd4a23536210826305b2efeabb398846efb392"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote4.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote4.png",
+      "size": 185,
+      "sha256": "26ffd31500e53ed4231703cc3b7a2602db1db823e6393ed549a64a62764c7990",
+      "git_blob_sha": "6d4418e7bc702da4a213d8ef351600d6c2fb4616"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote5.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote5.png",
+      "size": 166,
+      "sha256": "de0855d69d5e8293e5a651e927f96422dfcec11743490995c8b74e00f5657c22",
+      "git_blob_sha": "8e6b280f25515d6da367e480e856f88c163e75fe"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote6.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote6.png",
+      "size": 175,
+      "sha256": "f278acfac1ddc49ef356e32f7c11367c7fd3c3fcfd4737037dd9a5bdf37034fb",
+      "git_blob_sha": "3732e032852393fa8f9dda31b5ea066b34705785"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote7.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote7.png",
+      "size": 205,
+      "sha256": "1796b5ab88828195e3cea6a7c01244a278bc93e1bc1f27a9cb27a24f2e862f02",
+      "git_blob_sha": "75fff9b23ba4c42c73c58289da52836695bdc454"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote8.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote8.png",
+      "size": 197,
+      "sha256": "65bfc1e477fc3420dd8ac0c6a922ee9f58ba45ff72b708098d4d9dc233ac0a9c",
+      "git_blob_sha": "8d0d0b16747c82463492cbafde40f5aa25c761d3"
+    },
+    {
+      "path": "public/assets/ninja/ui/emotes/emote9.png",
+      "source_path": "public/assets/ninja/ui/emotes/emote9.png",
+      "size": 191,
+      "sha256": "f6a07464020abc2351fe2816e4affd181f1f66e89ba033c0f429cd1bec75932d",
+      "git_blob_sha": "52cf65d19806e11826a65a68f4232c76b9bda8bb"
+    },
+    {
+      "path": "public/assets/ninja/ui/heart-states.png",
+      "source_path": "public/assets/ninja/ui/heart-states.png",
+      "size": 3125,
+      "sha256": "f1163b91560c5097ac1de4f26470abaa9e3461f3bc4a8685fd7daae2d8cabb61",
+      "git_blob_sha": "006472f856799806b687197d90e5500418f7f52d"
+    },
+    {
+      "path": "public/assets/ninja/ui/heart-states2.png",
+      "source_path": "public/assets/ninja/ui/heart-states2.png",
+      "size": 290,
+      "sha256": "171a6e599458702c9bc28d8a873dd1174023011604d51bf7329f5fc6f840a50d",
+      "git_blob_sha": "15e0fa6c114e69f6c68f01fc75579ccbf5ef3d30"
+    },
+    {
+      "path": "public/assets/ninja/ui/heart.png",
+      "source_path": "public/assets/ninja/ui/heart.png",
+      "size": 200,
+      "sha256": "45bbfd7e60bf0cfc07055eeb2621a7982cb400f9d24259de63200b12f43310a0",
+      "git_blob_sha": "ddb849f83d9123918dacf9a9bcd1fd7220cd47c8"
+    },
+    {
+      "path": "public/core.js",
+      "source_path": "public/core.js",
+      "size": 22773,
+      "sha256": "38296aae051095593a671bb90e0625c4dc4a0dab6909774b285614fd63306979",
+      "git_blob_sha": "0e0db36be8cfd0de1226e300c87c5e8e1c6abe76"
+    },
+    {
+      "path": "public/index.html",
+      "source_path": "public/index.html",
+      "size": 881,
+      "sha256": "428a263709d32b956341225ffa1183a581a8aa2937688c06a7e6a24b6aef9976",
+      "git_blob_sha": "df76b9ada6f720d0885bff6df3ab97c0bde84482"
+    },
+    {
+      "path": "public/ninja.js",
+      "source_path": "public/ninja.js",
+      "size": 14888,
+      "sha256": "575fc8f18160fad2f947b3f0156b94d161b020a35bb7a846d3931cd70f3397f7",
+      "git_blob_sha": "dad3ed8f8a913294cef9517a93332174dd1c0600"
+    },
+    {
+      "path": "public/party-client.js",
+      "source_path": "public/party-client.js",
+      "size": 3321,
+      "sha256": "81e2050fd84fd330c36151eaec069c6abc7a3e3c1d58e0887cc26ba0f6c015a4",
+      "git_blob_sha": "b5d7d474b24cdc5d39ab988932f9b1adfb965045"
+    },
+    {
+      "path": "public/release.json",
+      "source_path": "public/release.json",
+      "size": 133,
+      "sha256": "510d69f16daccdce5b62a479b8e19113f649a9aa76cd9c9ac940491b38c17401",
+      "git_blob_sha": "9ebbc3296d2976141abdc40a8b842404189bbff5"
+    },
+    {
+      "path": "public/render.js",
+      "source_path": "public/render.js",
+      "size": 15428,
+      "sha256": "7525fb1640bae34d9ec5b3884efc712cd8d4fa2310fbdcd8d7cdce53bed0f515",
+      "git_blob_sha": "3509db1a2c9bd184eadb7ba9d112ea6fd6f81133"
+    },
+    {
+      "path": "public/runtime.js",
+      "source_path": "public/runtime.js",
+      "size": 87,
+      "sha256": "ce5f751efa8da362edf11fbddc295a626ed9d597c656bfd769c3b427c06e851b",
+      "git_blob_sha": "50dc82cf9a3510e133ef596567370b637853b9e3"
+    },
+    {
+      "path": "public/style.css",
+      "source_path": "public/style.css",
+      "size": 31656,
+      "sha256": "99e81801f430b3918326ef20cdbdba63cdcfec540504f768097ddb8729765ac6",
+      "git_blob_sha": "d0522309e525efe9cd9f4004eb89bc2f0437be20"
+    },
+    {
+      "path": "public/vendor/partyframe-client.js",
+      "source_path": "public/vendor/partyframe-client.js",
+      "size": 890808,
+      "sha256": "6fbc8b4cf6157212ee5ec81a377fa9dae44bbf7f209e0b7f4daa35f5a0937f4c",
+      "git_blob_sha": "d826cbbe1b5c2046997c2d7547f77faf3e188de4"
+    },
+    {
+      "path": "public/vendor/partyframe-rng.js",
+      "source_path": "public/vendor/partyframe-rng.js",
+      "size": 1620,
+      "sha256": "2360addfa54c6914d216c0d603be8da3fe2f2d632c3c7d89894ce202011a548a",
+      "git_blob_sha": "7e07ba1930bc14c5c2b18711a28452298ce64ab5"
+    },
+    {
+      "path": "public/vendor/qrcode.js",
+      "source_path": "public/vendor/qrcode.js",
+      "size": 56694,
+      "sha256": "79ec86f82856005b1c887905cfccfcfbec3821ca61c7fd5a952faa5f778f791c",
+      "git_blob_sha": "df13f829bf41f36b82f0ed85751ed3b4c39cfeb8"
+    },
+    {
+      "path": "scripts/build-framework.mjs",
+      "source_path": "scripts/build-framework.mjs",
+      "size": 1187,
+      "sha256": "31509bd30b24d217e3dc8e4353f04dd799eb75041d16444636d368472c811435",
+      "git_blob_sha": "f77b3dde1b148d59925a7f60afdc242e2977ad9c"
+    },
+    {
+      "path": "scripts/build.mjs",
+      "source_path": "scripts/build.mjs",
+      "size": 476,
+      "sha256": "2febc198269d28bb86e8a87fa043264e43a11cd37430bbed26e62face757f4cc",
+      "git_blob_sha": "0baa13bad65f70f089226496f0721a05855800e7"
+    },
+    {
+      "path": "scripts/package-release.mjs",
+      "source_path": "scripts/package-release.mjs",
+      "size": 4178,
+      "sha256": "d77b288cda3aae856a39c58dabce6bc646d9f1d3e4222184777d2a56c325789c",
+      "git_blob_sha": "1b1ff9ba78306c2e9a20e64ae87f86baf3f811c7"
+    },
+    {
+      "path": "server.mjs",
+      "source_path": "server.mjs",
+      "size": 2766,
+      "sha256": "f864ce1b27d051d87bc9a0ad47c438801ee72d2d8e02c9a4155bfeda65b44a57",
+      "git_blob_sha": "0a81a8b1d7c4482ca9772d7b1ae232cdd65dff49"
+    },
+    {
+      "path": "src/campaign-store.mjs",
+      "source_path": "src/campaign-store.mjs",
+      "size": 1388,
+      "sha256": "f2c11e0d22f955b3611ddd1264dfa0295720dc87ff17063e6ade2e64d0625596",
+      "git_blob_sha": "64af1946462d1e792b2725a508cdefb211ff499a"
+    },
+    {
+      "path": "src/framework-entry.ts",
+      "source_path": "src/framework-entry.ts",
+      "size": 14913,
+      "sha256": "a715a570a08cb9f8ab2e44c153461d8cc03d9c9d2829ffbfd90365289fac08fe",
+      "git_blob_sha": "e878590540a950b2661605a4c130403284ee9d47"
+    },
+    {
+      "path": "src/framework.mjs",
+      "source_path": "src/framework.mjs",
+      "size": 87201,
+      "sha256": "ac4178a40379ae691bb4e567af0890c1048f656f724f8ea1f258130b3169b3f4",
+      "git_blob_sha": "5730f9a4f69de0fed994c9620f880c39516ad1f8"
+    },
+    {
+      "path": "src/game-server.mjs",
+      "source_path": "src/game-server.mjs",
+      "size": 6529,
+      "sha256": "b23c95c4cdf47f51e18d4636d2d659a7ab159e93e1ea61be3a4d2d0d29b00236",
+      "git_blob_sha": "25315e53a3d009187e9587e0f36de5b66d3e8f7c"
+    },
+    {
+      "path": "tests/colyseus-helpers.mjs",
+      "source_path": "tests/colyseus-helpers.mjs",
+      "size": 1204,
+      "sha256": "741126d4636bb1a990dc9c14c41caac47f4a0f312e429911de353d849070730d",
+      "git_blob_sha": "26fbc7e7ec0560ba695bfa93ae9b150bb7b96538"
+    },
+    {
+      "path": "tests/core.test.mjs",
+      "source_path": "tests/core.test.mjs",
+      "size": 6730,
+      "sha256": "9a069ea0c2636eec51277b3b52997d0bee61c6be85a924ef78933399151e0cf8",
+      "git_blob_sha": "a55929a427e5d2affde8f0e72c4d2d36a7173004"
+    },
+    {
+      "path": "tests/framework.test.mjs",
+      "source_path": "tests/framework.test.mjs",
+      "size": 1990,
+      "sha256": "32de40b67562ef16ecaa72d288cdd6cd6256a31adcaf51f206c0eeb8bdb77541",
+      "git_blob_sha": "795f0c4bade9afebed031a9036b298a98712a067"
+    },
+    {
+      "path": "tests/multiplayer.test.mjs",
+      "source_path": "tests/multiplayer.test.mjs",
+      "size": 5588,
+      "sha256": "d005bed6ca8e1b9caebe2e35ee784d51af2032c8b419acff46417921bf821ce2",
+      "git_blob_sha": "8ed4e15ef032d5342e39bab5d9ffc24c1aefaf3f"
+    },
+    {
+      "path": "tests/ninja-render-check.mjs",
+      "source_path": "tests/ninja-render-check.mjs",
+      "size": 6523,
+      "sha256": "ad30741bd06b451e577efef7699df5a0cceb2dcafc82132164840b1fd179aa49",
+      "git_blob_sha": "5c5de51effcfc66cbf6c19b63714249ce16208c5"
+    },
+    {
+      "path": "tests/release-smoke.mjs",
+      "source_path": "tests/release-smoke.mjs",
+      "size": 3019,
+      "sha256": "1ce83b4ced64af164c8949e9f8b2b5a0303d07a5938c125fa461b9de938738c5",
+      "git_blob_sha": "dc396416daf366d2b93e565f9290de95a99630f0"
+    },
+    {
+      "path": "vendor/partyframe/ADDING_A_GAME.md",
+      "source_path": "vendor/partyframe/ADDING_A_GAME.md",
+      "size": 8508,
+      "sha256": "15824ef525f88e83ee4a89708be57d1c0e217d6ae72d49dca271e275f66e54a1",
+      "git_blob_sha": "f3cd9c0d4bab484cc0de6d2e230d1c98ade1bafa"
+    },
+    {
+      "path": "vendor/partyframe/CHANGES.md",
+      "source_path": "vendor/partyframe/CHANGES.md",
+      "size": 1114,
+      "sha256": "27f92df41e1ec8eae9f5c3ceefc85dc8b41048da579621fa712efe714e616648",
+      "git_blob_sha": "b421b2ad2309903af339ea88c64d1ed8ae3661ae"
+    },
+    {
+      "path": "vendor/partyframe/LICENSE",
+      "source_path": "vendor/partyframe/LICENSE",
+      "size": 1073,
+      "sha256": "2600c686ceb6850b13a63656fb708d0302573c21385ce8cb37f9ad4d6147a02d",
+      "git_blob_sha": "b0333e5fb4a93d748a9464ea10bbad293f5487cb"
+    },
+    {
+      "path": "vendor/partyframe/README.md",
+      "source_path": "vendor/partyframe/README.md",
+      "size": 1182,
+      "sha256": "f859d8b8fc36fabd9ac53e9f10106193d7361c1e33302ea8069c4235712fc2f4",
+      "git_blob_sha": "e30df50e4c42d65cd5f6349ec83e2db0759df60c"
+    },
+    {
+      "path": "vendor/partyframe/packages/game-core/package.json",
+      "source_path": "vendor/partyframe/packages/game-core/package.json",
+      "size": 628,
+      "sha256": "b75aafe32e1de4b9b3a5d2f8faad7d11ba5ab2d9e9e78e5815ee537450e873b6",
+      "git_blob_sha": "02a0ce545f12827941497cfa94a5305de8254f3b"
+    },
+    {
+      "path": "vendor/partyframe/packages/game-core/src/index.ts",
+      "source_path": "vendor/partyframe/packages/game-core/src/index.ts",
+      "size": 118,
+      "sha256": "738d844510ed329968571978677aa2887d687538a64f6a4f20c9862279b831ce",
+      "git_blob_sha": "0ea57cccf84c2315ecfaed094f8a49c83e677a3d"
+    },
+    {
+      "path": "vendor/partyframe/packages/game-core/src/registry.ts",
+      "source_path": "vendor/partyframe/packages/game-core/src/registry.ts",
+      "size": 1181,
+      "sha256": "09686cd807e3513b1982a46552b94ce6fe41042e426a95cc76f10ba5d1fe35d3",
+      "git_blob_sha": "279ed1f21b3b1193df838bc528fba52733e4cffe"
+    },
+    {
+      "path": "vendor/partyframe/packages/game-core/src/rng.ts",
+      "source_path": "vendor/partyframe/packages/game-core/src/rng.ts",
+      "size": 2355,
+      "sha256": "1212d6d2313861ef0ceb8aa9529a153eccaaae542b2cd5cd3e73f02d551c46bf",
+      "git_blob_sha": "4d5b59a23d3f2d522e67ef33a6ab212c41f3fc06"
+    },
+    {
+      "path": "vendor/partyframe/packages/game-core/src/types.ts",
+      "source_path": "vendor/partyframe/packages/game-core/src/types.ts",
+      "size": 5967,
+      "sha256": "d6b337b451e5e27e18a85f8b203ddd1095dbb70339448f02a680445ee734bdab",
+      "git_blob_sha": "a0c3e05f26f1c7e9cbe27e2a3ef177988e8e32ea"
+    },
+    {
+      "path": "vendor/partyframe/packages/game-core/src/validation.ts",
+      "source_path": "vendor/partyframe/packages/game-core/src/validation.ts",
+      "size": 1068,
+      "sha256": "3793aeb9075cc8d96c06411f73073e26563beade48b3afdbcfcc0d340581d587",
+      "git_blob_sha": "a4734a2f3bc7079f542d343a1dae3a782d3af23e"
+    },
+    {
+      "path": "vendor/partyframe/packages/game-core/tsconfig.json",
+      "source_path": "vendor/partyframe/packages/game-core/tsconfig.json",
+      "size": 214,
+      "sha256": "5928b0d3fd798e3bf394fd7772c8cf0f7b721504cbe2daad4ba0968413e14d75",
+      "git_blob_sha": "c77f5994dc5ef61ab1c2fe6de1fe83cb1fc866ad"
+    },
+    {
+      "path": "vendor/partyframe/packages/i18n/package.json",
+      "source_path": "vendor/partyframe/packages/i18n/package.json",
+      "size": 498,
+      "sha256": "10a0cb62164e312ea7fc7c2011a2133ea71c79bcaac9d36c63b216cda81f1e7f",
+      "git_blob_sha": "aedb23d2a7e65d6e13d884f4582a8006865c73f3"
+    },
+    {
+      "path": "vendor/partyframe/packages/i18n/src/en.ts",
+      "source_path": "vendor/partyframe/packages/i18n/src/en.ts",
+      "size": 3795,
+      "sha256": "6da684b964ad1286c670510ea960e789d07c1f6c0a9de848649b082ea717f8d7",
+      "git_blob_sha": "d674233bae525ebf43547d7774cb9e7b03bc2555"
+    },
+    {
+      "path": "vendor/partyframe/packages/i18n/src/index.ts",
+      "source_path": "vendor/partyframe/packages/i18n/src/index.ts",
+      "size": 3004,
+      "sha256": "7640e5c64885601d3de732643f732adf214421b4983760bd3b6fe58a3d74affb",
+      "git_blob_sha": "f24d5a467970054aa7c72bcb43dfa64e43fb35d1"
+    },
+    {
+      "path": "vendor/partyframe/packages/i18n/tsconfig.json",
+      "source_path": "vendor/partyframe/packages/i18n/tsconfig.json",
+      "size": 169,
+      "sha256": "af926449db6a4acdfc98088b954db082a4b765e0b1231a8c3e2bcee2d3601c89",
+      "git_blob_sha": "7e853a0fc58df267c9d1bc3a6a532bdf635bb516"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/package.json",
+      "source_path": "vendor/partyframe/packages/kit/package.json",
+      "size": 845,
+      "sha256": "b552b65a556d7bbe2ebc1e4e14c34055a3b775f2fdf2906c8bd297c22a52b137",
+      "git_blob_sha": "dad4bd80365b815f5d9df12b0d93f8406b87ed76"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/FuseBar.tsx",
+      "source_path": "vendor/partyframe/packages/kit/src/FuseBar.tsx",
+      "size": 2045,
+      "sha256": "6806c553ec1345d710811a472720b90532fa39f064a8dfa7ffb4e014524ea580",
+      "git_blob_sha": "1b003917cd406f241746a668f8c6f97029afa9b4"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/bind.ts",
+      "source_path": "vendor/partyframe/packages/kit/src/bind.ts",
+      "size": 1044,
+      "sha256": "53505fb28eb107f5851719a07226968c8a2548efc3adc0a64a6846027e0baa04",
+      "git_blob_sha": "331c1d44104c80b73bd7a834583356e15f572e62"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/bridge.ts",
+      "source_path": "vendor/partyframe/packages/kit/src/bridge.ts",
+      "size": 1693,
+      "sha256": "5192562d172774e399edabea88248602cac659358acb07ba6245f81bff1abf02",
+      "git_blob_sha": "4bf6bf3723c41913f74df2f17edfba0c5a941120"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/controller/JoinRoute.tsx",
+      "source_path": "vendor/partyframe/packages/kit/src/controller/JoinRoute.tsx",
+      "size": 5811,
+      "sha256": "a7b07b1649b7c7c002b570adb92d317bf445c2e99f2db0cea6e0120a2fa93f8c",
+      "git_blob_sha": "6e017485ad51e10468ac7ccebd006cef0fafa60e"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/controller/LobbyPanel.tsx",
+      "source_path": "vendor/partyframe/packages/kit/src/controller/LobbyPanel.tsx",
+      "size": 2847,
+      "sha256": "1980e39ad0da96d4c6d6a5809fc6d3422cc507920189f50d446f173fa7e734cd",
+      "git_blob_sha": "6c78dc5791de214b1c587bcce56c002664e28325"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/controller/SetupPanel.tsx",
+      "source_path": "vendor/partyframe/packages/kit/src/controller/SetupPanel.tsx",
+      "size": 5484,
+      "sha256": "d473df6352fbc040f7dfe87d5ed36e0db3dceecd88ff8e6817c17d268e675fad",
+      "git_blob_sha": "d141819dce3b15923774ba457f5f43fdc8a046c7"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/cues.ts",
+      "source_path": "vendor/partyframe/packages/kit/src/cues.ts",
+      "size": 573,
+      "sha256": "f2e01e9ef34a382787a452fe1c3752c3da7af72960d46a676c578b997db4e828",
+      "git_blob_sha": "1d154d2999c32fb5c399943b9bcc4ac695a1920d"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/i18n/I18nProvider.tsx",
+      "source_path": "vendor/partyframe/packages/kit/src/i18n/I18nProvider.tsx",
+      "size": 2254,
+      "sha256": "7c45ca651aacc0c627066f5e53a111e560bef0b184307ff8104b6dba903605ca",
+      "git_blob_sha": "97e3d714a38add7cb312a9a22d232d6896441ff4"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/index.ts",
+      "source_path": "vendor/partyframe/packages/kit/src/index.ts",
+      "size": 1010,
+      "sha256": "9f6c536901753966775eecdf7d86f10606c4280616067ad81329f6f27f08c072",
+      "git_blob_sha": "9ba6af68ff1fac482051edd0435aac0aea2b0d5d"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/net/SessionConnection.ts",
+      "source_path": "vendor/partyframe/packages/kit/src/net/SessionConnection.ts",
+      "size": 16270,
+      "sha256": "cacb5b2914610b1f65e91f5f9e740498c5fc20968e7385d33714b6d74afddc99",
+      "git_blob_sha": "8a3d7c05bbd71d05ed7331841ec498677fe6c282"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/net/clock.ts",
+      "source_path": "vendor/partyframe/packages/kit/src/net/clock.ts",
+      "size": 2975,
+      "sha256": "68c1c1687fda4ed7f07d33864b67c6e8fefe60239f29ab6f0e5bc0a5d96e70d9",
+      "git_blob_sha": "8d70fd525a3c318cc3ab06518984dfc2d1ad57ba"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/net/endpoint.ts",
+      "source_path": "vendor/partyframe/packages/kit/src/net/endpoint.ts",
+      "size": 2508,
+      "sha256": "ef1e2fc1bc80c433673f55bec53620b0e2378f8e1200d43eea37bc592b435b19",
+      "git_blob_sha": "650790551d3ba6b94ba607e90059cb86a4184912"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/net/serverConfig.ts",
+      "source_path": "vendor/partyframe/packages/kit/src/net/serverConfig.ts",
+      "size": 532,
+      "sha256": "131c1c1e7d2731f42b44167a3869d486d9b2da6f3ebdcba4a76a8266d1e5f7f1",
+      "git_blob_sha": "637b88fb2ffd571fab845b99636f0c6a3df9076d"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/net/storage.ts",
+      "source_path": "vendor/partyframe/packages/kit/src/net/storage.ts",
+      "size": 3007,
+      "sha256": "6bacd41d2e4d075aae9f2657d957dfb36dbe629f2523b7789a4013e33620e3b7",
+      "git_blob_sha": "92ed3b47b661c8ab3457a28f503d6e282d4ad034"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/net/useServerConfig.ts",
+      "source_path": "vendor/partyframe/packages/kit/src/net/useServerConfig.ts",
+      "size": 1457,
+      "sha256": "56a377754b086f61e5b5bf30f3b216b20fc9bdb56a63a71f2d8de1a042cd87a2",
+      "git_blob_sha": "6eb35548ab4297b902b4a46b5a74f811cd1e7c46"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/net/useSession.ts",
+      "source_path": "vendor/partyframe/packages/kit/src/net/useSession.ts",
+      "size": 2821,
+      "sha256": "da66060b297c851b5027e432c98ff6952ac7329b908565e2b41f91fbd17b0ba3",
+      "git_blob_sha": "87982d6c882e921b472ae88a1b6c2c33f2c00be2"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/sfx.ts",
+      "source_path": "vendor/partyframe/packages/kit/src/sfx.ts",
+      "size": 6376,
+      "sha256": "4c9ab7a6f1d70fbf35118d7cc9517a488b0518a661149b57c3fe5ee1ea968cdd",
+      "git_blob_sha": "d78c03fb06042361f5c559f616ff8c241d506420"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/shared-screen/DevPanel.tsx",
+      "source_path": "vendor/partyframe/packages/kit/src/shared-screen/DevPanel.tsx",
+      "size": 4323,
+      "sha256": "6cb22e7a7f926d217f754de47760a085fa0b1179ffb72f6e0195beb2efa03df1",
+      "git_blob_sha": "280bbe51fc9ceabae1d67e843f8304ebc551bd3c"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/shared-screen/EventFeed.tsx",
+      "source_path": "vendor/partyframe/packages/kit/src/shared-screen/EventFeed.tsx",
+      "size": 1416,
+      "sha256": "207ed4a3816fa157442979196e0088a98bad7ec9f140b578b32b3ad3d53eec05",
+      "git_blob_sha": "5faa2bc54dd69e993c6e5e7f0ce992a31dc4de28"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/shared-screen/HostRoute.tsx",
+      "source_path": "vendor/partyframe/packages/kit/src/shared-screen/HostRoute.tsx",
+      "size": 8153,
+      "sha256": "ec03a1e95d6093317fe94fe18cd714f03e962d693bacdd18568fce2d1c5e0257",
+      "git_blob_sha": "7ae26190f98c383bb9caad74dfdd5fbfd4b7a532"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/shared-screen/LobbyView.tsx",
+      "source_path": "vendor/partyframe/packages/kit/src/shared-screen/LobbyView.tsx",
+      "size": 3267,
+      "sha256": "63fd972125bb7f09875bd2ae0631dfc74820c39aa324b0cf421e18da5878640e",
+      "git_blob_sha": "23e4cfccaaa5f283873b5cf8174f18d3640b1aee"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/shared-screen/PlayerGrid.tsx",
+      "source_path": "vendor/partyframe/packages/kit/src/shared-screen/PlayerGrid.tsx",
+      "size": 2556,
+      "sha256": "255ac27b19acb6bb117c454b2eb34bf8f376a15ae6b23b072ae061843d8f7913",
+      "git_blob_sha": "d1d50cf0d56ef06dd438fa1b8877bad79914c8d7"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/shared-screen/QrPanel.tsx",
+      "source_path": "vendor/partyframe/packages/kit/src/shared-screen/QrPanel.tsx",
+      "size": 3088,
+      "sha256": "10697394e7e705f650bcabcc3b2f2f32cc02fc98a4f359c82c6ea84493cd5002",
+      "git_blob_sha": "c828a9b7133df6f3be003783f0fea44d2738cc59"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/shared-screen/ResultsView.tsx",
+      "source_path": "vendor/partyframe/packages/kit/src/shared-screen/ResultsView.tsx",
+      "size": 2446,
+      "sha256": "d49feb0e019ff56fce6dbb3b76e789675423bb87a05ae280b86bf7a840110976",
+      "git_blob_sha": "bfaa9a6e12cacc8e3f548ec64ca5aa551b3f4cc1"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/shared-screen/phaser/GameStage.tsx",
+      "source_path": "vendor/partyframe/packages/kit/src/shared-screen/phaser/GameStage.tsx",
+      "size": 4024,
+      "sha256": "6dba9ada5aef1208eef501931224d4d9552c98a9869de6d8d8763c0876056979",
+      "git_blob_sha": "fc5b2ca5df3b6ef7142e8c1cfdcb59e414805356"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/types.ts",
+      "source_path": "vendor/partyframe/packages/kit/src/types.ts",
+      "size": 2204,
+      "sha256": "5e08af235163e423f28d3a5fcd542a586fd63c137d156fd2aadec188f7b6c85a",
+      "git_blob_sha": "a2d25b827bdc93984ac50ac70a66b80386acdd8a"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/ui/common.tsx",
+      "source_path": "vendor/partyframe/packages/kit/src/ui/common.tsx",
+      "size": 2763,
+      "sha256": "8cdeb5df70c20d4d914994ac4bfdd3312b9ea5500c78498ce8d5193c512e92ce",
+      "git_blob_sha": "aa7f47be16c84f2c0edcd9306c6194685f5c7ee0"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/src/vite-env.d.ts",
+      "source_path": "vendor/partyframe/packages/kit/src/vite-env.d.ts",
+      "size": 38,
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5",
+      "git_blob_sha": "11f02fe2a0061d6e6e1f271b21da95423b448b32"
+    },
+    {
+      "path": "vendor/partyframe/packages/kit/tsconfig.json",
+      "source_path": "vendor/partyframe/packages/kit/tsconfig.json",
+      "size": 307,
+      "sha256": "b1bdf3fbac694eff335d27a629dd1171e2ce992be5765565f2308314b3b95bd5",
+      "git_blob_sha": "a32c2260040f7cb3677b68d4856c9f9d5860f2d4"
+    },
+    {
+      "path": "vendor/partyframe/packages/protocol/package.json",
+      "source_path": "vendor/partyframe/packages/protocol/package.json",
+      "size": 546,
+      "sha256": "c47902e7bf017ab2c16324480655b8b1d42bf373cb08efef4ec1fa5cffa0f7a1",
+      "git_blob_sha": "053eb9c4f8696add17ad49d47536e219761d2ab8"
+    },
+    {
+      "path": "vendor/partyframe/packages/protocol/src/constants.ts",
+      "source_path": "vendor/partyframe/packages/protocol/src/constants.ts",
+      "size": 1976,
+      "sha256": "0a5835787d3724b43ad77c7687a051e1a94ae0c7f7b616f8ec0ff346f3c505a9",
+      "git_blob_sha": "b4981b3c2dd340a204119d67dd941b42ad0ce565"
+    },
+    {
+      "path": "vendor/partyframe/packages/protocol/src/controller.ts",
+      "source_path": "vendor/partyframe/packages/protocol/src/controller.ts",
+      "size": 988,
+      "sha256": "81bd90146cabce6c63adfd03ec98a741f10335f5d26c7ff52a08880acc146b96",
+      "git_blob_sha": "47aeb64b8eee878d34923aeef8112c8fab4dbad5"
+    },
+    {
+      "path": "vendor/partyframe/packages/protocol/src/index.ts",
+      "source_path": "vendor/partyframe/packages/protocol/src/index.ts",
+      "size": 126,
+      "sha256": "70a4d1c5f03c28541d8c03c1a1801b85fb6069036ea563c21da234f8d774837f",
+      "git_blob_sha": "56726d65e44039ebbd875ee554e2df067f5be7e0"
+    },
+    {
+      "path": "vendor/partyframe/packages/protocol/src/messages.ts",
+      "source_path": "vendor/partyframe/packages/protocol/src/messages.ts",
+      "size": 5369,
+      "sha256": "7ad991d6dcd0cd4c67f205843264d3f8fb23db68b33c54170b8f9f7631f4cc32",
+      "git_blob_sha": "34432389bec675e689811723b7ce42a38ab9e0ee"
+    },
+    {
+      "path": "vendor/partyframe/packages/protocol/src/session.ts",
+      "source_path": "vendor/partyframe/packages/protocol/src/session.ts",
+      "size": 3549,
+      "sha256": "351defa71b3f2ea51f389f965d3e6047ce458c460fd1d50cd64c489df1450e99",
+      "git_blob_sha": "62d14974c4f4b66dd9c3ba6cce68f01916467078"
+    },
+    {
+      "path": "vendor/partyframe/packages/protocol/tsconfig.json",
+      "source_path": "vendor/partyframe/packages/protocol/tsconfig.json",
+      "size": 169,
+      "sha256": "af926449db6a4acdfc98088b954db082a4b765e0b1231a8c3e2bcee2d3601c89",
+      "git_blob_sha": "7e853a0fc58df267c9d1bc3a6a532bdf635bb516"
+    },
+    {
+      "path": "vendor/partyframe/packages/runtime/package.json",
+      "source_path": "vendor/partyframe/packages/runtime/package.json",
+      "size": 736,
+      "sha256": "274c4a25d8a718f23682fe2a4c4d44a79f015b6dde03199ec096518a39963911",
+      "git_blob_sha": "7454cd0d7a3ca142c5a74e8620d635b6fcf25fa8"
+    },
+    {
+      "path": "vendor/partyframe/packages/runtime/src/PartySessionRoom.ts",
+      "source_path": "vendor/partyframe/packages/runtime/src/PartySessionRoom.ts",
+      "size": 35019,
+      "sha256": "bbde5ae973e1b347fa0d54c5a6629b044345ecf78e0dfa9e50d7af149972c7ed",
+      "git_blob_sha": "3ed21f80b6c994b5006f5c9e2c1ee347aad48bff"
+    },
+    {
+      "path": "vendor/partyframe/packages/runtime/src/adapters.ts",
+      "source_path": "vendor/partyframe/packages/runtime/src/adapters.ts",
+      "size": 1620,
+      "sha256": "8ddc85532c786d178bf17a85e0b3211ce14e223d309d8d32a0a585cc1f4e5a87",
+      "git_blob_sha": "0baec0e4b50380594258575cf884fe104e098f62"
+    },
+    {
+      "path": "vendor/partyframe/packages/runtime/src/bind.ts",
+      "source_path": "vendor/partyframe/packages/runtime/src/bind.ts",
+      "size": 1942,
+      "sha256": "d7154c6bced77a9c2dbe97c3cff106345e48ad1a01e4768505e3ede5c5a216c0",
+      "git_blob_sha": "fd4ca27a30b11d1b980c9c0a201b517dc1e9a3a3"
+    },
+    {
+      "path": "vendor/partyframe/packages/runtime/src/bots.ts",
+      "source_path": "vendor/partyframe/packages/runtime/src/bots.ts",
+      "size": 1555,
+      "sha256": "16af444dda109ae5e74f520d13d3b9b0f62a6cccb6bc9c07a8fd5b6aca4caed4",
+      "git_blob_sha": "2193aaa8bab51415475f89e47658253346f450bd"
+    },
+    {
+      "path": "vendor/partyframe/packages/runtime/src/index.ts",
+      "source_path": "vendor/partyframe/packages/runtime/src/index.ts",
+      "size": 775,
+      "sha256": "1448dfd2e562941f56209be9e018257743d17c046d6c40213c2644deab728495",
+      "git_blob_sha": "ad9126bbfe5c21532881f9ac0e6e3fa11c774889"
+    },
+    {
+      "path": "vendor/partyframe/packages/runtime/src/rateLimit.ts",
+      "source_path": "vendor/partyframe/packages/runtime/src/rateLimit.ts",
+      "size": 2443,
+      "sha256": "05bb870de46dbc58f8447ad71da3de7ec06fb3aed33f655ede38e7501d017b02",
+      "git_blob_sha": "e758c3653e25ff4a4b893f4650e6b0883e280a28"
+    },
+    {
+      "path": "vendor/partyframe/packages/runtime/src/roomCode.ts",
+      "source_path": "vendor/partyframe/packages/runtime/src/roomCode.ts",
+      "size": 1817,
+      "sha256": "85a841dbc3d96739b287e84e8253764d1c56f06e8dc72e8106ff1d567db70e66",
+      "git_blob_sha": "f5b003ae2baf19dc9ae67f41ee92692ee6d71263"
+    },
+    {
+      "path": "vendor/partyframe/packages/runtime/src/sessionSchema.ts",
+      "source_path": "vendor/partyframe/packages/runtime/src/sessionSchema.ts",
+      "size": 2873,
+      "sha256": "e998c45ef8289df9f7d8369d1cf08dc25b213591a7b96210a482dc3169706f62",
+      "git_blob_sha": "ea719a1788b4d33a84646ff50296ae869aa722a1"
+    },
+    {
+      "path": "vendor/partyframe/packages/runtime/tsconfig.json",
+      "source_path": "vendor/partyframe/packages/runtime/tsconfig.json",
+      "size": 339,
+      "sha256": "07114b5cb895e50e58f46d9decc09ffd873071be2d9583dbeca5459b1ee8d03e",
+      "git_blob_sha": "318e351b78b4a64105ae2805ca4bfe0479006f71"
+    }
+  ]
+}

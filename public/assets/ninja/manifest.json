@@ -1,0 +1,3225 @@
+{
+  "pack": "Ninja Adventure Asset Pack",
+  "creators": [
+    "Pixel-boy",
+    "AAA"
+  ],
+  "official_url": "https://pixel-boy.itch.io/ninja-adventure-asset-pack",
+  "source_release": "Update 8; official download dated 2026-03-29 22:07 UTC; announced March 30, 2026",
+  "downloaded_at": "2026-10-26",
+  "archive_sha256": "95a06f4fdcfd1882f061a45ff313b7c905dbe2de1e8512b281d7937df62a7b15",
+  "license": "CC0-1.0",
+  "actors": {
+    "Knight": {
+      "file": "actors/Knight.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 1423,
+        "#8d977f": 1074,
+        "#5f7160": 840,
+        "#4e484a": 399,
+        "#3b3643": 399,
+        "#e3f1f5": 106,
+        "#ef914f": 98,
+        "#d14b34": 72
+      }
+    },
+    "KnightGold": {
+      "file": "actors/KnightGold.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 1648,
+        "#f1c471": 1205,
+        "#d78b4a": 898,
+        "#d14b34": 486,
+        "#f2eaf1": 316,
+        "#8f3e56": 310,
+        "#ca4820": 8
+      }
+    },
+    "Villager": {
+      "file": "actors/Villager.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 1232,
+        "#f2ad7d": 1170,
+        "#ef914f": 1005,
+        "#d14b34": 625,
+        "#4e484a": 338,
+        "#548789": 301,
+        "#2e3939": 43,
+        "#79b8ce": 36,
+        "#51614e": 12
+      }
+    },
+    "Villager2": {
+      "file": "actors/Villager2.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#3b3643": 1491,
+        "#141b1b": 1396,
+        "#8f3e56": 792,
+        "#4e484a": 670,
+        "#d14b34": 407,
+        "#4a5270": 346,
+        "#548789": 206
+      }
+    },
+    "Villager3": {
+      "file": "actors/Villager3.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 1260,
+        "#4e484a": 1146,
+        "#3b3643": 984,
+        "#a3754e": 604,
+        "#965340": 421,
+        "#56864c": 373,
+        "#a8a129": 221,
+        "#8d977f": 179,
+        "#abc2bc": 51
+      }
+    },
+    "Villager4": {
+      "file": "actors/Villager4.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 1260,
+        "#f1c471": 1146,
+        "#d78b4a": 984,
+        "#ef914f": 604,
+        "#d14b34": 422,
+        "#8f3e56": 372,
+        "#e0394c": 221,
+        "#8d977f": 179,
+        "#abc2bc": 51
+      }
+    },
+    "Villager5": {
+      "file": "actors/Villager5.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 1291,
+        "#3b3643": 1022,
+        "#4e484a": 646,
+        "#d14b34": 444,
+        "#56864c": 414,
+        "#c8966b": 363,
+        "#8f3e56": 298,
+        "#a8a129": 173,
+        "#fce2ca": 145,
+        "#2e3939": 17
+      }
+    },
+    "Villager6": {
+      "file": "actors/Villager6.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 1291,
+        "#3b3643": 1022,
+        "#4e484a": 646,
+        "#d14b34": 444,
+        "#56864c": 414,
+        "#c8966b": 363,
+        "#8f3e56": 298,
+        "#a8a129": 173,
+        "#fce2ca": 145,
+        "#2e3939": 17
+      }
+    },
+    "Woman": {
+      "file": "actors/Woman.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 1371,
+        "#f1c471": 930,
+        "#d78b4a": 821,
+        "#ef914f": 572,
+        "#cf736d": 521,
+        "#548789": 506,
+        "#79b8ce": 162,
+        "#e0394c": 42
+      }
+    },
+    "Princess": {
+      "file": "actors/Princess.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 1416,
+        "#3b3643": 1324,
+        "#4e484a": 1163,
+        "#a3754e": 435,
+        "#d78b4a": 312,
+        "#f1c471": 296,
+        "#965340": 243,
+        "#8d977f": 197,
+        "#e0394c": 157,
+        "#abc2bc": 67
+      }
+    },
+    "OldMan": {
+      "file": "actors/OldMan.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 1241,
+        "#4e484a": 733,
+        "#5f7160": 696,
+        "#ef914f": 630,
+        "#f2ad7d": 481,
+        "#8d977f": 320,
+        "#965340": 318,
+        "#548789": 236,
+        "#79b8ce": 60,
+        "#2e3939": 41,
+        "#f0e5d1": 34,
+        "#51614e": 12
+      }
+    },
+    "OldWoman": {
+      "file": "actors/OldWoman.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#a5608b": 431,
+        "#d3a2c0": 382,
+        "#141b1b": 351,
+        "#ef914f": 132,
+        "#d14b34": 105,
+        "#548789": 63,
+        "#4e484a": 54,
+        "#2d697b": 35,
+        "#f2eaf1": 32
+      }
+    },
+    "Hunter": {
+      "file": "actors/Hunter.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 1322,
+        "#d14b34": 1148,
+        "#8f3e56": 1009,
+        "#fce2ca": 397,
+        "#ef914f": 372,
+        "#c8966b": 329,
+        "#4a5270": 322,
+        "#548789": 129,
+        "#79b8ce": 20
+      }
+    },
+    "SorcererOrange": {
+      "file": "actors/SorcererOrange.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 1393,
+        "#4e484a": 1282,
+        "#5f7160": 990,
+        "#e46d3a": 712,
+        "#ef914f": 441,
+        "#cf736d": 286,
+        "#f2ad7d": 285,
+        "#e3f1f5": 111,
+        "#9ba7aa": 101
+      }
+    },
+    "Monk": {
+      "file": "actors/Monk.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 1236,
+        "#3b3643": 1219,
+        "#d14b34": 628,
+        "#4e484a": 617,
+        "#ef914f": 615,
+        "#56864c": 292,
+        "#345a52": 249,
+        "#d3a2c0": 216,
+        "#e3f1f5": 23
+      }
+    },
+    "Shaman": {
+      "file": "actors/Shaman.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 1723,
+        "#fce2ca": 1038,
+        "#8f3e56": 941,
+        "#c8966b": 862,
+        "#56864c": 583,
+        "#a8a129": 281,
+        "#d14b34": 267,
+        "#d78b4a": 17,
+        "#f1c471": 14,
+        "#e3f1f5": 6
+      }
+    },
+    "NinjaBlue": {
+      "file": "actors/NinjaBlue.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 1585,
+        "#79b8ce": 1353,
+        "#5f7160": 803,
+        "#f2eaf1": 415,
+        "#3b3643": 387,
+        "#f1c471": 372,
+        "#ef914f": 94,
+        "#d14b34": 71
+      }
+    },
+    "NinjaGreen": {
+      "file": "actors/NinjaGreen.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 1413,
+        "#56864c": 1365,
+        "#a8a129": 1315,
+        "#345a52": 572,
+        "#d14b34": 164,
+        "#ef914f": 133,
+        "#f2eaf1": 30
+      }
+    },
+    "NinjaMageBlack": {
+      "file": "actors/NinjaMageBlack.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#4e484a": 1814,
+        "#141b1b": 1520,
+        "#5f7160": 1419,
+        "#e0394c": 60,
+        "#e3f1f5": 25,
+        "#cf736d": 19,
+        "#f2ad7d": 14,
+        "#9ba7aa": 1
+      }
+    },
+    "SamuraiBlue": {
+      "file": "actors/SamuraiBlue.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 1546,
+        "#3b3643": 1526,
+        "#ef914f": 504,
+        "#548789": 465,
+        "#4e484a": 403,
+        "#d14b34": 313,
+        "#79b8ce": 270,
+        "#9ba7aa": 30,
+        "#4a5270": 12,
+        "#f2eaf1": 2
+      }
+    },
+    "FighterWhite": {
+      "file": "actors/FighterWhite.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 1452,
+        "#3b3643": 699,
+        "#8f3e56": 668,
+        "#e0394c": 634,
+        "#4e484a": 599,
+        "#d14b34": 387,
+        "#ef914f": 375,
+        "#d3a2c0": 304,
+        "#f2eaf1": 80
+      }
+    },
+    "Boy": {
+      "file": "actors/Boy.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 1416,
+        "#d14b34": 1246,
+        "#965340": 1113,
+        "#ef914f": 743,
+        "#548789": 339,
+        "#e3f1f5": 335,
+        "#2e3939": 50,
+        "#51614e": 12,
+        "#d3a2c0": 5
+      }
+    },
+    "Child": {
+      "file": "actors/Child.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 427,
+        "#4e484a": 278,
+        "#5f7160": 239,
+        "#ef914f": 214,
+        "#2b212a": 212,
+        "#d14b34": 171,
+        "#f1c471": 74,
+        "#f2eaf1": 52,
+        "#ffffff": 16
+      }
+    },
+    "Noble": {
+      "file": "actors/Noble.png",
+      "frame": [
+        16,
+        16
+      ],
+      "columns": 4,
+      "rows": 7,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "animations": {
+        "idle": {
+          "rows": [
+            0
+          ]
+        },
+        "walk": {
+          "rows": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        },
+        "attack": {
+          "rows": [
+            4
+          ]
+        },
+        "jump": {
+          "rows": [
+            5
+          ]
+        },
+        "dead": {
+          "column": 0,
+          "row": 6
+        },
+        "item": {
+          "column": 1,
+          "row": 6
+        },
+        "cast": {
+          "column": 2,
+          "row": 6
+        },
+        "cast2": {
+          "column": 3,
+          "row": 6
+        }
+      },
+      "palette": {
+        "#141b1b": 2497,
+        "#4e484a": 1298,
+        "#3b3643": 676,
+        "#ef914f": 560,
+        "#f2ad7d": 235,
+        "#965340": 121,
+        "#f2eaf1": 22,
+        "#7b7b7b": 1
+      }
+    }
+  },
+  "animated_ninja": {
+    "Idle": {
+      "file": "animated/Idle.png",
+      "frame": [
+        32,
+        32
+      ],
+      "columns": 4,
+      "rows": 4,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "frame_axis": "vertical",
+      "suggested_fps": 6,
+      "body_center": [
+        16,
+        16
+      ],
+      "body_size_about": [
+        16,
+        16
+      ]
+    },
+    "Walk": {
+      "file": "animated/Walk.png",
+      "frame": [
+        32,
+        32
+      ],
+      "columns": 4,
+      "rows": 4,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "frame_axis": "vertical",
+      "suggested_fps": 6,
+      "body_center": [
+        16,
+        16
+      ],
+      "body_size_about": [
+        16,
+        16
+      ]
+    },
+    "Attack": {
+      "file": "animated/Attack.png",
+      "frame": [
+        32,
+        32
+      ],
+      "columns": 4,
+      "rows": 4,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "frame_axis": "vertical",
+      "suggested_fps": 10,
+      "body_center": [
+        16,
+        16
+      ],
+      "body_size_about": [
+        16,
+        16
+      ]
+    },
+    "Hit": {
+      "file": "animated/Hit.png",
+      "frame": [
+        32,
+        32
+      ],
+      "columns": 4,
+      "rows": 2,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "frame_axis": "vertical",
+      "suggested_fps": 10,
+      "body_center": [
+        16,
+        16
+      ],
+      "body_size_about": [
+        16,
+        16
+      ]
+    },
+    "Roll": {
+      "file": "animated/Roll.png",
+      "frame": [
+        32,
+        32
+      ],
+      "columns": 4,
+      "rows": 3,
+      "direction_columns": {
+        "down": 0,
+        "up": 1,
+        "left": 2,
+        "right": 3
+      },
+      "frame_axis": "vertical",
+      "suggested_fps": 10,
+      "body_center": [
+        16,
+        16
+      ],
+      "body_size_about": [
+        16,
+        16
+      ]
+    },
+    "Dead": {
+      "file": "animated/Dead.png",
+      "frame": [
+        32,
+        32
+      ],
+      "columns": 1,
+      "rows": 2,
+      "direction_columns": null,
+      "frame_axis": "vertical",
+      "suggested_fps": 10,
+      "body_center": [
+        16,
+        16
+      ],
+      "body_size_about": [
+        16,
+        16
+      ]
+    },
+    "Pickup": {
+      "file": "animated/Pickup.png",
+      "frame": [
+        32,
+        32
+      ],
+      "columns": 1,
+      "rows": 2,
+      "direction_columns": null,
+      "frame_axis": "vertical",
+      "suggested_fps": 10,
+      "body_center": [
+        16,
+        16
+      ],
+      "body_size_about": [
+        16,
+        16
+      ]
+    },
+    "Item": {
+      "file": "animated/Item.png",
+      "frame": [
+        32,
+        32
+      ],
+      "columns": 1,
+      "rows": 2,
+      "direction_columns": null,
+      "frame_axis": "vertical",
+      "suggested_fps": 10,
+      "body_center": [
+        16,
+        16
+      ],
+      "body_size_about": [
+        16,
+        16
+      ]
+    }
+  },
+  "fx": {
+    "slash": {
+      "file": "fx/slash.png",
+      "frame": [
+        32,
+        32
+      ],
+      "frames": 4,
+      "rows": 1,
+      "frame_axis": "horizontal",
+      "suggested_fps": 10
+    },
+    "claw": {
+      "file": "fx/claw.png",
+      "frame": [
+        32,
+        32
+      ],
+      "frames": 4,
+      "rows": 1,
+      "frame_axis": "horizontal",
+      "suggested_fps": 10
+    },
+    "cut": {
+      "file": "fx/cut.png",
+      "frame": [
+        32,
+        32
+      ],
+      "frames": 4,
+      "rows": 1,
+      "frame_axis": "horizontal",
+      "suggested_fps": 10
+    },
+    "smoke": {
+      "file": "fx/smoke.png",
+      "frame": [
+        32,
+        32
+      ],
+      "frames": 6,
+      "rows": 1,
+      "frame_axis": "horizontal",
+      "suggested_fps": 10
+    },
+    "magic-circle": {
+      "file": "fx/magic-circle.png",
+      "frame": [
+        32,
+        32
+      ],
+      "frames": 4,
+      "rows": 1,
+      "frame_axis": "horizontal",
+      "suggested_fps": 10
+    },
+    "magic-spark": {
+      "file": "fx/magic-spark.png",
+      "frame": [
+        32,
+        32
+      ],
+      "frames": 6,
+      "rows": 1,
+      "frame_axis": "horizontal",
+      "suggested_fps": 10
+    },
+    "heal": {
+      "file": "fx/heal.png",
+      "frame": [
+        53,
+        35
+      ],
+      "frames": 8,
+      "rows": 1,
+      "frame_axis": "horizontal",
+      "suggested_fps": 12
+    },
+    "spark": {
+      "file": "fx/spark.png",
+      "frame": [
+        30,
+        35
+      ],
+      "frames": 9,
+      "rows": 1,
+      "frame_axis": "horizontal",
+      "suggested_fps": 10
+    },
+    "shield": {
+      "file": "fx/shield.png",
+      "frame": [
+        24,
+        26
+      ],
+      "frames": 6,
+      "rows": 1,
+      "frame_axis": "horizontal",
+      "suggested_fps": 15
+    },
+    "aura": {
+      "file": "fx/aura.png",
+      "frame": [
+        25,
+        24
+      ],
+      "frames": 5,
+      "rows": 1,
+      "frame_axis": "horizontal",
+      "suggested_fps": 12
+    },
+    "spirit": {
+      "file": "fx/spirit.png",
+      "frame": [
+        32,
+        32
+      ],
+      "frames": 5,
+      "rows": 1,
+      "frame_axis": "horizontal",
+      "suggested_fps": 10
+    },
+    "fire": {
+      "file": "fx/fire.png",
+      "frame": [
+        25,
+        30
+      ],
+      "frames": 8,
+      "rows": 1,
+      "frame_axis": "horizontal",
+      "suggested_fps": 12
+    },
+    "explosion": {
+      "file": "fx/explosion.png",
+      "frame": [
+        40,
+        40
+      ],
+      "frames": 9,
+      "rows": 1,
+      "frame_axis": "horizontal",
+      "suggested_fps": 12
+    },
+    "thunder": {
+      "file": "fx/thunder.png",
+      "frame": [
+        20,
+        28
+      ],
+      "frames": 8,
+      "rows": 1,
+      "frame_axis": "horizontal",
+      "suggested_fps": 15
+    }
+  },
+  "props": {
+    "round_table": {
+      "file": "tiles/camp.png",
+      "rect": [
+        16,
+        80,
+        32,
+        32
+      ]
+    },
+    "stool": {
+      "file": "tiles/camp.png",
+      "rect": [
+        48,
+        80,
+        16,
+        16
+      ]
+    },
+    "stool2": {
+      "file": "tiles/camp.png",
+      "rect": [
+        48,
+        96,
+        16,
+        16
+      ]
+    },
+    "long_table": {
+      "file": "tiles/props.png",
+      "rect": [
+        176,
+        16,
+        48,
+        16
+      ]
+    },
+    "bar_counter": {
+      "file": "tiles/props.png",
+      "rect": [
+        32,
+        160,
+        48,
+        16
+      ]
+    },
+    "barrel": {
+      "file": "tiles/props.png",
+      "rect": [
+        16,
+        0,
+        16,
+        16
+      ]
+    },
+    "chair": {
+      "file": "tiles/props.png",
+      "rect": [
+        192,
+        0,
+        16,
+        16
+      ]
+    },
+    "vase": {
+      "file": "tiles/props.png",
+      "rect": [
+        32,
+        144,
+        16,
+        16
+      ]
+    },
+    "chest": {
+      "file": "tiles/props.png",
+      "rect": [
+        16,
+        128,
+        16,
+        16
+      ]
+    }
+  },
+  "files": [
+    {
+      "file": "LICENSE.txt",
+      "source": "LICENSE.txt",
+      "sha256": "9bc2cd77030dd73fd2497c5729556a11524fa04099d8351bc527fd4d4c31b916",
+      "bytes": 6722
+    },
+    {
+      "file": "README-source.md",
+      "source": "README.md",
+      "sha256": "6865198a6d7b052636269e9db0de966304737d5f8bacf683f2ac06ad60a68bd7",
+      "bytes": 599
+    },
+    {
+      "file": "palette.png",
+      "source": "Palette.png",
+      "sha256": "769f5ae6be86f4e8c5f811d4f10f5a7ea4fe9e649316b3fcced2e0aa843437f9",
+      "bytes": 341,
+      "size": [
+        10,
+        9
+      ]
+    },
+    {
+      "file": "actors/Knight.png",
+      "source": "Actor/Character/Knight/SpriteSheet.png",
+      "sha256": "d20eacc1334abe43bd69c9298f55e383b86a1e71c726973240eb2bb0c4f5f08c",
+      "bytes": 5739,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/Knight.png",
+      "source": "Actor/Character/Knight/Faceset.png",
+      "sha256": "dc1f6d3d6eb9c5f6f03afb635304e3b7438d1fb0e9c337f03767298882a5e338",
+      "bytes": 3324,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/KnightGold.png",
+      "source": "Actor/Character/KnightGold/SpriteSheet.png",
+      "sha256": "6c1c16f9641d018d385cd128ec266a643c8612c21a08544240aaa6bebd113510",
+      "bytes": 5548,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/KnightGold.png",
+      "source": "Actor/Character/KnightGold/Faceset.png",
+      "sha256": "96b9b3d8129b8d9b6b2be6a9ddaaa0a5501266abc63d0f245624e47a5722ddf1",
+      "bytes": 3400,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/Villager.png",
+      "source": "Actor/Character/Villager/SpriteSheet.png",
+      "sha256": "74f05629f3214b095abe8ce13d745235a39603caabd9978815db7cbedab3a3fe",
+      "bytes": 4969,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/Villager.png",
+      "source": "Actor/Character/Villager/Faceset.png",
+      "sha256": "e81afb1f5665ca7a1a43aa2352e9125f8a39974c0ef5a2bb287a29ef62eca201",
+      "bytes": 3215,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/Villager2.png",
+      "source": "Actor/Character/Villager2/SpriteSheet.png",
+      "sha256": "0f3e231bf9892843e9dce9994d92d3693c0d13c835b68cefd4d9a095b8ae526c",
+      "bytes": 5804,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/Villager2.png",
+      "source": "Actor/Character/Villager2/Faceset.png",
+      "sha256": "b153ef673e268fe702a1e54c052144777ad190a51283524fb3971c8ae0ad014d",
+      "bytes": 3430,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/Villager3.png",
+      "source": "Actor/Character/Villager3/SpriteSheet.png",
+      "sha256": "6bd45886f6d91516416d6848bbe9e4090270822e3106349c7d54da40f9247f8b",
+      "bytes": 5723,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/Villager3.png",
+      "source": "Actor/Character/Villager3/Faceset.png",
+      "sha256": "3f8f86a1a246fb0014378ee08c84f6ff7e3003dd841a4ca6e22dddac850ffc8c",
+      "bytes": 3240,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/Villager4.png",
+      "source": "Actor/Character/Villager4/SpriteSheet.png",
+      "sha256": "98c376de5e7145e0389781da6a99efb826a0208b456e8becffa94b63990195ee",
+      "bytes": 5700,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/Villager4.png",
+      "source": "Actor/Character/Villager4/Faceset.png",
+      "sha256": "cedfa269e21e6712878d0955fc9dc6899bd4ed5962c06a0b306e8589a5f2561e",
+      "bytes": 732,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/Villager5.png",
+      "source": "Actor/Character/Villager5/SpriteSheet.png",
+      "sha256": "5268a923c9aeb386f30302d98c0acad45fb1a792f4f4c119cd1fe0666caefeb3",
+      "bytes": 6131,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/Villager5.png",
+      "source": "Actor/Character/Villager5/Faceset.png",
+      "sha256": "b7368f99b7bd10628c2ffa09aca1c25a2dd2846907174124b6e938aaaff00dc4",
+      "bytes": 3326,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/Villager6.png",
+      "source": "Actor/Character/Villager6/SpriteSheet.png",
+      "sha256": "5268a923c9aeb386f30302d98c0acad45fb1a792f4f4c119cd1fe0666caefeb3",
+      "bytes": 6131,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/Villager6.png",
+      "source": "Actor/Character/Villager6/Faceset.png",
+      "sha256": "b7368f99b7bd10628c2ffa09aca1c25a2dd2846907174124b6e938aaaff00dc4",
+      "bytes": 3326,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/Woman.png",
+      "source": "Actor/Character/Woman/SpriteSheet.png",
+      "sha256": "223c09c46ea77d50c3c2cdaaa1d285836d679f5faedb742b5081a1d2b5f8f4d0",
+      "bytes": 6169,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/Woman.png",
+      "source": "Actor/Character/Woman/Faceset.png",
+      "sha256": "358744f38e355c57d00276aa546611e17b55523ff303e80544535ff69a9935d5",
+      "bytes": 3363,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/Princess.png",
+      "source": "Actor/Character/Princess/SpriteSheet.png",
+      "sha256": "e9028fd04c481e0e5bd1cf63b044d023d9ecf7f621593d6e18e2a1b6a46b3ba6",
+      "bytes": 6207,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/Princess.png",
+      "source": "Actor/Character/Princess/Faceset.png",
+      "sha256": "89dde51ad712785f4d5aeadd6ad30c5679f0b51f900efd447219ab5b93e5ca20",
+      "bytes": 796,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/OldMan.png",
+      "source": "Actor/Character/OldMan/SpriteSheet.png",
+      "sha256": "3ec4d2d281a5a2fcc1b9d7b99c05bc5fa753a8c79124158ac8237f7e3623767b",
+      "bytes": 5401,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/OldMan.png",
+      "source": "Actor/Character/OldMan/Faceset.png",
+      "sha256": "1fc8a30d27b6e324a733c5d13761a45fa90d88e8b47a130bbd96bbe348e83b04",
+      "bytes": 3284,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/OldWoman.png",
+      "source": "Actor/Character/OldWoman/SpriteSheet.png",
+      "sha256": "94181e3bd33ad204370b591a0224041db556fb7093ca27ec23e0b8169658d5ac",
+      "bytes": 3720,
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "portraits/OldWoman.png",
+      "source": "Actor/Character/OldWoman/Faceset.png",
+      "sha256": "3a6e2abbb0fe828c341ca3bbcc3ddd2146d70e628a40411d2d34467d7b5e1bfd",
+      "bytes": 3379,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/Hunter.png",
+      "source": "Actor/Character/Hunter/SpriteSheet.png",
+      "sha256": "26af2137e450276687d308706519d6a57799e4a666d1a966076b1837c2032d81",
+      "bytes": 6558,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/Hunter.png",
+      "source": "Actor/Character/Hunter/Faceset.png",
+      "sha256": "c961b7d3aa9250616d6b648ff3ac702e93362e80058454fb049c91ed1f3f8555",
+      "bytes": 3420,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/SorcererOrange.png",
+      "source": "Actor/Character/SorcererOrange/SpriteSheet.png",
+      "sha256": "18aea3b2cf3fe7c2322bf8e19b5cf42516e7ca3907fdfdd2e6252c1b0b1bee57",
+      "bytes": 6019,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/SorcererOrange.png",
+      "source": "Actor/Character/SorcererOrange/Faceset.png",
+      "sha256": "7b77d6eec074dc8720e2847b19e99fc42638a7a6b60d4508dfcee497bf2cbc12",
+      "bytes": 908,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/Monk.png",
+      "source": "Actor/Character/Monk/SpriteSheet.png",
+      "sha256": "c64e7dd48325a10a9b7184227029ecd0708f8b6f0a4dbe9f10947f1e0049cfca",
+      "bytes": 6112,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/Monk.png",
+      "source": "Actor/Character/Monk/Faceset.png",
+      "sha256": "324c5c9ef0b222ffe3df8863c2277a31192eef4ed38ab4859ebf04c6abdc9947",
+      "bytes": 3368,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/Shaman.png",
+      "source": "Actor/Character/Shaman/SpriteSheet.png",
+      "sha256": "4ffbfc206d3b70df6cc6825e6cef75d4fb19d456b628d95c36b08362d7d99527",
+      "bytes": 5590,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/Shaman.png",
+      "source": "Actor/Character/Shaman/Faceset.png",
+      "sha256": "9fcd06ea655062d9886c084718cb553d5156aac1c7976aa226cc738149e4e8e9",
+      "bytes": 3465,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/NinjaBlue.png",
+      "source": "Actor/Character/NinjaBlue/SpriteSheet.png",
+      "sha256": "f2dd61a264c251b81e63da7a28ab0fdccd261b807e5fa7d1832a468e14a21078",
+      "bytes": 6139,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/NinjaBlue.png",
+      "source": "Actor/Character/NinjaBlue/Faceset.png",
+      "sha256": "9d661484288e234490191931e5f98a9cebdb0cbec2dbd72cc3e572797f73db99",
+      "bytes": 3337,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/NinjaGreen.png",
+      "source": "Actor/Character/NinjaGreen/SpriteSheet.png",
+      "sha256": "c99c8142f4813562a4e76e96d93bbe8e0b04c22e0625c98b75cf564c99e36358",
+      "bytes": 5224,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/NinjaGreen.png",
+      "source": "Actor/Character/NinjaGreen/Faceset.png",
+      "sha256": "d73020126261f52aa43e5109723985887ad27d0c259c378c8c94fc319c277309",
+      "bytes": 3245,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/NinjaMageBlack.png",
+      "source": "Actor/Character/NinjaMageBlack/SpriteSheet.png",
+      "sha256": "580687eb3e16ba23a1f641cfba9606099fe38bc029f62afcba9cbdbb69ba6c64",
+      "bytes": 5241,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/NinjaMageBlack.png",
+      "source": "Actor/Character/NinjaMageBlack/Faceset.png",
+      "sha256": "e8e1a2de4f3ae51a1345d18eb29c945061efe8ab8e2fa6e66c2d0607bacdfddf",
+      "bytes": 697,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/SamuraiBlue.png",
+      "source": "Actor/Character/SamuraiBlue/SpriteSheet.png",
+      "sha256": "7307266f5a51c5a7446350bf5a5866930fccbebd67429f11dca213086f89e062",
+      "bytes": 5536,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/SamuraiBlue.png",
+      "source": "Actor/Character/SamuraiBlue/Faceset.png",
+      "sha256": "8e86854a240028e063d773561c62473e47a9a227e884a02a41a31d53ab68c942",
+      "bytes": 874,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/FighterWhite.png",
+      "source": "Actor/Character/FighterWhite/SpriteSheet.png",
+      "sha256": "4ae38aeb7740229d7dab037e2ff4fa0e3ea5753ffb1be26dbd2e437624b874e0",
+      "bytes": 7606,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/FighterWhite.png",
+      "source": "Actor/Character/FighterWhite/Faceset.png",
+      "sha256": "4262b8cc6d978b4db6cf9ddcff32ab26337ac96b314282e9c12fb9b44829e793",
+      "bytes": 860,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/Boy.png",
+      "source": "Actor/Character/Boy/SpriteSheet.png",
+      "sha256": "d30facbd09de5521ec2152e8d9c291a90b35d93d9221514628b2f8d43dbfe6fe",
+      "bytes": 5194,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/Boy.png",
+      "source": "Actor/Character/Boy/Faceset.png",
+      "sha256": "9a7c2fe87351f94c21994a1257a9ac451b958306b022ad33f18558e7dcedc442",
+      "bytes": 3265,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/Child.png",
+      "source": "Actor/Character/Child/SpriteSheet.png",
+      "sha256": "671b433cedd0df0877141efba2f37d172458413a863dd43e56c0e2e74a6bf555",
+      "bytes": 3782,
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "portraits/Child.png",
+      "source": "Actor/Character/Child/Faceset.png",
+      "sha256": "ce3439411a1e254ece3fd6bd3d17d7ae2194f40e7d94e3ab6d8af6ee31f7cfb9",
+      "bytes": 3434,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "actors/Noble.png",
+      "source": "Actor/Character/Noble/SpriteSheet.png",
+      "sha256": "44ed23ecd5d7e7fa324e38e28252369f2167943ec26a490f9a2f5787cc8cbab0",
+      "bytes": 5436,
+      "size": [
+        64,
+        112
+      ]
+    },
+    {
+      "file": "portraits/Noble.png",
+      "source": "Actor/Character/Noble/Faceset.png",
+      "sha256": "d4914d1774a7b857aa1321c4a410c77cda3680444851a3e602b643dd420a20b6",
+      "bytes": 3241,
+      "size": [
+        38,
+        38
+      ]
+    },
+    {
+      "file": "animated/Idle.png",
+      "source": "Actor/CharacterAnimated/NinjaGreen/Separate/Idle.png",
+      "sha256": "58375e9f65d40403aded184328456204c8008df05bafab7a74b846e68b6a657b",
+      "bytes": 1560,
+      "size": [
+        128,
+        128
+      ]
+    },
+    {
+      "file": "animated/Walk.png",
+      "source": "Actor/CharacterAnimated/NinjaGreen/Separate/Walk.png",
+      "sha256": "d03702e8b5bd7e98c177c27f80acb00e09f339596269209df1b6594a39bb6c36",
+      "bytes": 1847,
+      "size": [
+        128,
+        128
+      ]
+    },
+    {
+      "file": "animated/Attack.png",
+      "source": "Actor/CharacterAnimated/NinjaGreen/Separate/Attack.png",
+      "sha256": "f4a1d75b7bfdb8a1f038d65d1a0b07ee7d38e1f97c9edf827341c0a94b6898b9",
+      "bytes": 2411,
+      "size": [
+        128,
+        128
+      ]
+    },
+    {
+      "file": "animated/Hit.png",
+      "source": "Actor/CharacterAnimated/NinjaGreen/Separate/Hit.png",
+      "sha256": "e296cec728ad53665a10a805e2e52324a542ee57675e6a9e68881e64af333f65",
+      "bytes": 1406,
+      "size": [
+        128,
+        64
+      ]
+    },
+    {
+      "file": "animated/Roll.png",
+      "source": "Actor/CharacterAnimated/NinjaGreen/Separate/Roll.png",
+      "sha256": "35ac017bb7b8838a1fae633add9cc2b4b6c8076b4f69a22763fb00f6be207d0a",
+      "bytes": 1749,
+      "size": [
+        128,
+        96
+      ]
+    },
+    {
+      "file": "animated/Dead.png",
+      "source": "Actor/CharacterAnimated/NinjaGreen/Separate/Dead.png",
+      "sha256": "3d14bec49e3c1ef58df5681a6f495d56c121fe9be7824607c543aa2e76040b4e",
+      "bytes": 566,
+      "size": [
+        32,
+        64
+      ]
+    },
+    {
+      "file": "animated/Pickup.png",
+      "source": "Actor/CharacterAnimated/NinjaGreen/Separate/Pickup.png",
+      "sha256": "5f4893622947733beb063dc5a8d8d68cebdea5e42290e7a44a1e5b58206cb03c",
+      "bytes": 624,
+      "size": [
+        32,
+        64
+      ]
+    },
+    {
+      "file": "animated/Item.png",
+      "source": "Actor/CharacterAnimated/NinjaGreen/Separate/Item.png",
+      "sha256": "37de68f8651dd10f79f43343871dc58d4120d5394128f1e87a54b0a009cac13f",
+      "bytes": 529,
+      "size": [
+        32,
+        64
+      ]
+    },
+    {
+      "file": "fx/slash.png",
+      "source": "FX/Attack/SlashCurved/SpriteSheet.png",
+      "sha256": "5d5342f3a6b0824e4a6a135a4ca597fcc569535835dcd570e9b772ee4ab5fbea",
+      "bytes": 479,
+      "size": [
+        128,
+        32
+      ]
+    },
+    {
+      "file": "fx/claw.png",
+      "source": "FX/Attack/Claw/SpriteSheet.png",
+      "sha256": "fe0eeae77261956e4ee1bee3780482115d29a3bf985fac6ddd7960f7b51267a8",
+      "bytes": 731,
+      "size": [
+        128,
+        32
+      ]
+    },
+    {
+      "file": "fx/cut.png",
+      "source": "FX/Attack/CutX/SpriteSheet.png",
+      "sha256": "c2d7ca44e0f637bdca3dd23e6124907a2ac8f8320c58a4cc8d0c50765e874979",
+      "bytes": 569,
+      "size": [
+        128,
+        32
+      ]
+    },
+    {
+      "file": "fx/smoke.png",
+      "source": "FX/Smoke/Smoke/SpriteSheet.png",
+      "sha256": "33b2fc9c855a3dfc620f3bc5e494ab08e559b29737d72ea0b80283b779e5023d",
+      "bytes": 1446,
+      "size": [
+        192,
+        32
+      ]
+    },
+    {
+      "file": "fx/magic-circle.png",
+      "source": "FX/Magic/Circle/SpriteSheetOrange.png",
+      "sha256": "bdc3bbde08625fb615130846d430b53ca2200f06650268c7d05eb8f33218fc04",
+      "bytes": 592,
+      "size": [
+        128,
+        32
+      ]
+    },
+    {
+      "file": "fx/magic-spark.png",
+      "source": "FX/Magic/Circle/SpriteSheetSpark.png",
+      "sha256": "fd88f439972415d13e069cf3791146e838e2079c28d5b7fbd7e3031cfd314672",
+      "bytes": 784,
+      "size": [
+        192,
+        32
+      ]
+    },
+    {
+      "file": "fx/heal.png",
+      "source": "FX/Magic/Boost/SpriteSheet.png",
+      "sha256": "dac0e257f7bd11b4208d1c309c5388ec0b54c671d487e2e2e0a4127c7313d063",
+      "bytes": 810,
+      "size": [
+        424,
+        35
+      ]
+    },
+    {
+      "file": "fx/spark.png",
+      "source": "FX/Magic/Spark/SpriteSheet.png",
+      "sha256": "cfd7d4cb3b4d1c0f1137543cbef0d32a07b3db77a08e876c16bbbcbbcd0695eb",
+      "bytes": 1490,
+      "size": [
+        270,
+        35
+      ]
+    },
+    {
+      "file": "fx/shield.png",
+      "source": "FX/Magic/Shield/SpriteSheetBlue.png",
+      "sha256": "47efef506d7d00376f303662c4b43770d43e82989062a306bdd4b8c0e661ca0f",
+      "bytes": 1523,
+      "size": [
+        144,
+        26
+      ]
+    },
+    {
+      "file": "fx/aura.png",
+      "source": "FX/Magic/Aura/SpriteSheet.png",
+      "sha256": "55f3c93e7666be29780fedffab4e7eb5bf1a864ce329fd10e6c3970263394699",
+      "bytes": 1706,
+      "size": [
+        125,
+        24
+      ]
+    },
+    {
+      "file": "fx/spirit.png",
+      "source": "FX/Magic/Spirit/SpriteSheetBlue.png",
+      "sha256": "75fb5220178594ef49ee6f47bee8a53c77760efac6580c6ec1669598557ed84b",
+      "bytes": 669,
+      "size": [
+        160,
+        32
+      ]
+    },
+    {
+      "file": "fx/fire.png",
+      "source": "FX/Elemental/Flam/SpriteSheet.png",
+      "sha256": "a46b49fdd9149cdee578acc9ebde50147f7c84faf8463ff265f3f54677e79e4d",
+      "bytes": 3010,
+      "size": [
+        200,
+        30
+      ]
+    },
+    {
+      "file": "fx/explosion.png",
+      "source": "FX/Elemental/Explosion/SpriteSheet.png",
+      "sha256": "98f3dfc6cdcdfaf122d7cf70b7cbc8e14c96f4e76f1e8f430099575d6b942219",
+      "bytes": 2939,
+      "size": [
+        360,
+        40
+      ]
+    },
+    {
+      "file": "fx/thunder.png",
+      "source": "FX/Elemental/Thunder/SpriteSheet.png",
+      "sha256": "a6563e86290a06e44e005733786a8576b991f7dfda83b613f145372af1d2fe7d",
+      "bytes": 688,
+      "size": [
+        160,
+        28
+      ]
+    },
+    {
+      "file": "tiles/props.png",
+      "source": "Backgrounds/Tilesets/TilesetElement.png",
+      "sha256": "63d64985697d77033372256b9304ea85db7061f0fc19aafd0714492a9b57140e",
+      "bytes": 13884,
+      "size": [
+        256,
+        240
+      ]
+    },
+    {
+      "file": "tiles/camp.png",
+      "source": "Backgrounds/Tilesets/tileset_camp.png",
+      "sha256": "93440df0e9039a8f8cd6758da8a41d7405545c8444e1fb10c4ea9ea4746e1051",
+      "bytes": 15642,
+      "size": [
+        368,
+        144
+      ]
+    },
+    {
+      "file": "tiles/house.png",
+      "source": "Backgrounds/Tilesets/TilesetHouse.png",
+      "sha256": "acdec09ff389883a48af18ebd344cac4081db0388154d4d13be0089cd376d508",
+      "bytes": 58356,
+      "size": [
+        528,
+        368
+      ]
+    },
+    {
+      "file": "tiles/interior-floor.png",
+      "source": "Backgrounds/Tilesets/Interior/TilesetInteriorFloor.png",
+      "sha256": "e281598e2d90f43b31fd557b94c2d2abb00d307758a053b7df301575bf535e3a",
+      "bytes": 13012,
+      "size": [
+        352,
+        272
+      ]
+    },
+    {
+      "file": "tiles/interior-wall.png",
+      "source": "Backgrounds/Tilesets/Interior/TilesetWallSimple.png",
+      "sha256": "ad5eb80ab4d5e65dbcda9dc012f9981323b277717349cdab012fc65ce06e43b2",
+      "bytes": 5149,
+      "size": [
+        160,
+        176
+      ]
+    },
+    {
+      "file": "tiles/interior.png",
+      "source": "Backgrounds/Tilesets/Interior/TilesetInterior.png",
+      "sha256": "49b76b218b3fbb3308984f7579609822eb99d464557aaa6859296e11378f42ba",
+      "bytes": 14493,
+      "size": [
+        256,
+        320
+      ]
+    },
+    {
+      "file": "ui/heart.png",
+      "source": "Ui/Receptacle/IconHeart.png",
+      "sha256": "45bbfd7e60bf0cfc07055eeb2621a7982cb400f9d24259de63200b12f43310a0",
+      "bytes": 200,
+      "size": [
+        14,
+        12
+      ]
+    },
+    {
+      "file": "ui/heart-states.png",
+      "source": "Ui/Receptacle/Heart.png",
+      "sha256": "f1163b91560c5097ac1de4f26470abaa9e3461f3bc4a8685fd7daae2d8cabb61",
+      "bytes": 3125,
+      "size": [
+        80,
+        16
+      ]
+    },
+    {
+      "file": "ui/heart-states2.png",
+      "source": "Ui/Receptacle/Heart2.png",
+      "sha256": "171a6e599458702c9bc28d8a873dd1174023011604d51bf7329f5fc6f840a50d",
+      "bytes": 290,
+      "size": [
+        64,
+        16
+      ]
+    },
+    {
+      "file": "ui/emotes/emote1.png",
+      "source": "Ui/Emote/emote1.png",
+      "sha256": "0b787269cc6583b2cfd2020318d4a333d061d863bff526d263caae1feb402189",
+      "bytes": 179,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote10.png",
+      "source": "Ui/Emote/emote10.png",
+      "sha256": "b51f7230fd57ecf701ff961bd5d08684e88a4e9dd96c320993af8a9e36c56124",
+      "bytes": 175,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote11.png",
+      "source": "Ui/Emote/emote11.png",
+      "sha256": "6b5fc25dbef20230369d4a847b8621c04af84314de9cd9d08c03ef053da90d06",
+      "bytes": 180,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote12.png",
+      "source": "Ui/Emote/emote12.png",
+      "sha256": "a7e815b1b015e93da7e572f5f52585f24a474842224ff3acffd99115058fad65",
+      "bytes": 175,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote13.png",
+      "source": "Ui/Emote/emote13.png",
+      "sha256": "01fa2a80b1e5401cd353244e229c019f1265755ceb1244bbfa02cf2654131a66",
+      "bytes": 169,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote14.png",
+      "source": "Ui/Emote/emote14.png",
+      "sha256": "e200c3345e11323e7413ac7dcac105c39bf05fd3e1a0b735f572bc6073db55e7",
+      "bytes": 166,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote15.png",
+      "source": "Ui/Emote/emote15.png",
+      "sha256": "df814ba9f8a93fb035c559d69645649a1e7b38c16dad1ad2b599e240f609f137",
+      "bytes": 198,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote16.png",
+      "source": "Ui/Emote/emote16.png",
+      "sha256": "5b3d983a91621b13797a3e972b91bc6c47f2408b6e9cf132b675f542b884de2f",
+      "bytes": 172,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote17.png",
+      "source": "Ui/Emote/emote17.png",
+      "sha256": "c7e78a40aad37c6271c25671c78a35ccbc15d9bc91c9f0b48980648c987644da",
+      "bytes": 188,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote18.png",
+      "source": "Ui/Emote/emote18.png",
+      "sha256": "49f38e75da41ac3ebcfb9c7204355e1b661016da708878dd50e5ca39d5a5dbad",
+      "bytes": 184,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote19.png",
+      "source": "Ui/Emote/emote19.png",
+      "sha256": "58f610d23ee5ace228b5590b6ec9ab00911fa0c238286a763718a1b94bdb4d50",
+      "bytes": 186,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote2.png",
+      "source": "Ui/Emote/emote2.png",
+      "sha256": "91dbe0ecd9a7014578646470b032a4845203d13156a4149a403f5115a3a558f8",
+      "bytes": 185,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote20.png",
+      "source": "Ui/Emote/emote20.png",
+      "sha256": "2687fcf383f9f6880909e6a066bf3bbf1c8f93ad5cbba44600234f3a00fd8dbb",
+      "bytes": 158,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote21.png",
+      "source": "Ui/Emote/emote21.png",
+      "sha256": "832805e7c150e23b95212c9a3282f6cb643e58985eb2738b58c6aab54e54265b",
+      "bytes": 166,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote22.png",
+      "source": "Ui/Emote/emote22.png",
+      "sha256": "d132bef23f759d7a740bfedf8802083472776719d0a4bcc878fb162cbd075753",
+      "bytes": 166,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote23.png",
+      "source": "Ui/Emote/emote23.png",
+      "sha256": "a9298c965552e7afb2f812890f3dc7ce515d1b306b533f7e5312024219ff7aa6",
+      "bytes": 201,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote24.png",
+      "source": "Ui/Emote/emote24.png",
+      "sha256": "4249d25e68ff8652c816ff1c5721ebd3e27ee544eda65d1c0900f69265f667bf",
+      "bytes": 186,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote25.png",
+      "source": "Ui/Emote/emote25.png",
+      "sha256": "c7e3bb9c75af574b970899942243101e1affc582324927770f6e1c6fdf88d81c",
+      "bytes": 189,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote26.png",
+      "source": "Ui/Emote/emote26.png",
+      "sha256": "e1143e4690e482b2cb29bd8afbce0500fd1b91a93b89959f5df2c7ce7e44bd11",
+      "bytes": 206,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote27.png",
+      "source": "Ui/Emote/emote27.png",
+      "sha256": "393f8153c623f22b1136600391fc6406cb5a4ec697b183a3aece5a84306b0da5",
+      "bytes": 183,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote28.png",
+      "source": "Ui/Emote/emote28.png",
+      "sha256": "3c0f004bbbc26ed9391978c1ce89cdb6cabed05cf5952fc49cfc0782923da67a",
+      "bytes": 195,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote29.png",
+      "source": "Ui/Emote/emote29.png",
+      "sha256": "fee7dfd994cb563b2e422f992a2d5a1b4652e8c04e633ea5cdf9977c0d94c561",
+      "bytes": 196,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote3.png",
+      "source": "Ui/Emote/emote3.png",
+      "sha256": "efca2b7d293b16aa5a33c95750c885b4c430a20241db3bbe3bb2ed9c162c741b",
+      "bytes": 193,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote30.png",
+      "source": "Ui/Emote/emote30.png",
+      "sha256": "42c52c61c00294541c0b4a429182632efbe9e6c722728750ae99c2f3c8a80d8f",
+      "bytes": 177,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote4.png",
+      "source": "Ui/Emote/emote4.png",
+      "sha256": "26ffd31500e53ed4231703cc3b7a2602db1db823e6393ed549a64a62764c7990",
+      "bytes": 185,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote5.png",
+      "source": "Ui/Emote/emote5.png",
+      "sha256": "de0855d69d5e8293e5a651e927f96422dfcec11743490995c8b74e00f5657c22",
+      "bytes": 166,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote6.png",
+      "source": "Ui/Emote/emote6.png",
+      "sha256": "f278acfac1ddc49ef356e32f7c11367c7fd3c3fcfd4737037dd9a5bdf37034fb",
+      "bytes": 175,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote7.png",
+      "source": "Ui/Emote/emote7.png",
+      "sha256": "1796b5ab88828195e3cea6a7c01244a278bc93e1bc1f27a9cb27a24f2e862f02",
+      "bytes": 205,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote8.png",
+      "source": "Ui/Emote/emote8.png",
+      "sha256": "65bfc1e477fc3420dd8ac0c6a922ee9f58ba45ff72b708098d4d9dc233ac0a9c",
+      "bytes": 197,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "ui/emotes/emote9.png",
+      "source": "Ui/Emote/emote9.png",
+      "sha256": "f6a07464020abc2351fe2816e4affd181f1f66e89ba033c0f429cd1bec75932d",
+      "bytes": 191,
+      "size": [
+        14,
+        13
+      ]
+    },
+    {
+      "file": "audio/slash.wav",
+      "source": "Audio/Sounds/Whoosh & Slash/Slash.wav",
+      "sha256": "0617f09ebe05251353bd0bfe0c05b84fb774c3f7b51b4444b711f314798e917d",
+      "bytes": 59344
+    },
+    {
+      "file": "audio/hit.wav",
+      "source": "Audio/Sounds/Hit & Impact/Hit1.wav",
+      "sha256": "56b206a2648109fa25761b7034c211903ef10f1a9b4ce2f6526f7a77a831328d",
+      "bytes": 60200
+    },
+    {
+      "file": "audio/magic.wav",
+      "source": "Audio/Sounds/Magic & Skill/Magic1.wav",
+      "sha256": "8e73ed5ac62f32e8f327a6e3d12c8dd90fb087e4b6ac4367e69a856ca43a6630",
+      "bytes": 70608
+    },
+    {
+      "file": "audio/heal.wav",
+      "source": "Audio/Sounds/Magic & Skill/Heal.wav",
+      "sha256": "693dc7b572ab92a58f17d71f4866a82252841841426928c777d7aa52b39a8dee",
+      "bytes": 54816
+    },
+    {
+      "file": "audio/coin.wav",
+      "source": "Audio/Sounds/Bonus/Coin.wav",
+      "sha256": "0a28cb379c8b9ba2dc0a96ddc770aeaa648c013fb1f5db3be3535467ca928661",
+      "bytes": 51508
+    },
+    {
+      "file": "audio/fire.wav",
+      "source": "Audio/Sounds/Elemental/Fireball.wav",
+      "sha256": "8a51ddab1add19c0d75beb1e015659e8a29cccaef3787ddabe57c63dc062fc34",
+      "bytes": 60794
+    },
+    {
+      "file": "audio/success.wav",
+      "source": "Audio/Jingles/Success1.wav",
+      "sha256": "025ffc87feca7630e813eb1e4673c7db44b4ad1d51a58ff216ea58656266518c",
+      "bytes": 78838
+    }
+  ]
+}

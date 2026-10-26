@@ -1,0 +1,33 @@
+{
+  "name": "@partyframe/runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsc -b --watch --preserveWatchOutput",
+    "typecheck": "tsc -b --pretty",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@colyseus/core": "0.16.24",
+    "@colyseus/schema": "3.0.76",
+    "@partyframe/game-core": "workspace:*",
+    "@partyframe/protocol": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3"
+  },
+  "files": [
+    "dist"
+  ]
+}
