@@ -1,3 +1,4 @@
+import { seats as slots, landmarks as npcPositions, targetPosition, actorPosition, recoil } from './tavern-motion.js';
 import { SKIN, HAIR, CLOTHES, DEFAULT_AVATAR } from './core.js';
 import { ninjaAvatarFrame, drawNinjaEffect, ninjaAssetsReady } from './ninja.js';
 ninjaAssetsReady.then(()=>document.dispatchEvent(new CustomEvent('ninja-assets-ready')));
@@ -52,14 +53,9 @@ function tile(g,id,x,y,size=32,img=sprites) {
   if(!img.complete||!img.naturalWidth)return;
   g.drawImage(img,(id%12)*16,Math.floor(id/12)*16,16,16,Math.round(x),Math.round(y),size,size);
 }
-const slots=[ [154,278],[278,280],[402,280],[532,280],[660,278],[784,278],
-  [188,377],[310,378],[435,378],[563,378],[688,378],[812,377],
-  [154,474],[278,475],[402,475],[532,475],[660,474],[784,474],
-  [210,212],[341,212],[598,212],[728,212],[110,385],[866,385] ];
-const npcPositions={guard:[853,250],bartender:[480,134],chest:[665,130],goblin:[100,222],chandelier:[480,225],door:[480,510],room:[480,330]};
 export class TavernScene {
   constructor(){this.canvas=null;this.state=null;this.lastFrame=0;this.resultId=null;this.fxAt=0;this.declarationId=null;this.declareAt=0;this.reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;this.on=true;this.loop=this.loop.bind(this);requestAnimationFrame(this.loop);}
-  attach(canvas){this.canvas=canvas;if(canvas){canvas.width=960;canvas.height=540;}}
+  attach(canvas){if(this.canvas===canvas)return;this.canvas=canvas;if(canvas){canvas.width=960;canvas.height=540;}}
   setState(state){
     this.state=state;
     if(state?.result&&state.result.id!==this.resultId){this.resultId=state.result.id;this.fxAt=performance.now();}
@@ -83,18 +79,34 @@ export class TavernScene {
     for(const sx of [124,700]){g.fillStyle='#34242b';g.fillRect(sx,38,140,52);g.fillStyle='#9d7150';g.fillRect(sx-4,83,148,7);for(let n=0;n<5;n++)tile(g,113+(n%4),sx+n*27,49,28);}
     g.fillStyle='#261d29';g.fillRect(350,34,260,53);g.strokeStyle='#a87c50';g.lineWidth=3;g.strokeRect(351,35,258,51);
     g.font='bold 16px monospace';g.textAlign='center';g.fillStyle='#e0bd80';g.fillText('THE TIPSY WYVERN',480,57);g.font='10px monospace';g.fillStyle='#a48e7a';g.fillText('EST. BEFORE GOOD JUDGMENT',480,74);
+    // Tall oak beams, moonlit windows and a hearth give the room a lived-in silhouette.
+    for(const x of [48,302,650,900]){g.fillStyle='#30232a';g.fillRect(x,22,10,114);g.fillStyle='#916044';g.fillRect(x+2,22,3,110);}
+    for(const x of [76,822]){g.fillStyle='#211c30';g.fillRect(x,40,58,64);g.fillStyle='#675976';g.fillRect(x+5,45,48,52);g.fillStyle='#333c5a';g.fillRect(x+8,48,42,46);g.fillStyle='#b8c9b8';g.fillRect(x+36,51,8,8);g.fillStyle='#4f3840';g.fillRect(x+27,45,5,52);g.fillRect(x+5,70,48,5);g.fillStyle='#b18156';g.fillRect(x-3,100,64,6);}
+    g.fillStyle='#28222a';g.fillRect(54,260,76,87);g.fillStyle='#62515a';g.fillRect(50,252,84,12);g.fillRect(54,264,12,76);g.fillRect(118,264,12,76);g.fillStyle='#1f1922';g.fillRect(66,272,52,62);
+    for(let n=0;n<7;n++){g.fillStyle=n%2?'#f5bf66':'#c76c43';const h=18+Math.sin(second*7+n*2)*8;g.fillRect(70+n*6,328-h,5,h);}
+    g.fillStyle='#624333';g.fillRect(62,329,60,7);
+    const warmth=g.createRadialGradient(92,318,8,92,318,145);warmth.addColorStop(0,'#efa05235');warmth.addColorStop(1,'#efa05200');g.fillStyle=warmth;g.fillRect(30,200,220,240);
+    // Bunting and hanging ironwork are kept above the walkable floor.
+    g.strokeStyle='#30232b';g.lineWidth=2;g.beginPath();g.moveTo(320,25);g.quadraticCurveTo(480,34,640,25);g.stroke();
+    for(let n=0;n<11;n++){const x=330+n*29,y=16+Math.sin(n/10*Math.PI)*5;g.fillStyle=n%2?'#98704e':'#6c5961';g.beginPath();g.moveTo(x,y);g.lineTo(x+12,y+2);g.lineTo(x+5,y+16);g.fill();}
     // Rugs and tables leave walkable gaps for a large party.
     const rug=(x,y,w,h)=>{g.fillStyle='#44334d';g.fillRect(x,y,w,h);g.fillStyle='#6d4762';g.fillRect(x+5,y+4,w-10,h-8);g.strokeStyle='#ae8263';g.lineWidth=2;g.strokeRect(x+10,y+8,w-20,h-16);};
     rug(346,290,270,175);
+    for(let y=309;y<453;y+=18){g.fillStyle='#9a705f';g.fillRect(358,y,4,4);g.fillRect(600,y,4,4);}
+    for(const [x,y] of [[74,367],[850,365],[155,146],[750,149]]){tile(g,82,x,y,36);tile(g,113,x+7,y-9,24);}
+    // Small candlelit sideboards and scattered mugs break up the empty floor.
+    for(const x of [140,758]){g.fillStyle='#3d2a2b';g.fillRect(x,175,62,20);g.fillStyle='#ad7951';g.fillRect(x-3,171,68,7);tile(g,114,x+9,151,27);tile(g,113,x+33,155,23);}
+    for(const x of [218,682]){g.fillStyle='#37262b';g.fillRect(x,305,5,17);g.fillStyle='#f3d497';g.fillRect(x,301,5,12);g.fillStyle='#ffd98a';g.fillRect(x+1,297+Math.round(Math.sin(second*6)),3,5);}
     const table=(x,y)=>{g.fillStyle='#00000033';g.fillRect(x-42,y+24,84,16);g.fillStyle='#36262a';g.fillRect(x-36,y-9,72,46);g.fillStyle='#ae7850';g.fillRect(x-40,y-16,80,40);g.fillStyle='#bf8759';g.fillRect(x-36,y-16,72,5);g.fillStyle='#85563d';g.fillRect(x-36,y+3,72,2);tile(g,113,x-27,y-27,27);tile(g,114,x+7,y-25,27);g.fillStyle='#dec19b';g.fillRect(x+2,y+6,12,3);};
-    for(const [x,y] of [[248,325],[711,325],[248,430],[711,430]]){tile(g,73,x-67,y+3,32);tile(g,73,x+35,y+3,32);table(x,y);}
+    const furniture=[[245,335],[715,335],[245,445],[715,445]];
+    const layers=furniture.map(([x,y])=>({y,draw:()=>{tile(g,73,x-67,y+3,32);tile(g,73,x+35,y+3,32);table(x,y);}}));
     // Counter and the crown chest, all from reusable licensed tiles.
     for(let x=306;x<664;x+=32){tile(g,63,x,132);g.fillStyle='#bc885a';g.fillRect(x,130,32,6);}
     tile(g,89,650,113,40);tile(g,82,824,121,44);tile(g,82,865,143,40);tile(g,82,73,135,44);
-    tile(g,85,460,91,40);this.label(g,'MARNIE',480,89,'#dfbd89',10);
-    tile(g,96,831,211,44);tile(g,97,75,419,42);tile(g,96,838,418,42);
-    this.label(g,'CAPT. BRICK',853,208,'#bdc6d0',9);
-    tile(g,112,79,183,42);tile(g,117,103,198,23,town);this.label(g,'THE FIDDLER',100,178,'#cad5a8',9);
+
+
+
+
     // Doorway and a warm patch of light spilling out.
     g.fillStyle='#35252e';g.fillRect(435,510,90,30);g.fillStyle='#cda374';g.fillRect(441,514,78,26);g.fillStyle='#9c7355';g.fillRect(449,518,62,22);
     this.label(g,'EXIT',480,533,'#ebc998',10);
@@ -108,11 +120,17 @@ export class TavernScene {
     if(!players.length){
       const previews=[{skin:2,hair:0,color:0,accessory:1},{skin:0,hair:2,color:1,accessory:4},{skin:4,hair:3,color:4,accessory:0}];
       previews.forEach((a,i)=>this.person(g,{id:'preview'+i,avatar:{...DEFAULT_AVATAR,...a},name:['YOUR NEXT','BAD IDEA','STARTS HERE'][i],hp:10,connected:true},[380+i*100,367],second,i,t));
-    }else players.forEach((p,i)=>this.person(g,p,slots[i%slots.length],second,i,t));
+    }else players.forEach((p,i)=>{const pos=this.position(p,i,t);layers.push({y:pos[1],draw:()=>this.person(g,p,pos,second,i,t)});});
+    const npcs=[{id:'bartender',name:'MARNIE',avatar:{...DEFAULT_AVATAR,skin:3,hair:1,outfit:1,color:2}}, {id:'guard',name:'CAPTAIN BRICK',avatar:{...DEFAULT_AVATAR,outfit:3,hair:5,color:4,accessory:0}}, {id:'goblin',name:'THE FIDDLER',avatar:{...DEFAULT_AVATAR,body:'elf',hair:2,color:3,accessory:1}}];
+    for(const npc of npcs){const pos=[...npcPositions[npc.id]];const hit=r?.result?.success&&r.result.target?.kind===npc.id&&['attack','magic','break'].includes(r.result.intent);if(hit)pos[0]+=recoil(t-this.fxAt,this.reduced);layers.push({y:pos[1],draw:()=>this.person(g,{...npc,hp:10,connected:true,npc:true,hit:hit&&t-this.fxAt<650},pos,second,0,t)});}
+    layers.sort((a,b)=>a.y-b.y).forEach(layer=>layer.draw());
+    // Foreground framing adds depth without hiding the central action.
+    for(const x of [28,920]){g.fillStyle='#261e27';g.fillRect(x,114,12,410);g.fillStyle='#946246';g.fillRect(x+3,114,3,410);}
+
     const elapsed=t-this.fxAt;
     if(r?.result&&elapsed<3400)this.effects(g,r.result,elapsed);
     if(r?.phase==='react'&&r.turn&&t-this.declareAt<3000){
-      const i=players.findIndex(p=>p.id===r.turn.actorId),pos=slots[Math.max(0,i)];
+      const i=players.findIndex(p=>p.id===r.turn.actorId),pos=this.position(players[i],Math.max(0,i),t);
       g.fillStyle='#f5dc9a';const w=130;g.fillRect(pos[0]-w/2,pos[1]-115,w,25);g.fillRect(pos[0]-3,pos[1]-91,6,7);g.font='bold 10px monospace';g.textAlign='center';g.fillStyle='#332836';g.fillText('IDEA LOCKED IN!',pos[0],pos[1]-99);
     }
     if(r?.quest.crown){const i=players.findIndex(p=>p.id===r.quest.carrierId);if(i>=0){const pos=slots[i];this.crown(g,pos[0],pos[1]-97+Math.sin(second*3)*3,1.2);}}
@@ -120,30 +138,40 @@ export class TavernScene {
     // Subtle vignette uses one gradient instead of a full-screen image filter.
     const vignette=g.createRadialGradient(480,280,200,480,280,570);vignette.addColorStop(0,'#130e2000');vignette.addColorStop(1,'#130e2070');g.fillStyle=vignette;g.fillRect(0,0,960,540);
   }
+  position(p,i,t){
+    const home=slots[i%slots.length];if(!p)return home;
+    const r=this.state,turn=r?.turn;
+    if(turn?.actorId!==p.id)return home;
+    const target=targetPosition(turn.target,r.players,home);
+    return actorPosition(home,target,t-this.declareAt,r.result?.id===turn.id?t-this.fxAt:null,this.reduced);
+  }
   label(g,text,x,y,color='#f3e7cb',size=11){g.font=`bold ${size}px monospace`;g.textAlign='center';g.fillStyle='#1a1728';g.fillText(text,x+1,y+1);g.fillStyle=color;g.fillText(text,x,y);}
   person(g,p,pos,second,i,t){
     let [x,y]=pos;const r=this.state;const active=r?.turn?.actorId===p.id&&['react','reveal'].includes(r.phase);const reaction=r?.turn?.reactions.find(q=>q.playerId===p.id);
     const elapsed=t-this.fxAt;
-    if(r?.result?.playerId===p.id&&elapsed<800){const q=Math.sin(elapsed/800*Math.PI);x+=q*15;y-=q*9;}
+    if(!p.npc&&r?.result?.success&&r.result.target?.id===p.id)y-=recoil(elapsed,this.reduced)*.4;
     const bob=this.reduced||p.hp===0?0:Math.floor(Math.sin(second*2+i)*1.4);
     g.globalAlpha=p.connected===false?.48:1;
     g.fillStyle=active?'#dab97a55':'#100e203d';g.beginPath();g.ellipse(x,y-2,23,7,0,0,Math.PI*2);g.fill();
     if(active){g.strokeStyle='#f3c975';g.lineWidth=2;g.beginPath();g.ellipse(x,y-2,27,9,0,0,Math.PI*2);g.stroke();}
     const resultActor=r?.result?.playerId===p.id&&elapsed<1500;
     const intent=r?.result?.intent;
-    const pose=p.hp===0?'dead':resultActor?({attack:'attack',break:'attack',magic:'cast',heal:'heal',steal:'steal',dance:'dance',flee:'flee',sneak:'walk'}[intent]||'item'):'idle';
+    const approaching=r?.phase==='react'&&r.turn?.actorId===p.id&&t-this.declareAt<850;
+    const pose=p.hit?'hit':p.hp===0?'dead':approaching?'walk':resultActor?({attack:'attack',break:'attack',magic:'cast',heal:'heal',steal:'steal',dance:'dance',flee:'flee',sneak:'walk'}[intent]||'item'):'idle';
     const sprite=avatarCanvas(p.avatar,pose,this.reduced?0:resultActor?elapsed:t+i*150);
-    g.drawImage(sprite,Math.round(x-25),Math.round(y-70+bob),50,70);
-    this.label(g,p.name?.slice(0,16)||'Adventurer',x,y+14,active?'#ffe4a2':p.isBot?'#bdb4cb':'#f5e7cf',11);
+    const crowded=(this.state?.players.length||0)>12&&!p.npc;
+    const scale=crowded?2:2.5;
+    g.drawImage(sprite,Math.round(x-10*scale),Math.round(y-28*scale+bob),20*scale,28*scale);
+    this.label(g,p.name?.slice(0,crowded&&!active?12:16)||'Adventurer',x,p.id==='guard'?y-77:y+14,active?'#ffe4a2':p.isBot?'#bdb4cb':'#f5e7cf',crowded?9:11);
     if(p.maxHp&&p.hp<p.maxHp){g.fillStyle='#261e2e';g.fillRect(x-17,y+19,34,3);g.fillStyle=p.hp<4?'#d96d7e':'#86b89b';g.fillRect(x-17,y+19,34*p.hp/p.maxHp,3);}
     if(reaction){const glyph={assist:'+',intervene:'!',flee:'»',custom:'?'}[reaction.kind];g.fillStyle='#221b30';g.fillRect(x+17,y-69,18,18);this.label(g,glyph,x+26,y-55,'#c2afe9',14);}
     g.globalAlpha=1;
   }
   crown(g,x,y,s=1){g.fillStyle='#5f3e31';g.fillRect(x-11*s,y+5*s,22*s,4*s);g.fillStyle='#edc46e';g.fillRect(x-10*s,y,20*s,6*s);g.fillRect(x-10*s,y-6*s,4*s,8*s);g.fillRect(x-2*s,y-4*s,4*s,7*s);g.fillRect(x+6*s,y-6*s,4*s,8*s);g.fillStyle='#fbebad';g.fillRect(x-9*s,y+1*s,18*s,2*s);}
   effects(g,res,elapsed){
-    const players=this.state?.players||[],i=players.findIndex(p=>p.id===res.playerId);const pos=slots[Math.max(0,i)];const f=Math.max(0,1-elapsed/3400);
+    const players=this.state?.players||[],i=players.findIndex(p=>p.id===res.playerId);const pos=this.position(players[i],Math.max(0,i),this.fxAt+elapsed);const f=Math.max(0,1-elapsed/3400);
     for(const effect of res.effects){
-      const j=players.findIndex(p=>p.id===effect.actorId),from=slots[Math.max(0,j)];
+      const j=players.findIndex(p=>p.id===effect.actorId),from=this.position(players[j],Math.max(0,j),this.fxAt+elapsed);
       const target=effect.target==='self'?from:effect.targetId?slots[Math.max(0,players.findIndex(p=>p.id===effect.targetId))]:(npcPositions[effect.target]||pos);
       const [x,y]=target;
       const licensed=drawNinjaEffect(g,effect.verb,x,y-35,elapsed,1.8);
