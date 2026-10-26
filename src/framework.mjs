@@ -2118,7 +2118,7 @@ for (const [i, [x, y]] of [[846, 165], [885, 180], [95, 170], [92, 403], [868, 4
 add("door", "the tavern door", "door", 480, 500, ["door", "gate"]);
 add("chest", "the locked chest", "chest", 670, 145, ["chest", "treasure", "crown", "box"]);
 add("chandelier", "the chandelier", "chandelier", 480, 260, ["chandelier", "hanging light"], { material: "metal", lit: true });
-add("hearth", "the fireplace", "hearth", 92, 330, ["fireplace", "hearth"], { lit: true });
+add("hearth", "the fireplace", "hearth", 92, 330, ["fireplace", "hearth", "fire"], { lit: true });
 add("sign", "the tavern sign", "sign", 480, 88, ["sign"], { portable: true });
 add("counter", "the bar counter", "counter", 480, 160, ["counter", "bar"]);
 add("floor", "the floorboards", "floor", 480, 400, ["floor", "floorboards"], { material: "wood" });
@@ -2146,7 +2146,7 @@ function objectState(world, id) {
   return { condition: legacy === false ? "taken" : legacy === "broken" ? "broken" : "intact", lit: !!o.lit, open: false, offset: [0, 0], ...world?.objects?.[id] };
 }
 function environmentVerb(text, intent) {
-  for (const [verb, pattern] of Object.entries({ extinguish: /\b(extinguish|douse|quench|put out|blow out)\b/i, repair: /\b(repair|fix|mend|restore)\b/i, ignite: /\b(ignite|light|burn|fireball|set.*on fire)\b/i, close: /\b(close|shut|lock)\b/i, open: /\b(unlock|pick.*lock|open)\b/i, push: /\b(push|shove|drag|move|pull|flip)\b/i, climb: /\b(sit|stand on|climb|jump on|dance on)\b/i, pour: /\b(pour|spill|empty|drink)\b/i, hide: /\b(hide|duck|crawl under)\b/i })) if (pattern.test(text) && !(verb === "push" && intent === "steal")) return verb;
+  for (const [verb, pattern] of Object.entries({ extinguish: /\b(extinguish|douse|quench|put out|blow out)\b/i, repair: /\b(repair|fix|mend|restore)\b/i, ignite: /\b(ignite|light|burn|fire|flame|fireball|set.*on fire)\b/i, close: /\b(close|shut|lock)\b/i, open: /\b(unlock|pick.*lock|open)\b/i, push: /\b(push|shove|drag|move|pull|flip)\b/i, climb: /\b(sit|stand on|climb|jump on|dance on)\b/i, pour: /\b(pour|spill|empty|drink)\b/i, hide: /\b(hide|duck|crawl under)\b/i })) if (pattern.test(text) && !(verb === "push" && intent === "steal")) return verb;
   return { attack: "break", break: "break", steal: "take" }[intent] || intent;
 }
 function environmentCheck(world, target, intent, text) {
@@ -2530,6 +2530,8 @@ function classify(text) {
 function targetFor(r, actor, text) {
   const t = text.toLowerCase();
   if (classify(text) === "flee") return { kind: "door", name: "the tavern exit" };
+  const aimed = t.match(/\b(?:at|on|against|into|towards?)\s+(?:the\s+)?(.+?)(?:\s+(?:with|using)\b|$)/);
+  if (aimed && aimed[1] !== t) return targetFor(r, actor, aimed[1]);
   const other = r.players.find((p) => p.id !== actor.id && t.includes(p.name.toLowerCase()));
   if (other) return { kind: "player", id: other.id, name: other.name };
   const environmental = environmentTarget(text);
@@ -2540,7 +2542,7 @@ function targetFor(r, actor, text) {
   if (/bartender|marnie|barkeep|barmaid/.test(t)) return { kind: "bartender", name: "Marnie" };
   if (/rug|carpet|mat|runner|tapestry/.test(t)) return { kind: "rug", name: "the tavern rug" };
   if (/crown|chest|box|treasure|drawer/.test(t)) return { kind: "chest", name: "the locked chest" };
-  if (/goblin|bard|musician/.test(t)) return { kind: "goblin", name: "the goblin fiddler" };
+  if (/goblin|bard|musician|fiddler/.test(t)) return { kind: "goblin", name: "the goblin fiddler" };
   if (/chandelier|ceiling/.test(t)) return { kind: "chandelier", name: "the chandelier" };
   return environmental || { kind: "room", name: "the tavern" };
 }
@@ -2690,6 +2692,17 @@ function resolve(r, now) {
   if (!automatic) r.stats.rolls++;
   if (critical) p.nat20++;
   const target = r.players.find((x) => x.id === t.target.id);
+  const damageNpc = (n) => {
+    if (!["guard", "bartender", "goblin"].includes(t.target.kind)) return;
+    const npcs = r.world.npcs ||= {}, npc = npcs[t.target.kind] ||= { hp: 8, maxHp: 8 };
+    npc.hp = Math.max(0, npc.hp - n);
+    add2(`${t.target.name} ${npc.hp}/8 HP`);
+    if (!npc.hp) {
+      npc.status = "knocked out";
+      add2(`${t.target.name} KNOCKED OUT`);
+      if (t.target.kind === "guard") r.world.guards = "distracted";
+    }
+  };
   const props = r.world.props || (r.world.props = { rug: true });
   const environmental = interactEnvironment(r.world, t.target, t.intent, success, p, { text: t.action });
   if (environmental) {
@@ -2776,8 +2789,12 @@ function resolve(r, now) {
       fx("spell");
       r.chaos += 2;
       if (success) {
-        narration = pick(r, [`${p.name} bends reality just enough to make everyone extremely uncomfortable.`, `${p.name} casts it. The goblin briefly glows. He charges extra for that.`, `${p.name} makes magic happen. Three guards immediately blame each other.`]);
-        if (target) recovery(target, 1);
+        const offensive = /\b(fire|fireball|lightning|bolt|blast|zap|freeze)\b/i.test(t.action);
+        narration = offensive ? `${p.name}'s spell strikes ${t.target.name}. The impact leaves a very real mark.` : pick(r, [`${p.name} bends reality just enough to make everyone extremely uncomfortable.`, `${p.name} casts it. The goblin briefly glows. He charges extra for that.`, `${p.name} makes magic happen. Three guards immediately blame each other.`]);
+        if (offensive) {
+          if (target) damage(target, critical ? 4 : 2);
+          else damageNpc(critical ? 4 : 2);
+        } else if (target) recovery(target, 1);
         if (t.target.kind === "guard") {
           r.world.guards = "distracted";
           add2("GUARDS DISTRACTED");

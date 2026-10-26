@@ -11,7 +11,7 @@ for(const [i,[x,y]] of [[846,165],[885,180],[95,170],[92,403],[868,401],[173,182
 add('door','the tavern door','door',480,500,['door','gate']);
 add('chest','the locked chest','chest',670,145,['chest','treasure','crown','box']);
 add('chandelier','the chandelier','chandelier',480,260,['chandelier','hanging light'],{material:'metal',lit:true});
-add('hearth','the fireplace','hearth',92,330,['fireplace','hearth'],{lit:true});
+add('hearth','the fireplace','hearth',92,330,['fireplace','hearth','fire'],{lit:true});
 add('sign','the tavern sign','sign',480,88,['sign'],{portable:true});
 add('counter','the bar counter','counter',480,160,['counter','bar']);
 add('floor','the floorboards','floor',480,400,['floor','floorboards'],{material:'wood'});
@@ -32,7 +32,7 @@ export function environmentTarget(text){
 }
 export function objectState(world,id){const o=OBJECTS[id];if(!o)return null;const legacy=world?.props?.[id];return {condition:legacy===false?'taken':legacy==='broken'?'broken':'intact',lit:!!o.lit,open:false,offset:[0,0],...world?.objects?.[id]};}
 export function environmentVerb(text,intent){
-  for(const [verb,pattern] of Object.entries({extinguish:/\b(extinguish|douse|quench|put out|blow out)\b/i,repair:/\b(repair|fix|mend|restore)\b/i,ignite:/\b(ignite|light|burn|fireball|set.*on fire)\b/i,close:/\b(close|shut|lock)\b/i,open:/\b(unlock|pick.*lock|open)\b/i,push:/\b(push|shove|drag|move|pull|flip)\b/i,climb:/\b(sit|stand on|climb|jump on|dance on)\b/i,pour:/\b(pour|spill|empty|drink)\b/i,hide:/\b(hide|duck|crawl under)\b/i}))if(pattern.test(text)&&!(verb==='push'&&intent==='steal'))return verb;
+  for(const [verb,pattern] of Object.entries({extinguish:/\b(extinguish|douse|quench|put out|blow out)\b/i,repair:/\b(repair|fix|mend|restore)\b/i,ignite:/\b(ignite|light|burn|fire|flame|fireball|set.*on fire)\b/i,close:/\b(close|shut|lock)\b/i,open:/\b(unlock|pick.*lock|open)\b/i,push:/\b(push|shove|drag|move|pull|flip)\b/i,climb:/\b(sit|stand on|climb|jump on|dance on)\b/i,pour:/\b(pour|spill|empty|drink)\b/i,hide:/\b(hide|duck|crawl under)\b/i}))if(pattern.test(text)&&!(verb==='push'&&intent==='steal'))return verb;
   return ({attack:'break',break:'break',steal:'take'})[intent]||intent;
 }
 export function environmentCheck(world,target,intent,text){

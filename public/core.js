@@ -95,6 +95,8 @@ export function classify(text) {
 function targetFor(r,actor,text) {
   const t=text.toLowerCase();
   if(classify(text)==='flee')return {kind:'door',name:'the tavern exit'};
+  const aimed=t.match(/\b(?:at|on|against|into|towards?)\s+(?:the\s+)?(.+?)(?:\s+(?:with|using)\b|$)/);
+  if(aimed&&aimed[1]!==t)return targetFor(r,actor,aimed[1]);
   const other=r.players.find(p=>p.id!==actor.id&&t.includes(p.name.toLowerCase()));
   if(other) return {kind:'player',id:other.id,name:other.name};
   const environmental=environmentTarget(text);
@@ -105,7 +107,7 @@ function targetFor(r,actor,text) {
   if(/bartender|marnie|barkeep|barmaid/.test(t)) return {kind:'bartender',name:'Marnie'};
   if(/rug|carpet|mat|runner|tapestry/.test(t)) return {kind:'rug',name:'the tavern rug'};
   if(/crown|chest|box|treasure|drawer/.test(t)) return {kind:'chest',name:'the locked chest'};
-  if(/goblin|bard|musician/.test(t)) return {kind:'goblin',name:'the goblin fiddler'};
+  if(/goblin|bard|musician|fiddler/.test(t)) return {kind:'goblin',name:'the goblin fiddler'};
   if(/chandelier|ceiling/.test(t)) return {kind:'chandelier',name:'the chandelier'};
   return environmental||{kind:'room',name:'the tavern'};
 }
@@ -180,6 +182,7 @@ function resolve(r,now) {
   const recovery=(who,n)=>{let h=heal(who,n);if(h)add(`${who.name} +${h} HP`);};
   p.actions++; r.stats.actions++; if(!automatic)r.stats.rolls++; if(critical) p.nat20++;
   const target=r.players.find(x=>x.id===t.target.id);
+  const damageNpc=n=>{if(!['guard','bartender','goblin'].includes(t.target.kind))return;const npcs=r.world.npcs||={},npc=npcs[t.target.kind]||={hp:8,maxHp:8};npc.hp=Math.max(0,npc.hp-n);add(`${t.target.name} ${npc.hp}/8 HP`);if(!npc.hp){npc.status='knocked out';add(`${t.target.name} KNOCKED OUT`);if(t.target.kind==='guard')r.world.guards='distracted';}};
   const props=r.world.props||(r.world.props={rug:true});
   const environmental=interactEnvironment(r.world,t.target,t.intent,success,p,{text:t.action});
   if(environmental){success=environmental.success;narration=environmental.text;if(environmental.change)add(environmental.change);fx(({break:'impact',ignite:'fire',extinguish:'smoke',take:'steal',repair:'hearts',push:'impact'})[environmental.verb]||'inspect');r.chaos+=environmental.chaos;if(environmental.damage)damage(p,environmental.damage);if(environmental.cover){p.status='hiding';p.cover=true;}}
@@ -215,7 +218,7 @@ function resolve(r,now) {
       break;
     case 'magic':
       fx('spell');r.chaos+=2;
-      if(success) {narration=pick(r,[`${p.name} bends reality just enough to make everyone extremely uncomfortable.`,`${p.name} casts it. The goblin briefly glows. He charges extra for that.`,`${p.name} makes magic happen. Three guards immediately blame each other.`]);if(target)recovery(target,1);if(t.target.kind==='guard'){r.world.guards='distracted';add('GUARDS DISTRACTED');}}
+      if(success) {const offensive=/\b(fire|fireball|lightning|bolt|blast|zap|freeze)\b/i.test(t.action);narration=offensive?`${p.name}'s spell strikes ${t.target.name}. The impact leaves a very real mark.`:pick(r,[`${p.name} bends reality just enough to make everyone extremely uncomfortable.`,`${p.name} casts it. The goblin briefly glows. He charges extra for that.`,`${p.name} makes magic happen. Three guards immediately blame each other.`]);if(offensive){if(target)damage(target,critical?4:2);else damageNpc(critical?4:2);}else if(target)recovery(target,1);if(t.target.kind==='guard'){r.world.guards='distracted';add('GUARDS DISTRACTED');}}
       else {damage(p,2);fx('fire','self');narration=pick(r,[`${p.name} summons a very small problem with very large eyebrows. It explodes.`,`${p.name} gets the spell mostly right. “Mostly” is doing a lot of work here.`,`${p.name} accidentally enchants their own boots. The boots are furious.`]);}
       break;
     case 'break':

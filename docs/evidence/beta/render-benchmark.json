@@ -1,0 +1,8 @@
+{
+  "scope": "24-player cloud Chromium rendering paced by real requestAnimationFrame, 20 warm-up + 180 measured frames; not Mac hardware",
+  "frames": 180,
+  "meanDrawMs": 1.5022222219655912,
+  "p95DrawMs": 3,
+  "meanIntervalMs": 17.129444444444403,
+  "p95IntervalMs": 16.700000000000273
+}
