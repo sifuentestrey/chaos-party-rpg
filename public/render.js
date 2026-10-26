@@ -90,8 +90,10 @@ export class TavernScene {
     // Bunting and hanging ironwork are kept above the walkable floor.
     g.strokeStyle='#30232b';g.lineWidth=2;g.beginPath();g.moveTo(320,25);g.quadraticCurveTo(480,34,640,25);g.stroke();
     for(let n=0;n<11;n++){const x=330+n*29,y=16+Math.sin(n/10*Math.PI)*5;g.fillStyle=n%2?'#98704e':'#6c5961';g.beginPath();g.moveTo(x,y);g.lineTo(x+12,y+2);g.lineTo(x+5,y+16);g.fill();}
-    // Rugs and tables leave walkable gaps for a large party.
-    const rug=(x,y,w,h)=>{g.fillStyle='#44334d';g.fillRect(x,y,w,h);g.fillStyle='#6d4762';g.fillRect(x+5,y+4,w-10,h-8);g.strokeStyle='#ae8263';g.lineWidth=2;g.strokeRect(x+10,y+8,w-20,h-16);};
+    // Rugs and tables leave walkable gaps for a large party. The centre rug is
+    // deliberately patterned so it reads as a place in the tavern, not an
+    // empty UI panel behind the characters.
+    const rug=(x,y,w,h)=>{g.fillStyle='#21192566';g.fillRect(x-8,y+10,w+16,h+10);g.fillStyle='#382936';g.fillRect(x,y,w,h);g.fillStyle='#5f3e56';g.fillRect(x+6,y+5,w-12,h-10);g.strokeStyle='#b17b60';g.lineWidth=3;g.strokeRect(x+12,y+11,w-24,h-22);g.strokeStyle='#89606a';g.lineWidth=1;g.strokeRect(x+21,y+20,w-42,h-40);g.fillStyle='#d09a68';for(let n=0;n<7;n++){const xx=x+35+n*34;g.fillRect(xx,y+10,5,3);g.fillRect(xx,y+h-13,5,3);}for(let n=0;n<4;n++){const yy=y+38+n*32;g.fillRect(x+13,yy,3,5);g.fillRect(x+w-16,yy,3,5);}g.fillStyle='#c38b65';g.beginPath();g.moveTo(x+w/2,y+34);g.lineTo(x+w/2+15,y+h/2);g.lineTo(x+w/2,y+h-34);g.lineTo(x+w/2-15,y+h/2);g.closePath();g.fill();g.fillStyle='#5f3e56';g.fillRect(x+w/2-5,y+h/2-5,10,10);};
     rug(346,290,270,175);
     for(let y=309;y<453;y+=18){g.fillStyle='#9a705f';g.fillRect(358,y,4,4);g.fillRect(600,y,4,4);}
     for(const [x,y] of [[74,367],[850,365],[155,146],[750,149]]){tile(g,82,x,y,36);tile(g,113,x+7,y-9,24);}
@@ -119,8 +121,13 @@ export class TavernScene {
     // Render all 24 possible player slots; labels are separate from their sprite.
     const players=r?.players||[];
     if(!players.length){
-      const previews=[{skin:2,hair:0,color:0,accessory:1},{skin:0,hair:2,color:1,accessory:4},{skin:4,hair:3,color:4,accessory:0}];
-      previews.forEach((a,i)=>this.person(g,{id:'preview'+i,avatar:{...DEFAULT_AVATAR,...a},name:['YOUR NEXT','BAD IDEA','STARTS HERE'][i],hp:10,connected:true},[380+i*100,367],second,i,t));
+      const patrons=[
+        {skin:2,hair:0,color:0,accessory:1,outfit:0},
+        {skin:0,hair:2,color:1,accessory:4,outfit:2},
+        {skin:4,hair:3,color:4,accessory:0,outfit:1},
+        {skin:1,hair:5,color:3,accessory:5,outfit:3}
+      ];
+      patrons.forEach((a,i)=>{const pos=[[336,270],[624,270],[330,468],[630,468]][i];layers.push({y:pos[1],draw:()=>this.person(g,{id:'patron'+i,avatar:{...DEFAULT_AVATAR,...a},name:'PATRON',hp:10,connected:true,npc:true,ambient:true},pos,second,i,t)});});
     }else players.forEach((p,i)=>{const pos=this.position(p,i,t);layers.push({y:pos[1],draw:()=>this.person(g,p,pos,second,i,t)});});
     const npcs=[{id:'bartender',name:'MARNIE',avatar:{...DEFAULT_AVATAR,skin:3,hair:1,outfit:1,color:2}}, {id:'guard',name:'CAPTAIN BRICK',avatar:{...DEFAULT_AVATAR,outfit:3,hair:5,color:4,accessory:0}}, {id:'goblin',name:'THE FIDDLER',avatar:{...DEFAULT_AVATAR,body:'elf',hair:2,color:3,accessory:1}}];
     for(const npc of npcs){const pos=[...npcPositions[npc.id]];const hit=r?.result?.success&&r.result.target?.kind===npc.id&&['attack','magic','break'].includes(r.result.intent);if(hit)pos[0]+=recoil(t-this.fxAt,this.reduced);layers.push({y:pos[1],draw:()=>this.person(g,{...npc,hp:10,connected:true,npc:true,hit:hit&&t-this.fxAt<650},pos,second,0,t)});}
@@ -163,7 +170,7 @@ export class TavernScene {
     const crowded=(this.state?.players.length||0)>12&&!p.npc;
     const scale=crowded?2:2.5;
     g.drawImage(sprite,Math.round(x-10*scale),Math.round(y-28*scale+bob),20*scale,28*scale);
-    this.label(g,p.name?.slice(0,crowded&&!active?12:16)||'Adventurer',x,p.id==='guard'?y-77:y+14,active?'#ffe4a2':p.isBot?'#bdb4cb':'#f5e7cf',crowded?9:11);
+    if(!p.ambient)this.label(g,p.name?.slice(0,crowded&&!active?12:16)||'Adventurer',x,p.id==='guard'?y-77:y+14,active?'#ffe4a2':p.isBot?'#bdb4cb':'#f5e7cf',crowded?9:11);
     if(p.maxHp&&p.hp<p.maxHp){g.fillStyle='#261e2e';g.fillRect(x-17,y+19,34,3);g.fillStyle=p.hp<4?'#d96d7e':'#86b89b';g.fillRect(x-17,y+19,34*p.hp/p.maxHp,3);}
     if(reaction){const glyph={assist:'+',intervene:'!',flee:'»',custom:'?'}[reaction.kind];g.fillStyle='#221b30';g.fillRect(x+17,y-69,18,18);this.label(g,glyph,x+26,y-55,'#c2afe9',14);}
     g.globalAlpha=1;
