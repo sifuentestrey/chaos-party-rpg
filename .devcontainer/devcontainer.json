@@ -14,5 +14,5 @@
     "CHAOS_PREVIEW": "1"
   },
   "postCreateCommand": "npm ci --no-audit --no-fund",
-  "postStartCommand": "nohup npm start > /tmp/chaos-party.log 2>&1 &"
+  "postStartCommand": "bash .devcontainer/start-server.sh"
 }

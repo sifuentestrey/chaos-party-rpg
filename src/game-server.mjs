@@ -43,6 +43,9 @@ export async function createGameServer(options={}){
     try{
       if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);res.end();return;}
       let pathname;try{pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);}catch{return json(400,{error:'Invalid address'});}
+      if(['/host/','/game/','/join/'].includes(pathname)){
+        res.writeHead(302,{Location:pathname.slice(0,-1)});res.end();return;
+      }
       if(pathname==='/health')return json(200,{ok:true,status:'ok',service:'chaos-party',version:VERSION,framework:'PartyFrame',rooms:currentRooms().size});
       if(pathname==='/api/info')return json(200,network());
       if(pathname==='/api/host-key'){
