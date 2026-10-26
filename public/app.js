@@ -303,6 +303,7 @@ async function init(){
   // Download metadata is build-generated and contains only a user-facing release link.
   try{const d=await fetch('./release.json').then(r=>r.ok?r.json():null);M.downloadUrl=d?.downloadUrl||'';}catch{}
   const params=new URLSearchParams(location.search);const code=(params.get('room')||location.pathname.match(/^\/join\/([A-Z0-9]{6})$/)?.[1]||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+  if(config.standalone&&params.has('play')){beginCreator('solo');return;}
   if(!config.standalone&&code){M.code=code;if(M.devices[code]){try{await joinParty(code);return;}catch(e){M.error=e.message;}}beginCreator('party');return;}
   if(!config.standalone&&location.pathname==='/host'){await loadHost();return;}
   render();
