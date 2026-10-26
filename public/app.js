@@ -5,6 +5,7 @@ import { PartyClient } from './party-client.js';
 const root=document.getElementById('app');
 const scene=new TavernScene();
 const config=window.CHAOS_CONFIG||{standalone:true};
+const assetUrl=relative=>new URL(relative,import.meta.url).href;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}};
 const write=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value));}catch{toast('This browser couldn’t save your character. Keep your recovery PIN.');}};
@@ -34,9 +35,9 @@ const effectAudio=new Map();
 function impactSound(result){
   const clip=({attack:'hit',break:'slash',magic:'magic',heal:'heal',steal:'coin',dance:'success'})[result.intent];
   if(!clip||!M.sound)return;
-  setTimeout(()=>{if(!M.sound)return;let audio=effectAudio.get(clip);if(!audio){audio=new Audio('/assets/ninja/audio/'+clip+'.wav');audio.volume=.32;effectAudio.set(clip,audio);}audio.currentTime=0;audio.play().catch(()=>{});},220);
+  setTimeout(()=>{if(!M.sound)return;let audio=effectAudio.get(clip);if(!audio){audio=new Audio(assetUrl('./assets/ninja/audio/'+clip+'.wav'));audio.volume=.32;effectAudio.set(clip,audio);}audio.currentTime=0;audio.play().catch(()=>{});},220);
 }
-const brand=()=>`<button class="brand" data-action="home" aria-label="Chaos Party home"><img src="/assets/dice.svg" alt=""><span class="brand-name">CHAOS PARTY<small>Good company. Bad ideas.</small></span></button>`;
+const brand=()=>`<button class="brand" data-action="home" aria-label="Chaos Party home"><img src="${assetUrl('./assets/dice.svg')}" alt=""><span class="brand-name">CHAOS PARTY<small>Good company. Bad ideas.</small></span></button>`;
 function header(){return `<header class="topbar">${brand()}<div class="toplinks"><button class="link-button desktop" data-action="how">How to play</button><span class="tag purple">${M.mode==='solo'&&M.screen==='solo'?'SOLO · SCRIPTED DM':'PLAYABLE PROTOTYPE'}</span><button class="icon-button ${M.sound?'active':''}" data-action="sound" aria-label="${M.sound?'Mute':'Enable'} game sound">${icon(M.sound?'volume':'mute')}</button></div></header>`;}
 function home(){
   const soloExists=!!read('chaos.solo',null);
@@ -294,7 +295,7 @@ document.addEventListener('visibilitychange',async()=>{if(!document.hidden&&M.mo
 
 async function init(){
   // Download metadata is build-generated and contains only a user-facing release link.
-  try{const d=await fetch('/release.json').then(r=>r.ok?r.json():null);M.downloadUrl=d?.downloadUrl||'';}catch{}
+  try{const d=await fetch('./release.json').then(r=>r.ok?r.json():null);M.downloadUrl=d?.downloadUrl||'';}catch{}
   const params=new URLSearchParams(location.search);const code=(params.get('room')||location.pathname.match(/^\/join\/([A-Z0-9]{6})$/)?.[1]||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
   if(!config.standalone&&code){M.code=code;if(M.devices[code]){try{await joinParty(code);return;}catch(e){M.error=e.message;}}beginCreator('party');return;}
   if(!config.standalone&&location.pathname==='/host'){await loadHost();return;}

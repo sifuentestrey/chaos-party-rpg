@@ -3,8 +3,9 @@ import { SKIN, HAIR, CLOTHES, DEFAULT_AVATAR } from './core.js';
 import { ninjaAvatarFrame, drawNinjaEffect, ninjaAssetsReady } from './ninja.js';
 ninjaAssetsReady.then(()=>document.dispatchEvent(new CustomEvent('ninja-assets-ready')));
 
-const sprites=new Image(); sprites.src='/assets/kenney/dungeon.png';
-const town=new Image(); town.src='/assets/kenney/town.png';
+const assetUrl=relative=>new URL(relative,import.meta.url).href;
+const sprites=new Image(); sprites.src=assetUrl('./assets/kenney/dungeon.png');
+const town=new Image(); town.src=assetUrl('./assets/kenney/town.png');
 const avatarCache=new Map();
 export function avatarCanvas(avatar=DEFAULT_AVATAR,animation='idle',timeMs=0) {
   const professional=ninjaAvatarFrame(avatar,animation,timeMs);if(professional)return professional;

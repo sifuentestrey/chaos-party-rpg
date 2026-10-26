@@ -1,0 +1,51 @@
+name: Phone preview
+
+on:
+  push:
+    branches:
+      - main
+      - improve/tavern-presentation
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: phone-preview
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build the static solo preview
+        run: npm run build
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload preview artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+      - name: Publish preview
+        id: deployment
+        uses: actions/deploy-pages@v4
