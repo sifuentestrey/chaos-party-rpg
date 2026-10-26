@@ -11,6 +11,10 @@ const b=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/b
 // Uses fresh browser profiles and creates a separate test campaign; never loads user saves.
 const errors=[],audioRequests=[];const hostContext=await b.newContext({viewport:{width:1280,height:720},recordVideo:{dir:out,size:{width:1280,height:720}}});
 const h=await hostContext.newPage();h.on('response',r=>{if(r.url().includes('/audio/')&&r.status()===200)audioRequests.push(r.url().split('/').at(-1));});h.on('pageerror',e=>(errors.push(e.stack),console.log(e.stack)));await h.goto(origin+'/host');await h.locator('[data-action=createRoom]').click();await h.waitForSelector('.room-code');const code=await h.locator('.room-code').innerText();
+await h.locator('[data-action=fullscreen]').click();
+await h.waitForTimeout(500);
+const fullBounds=await h.locator('[data-scene]').boundingBox();
+assert.equal(fullBounds.width,1280);assert.equal(fullBounds.height,720);
 const phones=[];
 for(let i=0;i<2;i++){
  const ctx=await b.newContext({viewport:{width:390,height:844}});const p=await ctx.newPage();p.on('pageerror',e=>(errors.push(e.stack),console.log(e.stack)));await p.goto(origin+'/join?room='+code);await p.locator('#character-name').fill(['Jinx','Sir Snacks'][i]);await p.locator('[data-action=avatar][data-key=hair][data-value="'+(i?3:2)+'"]').click();await p.locator('[data-action=creatorTab][data-value=style]').click();await p.locator('[data-action=avatar][data-key=outfit][data-value="'+(i?3:2)+'"]').click();await p.locator('[data-action=creatorTab][data-value=role]').click();await p.locator('[data-action=enter]').click();await p.waitForSelector('.player-card');phones.push(p);

@@ -16,6 +16,7 @@ test('declaration approaches without teleporting, holds for reactions, and retur
   assert.equal(arrived[0],448);
   assert.deepEqual(actorPosition(home,target,10000,null),arrived);
   assert.ok(actorPosition(home,target,10000,250)[0]>arrived[0]);
+  assert.ok(actorPosition(home,target,10000,250)[0]-arrived[0]<=12,'strike distance stays bounded across the room');
   assert.deepEqual(actorPosition(home,target,10000,1850),home);
   assert.deepEqual(actorPosition(home,target,10000,250,true),home);
   assert.equal(recoil(250,true),0);assert.ok(recoil(350)>0);assert.equal(recoil(700),0);

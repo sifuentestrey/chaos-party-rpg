@@ -63,3 +63,30 @@ iPhone Safari, audio listening and early-2015 Mac performance remain unverified.
 The renderer retains the original approximate 30fps draw cap. The narrator is
 still scripted/keyword-based. These changes are a presentation iteration, not
 a claim that all QUALITY_GATES.md items have been completed.
+
+## Captured evidence
+
+The local evidence bundle includes a recorded six-round session of more than
+90 seconds with two independent browser controllers and no page errors. The
+browser run confirmed successful requests for the licensed hit, magic and
+success WAV files; playback has not been assessed by listening. Real 20-client
+host screenshots were captured separately, not populated by a fixture.
+
+- [Silent gameplay recording](evidence/tavern/gameplay.mp4)
+- [Baseline TV](evidence/tavern/before-host.png)
+- [20 connected characters](evidence/tavern/after-20-clients.png)
+- [Resolved action](evidence/tavern/after-impact.png)
+- [Portrait controller, recovery PIN masked](evidence/tavern/phone-controller.png)
+
+The final suite passed 21/21 and the compositor passed 78/78. One intermediate
+multiplayer rerun failed at reconnection with “token invalid or expired” while
+video encoding ran concurrently, then hung in cleanup. That run was terminated;
+the unmodified multiplayer test passed when rerun after encoding completed.
+The test uses a fixed 70ms disconnect/reconnect delay. The timing sensitivity
+remains a known test limitation; no claim of its root cause or of physical
+network reliability is made.
+
+Final recorded browser sequence: six rounds over 101 seconds, zero page errors,
+with hit.wav, magic.wav and success.wav successfully served. A separate
+fullscreen-button check retained the full 1280×720 canvas. Physical-device
+quality gates remain open.

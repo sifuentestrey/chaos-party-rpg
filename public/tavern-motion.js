@@ -21,7 +21,7 @@ export function actorPosition(home,target,age,resultAge,reduced=false){
   const approach=smooth(age/850);
   let reach=stop*approach;
   if(resultAge!==null){
-    const strike=Math.sin(Math.min(1,Math.max(0,resultAge)/500)*Math.PI)*.12;
+    const strike=Math.sin(Math.min(1,Math.max(0,resultAge)/500)*Math.PI)*12/length;
     reach=(stop+strike)*(1-smooth((resultAge-1000)/850));
   }
   return [home[0]+dx*reach,home[1]+dy*reach];
