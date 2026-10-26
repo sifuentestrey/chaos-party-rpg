@@ -72,6 +72,10 @@ function storyCard(r){
 }
 function resultsCard(r){const ranked=[...r.players].sort((a,b)=>b.score-a.score);return `<section class="result-summary"><div class="eyebrow">THE CROWN JOB · COMPLETE</div><h2>You absolute menaces.</h2><p class="story-text">The crown is out. So are you. Marnie is updating her insurance policy.</p><div class="leaderboard-row"><span class="trophy">♛</span><div><strong style="margin:0;font-size:13px">${esc(ranked[0]?.name||'The party')}</strong><br><span class="tiny muted">Most valuable bad influence</span></div></div>${ranked.slice(0,8).map(p=>`<div class="leaderboard-row"><canvas width="60" height="84" data-avatar-pid="${p.id}"></canvas><span>${esc(p.name)}${p.isBot?' · BOT':''}<br><span class="tiny muted">${p.actions} ideas · ${p.assists} reactions</span></span><strong>${p.score} XP</strong></div>`).join('')}<button class="button gold" data-action="newStory" style="margin-top:20px">Another terrible evening ${icon('refresh',15)}</button><p class="hint">Characters stay. The heist starts fresh.</p></section>`;}
 function log(r){return `<button class="log-toggle" data-action="toggleLog">The story so far <span>${M.showLog?'−':'+'}</span></button>${M.showLog?`<div class="log-list">${r.events.filter(e=>e.type!=='join').slice(-18).reverse().map(e=>`<div class="log-entry ${e.type}"><small>${e.type==='declaration'?esc(e.name)+' · DECLARED':e.type==='outcome'?'THE DICE HAVE SPOKEN':'THE STORY'}</small>${esc(e.text)}${M.mode==='party'&&e.type==='declaration'?` <button class="link-button tiny" data-action="redact" data-id="${e.id}">Hide</button>`:''}</div>`).join('')||'<p class="hint">The first page is still blank.</p>'}</div>`:''}`;}
+function emulatorScreen(){
+  const r=M.room;if(!r)return '<div class="loading">Starting the emulator…</div>';
+  return `<main class="emulator-shell"><header class="emulator-header"><div><b>CHAOS PARTY</b><span>LOCAL PLAYTEST EMULATOR</span></div><div class="emulator-header-actions"><span class="emulator-live"><span class="dot"></span>PC SCREEN</span><button class="emulator-button" data-action="editCharacter">CHANGE LOOK</button><button class="emulator-button" data-action="newStory">RESET</button></div></header><section class="emulator-monitor"><div class="emulator-monitor-bar"><span>THE TIPSY WYVERN · NIGHT ONE</span><span>${r.paused?'PAUSED':'LIVE'} · ${r.players.length} CHARACTERS</span></div><div class="emulator-screen"><canvas class="scene" data-scene aria-label="Chaos Party tavern emulator"></canvas><div class="emulator-screen-label">${r.phase==='react'?'REACTION WINDOW':r.phase==='reveal'?'THE DICE DECIDE':r.phase==='ended'?'HEIST COMPLETE':'THE FLOOR IS OPEN'}</div></div><div class="emulator-story">${storyCard(r)}</div></section><section class="emulator-console"><div class="emulator-console-label"><span>PHONE CONTROLLER</span><span>Same rules · local session · no account</span></div>${controllerContent(true)}</section></main>`;
+}
 function soloQuestHud(r){const q=r.quest;return `<div class="solo-quest-hud"><div class="solo-hud-title">THE CROWN JOB</div><div class="solo-quest-row ${q.clues>=3?'done':'current'}"><span>${q.clues>=3?'✓':'01'}</span><b>Find the crown</b><em>${q.clues}/3</em></div><div class="solo-quest-row ${q.crown?'done':q.clues>=3?'current':''}"><span>${q.crown?'✓':'02'}</span><b>Take it</b><em>${q.crown?'DONE':'—'}</em></div><div class="solo-quest-row ${q.escaped?'done':q.crown?'current':''}"><span>${q.escaped?'✓':'03'}</span><b>Get out</b><em>${q.escaped?'DONE':'—'}</em></div><div class="solo-chaos-line"><span>CHAOS</span><div class="solo-chaos-bars">${Array.from({length:10},(_,i)=>`<i class="${i<r.chaos?'lit':''} ${i>=7?'danger':''}"></i>`).join('')}</div><b>${r.chaos}/10</b></div></div>`;}
 function hostScreen(solo=false){
   const r=M.room;if(!r)return `${header()}<div class="loading">Joining the tavern…</div>`;
@@ -104,7 +108,7 @@ function suggestions(r,p){
 function render(){
   const focus=document.activeElement,focusId=focus?.id,start=focus?.selectionStart,end=focus?.selectionEnd;
   document.body.classList.toggle('tavern-tv',M.screen==='host');
-  root.innerHTML=M.screen==='home'?home():M.screen==='creator'?creator():M.screen==='join'?joinScreen():M.screen==='hostSetup'?hostSetup():M.screen==='host'?hostScreen(false):M.screen==='solo'?hostScreen(true):`${header()}${!M.connected?'<div class="connection-banner">Reconnecting — your character is saved. Keep this page open.</div>':''}${controllerContent(false)}`;
+  root.innerHTML=M.screen==='home'?home():M.screen==='creator'?creator():M.screen==='join'?joinScreen():M.screen==='hostSetup'?hostSetup():M.screen==='host'?hostScreen(false):M.screen==='solo'?hostScreen(true):M.screen==='emulator'?emulatorScreen():`${header()}${!M.connected?'<div class="connection-banner">Reconnecting — your character is saved. Keep this page open.</div>':''}${controllerContent(false)}`;
   scene.attach(root.querySelector('[data-scene]'));scene.setState(M.room);
   root.querySelectorAll('[data-profile]').forEach(c=>drawPortrait(c,M.profile.avatar));
   root.querySelectorAll('[data-avatar-pid]').forEach(c=>drawPortrait(c,M.room?.players.find(p=>p.id===c.dataset.avatarPid)?.avatar));
@@ -221,6 +225,7 @@ function startSolo(fresh=false){
   },100);
   soloSync();window.scrollTo(0,0);
 }
+function startEmulator(){startSolo();M.screen='emulator';render();window.scrollTo(0,0);}
 async function sendAction(kind='action',reaction='custom',text=null){
   if(M.busy)return;
   text=text??(kind==='reaction'?M.reactDraft:M.draft);if(!text.trim()){toast('Tell us what you try to do first.');document.getElementById(kind==='reaction'?'reaction-text':'action-text')?.focus();return;}
@@ -308,6 +313,7 @@ async function init(){
   // Download metadata is build-generated and contains only a user-facing release link.
   try{const d=await fetch('./release.json').then(r=>r.ok?r.json():null);M.downloadUrl=d?.downloadUrl||'';}catch{}
   const params=new URLSearchParams(location.search);const code=(params.get('room')||location.pathname.match(/^\/join\/([A-Z0-9]{6})$/)?.[1]||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+  if(config.standalone&&params.has('emulator')){startEmulator();return;}
   if(config.standalone&&params.has('play')){startSolo();return;}
   if(!config.standalone&&code){M.code=code;if(M.devices[code]){try{await joinParty(code);return;}catch(e){M.error=e.message;}}beginCreator('party');return;}
   if(!config.standalone&&location.pathname==='/host'){await loadHost();return;}

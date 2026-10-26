@@ -27,3 +27,10 @@ For the full family game, use the Mac LAN workflow described in
 real multiplayer game. For actual host/controller gameplay from phones, use
 [PHONE_REAL_GAME.md](PHONE_REAL_GAME.md) with a Codespace, or run the Mac LAN
 workflow.
+
+For a focused playtest, open:
+`https://sifuentestrey.github.io/chaos-party-rpg/?emulator=1`
+
+This route puts the tavern in a desktop-style game window with a compact
+controller below it. It runs the existing solo rules locally, including
+declarations, reactions, dice, saves and animation, without a Codespace.
