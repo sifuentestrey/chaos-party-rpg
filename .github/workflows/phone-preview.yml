@@ -19,7 +19,9 @@ concurrency:
 jobs:
   build-and-deploy:
     environment:
-      name: github-pages
+      # Keep the preview deployment separate from the repository's protected
+      # default Pages environment, which may only allow the main branch.
+      name: github-pages-preview
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
