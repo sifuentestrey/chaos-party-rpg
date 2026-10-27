@@ -20,7 +20,7 @@ export async function createGameServer(options={}){
   const publicDir=options.publicDir||path.join(base,'public');
   const dataDir=options.dataDir||process.env.CHAOS_DATA_DIR||path.join(base,'data');
   const store=openCampaignStore(dataDir);if(options.hostKey)store.hostKey=options.hostKey;
-  const ai=options.ai||createLocalGameMaster();await ai.check();
+  const ai=options.ai||createLocalGameMaster({dataDir});await ai.check();
   let port=0,closing=false;
   const addresses=()=>{try{return [...new Set(Object.values(os.networkInterfaces()).flat().filter(n=>n&&n.family==='IPv4'&&!n.internal&&!n.address.startsWith('169.254.')).map(n=>n.address))];}catch{return [];}};
   const publicBaseUrl=()=>{

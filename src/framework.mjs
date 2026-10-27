@@ -4261,7 +4261,7 @@ var ChaosPartyRoom = class extends PartySessionRoom {
       this.finishTick(this.buildContext(Date.now()));
     }).catch(() => {
       if (this.aiDisposed || this.tavern !== room || room.turn?.id !== id || room.phase !== "react") return;
-      turn.ai = { status: "fallback", model: status.model, reason: "Local AI was unavailable, slow, or returned an unsupported plan. Using the game rules." };
+      turn.ai = { status: "fallback", model: status.model, reason: "AI was unavailable, rate-limited, slow, or returned an unsupported plan. Using the game rules." };
       room.revision++;
       this.finishTick(this.buildContext(Date.now()));
     });
