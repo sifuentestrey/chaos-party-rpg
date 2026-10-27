@@ -5,6 +5,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createGameServer } from '../server.mjs';
 import { createLocalGameMaster } from '../src/local-game-master.mjs';
+import { skipBrowserTimer } from './browser-timers.mjs';
 
 const playwrightPath = process.env.CHAOS_PLAYWRIGHT_MODULE || '/opt/codex/runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.js';
 const imported = await import(pathToFileURL(playwrightPath));
@@ -32,6 +33,18 @@ try {
   const ai = createLocalGameMaster({ env: { CHAOS_AI: 'off', CHAOS_AI_NARRATION: 'off', CHAOS_AI_ACTION_CONTRACT: 'off' }, dataDir });
   app = await createGameServer({ port: 0, host: '127.0.0.1', dataDir, ai });
   browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', args: ['--no-sandbox'] });
+  const failedBootContext = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  const failedBoot = await failedBootContext.newPage();
+  let appRequestAborted = false;
+  const bootEvents = [];
+  failedBoot.on('console', message => bootEvents.push(message.text()));
+  failedBoot.on('pageerror', error => bootEvents.push(error.message));
+  failedBoot.on('requestfailed', request => bootEvents.push(`failed: ${request.url()}`));
+  await failedBoot.route('**/app.js', route => { appRequestAborted = true; return route.abort(); });
+  await failedBoot.goto(`http://127.0.0.1:${app.port}/`);
+  try { await failedBoot.getByText('The tavern did not open').waitFor({ timeout: 3000 }); } catch (error) { throw new Error(`Boot handler did not render (intercepted=${appRequestAborted}; events=${JSON.stringify(bootEvents)}; body=${(await failedBoot.locator('body').innerText()).slice(0,300)})`, { cause: error }); }
+  await failedBootContext.close();
+
   const hostContext = await browser.newContext({ viewport: { width: 1280, height: 720 } });
   const host = await hostContext.newPage();
   host.on('pageerror', (error) => errors.push(`host: ${error.message}`));
@@ -122,6 +135,41 @@ try {
   await noHorizontalOverflow(phones[1], 'phone2-result-390-or-320');
   await screenshot(host, 'host-result-1280x720.png');
   await screenshot(phones[0], 'phone1-result.png');
+
+  const roomState = () => app.rooms()[code];
+  const waitForPhase = async phase => {
+    const end = Date.now() + 12000;
+    while (roomState()?.phase !== phase) {
+      if (Date.now() > end) throw new Error(`Timed out waiting for ${phase}; found ${roomState()?.phase}`);
+      await new Promise(resolve => setTimeout(resolve, 40));
+    }
+  };
+  const takeTurn = async (page, declaration) => {
+    if (['react', 'reveal'].includes(roomState().phase)) await skipBrowserTimer(host, roomState);
+    await waitForPhase('open');
+    await page.locator('#action-text').fill(declaration);
+    await page.locator('#action-form button').click();
+    await waitForPhase('react');
+    await skipBrowserTimer(host, roomState);
+    await waitForPhase('reveal');
+    await skipBrowserTimer(host, roomState);
+    await waitForPhase('open');
+  };
+  await takeTurn(phones[0], 'Travel to clearing');
+  assert.equal(roomState().world.expedition.current, 'clearing', 'the existing clearing travel command resolves');
+  await noHorizontalOverflow(host, 'clearing-1280x720');
+  await screenshot(host, 'clearing-1280x720.png');
+  assert.match(await host.locator('.scene-toolbar .location').innerText(), /Clearing/i);
+  assert.match(await phones[0].locator('.controller-story').innerText(), /Chapter 1|keepsake|wayfarer/i);
+  await takeTurn(phones[1], 'Travel to ruins');
+  assert.equal(roomState().world.expedition.current, 'ruins', 'the second independent phone can travel to the existing ruins');
+  await noHorizontalOverflow(host, 'ruins-1280x720');
+  await screenshot(host, 'ruins-1280x720.png');
+  assert.match(await host.locator('.scene-toolbar .location').innerText(), /Ruins/i);
+  await takeTurn(phones[0], 'Travel to clearing');
+  assert.equal(roomState().world.expedition.current, 'clearing', 'the party can return to its prior area');
+  await takeTurn(phones[1], 'Travel to tavern');
+  assert.equal(roomState().world.expedition.current, 'tavern', 'the party can return to the tavern');
 
   await host.setViewportSize({ width: 1920, height: 1080 });
   await host.waitForTimeout(150);

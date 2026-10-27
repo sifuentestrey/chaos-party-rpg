@@ -19,15 +19,31 @@ export function drawItemGlyph(g,item,x,y,scale=2){
   g.restore();
 }
 export function drawGeneratedLocation(g,room){
-  const location=room.world.expedition.locations[currentLocation(room)],ruins=['ruins','cavern','village'].includes(location.kind),palette=CAMPAIGN_TYPES[location.kind]||CAMPAIGN_TYPES.clearing;
-  g.fillStyle=ruins?'#454451':'#314c43';g.fillRect(0,0,960,540);
-  g.fillStyle=palette.ground;g.fillRect(45,112,870,400);
-  for(let y=115;y<510;y+=24)for(let x=50;x<910;x+=32){g.fillStyle=ruins?'#62616d':'#52745b';g.fillRect(x+((y%7)*3),y,ruins?27:3,ruins?19:6);}
-  g.fillStyle=ruins?'#777586':'#617c68';g.fillRect(451,112,58,399);
-  for(const [x,y,n] of location.decor){g.fillStyle=ruins?'#2c2c39':'#243f3b';g.fillRect(x,y,30,24);g.fillStyle=palette.accent;if(location.kind==='forest'||location.kind==='clearing'){g.fillRect(x+11,y-10,8,30);g.fillStyle=palette.accent;g.fillRect(x-8,y-38,46,28);g.fillRect(x-1,y-45,32,12);}else if(location.kind==='marsh'){g.fillStyle='#679f9c';g.fillRect(x-5,y,40,12);g.fillStyle='#a9b88a';g.fillRect(x+5,y-15,3,22);g.fillRect(x+19,y-21,3,28);}else if(location.kind==='village'){g.fillRect(x-3,y-20,36,35);g.fillStyle='#58434a';g.fillRect(x-7,y-29,44,10);g.fillRect(x+9,y-4,10,19);}else{g.fillRect(x+3,y-25,24,40);g.fillStyle='#504d5d';g.fillRect(x+7,y-15,3,23);}}
-  g.fillStyle='#d9c68f';g.fillRect(455,485,50,8);
+  const location=room.world.expedition.locations[currentLocation(room)],kind=location.kind,
+    ruins=['ruins','cavern','village'].includes(kind),marsh=kind==='marsh',
+    palette=CAMPAIGN_TYPES[kind]||CAMPAIGN_TYPES.clearing;
+  const fill=(color,x,y,w,h)=>{g.fillStyle=color;g.fillRect(x,y,w,h);};
+  fill(marsh?'#263e4a':ruins?'#292a3a':'#253d4c',0,0,960,540);
+  fill(ruins?'#4b4959':marsh?'#45636a':'#416052',0,85,960,53);
+  for(let i=0;i<11;i++){
+    const x=i*98-18,h=18+(i*17%35);
+    if(ruins){fill(i%2?'#646171':'#555363',x,116-h,76,h);fill('#817b83',x+10,109-h,48,5);}
+    else if(marsh){fill('#314c54',x,111-h,72,h);fill('#5b8279',x+9,102-h,42,4);}
+    else{fill(i%2?'#314f43':'#385748',x,109-h,84,h);fill('#59765c',x+12,103-h,52,5);}
+  }
+  fill(palette.ground,35,136,890,376);
+  g.beginPath();g.moveTo(440,512);g.bezierCurveTo(ruins?530:370,430,ruins?360:585,320,480,136);g.lineTo(548,136);g.bezierCurveTo(640,318,ruins?450:440,422,520,512);g.closePath();g.fillStyle=ruins?'#77736c':marsh?'#8a8064':'#a48b68';g.fill();
+  if(ruins){fill('#363542',91,160,72,68);fill('#716c6b',84,154,86,12);fill('#363542',797,179,57,91);fill('#716c6b',790,172,70,12);fill('#242635',439,136,16,62);fill('#8b8276',435,133,90,8);fill('#514e5a',457,143,47,4);}
+  else if(marsh){for(let i=0;i<6;i++){const x=78+i*156;fill(i%2?'#64837c':'#587770',x,300+(i%3)*47,83,12);fill('#9aa17c',x+18,306+(i%3)*47,42,3);}}
+  else{for(let i=0;i<7;i++){const x=52+i*143;fill('#2d493c',x,114+(i%2)*17,12,102);fill(palette.accent,x-31,115+(i%2)*17,74,46);fill('#568161',x-22,94+(i%2)*17,57,26);}}
+  for(const [x,y] of location.decor){
+    if(ruins){fill('#363542',x,y,34,28);fill(palette.accent,x+4,y-19,27,20);fill('#827b76',x-3,y-23,40,6);}
+    else if(marsh){fill('#294750',x,y+5,38,12);fill(palette.accent,x+7,y-19,4,28);fill('#a9b88a',x+20,y-28,4,36);}
+    else{fill('#243f3b',x+11,y-9,8,30);fill(palette.accent,x-8,y-38,46,28);fill('#5d8264',x-1,y-45,32,12);}
+  }
+  fill(ruins?'#c6ab78':'#d9c68f',455,485,50,8);
   g.font='bold 21px monospace';g.textAlign='center';g.fillStyle='#f3e7cb';g.fillText(location.name.toUpperCase(),480,52);
-  g.font='13px monospace';g.fillText('PATHS: '+location.exits.join(' · ').toUpperCase(),480,78);
+  g.font='13px monospace';g.fillStyle='#e2d4b7';g.fillText('PATHS: '+location.exits.join(' · ').toUpperCase(),480,78);
 }
 
 export function drawBeast(g,c,x,y,hit=false){

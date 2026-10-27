@@ -11,6 +11,7 @@ const assetUrl=relative=>new URL(relative,import.meta.url).href;
 const sprites=new Image(); sprites.src=assetUrl('./assets/kenney/dungeon.png');
 const town=new Image(); town.src=assetUrl('./assets/kenney/town.png');
 const avatarCache=new Map();
+function fitName(g,name,maxWidth){const text=String(name||'Adventurer');if(g.measureText(text).width<=maxWidth)return text;let out=text;while(out.length>2&&g.measureText(out+'…').width>maxWidth)out=out.slice(0,-1);return out+'…';}
 export function avatarCanvas(avatar=DEFAULT_AVATAR,animation='idle',timeMs=0) {
   const professional=ninjaAvatarFrame(avatar,animation,timeMs);if(professional)return professional;
   const a={...DEFAULT_AVATAR,...avatar},key=JSON.stringify(a);
@@ -160,7 +161,7 @@ export class TavernScene {
     const scale=crowded?2:2.5;
     g.drawImage(sprite,Math.round(x-10*scale),Math.round(y-28*scale+bob),20*scale,28*scale);
     if(r){const carried=visibleItems(r).filter(item=>item.ownerId===p.id);for(const item of carried.filter(i=>i.equipped))drawItemGlyph(g,item,x+(item.slot==='hand'?23:0),y-(item.slot==='body'?10:item.slot==='hand'?9:20)*scale+bob,item.slot==='head'?2:1.5);const held=carried.find(i=>!i.equipped);if(held)drawItemGlyph(g,held,x+23,y-24+bob,1.5);}
-    if(!p.ambient)this.label(g,p.name?.slice(0,crowded&&!active?12:16)||'Adventurer',x,p.id==='guard'?y-77:y+14,active?'#ffe4a2':p.isBot?'#bdb4cb':'#f5e7cf',crowded?9:11);
+    if(!p.ambient)this.label(g,fitName(g,p.name,crowded&&!active?76:112),x,p.id==='guard'?y-77:y+14,active?'#ffe4a2':p.isBot?'#bdb4cb':'#f5e7cf',crowded?9:10);
     if(p.maxHp&&p.hp<p.maxHp){g.fillStyle='#261e2e';g.fillRect(x-17,y+19,34,3);g.fillStyle=p.hp<4?'#d96d7e':'#86b89b';g.fillRect(x-17,y+19,34*p.hp/p.maxHp,3);}
     if(reaction){const glyph={assist:'+',intervene:'!',flee:'»',custom:'?'}[reaction.kind];g.fillStyle='#221b30';g.fillRect(x+17,y-69,18,18);this.label(g,glyph,x+26,y-55,'#c2afe9',14);}
     g.globalAlpha=1;
