@@ -1,8 +1,10 @@
 import {build} from 'esbuild';
-import './build-game-foundations.mjs';
+import {buildCampaignText} from './build-campaign-text.mjs';
 import path from 'node:path';
 import fs from 'node:fs';
 const root=process.cwd(),base=path.join(root,'vendor/partyframe/packages');
+buildCampaignText();
+await import('./build-game-foundations.mjs');
 export const aliases={
   '@partyframe/runtime':path.join(base,'runtime/src/index.ts'),
   '@partyframe/protocol':path.join(base,'protocol/src/index.ts'),

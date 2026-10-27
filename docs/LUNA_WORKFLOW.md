@@ -1,0 +1,67 @@
+# Working cheaply without weakening the game
+
+**Date: October 27, 2026.** Read `AGENTS.md` and `CURRENT_STATUS.md` first. This guide is for coding assistants, not the model running the game.
+
+## Assessment
+
+The tested foundation already protects multiplayer turn ownership, authoritative dice/state, exact item identities, ownership and saves. It is not a finished creative DM or a physically accepted game-night build. Passing tests does not establish fun, truthful prose, or every possible action.
+
+Luna is useful for small tasks with explicit inputs, allowed files and observable results. It is not an appropriate sole designer/reviewer for a new mechanic, save format, network protocol or AI authority boundary. No architecture can make arbitrary unreviewed code changes harmless.
+
+## Task lanes
+
+| Lane | Suitable work | Required review |
+| --- | --- | --- |
+| Green | Values in the validated campaign text JSON; assigned documentation; small additional test fixtures using existing helpers | Check the diff, run verification, and review wording/assertions. Content still needs a semantic/editorial glance. |
+| Yellow | A specified visual/copy adjustment, licensed sprite integration, a small adapter or renderer change | A clear reference/acceptance case, screenshots when relevant, and SOL or human review before promotion. Some frontend files also contain critical controller code. |
+| Red | New action behavior, physics/materials, rewards/difficulty, NPC/item aliases, save migrations, multiplayer/credentials, provider/quota settings, AI validation, new region types, build/security rules | SOL designs the change and acceptance tests; Luna may implement a bounded part. Strong review is required. |
+
+Do not give Luna an open-ended “build the rest of the game” task. Break the work into approved small changes. Major world expansion and travel voting still wait for the physical game-night gate.
+
+## First enforced content lane
+
+`public/content/campaign-text.json` contains only the existing procedural (`wild-*`) location prefixes, ambient rumors and quest titles. The build validates fixed keys, counts and plain-text limits, then generates a frozen JavaScript module. This supports older browser module loading without runtime JSON imports. Initial tavern/clearing/ruins names are outside this lane, and already saved regions retain their saved text; do not rewrite campaigns to force a wording change.
+
+The file does not define rewards, NPC/item identities, objectives, materials, physics, exits or save schemas. Adding one of those fields must fail validation; changing it requires a separate design task. Changing rumor wording can still create a misleading story claim, so schema validation cannot replace reading the text.
+
+For a text-only task:
+
+1. Record the base commit and exact wording goal. Work on a small separate branch and preserve unrelated files.
+2. Edit only `public/content/campaign-text.json` by hand. Keep the existing keys and array counts. Do not modify the validator or tests to make bad data pass.
+3. Run `npm run build`. It regenerates `public/content/campaign-text.generated.js` and the bundled `src/framework.mjs`; include their resulting diffs, but never hand-edit them.
+4. Run `npm run verify`. If it reports generated drift, regenerate and inspect the generated diff before rerunning. Do not suppress the check.
+5. Inspect `git diff --name-only`. Stop and report if the task needs any additional engine, schema, test-oracle or infrastructure edits.
+6. Commit the small patch with the verification result. Passing CI is evidence, not automatic approval to merge or deploy.
+
+## What verification enforces
+
+- `npm test` launches the suite in a child environment with game AI disabled and inherited provider credentials/configuration removed. A disposable default data directory protects against a test accidentally using the development campaign; it is removed after success or failure. Tests can still use their explicit synthetic adapters and explicit per-test data directories.
+- `npm run verify` snapshots tracked generated files **before** the suite rebuilds them, compares them after tests and after the static build, and fails on missing or stale output. A passing test run cannot silently hide an uncommitted regeneration.
+- The GitHub offline-check workflow runs tests/build with read-only repository permissions. It does not deploy, run live model benchmarks, download weights or enable paid providers.
+
+These are development checks, not an operating-system sandbox or configured branch-protection rule. A worker able to edit the checks could weaken them; keep those files outside ordinary Luna task scope and review their changes separately.
+
+## Cheap task card
+
+Give the worker only the relevant files, one goal and a short acceptance list:
+
+```text
+Task: [one precise requested change]
+Base: [current tested commit/branch]
+Allowed manual files: [explicit paths]
+Allowed generated output: [only output produced by the approved build]
+Keep: first declaration, dice/state authority, saves, identities and current defaults
+Pass: [specific positive and negative behavior checks] + npm run verify
+Stop: if another file, changed mechanic, weaker assertion or new service is needed
+Report: changed paths, checks actually run, failures/limits, commit
+```
+
+For green content work, fill the paths from the content lane above. For tests, specify the expected outcome independently; a worker must not simply copy current behavior into an assertion and call it correct.
+
+## Keep usage low
+
+Use SOL once to define a consequential change and its boundaries, then let Luna do the bounded implementation. Batch review of small green changes rather than asking SOL to reread the whole repository for each wording edit. Escalate a failed invariant or ambiguous mechanic with a short reproduction instead of guessing.
+
+Read only the assigned paths and their relevant tests after the short handoff. Keep full verification output in an ignored log file and report its summary plus any failures; do not paste the whole suite or repeatedly enumerate assets. Do not manufacture busywork or add features just to keep a worker active when the next real acceptance gate is blocked.
+
+Live Groq calls, `ai:check`, qualification scripts in live mode and provider configuration are outside ordinary Luna tasks. They consume a separate game-service allowance and need the existing approved procedure. A new task/chat is not a quota reset. No paid service, deployment, model activation or save replacement follows from this guide.

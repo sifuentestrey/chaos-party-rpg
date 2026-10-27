@@ -1,4 +1,5 @@
 import {Rng} from './vendor/partyframe-rng.js';
+import {CAMPAIGN_TEXT} from './content/campaign-text.generated.js';
 // Deterministic region generation is independent of the authoritative dice stream.
 const hash=text=>{let h=2166136261;for(const c of text)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0;};
 export const CAMPAIGN_TYPES={
@@ -22,7 +23,7 @@ export function describeRegion(s,id){
  const [x,y]=m.slice(1).map(Number);if(!Number.isSafeInteger(x)||!Number.isSafeInteger(y)||Math.abs(x)>100000||Math.abs(y)>100000)return null;
  const rng=new Rng(hash(s.worldSeed+':'+id)),kind=rng.pick(Object.keys(CAMPAIGN_TYPES));
  const exits=[`wild-${x+1}-${y}`,`wild-${x}-${y+1}`,`wild-${x-1}-${y}`,`wild-${x}-${y-1}`];if(x===0&&y===0)exits[2]='ruins';
- return s.locations[id]={id,name:rng.pick(['Whispering','Copper','Forgotten','Silver','Thorn','Starfall','Ashen','Winding'])+' '+CAMPAIGN_TYPES[kind].name+' '+Math.abs(hash(id)%1000),kind,exits,visited:false,danger:Math.min(5,1+Math.floor((Math.abs(x)+Math.abs(y))/3)),decor:Array.from({length:12},()=>[rng.int(90,870),rng.int(170,470),rng.int(0,2)])};
+ return s.locations[id]={id,name:rng.pick(CAMPAIGN_TEXT.locationPrefixes)+' '+CAMPAIGN_TYPES[kind].name+' '+Math.abs(hash(id)%1000),kind,exits,visited:false,danger:Math.min(5,1+Math.floor((Math.abs(x)+Math.abs(y))/3)),decor:Array.from({length:12},()=>[rng.int(90,870),rng.int(170,470),rng.int(0,2)])};
 }
 export function spawnItem(s,location,properties){
  const id='item-'+s.nextId++;
@@ -59,7 +60,7 @@ export function enterRegion(r,s,id){
  const gate=spawnItem(s,id,{name:'weathered gate',type:'fixture',material:'wood',portable:false,locked:false,open:false,position:[480,145],appearance:{shape:'gate',color:'#b88955'},parts:[{name:'wood shaving',material:'wood',count:2}]});
  if(adventureKind==='restore'){gate.condition='broken';gate.hp=0;}
  const objective=adventureKind==='rescue'?'Make the road safe and bandage the injured wayfarer.':adventureKind==='restore'?'Make the road safe and repair the broken gate.':'Make the road safe and return the keepsake from the coffer to the wayfarer.';
- s.regions[id]={quest:{id:'quest-'+id,kind:adventureKind,objective,gateId:gate.id,title:adventureKind==='rescue'?'Shelter on the road':adventureKind==='restore'?'The broken crossing':'A keepsake on the road',patronId,threatId,relicId:relic.id,chestId:chest.id,status:'available',reward:4+danger,chapter:s.campaign.chapter},rumor:rng.pick(['Someone has been moving the old boundary stones.','The spring runs clear, even in drought.','Travelers say the next valley remembers every promise.'])};
+ s.regions[id]={quest:{id:'quest-'+id,kind:adventureKind,objective,gateId:gate.id,title:CAMPAIGN_TEXT.questTitles[adventureKind],patronId,threatId,relicId:relic.id,chestId:chest.id,status:'available',reward:4+danger,chapter:s.campaign.chapter},rumor:rng.pick(CAMPAIGN_TEXT.rumors)};
  recordCampaign(r,s,'discovery',`Discovered ${l.name}.`,{location:id});
  return true;
 }

@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node server.mjs",
     "dev": "CHAOS_PREVIEW=1 node server.mjs",
-    "test": "node scripts/build-framework.mjs && node --test tests/*.test.mjs",
+    "test": "node scripts/test-offline.mjs",
+    "verify": "node scripts/verify-offline.mjs",
     "build": "node scripts/build-framework.mjs && node scripts/build.mjs",
     "prestart": "node scripts/build-framework.mjs",
     "predev": "node scripts/build-framework.mjs",
