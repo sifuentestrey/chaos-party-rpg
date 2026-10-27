@@ -1,5 +1,7 @@
 # AI Dungeon Master implementation checkpoint
 
+> **Historical snapshot; status reconciled 2026-10-27 at 19:07 UTC.** The sections below describe the earlier `feature/creative-dm` checkpoint, not the current environment or branch. Later work reached GitHub on `fix/grounded-action-contract`: game-code checkpoint `8ebabfff`, followed by documentation-only handoff commits through `0c05092`. Groq connectivity and real inference were subsequently exercised; the statements below about blocked access and unpushed work are superseded. The latest recorded full suite passed 119/119 with a successful build; this documentation review did not rerun it. Generated narration remains unqualified/off by default, and the combined action contract remains experimental. See [the latest stress checkpoint](LOW_USAGE_STRESS_RESULTS.md), [the owner handoff](OWNER_HANDOFF_REACTIVE_HYBRID_WORLD_2026-10-27.md), and [the dated engineering review in issue #9](https://github.com/sifuentestrey/chaos-party-rpg/issues/9). Recheck current runtime readiness and the shared usage ledger before any future live requests.
+
 Date: 2026-10-27. Branch: `feature/creative-dm`. This continues the existing game; PartyFrame/Colyseus and Ninja Adventure remain the runtime and visual foundations. The original `Chaos_Party_Mac.zip` remains unavailable in this task. Existing source recovery and earlier visual evidence were used; no replacement archive provenance is claimed.
 
 ## Added
