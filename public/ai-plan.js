@@ -23,10 +23,12 @@ export function applyAIPlan(room,turnId,raw,model,now=Date.now()){
   const t=room.turn;
   if(room.phase!=='react'||room.paused||!t||t.worldLocked||t.id!==turnId||now>=t.deadline-800)return false;
   if(room.world.expedition?.current!=='tavern'&&room.world.expedition?.current&&raw?.domain!=='world')throw new Error('Tavern interpretations cannot affect remote locations');
+  if(t.worldPendingVerb&&raw.verb!==t.worldPendingVerb&&raw.verb!=='unsupported')throw Error('Interpretation changed the declared action instead of resolving its target');
   const plan=validateAIPlan(raw,room,t.actorId);
   const actor=room.players.find(p=>p.id===t.actorId);
   if(actor.hp<=0&&plan.intent!=='heal')throw new Error('Knocked out characters must recover');
   t.intent=plan.intent;t.target=plan.target;t.rulesText=plan.rulesText;if(plan.worldAction){t.worldAction=true;t.worldBlueprint=plan.blueprint;}else{t.worldAction=false;delete t.worldBlueprint;}
+  if(t.worldPendingVerb){delete t.worldPendingVerb;t.worldLocked=true;}
   t.ai={status:'applied',model,summary:plan.summary,verb:plan.verb};
   room.revision++;room.updatedAt=now;return true;
 }

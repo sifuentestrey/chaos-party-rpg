@@ -143,7 +143,7 @@ export function submit(r, playerId, input, now=Date.now()) {
   const e=event(r,'declaration',text,now,{playerId:p.id,name:p.name});
   r.round++; r.turn={id:uid(),seq:e.id,actorId:p.id,action:text,intent,target:targetFor(r,p,text),at:now,
     deadline:now+r.reactionMs,reactions:[]};
-  if(dynamic){r.turn.worldAction=true;r.turn.worldLocked=dynamic.verb!=='unsupported';const key=dynamic.targetId||dynamic.itemId||dynamic.sourceIds?.[0];const item=r.world.expedition.items[key]||r.world.expedition.creatures?.[key];r.turn.target={kind:'world',entityId:item?.id,name:item?.name||dynamic.destination||'materials',position:item?.ownerId?[480,335]:item?.position||[480,490]};}
+  if(dynamic){r.turn.worldAction=true;r.turn.worldLocked=dynamic.verb!=='unsupported'&&!dynamic.unresolvedTarget;if(dynamic.unresolvedTarget)r.turn.worldPendingVerb=dynamic.verb;const key=dynamic.targetId||dynamic.itemId||dynamic.sourceIds?.[0];const item=r.world.expedition.items[key]||r.world.expedition.creatures?.[key];r.turn.target={kind:'world',entityId:item?.id,name:item?.name||dynamic.destination||'materials',position:item?.ownerId?[480,335]:item?.position||[480,490]};}
   r.phase='react'; r.deadline=r.turn.deadline; r.result=null; p.status='committed';p.cover=false;
   const ack={ok:true,accepted:true,kind:'action',seq:e.id,at:now,turnId:r.turn.id};
   r.requests[key]=ack;

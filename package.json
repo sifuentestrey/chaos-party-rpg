@@ -11,7 +11,8 @@
     "build": "node scripts/build-framework.mjs && node scripts/build.mjs",
     "prestart": "node scripts/build-framework.mjs",
     "predev": "node scripts/build-framework.mjs",
-    "ai:check": "node scripts/check-local-ai.mjs"
+    "ai:check": "node scripts/check-local-ai.mjs",
+    "start:free-ai": "node scripts/build-framework.mjs && CHAOS_AI_PROVIDER=groq-free CHAOS_AI_NARRATION=off NODE_USE_ENV_PROXY=1 node server.mjs"
   },
   "dependencies": {
     "@colyseus/core": "0.16.24",

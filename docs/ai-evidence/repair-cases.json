@@ -1,0 +1,297 @@
+{
+  "model": "openai/gpt-oss-120b",
+  "productionBudgetMs": 5500,
+  "diagnosticTimeoutMs": 15000,
+  "scope": "Live AI component tests plus normal applyAIPlan/advance. Native locked turns can retain their original interpretation. No forced unlock or production saves.",
+  "rows": [
+    {
+      "id": "blue-headwear",
+      "attempt": "Fashion my cloth strip and wood splinter into a silly blue hat for my head",
+      "expected": {
+        "verb": "craft",
+        "sources": [
+          "item-1",
+          "item-2"
+        ],
+        "itemType": "wearable",
+        "slot": "head",
+        "color": "#7ea7d4"
+      },
+      "exploratory": false,
+      "nativeLocked": false,
+      "elapsedMs": 1247,
+      "actual": {
+        "domain": "world",
+        "verb": "craft",
+        "target": "",
+        "item": "",
+        "sources": [
+          "item-1",
+          "item-2"
+        ],
+        "name": "silly blue hat",
+        "itemType": "wearable",
+        "slot": "head",
+        "color": "#7ea7d4",
+        "summary": "Jinx attempts to craft a silly blue hat for their head using the cloth strip and wood splinter."
+      },
+      "usage": {
+        "promptTokens": 1301,
+        "completionTokens": 176
+      },
+      "correct": true,
+      "checks": {
+        "verb": true,
+        "itemType": true,
+        "slot": true,
+        "color": true,
+        "sources": true
+      },
+      "validated": true,
+      "noPrematureMechanicalMutation": true,
+      "applied": true,
+      "resolution": {
+        "blocked": false,
+        "success": true,
+        "text": "Jinx creates silly blue hat (item-13) from cloth strip and wood splinter.",
+        "changes": [
+          "CREATED: silly blue hat"
+        ]
+      }
+    },
+    {
+      "id": "wolf-rap",
+      "attempt": "I soothe Cinder Wolf with a gentle ridiculous rap instead of hurting it",
+      "expected": {
+        "verb": "pacify",
+        "target": "beast-clearing"
+      },
+      "exploratory": false,
+      "nativeLocked": false,
+      "elapsedMs": 903,
+      "actual": {
+        "domain": "world",
+        "verb": "pacify",
+        "target": "beast-clearing",
+        "item": "",
+        "sources": [],
+        "name": "Cinder Wolf",
+        "itemType": "tool",
+        "slot": "hand",
+        "color": "#bd88cf",
+        "summary": "Jinx attempts to soothe the Cinder Wolf with a ridiculous rap."
+      },
+      "usage": {
+        "promptTokens": 1745,
+        "completionTokens": 164
+      },
+      "correct": true,
+      "checks": {
+        "verb": true,
+        "target": true
+      },
+      "validated": true,
+      "noPrematureMechanicalMutation": true,
+      "applied": true,
+      "resolution": {
+        "blocked": false,
+        "success": true,
+        "text": "Jinx: pacify Cinder Wolf.",
+        "changes": [
+          "PACIFY: Cinder Wolf"
+        ]
+      }
+    },
+    {
+      "id": "alternative-treatment",
+      "attempt": "Bandage the wayfarer’s sprained arm using my cloth strip",
+      "expected": {
+        "verb": "treat",
+        "target": "person-clearing"
+      },
+      "exploratory": false,
+      "nativeLocked": true,
+      "elapsedMs": 925,
+      "actual": {
+        "domain": "world",
+        "verb": "treat",
+        "target": "person-clearing",
+        "item": "item-1",
+        "sources": [],
+        "name": "",
+        "itemType": "tool",
+        "slot": "hand",
+        "color": "#bd88cf",
+        "summary": "Jinx attempts to bandage Tansy the Wayfarer’s sprained arm using the cloth strip."
+      },
+      "usage": {
+        "promptTokens": 1749,
+        "completionTokens": 157
+      },
+      "correct": true,
+      "checks": {
+        "verb": true,
+        "target": true
+      },
+      "validated": true,
+      "noPrematureMechanicalMutation": true,
+      "applied": false,
+      "resolution": {
+        "blocked": false,
+        "success": true,
+        "text": "Jinx: treat Tansy the Wayfarer.",
+        "changes": [
+          "TREAT: Tansy the Wayfarer"
+        ]
+      }
+    },
+    {
+      "id": "fresh-green-headband",
+      "attempt": "Create a green headband from my cloth strip and wood splinter to wear on my head",
+      "expected": {
+        "verb": "craft",
+        "sources": [
+          "item-1",
+          "item-2"
+        ],
+        "itemType": "wearable",
+        "slot": "head",
+        "color": "#83b48a"
+      },
+      "exploratory": false,
+      "nativeLocked": true,
+      "elapsedMs": 2729,
+      "actual": {
+        "domain": "world",
+        "verb": "craft",
+        "target": "",
+        "item": "",
+        "sources": [
+          "item-1",
+          "item-2"
+        ],
+        "name": "green headband",
+        "itemType": "wearable",
+        "slot": "head",
+        "color": "#83b48a",
+        "summary": "Jinx attempts to craft a green headband from the cloth strip and wood splinter."
+      },
+      "usage": {
+        "promptTokens": 1313,
+        "completionTokens": 168
+      },
+      "correct": true,
+      "checks": {
+        "verb": true,
+        "itemType": true,
+        "slot": true,
+        "color": true,
+        "sources": true
+      },
+      "validated": true,
+      "noPrematureMechanicalMutation": true,
+      "applied": false,
+      "resolution": {
+        "blocked": true,
+        "success": false,
+        "text": "Choose two to four different intact items from your own pockets; take them out of containers first. Use item IDs if names repeat.",
+        "changes": []
+      }
+    },
+    {
+      "id": "fresh-wolf-lullaby",
+      "attempt": "I calm Cinder Wolf with a softly sung lullaby",
+      "expected": {
+        "verb": "pacify",
+        "target": "beast-clearing"
+      },
+      "exploratory": false,
+      "nativeLocked": false,
+      "elapsedMs": 3256,
+      "actual": {
+        "domain": "world",
+        "verb": "pacify",
+        "target": "beast-clearing",
+        "item": "",
+        "sources": [],
+        "name": "Cinder Wolf",
+        "itemType": "tool",
+        "slot": "hand",
+        "color": "#bd88cf",
+        "summary": "Jinx attempts to calm the Cinder Wolf with a softly sung lullaby."
+      },
+      "usage": {
+        "promptTokens": 1722,
+        "completionTokens": 151
+      },
+      "correct": true,
+      "checks": {
+        "verb": true,
+        "target": true
+      },
+      "validated": true,
+      "noPrematureMechanicalMutation": true,
+      "applied": true,
+      "resolution": {
+        "blocked": false,
+        "success": true,
+        "text": "Jinx: pacify Cinder Wolf.",
+        "changes": [
+          "PACIFY: Cinder Wolf"
+        ]
+      }
+    },
+    {
+      "id": "fresh-bandage-title",
+      "attempt": "Treat the wayfarer with my cloth strip",
+      "expected": {
+        "verb": "treat",
+        "target": "person-clearing"
+      },
+      "exploratory": false,
+      "nativeLocked": true,
+      "elapsedMs": 4452,
+      "actual": {
+        "domain": "world",
+        "verb": "treat",
+        "target": "person-clearing",
+        "item": "item-1",
+        "sources": [],
+        "name": "Treat Wayfarer",
+        "itemType": "tool",
+        "slot": "hand",
+        "color": "#bd88cf",
+        "summary": "Jinx attempts to treat Tansy the Wayfarer with the carried cloth strip."
+      },
+      "usage": {
+        "promptTokens": 1781,
+        "completionTokens": 197
+      },
+      "correct": true,
+      "checks": {
+        "verb": true,
+        "target": true
+      },
+      "validated": true,
+      "noPrematureMechanicalMutation": true,
+      "applied": false,
+      "resolution": {
+        "blocked": false,
+        "success": true,
+        "text": "Jinx: treat Tansy the Wayfarer.",
+        "changes": [
+          "TREAT: Tansy the Wayfarer"
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "scored": 6,
+    "matched": 6,
+    "matchedWithinBudget": 6,
+    "errors": 0,
+    "p50Ms": 1247,
+    "p95Ms": 4452,
+    "narrationRequiresManualReview": true
+  }
+}

@@ -12,6 +12,8 @@ export function available(s,r,item){
 export function entityNamed(s,r,text,find){
  const norm=normalized(text),matches=[...localCreatures(s),...r.players].filter(c=>c.id===text||normalized(c.name)===norm);
  if(matches.length===1)return matches[0];
+ // Titles are aliases only when unique among entities currently present.
+ if(!matches.length){const titled=[...localCreatures(s),...r.players].filter(c=>normalized(c.name).endsWith(' the '+norm));if(titled.length===1)return titled[0];}
  const item=find(s,r,text);if(item)return item;
  if(s.current==='tavern'){
   const legacy=Object.hasOwn(OBJECTS,text)?{kind:text}:environmentTarget(text);
@@ -25,7 +27,7 @@ export function parseEntityAttempt(text){
  if((m=text.match(/^(?:talk to|ask|negotiate with|pacify|befriend|tame|persuade) (.+?)(?: about .*)?$/i)))return {verb:/^(talk|ask)/i.test(text)?'talk':'pacify',target:m[1]};
  if((m=text.match(/^(?:attack|damage|hit|strike) (.+?)(?: with (.+))?$/i)))return {verb:'attack',target:m[1],item:m[2]};
  if((m=text.match(/^(?:cut|pluck|harvest|separate) (.+?) from (.+)$/i)))return {verb:'harvest',part:m[1],target:m[2]};
- if((m=text.match(/^(?:heal|bandage|treat) (.+)$/i)))return {verb:'treat',target:m[1]};
+ if((m=text.match(/^(?:heal|bandage|treat) (.+?)(?: (?:using|with) (.+))?$/i)))return {verb:'treat',target:m[1].replace(/[’']s (?:sprained |injured |wounded )?(?:arm|leg|hand|foot|head|wound|injury)\b.*$/i,''),item:m[2]?.replace(/^my /i,'')};
  if((m=text.match(/^put (.+?) (?:in|into) (.+)$/i)))return {verb:'put',item:m[1],target:m[2]};
  if((m=text.match(/^attach (.+?) to (.+)$/i)))return {verb:'attachTo',item:m[1],target:m[2]};
  if((m=text.match(/^fill (.+?) from (.+)$/i)))return {verb:'fill',item:m[1],target:m[2]};
@@ -40,7 +42,7 @@ export function planEntity(r,s,actor,attempt,find){
   return {...attempt,destination:next,automatic:true,ability:'Exploration'};
  }
  const target=entityNamed(s,r,attempt.target,find);
- if(!target){if(s.current==='tavern'&&!['harvest','pacify','fill'].includes(attempt.verb))return null;return blocked('That entity is not here. Use the displayed name or identity.');}
+ if(!target){if(s.current==='tavern'&&!['harvest','pacify','fill'].includes(attempt.verb))return null;return {...blocked('That entity is not here. Use the displayed name or identity.'),unresolvedTarget:true};}
  if(target.legacyId&&!['harvest','attack'].includes(attempt.verb))return null;
  const p={...attempt,targetId:target.id,automatic:true,dc:0,ability:'Interaction'};
  if(attempt.verb==='inspect')return p;
@@ -56,7 +58,9 @@ export function planEntity(r,s,actor,attempt,find){
  }
  if(attempt.verb==='treat'){
   if(!creature&&!player)return blocked('Choose an injured creature or adventurer.');
-  const bandage=Object.values(s.items).find(i=>i.ownerId===actor.id&&available(s,r,i)&&['cloth','fiber'].includes(i.material)&&i.condition==='intact');
+  const requested=attempt.item?Object.values(s.items).filter(i=>i.ownerId===actor.id&&available(s,r,i)&&(i.id===attempt.item||normalized(i.name)===normalized(attempt.item))):[];
+  const candidate=requested.length===1?requested[0]:null;
+  const bandage=(attempt.item?[candidate]:Object.values(s.items)).find(i=>i&&i.ownerId===actor.id&&available(s,r,i)&&['cloth','fiber'].includes(i.material)&&i.condition==='intact');
   return bandage?{...p,itemId:bandage.id,automatic:false,dc:8,ability:'Medicine'}:blocked('You need a carried cloth or fiber item for a bandage.');
  }
  if(attempt.verb==='harvest'){

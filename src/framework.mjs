@@ -2559,6 +2559,10 @@ function available(s, r, item) {
 function entityNamed(s, r, text, find) {
   const norm2 = normalized(text), matches = [...localCreatures(s), ...r.players].filter((c) => c.id === text || normalized(c.name) === norm2);
   if (matches.length === 1) return matches[0];
+  if (!matches.length) {
+    const titled = [...localCreatures(s), ...r.players].filter((c) => normalized(c.name).endsWith(" the " + norm2));
+    if (titled.length === 1) return titled[0];
+  }
   const item = find(s, r, text);
   if (item) return item;
   if (s.current === "tavern") {
@@ -2576,7 +2580,7 @@ function parseEntityAttempt(text) {
   if (m = text.match(/^(?:talk to|ask|negotiate with|pacify|befriend|tame|persuade) (.+?)(?: about .*)?$/i)) return { verb: /^(talk|ask)/i.test(text) ? "talk" : "pacify", target: m[1] };
   if (m = text.match(/^(?:attack|damage|hit|strike) (.+?)(?: with (.+))?$/i)) return { verb: "attack", target: m[1], item: m[2] };
   if (m = text.match(/^(?:cut|pluck|harvest|separate) (.+?) from (.+)$/i)) return { verb: "harvest", part: m[1], target: m[2] };
-  if (m = text.match(/^(?:heal|bandage|treat) (.+)$/i)) return { verb: "treat", target: m[1] };
+  if (m = text.match(/^(?:heal|bandage|treat) (.+?)(?: (?:using|with) (.+))?$/i)) return { verb: "treat", target: m[1].replace(/[’']s (?:sprained |injured |wounded )?(?:arm|leg|hand|foot|head|wound|injury)\b.*$/i, ""), item: m[2]?.replace(/^my /i, "") };
   if (m = text.match(/^put (.+?) (?:in|into) (.+)$/i)) return { verb: "put", item: m[1], target: m[2] };
   if (m = text.match(/^attach (.+?) to (.+)$/i)) return { verb: "attachTo", item: m[1], target: m[2] };
   if (m = text.match(/^fill (.+?) from (.+)$/i)) return { verb: "fill", item: m[1], target: m[2] };
@@ -2593,7 +2597,7 @@ function planEntity(r, s, actor, attempt, find) {
   const target = entityNamed(s, r, attempt.target, find);
   if (!target) {
     if (s.current === "tavern" && !["harvest", "pacify", "fill"].includes(attempt.verb)) return null;
-    return blocked("That entity is not here. Use the displayed name or identity.");
+    return { ...blocked("That entity is not here. Use the displayed name or identity."), unresolvedTarget: true };
   }
   if (target.legacyId && !["harvest", "attack"].includes(attempt.verb)) return null;
   const p = { ...attempt, targetId: target.id, automatic: true, dc: 0, ability: "Interaction" };
@@ -2610,7 +2614,9 @@ function planEntity(r, s, actor, attempt, find) {
   }
   if (attempt.verb === "treat") {
     if (!creature && !player) return blocked("Choose an injured creature or adventurer.");
-    const bandage = Object.values(s.items).find((i) => i.ownerId === actor.id && available(s, r, i) && ["cloth", "fiber"].includes(i.material) && i.condition === "intact");
+    const requested = attempt.item ? Object.values(s.items).filter((i) => i.ownerId === actor.id && available(s, r, i) && (i.id === attempt.item || normalized(i.name) === normalized(attempt.item))) : [];
+    const candidate = requested.length === 1 ? requested[0] : null;
+    const bandage = (attempt.item ? [candidate] : Object.values(s.items)).find((i) => i && i.ownerId === actor.id && available(s, r, i) && ["cloth", "fiber"].includes(i.material) && i.condition === "intact");
     return bandage ? { ...p, itemId: bandage.id, automatic: false, dc: 8, ability: "Medicine" } : blocked("You need a carried cloth or fiber item for a bandage.");
   }
   if (attempt.verb === "harvest") {
@@ -2849,10 +2855,15 @@ function findItem(s, r, text) {
   const matches = Object.values(s.items).filter((i) => available(s, r, i) && (i.id === text.trim() || norm(i.name) === norm(text)));
   return matches.length === 1 ? matches[0] : null;
 }
+function findCarriedItem(s, r, actor, text) {
+  const reference = text.trim().replace(/^my /i, "");
+  const matches = Object.values(s.items).filter((i) => i.ownerId === actor.id && available(s, r, i) && (i.id === reference || norm(i.name) === norm(reference)));
+  return matches.length === 1 ? matches[0] : null;
+}
 function parseItemAttempt(text) {
   let m;
   if (m = text.match(/^(?:travel|go) to (.+)$/i)) return { verb: "travel", destination: norm(m[1]) };
-  if (m = text.match(/^(?:make|craft|create) (.+?) from (.+)$/i)) return { verb: "craft", name: m[1].replace(/^(a|an|the)\s+/i, "").trim(), sources: m[2].split(/\s+and\s+|\s*\+\s*/i) };
+  if (m = text.match(/^(?:make|craft|create) (.+?) from (.+)$/i)) return { verb: "craft", name: m[1].replace(/^(a|an|the)\s+/i, "").trim(), sources: m[2].replace(/\s+to wear (?:on )?(?:my |the )?(?:head|body|hand)$/i, "").split(/\s+and\s+|\s*\+\s*/i) };
   if (m = text.match(/^attach (.+?) to (.+)$/i)) return { verb: "attach", sources: [m[1], m[2]] };
   if (m = text.match(/^give (.+?) to (.+)$/i)) return { verb: "give", item: m[1], recipient: m[2] };
   if (m = text.match(/^use (.+?) on (.+)$/i)) return { verb: "use", item: m[1], target: m[2] };
@@ -2868,7 +2879,7 @@ function itemPlan(r, actor, text) {
   if (!attempt && /\b(make|craft|create|fashion|weave|sew|build|turn.+into)\b/i.test(text)) return { verb: "unsupported", error: "This creative attempt needs a validated interpretation. Use Make <name> from two carried components, or connect local AI.", automatic: true, dc: 0, ability: "Interaction" };
   if (!attempt) return currentLocation(r) === "tavern" ? null : { verb: "unsupported", error: "Try taking, crafting, equipping, giving, separating, or using an object here, or travel to a connected place.", automatic: true, dc: 0, ability: "Interaction" };
   const isExplicit = ["travel", "craft", "attach", "give", "use", "equip", "unequip", "separate", "drop"].includes(attempt.verb);
-  const s = ensureItems(r), item = attempt.item ? findItem(s, r, attempt.item) : null;
+  const s = ensureItems(r), item = attempt.item ? ["give", "use", "equip", "unequip", "drop", "separate"].includes(attempt.verb) ? findCarriedItem(s, r, actor, attempt.item) : findItem(s, r, attempt.item) : null;
   if (!isExplicit && !item) {
     if (s.current === "tavern" && !/^item-\d+$/i.test(attempt.item || "")) return null;
   }
@@ -2880,7 +2891,7 @@ function itemPlan(r, actor, text) {
   }
   if (["craft", "attach"].includes(attempt.verb)) {
     if (attempt.verb === "craft" && (!attempt.name || attempt.name.length > 48 || /[<>]/.test(attempt.name))) return blocked("Use an item name of 1\u201348 plain characters.");
-    const sources = attempt.sources.map((name) => findItem(s, r, name));
+    const sources = attempt.sources.map((name) => findCarriedItem(s, r, actor, name));
     if (sources.length < 2 || sources.length > 4 || sources.some((i) => !i || i.ownerId !== actor.id || i.containerId || i.condition !== "intact") || new Set(sources.map((i) => i.id)).size !== sources.length) return blocked("Choose two to four different intact items from your own pockets; take them out of containers first. Use item IDs if names repeat.");
     if (Object.values(s.items).filter((i) => i.location === s.current || i.ownerId === actor.id).length >= 256) return blocked("This campaign has reached its 256-object crafting limit.");
     return { ...attempt, sourceIds: sources.map((i) => i.id), automatic: false, dc: 10, ability: "Craft" };
@@ -2933,7 +2944,7 @@ function resolveItem(r, actor, plan, success) {
   }
   if (["craft", "attach"].includes(plan.verb)) {
     const sources = plan.sourceIds.map((id2) => s.items[id2]), name = plan.name || `${sources[1].name} with ${sources[0].name}`.slice(0, 48);
-    const type3 = plan.creationType || (plan.verb === "attach" ? sources[1].type : /\b(hat|crown|ring|cape|mask|belt|amulet|badge|necklace|helmet|wearable)\b/i.test(name) ? "wearable" : /\b(bottle|cup|bowl|container|flask)\b/i.test(name) ? "container" : "tool");
+    const type3 = plan.creationType || (plan.verb === "attach" ? sources[1].type : /\b(hat|headband|crown|ring|cape|mask|belt|amulet|badge|necklace|helmet|wearable)\b/i.test(name) ? "wearable" : /\b(bottle|cup|bowl|container|flask)\b/i.test(name) ? "container" : "tool");
     const id = "item-" + s.nextId++, material = sources[0].material;
     const slot = plan.creationSlot || (type3 !== "wearable" ? null : plan.verb === "attach" ? sources[1].slot || "head" : /\b(ring)\b/i.test(name) ? "hand" : /\b(cape|belt|amulet|badge|necklace)\b/i.test(name) ? "body" : "head");
     const palette = { red: "#d87878", blue: "#7ea7d4", green: "#83b48a", gold: "#dfc16e", purple: "#bd88cf", white: "#e4dcc8", black: "#484552" };
@@ -3277,7 +3288,8 @@ function submit(r, playerId, input, now = Date.now()) {
   };
   if (dynamic) {
     r.turn.worldAction = true;
-    r.turn.worldLocked = dynamic.verb !== "unsupported";
+    r.turn.worldLocked = dynamic.verb !== "unsupported" && !dynamic.unresolvedTarget;
+    if (dynamic.unresolvedTarget) r.turn.worldPendingVerb = dynamic.verb;
     const key2 = dynamic.targetId || dynamic.itemId || dynamic.sourceIds?.[0];
     const item = r.world.expedition.items[key2] || r.world.expedition.creatures?.[key2];
     r.turn.target = { kind: "world", entityId: item?.id, name: item?.name || dynamic.destination || "materials", position: item?.ownerId ? [480, 335] : item?.position || [480, 490] };
@@ -3788,7 +3800,9 @@ function hostCommand(r, command, now = Date.now()) {
 var WORLD_VERBS = ["craft", "attach", "give", "equip", "unequip", "take", "drop", "separate", "inspect", "use", "travel", "explore", "talk", "pacify", "attack", "harvest", "treat", "fill", "drink", "open", "close", "unlock", "move", "ignite", "extinguish", "repair", "put", "rest", "unsupported"];
 var APPEARANCE_COLORS = ["#d87878", "#7ea7d4", "#83b48a", "#dfc16e", "#bd88cf", "#e4dcc8", "#484552", "#b88955", "#7dc7cf"];
 var WORLD_PLAN_SCHEMA = { type: "object", properties: { domain: { type: "string", enum: ["world"] }, verb: { type: "string", enum: WORLD_VERBS }, target: { type: "string" }, item: { type: "string" }, sources: { type: "array", items: { type: "string" }, maxItems: 4 }, name: { type: "string", maxLength: 48 }, itemType: { type: "string", enum: ["wearable", "tool", "container", "fragment"] }, slot: { type: "string", enum: ["head", "body", "hand"] }, color: { type: "string", enum: APPEARANCE_COLORS }, summary: { type: "string", maxLength: 160 } }, required: ["domain", "verb", "target", "item", "sources", "name", "itemType", "slot", "color", "summary"], additionalProperties: false };
+var voicePacification = (text) => /\b(soothe|calm|befriend|pacify|win .+ over)\b/i.test(text) && /\b(voice|song|sing|rap|music|lullaby|joke)\b/i.test(text) && !/\b(heal|bandage|bind|treat|wound|injury|pain)\b/i.test(text);
 function validateWorldPlan(raw, room, actorId) {
+  if (voicePacification(room.turn?.action || "") && !["pacify", "unsupported"].includes(raw.verb)) throw Error("A vocal pacification cannot become a different mechanical action");
   const allowed = Object.keys(WORLD_PLAN_SCHEMA.properties);
   if (Object.keys(raw).some((k) => !allowed.includes(k)) || !WORLD_VERBS.includes(raw.verb) || typeof raw.summary !== "string" || raw.summary.length > 160) throw Error("Invalid world interpretation");
   for (const key of ["target", "item", "name"]) if (raw[key] !== void 0 && (typeof raw[key] !== "string" || raw[key].length > 100)) throw Error("Invalid entity reference");
@@ -3835,7 +3849,7 @@ function validateWorldPlan(raw, room, actorId) {
       text = `Befriend ${reference(raw.target)}`;
       break;
     case "treat":
-      text = `Bandage ${reference(raw.target)}`;
+      text = `Bandage ${reference(raw.target)}${raw.item ? " with " + reference(raw.item) : ""}`;
       break;
     case "attack":
       text = `Attack ${reference(raw.target)}${raw.item ? " with " + reference(raw.item) : ""}`;
@@ -3893,6 +3907,7 @@ function applyAIPlan(room, turnId, raw, model, now = Date.now()) {
   const t = room.turn;
   if (room.phase !== "react" || room.paused || !t || t.worldLocked || t.id !== turnId || now >= t.deadline - 800) return false;
   if (room.world.expedition?.current !== "tavern" && room.world.expedition?.current && raw?.domain !== "world") throw new Error("Tavern interpretations cannot affect remote locations");
+  if (t.worldPendingVerb && raw.verb !== t.worldPendingVerb && raw.verb !== "unsupported") throw Error("Interpretation changed the declared action instead of resolving its target");
   const plan = validateAIPlan(raw, room, t.actorId);
   const actor = room.players.find((p) => p.id === t.actorId);
   if (actor.hp <= 0 && plan.intent !== "heal") throw new Error("Knocked out characters must recover");
@@ -3905,6 +3920,10 @@ function applyAIPlan(room, turnId, raw, model, now = Date.now()) {
   } else {
     t.worldAction = false;
     delete t.worldBlueprint;
+  }
+  if (t.worldPendingVerb) {
+    delete t.worldPendingVerb;
+    t.worldLocked = true;
   }
   t.ai = { status: "applied", model, summary: plan.summary, verb: plan.verb };
   room.revision++;

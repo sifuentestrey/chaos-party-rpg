@@ -31,11 +31,17 @@ function findItem(s,r,text){
 }
 export function visibleCreatures(r){return localCreatures(r.world.expedition||{});}
 
+function findCarriedItem(s,r,actor,text){
+ const reference=text.trim().replace(/^my /i,'');
+ const matches=Object.values(s.items).filter(i=>i.ownerId===actor.id&&available(s,r,i)&&(i.id===reference||norm(i.name)===norm(reference)));
+ return matches.length===1?matches[0]:null;
+}
+
 // A bounded local grammar. Unknown entities never fall through to fake rewards.
 export function parseItemAttempt(text){
   let m;
   if((m=text.match(/^(?:travel|go) to (.+)$/i)))return {verb:'travel',destination:norm(m[1])};
-  if((m=text.match(/^(?:make|craft|create) (.+?) from (.+)$/i)))return {verb:'craft',name:m[1].replace(/^(a|an|the)\s+/i,'').trim(),sources:m[2].split(/\s+and\s+|\s*\+\s*/i)};
+  if((m=text.match(/^(?:make|craft|create) (.+?) from (.+)$/i)))return {verb:'craft',name:m[1].replace(/^(a|an|the)\s+/i,'').trim(),sources:m[2].replace(/\s+to wear (?:on )?(?:my |the )?(?:head|body|hand)$/i,'').split(/\s+and\s+|\s*\+\s*/i)};
   if((m=text.match(/^attach (.+?) to (.+)$/i)))return {verb:'attach',sources:[m[1],m[2]]};
   if((m=text.match(/^give (.+?) to (.+)$/i)))return {verb:'give',item:m[1],recipient:m[2]};
   if((m=text.match(/^use (.+?) on (.+)$/i)))return {verb:'use',item:m[1],target:m[2]};
@@ -48,7 +54,7 @@ export function itemPlan(r,actor,text){
   if(currentLocation(r)!=='tavern'&&/^(?:rest|rest and heal|heal myself)$/i.test(text.trim()))return {verb:'rest',automatic:false,dc:6,ability:'Recovery'};
   const attempt=parseItemAttempt(text);if(!attempt&&/\b(make|craft|create|fashion|weave|sew|build|turn.+into)\b/i.test(text))return {verb:'unsupported',error:'This creative attempt needs a validated interpretation. Use Make <name> from two carried components, or connect local AI.',automatic:true,dc:0,ability:'Interaction'};if(!attempt)return currentLocation(r)==='tavern'?null:{verb:'unsupported',error:'Try taking, crafting, equipping, giving, separating, or using an object here, or travel to a connected place.',automatic:true,dc:0,ability:'Interaction'};
   const isExplicit=['travel','craft','attach','give','use','equip','unequip','separate','drop'].includes(attempt.verb);
-  const s=ensureItems(r),item=attempt.item?findItem(s,r,attempt.item):null;
+  const s=ensureItems(r),item=attempt.item?(['give','use','equip','unequip','drop','separate'].includes(attempt.verb)?findCarriedItem(s,r,actor,attempt.item):findItem(s,r,attempt.item)):null;
   if(!isExplicit&&!item){if(s.current==='tavern'&&!/^item-\d+$/i.test(attempt.item||''))return null;}
   const blocked=message=>({...attempt,itemId:item?.id,error:message,automatic:true,dc:0,ability:'Interaction'});
   if(attempt.verb==='travel'){
@@ -58,7 +64,7 @@ export function itemPlan(r,actor,text){
   }
   if(['craft','attach'].includes(attempt.verb)){
     if(attempt.verb==='craft'&&(!attempt.name||attempt.name.length>48||/[<>]/.test(attempt.name)))return blocked('Use an item name of 1–48 plain characters.');
-    const sources=attempt.sources.map(name=>findItem(s,r,name));
+    const sources=attempt.sources.map(name=>findCarriedItem(s,r,actor,name));
     if(sources.length<2||sources.length>4||sources.some(i=>!i||i.ownerId!==actor.id||i.containerId||i.condition!=='intact')||new Set(sources.map(i=>i.id)).size!==sources.length)return blocked('Choose two to four different intact items from your own pockets; take them out of containers first. Use item IDs if names repeat.');
     if(Object.values(s.items).filter(i=>i.location===s.current||i.ownerId===actor.id).length>=256)return blocked('This campaign has reached its 256-object crafting limit.');
     return {...attempt,sourceIds:sources.map(i=>i.id),automatic:false,dc:10,ability:'Craft'};
@@ -96,7 +102,7 @@ export function resolveItem(r,actor,plan,success){
   if(plan.verb==='travel'||plan.verb==='explore'){enterRegion(r,s,plan.destination);recordCampaign(r,s,'travel',actor.name+' led the party to '+s.locations[s.current].name,{location:s.current});return {...out,text:`The party travels to ${s.locations[s.current].name}. Carried objects come along.`,change:'LOCATION: '+s.locations[s.current].name};}
   if(['craft','attach'].includes(plan.verb)){
     const sources=plan.sourceIds.map(id=>s.items[id]),name=plan.name||`${sources[1].name} with ${sources[0].name}`.slice(0,48);
-    const type=plan.creationType||(plan.verb==='attach'?sources[1].type:/\b(hat|crown|ring|cape|mask|belt|amulet|badge|necklace|helmet|wearable)\b/i.test(name)?'wearable':/\b(bottle|cup|bowl|container|flask)\b/i.test(name)?'container':'tool');
+    const type=plan.creationType||(plan.verb==='attach'?sources[1].type:/\b(hat|headband|crown|ring|cape|mask|belt|amulet|badge|necklace|helmet|wearable)\b/i.test(name)?'wearable':/\b(bottle|cup|bowl|container|flask)\b/i.test(name)?'container':'tool');
     const id='item-'+s.nextId++,material=sources[0].material;
     const slot=plan.creationSlot||(type!=='wearable'?null:plan.verb==='attach'?sources[1].slot||'head':/\b(ring)\b/i.test(name)?'hand':/\b(cape|belt|amulet|badge|necklace)\b/i.test(name)?'body':'head');
     const palette={red:'#d87878',blue:'#7ea7d4',green:'#83b48a',gold:'#dfc16e',purple:'#bd88cf',white:'#e4dcc8',black:'#484552'};
