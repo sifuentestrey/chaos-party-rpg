@@ -44,4 +44,4 @@ try{
   await jinx.screenshot({path:path.join(output,'phone.png'),fullPage:true});
   assert.deepEqual(errors,[]);fs.writeFileSync(path.join(output,'results.json'),JSON.stringify({synthetic:true,realInference:false,errors,hostViewport:[1280,720],phoneViewport:[390,844],story:live().result.story,reactions:live().result.reactions.length,overflow},null,2));
   console.log('PASS: host and two phone browsers show post-roll narration, NPC dialogue and preserved reactions/world. Synthetic model responses only.');
-}finally{await browser.close();await app.close();fs.rmSync(dir,{recursive:true,force:true});}
+}finally{await app.close();await browser.close();fs.rmSync(dir,{recursive:true,force:true});}
