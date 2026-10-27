@@ -9,7 +9,11 @@ export function available(s,r,item){
  if(item.containerId){const box=s.items[item.containerId];if(!box?.open&&box?.condition!=='broken')return false;}
  return item.location===s.current||r.players.some(p=>p.id===item.ownerId)||localCreatures(s).some(c=>c.id===item.ownerId);
 }
-export function entityNamed(s,r,text,find){
+export function entityNamed(s,r,text,find,{exactIds=false}={}){
+ if(exactIds){
+  if(typeof text!=='string')return null;
+  return localCreatures(s).find(c=>c.id===text)||r.players.find(p=>p.id===text)||find(s,r,text)||null;
+ }
  const norm=normalized(text),matches=[...localCreatures(s),...r.players].filter(c=>c.id===text||normalized(c.name)===norm);
  if(matches.length===1)return matches[0];
  // Titles are aliases only when unique among entities currently present.
@@ -34,14 +38,14 @@ export function parseEntityAttempt(text){
  if((m=text.match(/^(inspect|open|close|unlock|repair|ignite|extinguish|drink|move|push) (.+)$/i)))return {verb:m[1].toLowerCase()==='push'?'move':m[1].toLowerCase(),target:m[2]};
  return null;
 }
-export function planEntity(r,s,actor,attempt,find){
+export function planEntity(r,s,actor,attempt,find,{exactIds=false}={}){
  if(!attempt)return null;
  const blocked=error=>({...attempt,error,automatic:true,dc:0,ability:'Interaction'});
  if(attempt.verb==='explore'){
   const next=s.locations[s.current].exits.find(id=>!s.locations[id]?.visited)||s.locations[s.current].exits.find(id=>id!=='tavern');
   return {...attempt,destination:next,automatic:true,ability:'Exploration'};
  }
- const target=entityNamed(s,r,attempt.target,find);
+ const target=entityNamed(s,r,attempt.target,find,{exactIds});
  if(!target){if(s.current==='tavern'&&!['harvest','pacify','fill'].includes(attempt.verb))return null;return {...blocked('That entity is not here. Use the displayed name or identity.'),unresolvedTarget:true};}
  if(target.legacyId&&!['harvest','attack'].includes(attempt.verb))return null;
  const p={...attempt,targetId:target.id,automatic:true,dc:0,ability:'Interaction'};
@@ -57,8 +61,9 @@ export function planEntity(r,s,actor,attempt,find){
   return {...p,itemId:item.id};
  }
  if(attempt.verb==='treat'){
+  if(exactIds&&!attempt.item)return blocked('Typed treatment requires an explicit carried bandage ID.');
   if(!creature&&!player)return blocked('Choose an injured creature or adventurer.');
-  const requested=attempt.item?Object.values(s.items).filter(i=>i.ownerId===actor.id&&available(s,r,i)&&(i.id===attempt.item||normalized(i.name)===normalized(attempt.item))):[];
+  const requested=attempt.item?Object.values(s.items).filter(i=>i.ownerId===actor.id&&available(s,r,i)&&(i.id===attempt.item||!exactIds&&normalized(i.name)===normalized(attempt.item))):[];
   const candidate=requested.length===1?requested[0]:null;
   const bandage=(attempt.item?[candidate]:Object.values(s.items)).find(i=>i&&i.ownerId===actor.id&&available(s,r,i)&&['cloth','fiber'].includes(i.material)&&i.condition==='intact');
   return bandage?{...p,itemId:bandage.id,automatic:false,dc:8,ability:'Medicine'}:blocked('You need a carried cloth or fiber item for a bandage.');

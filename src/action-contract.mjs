@@ -21,7 +21,7 @@ export function actionContract(room,actorId){
   craft:'Create a NEW output named by name, from 2–4 carried sources. Pick itemType, slot and requested color from the supplied palette mapping. Empty target/item; no existing output ID needed.',
   give:'Transfer carried item to target player or creature ID.',
   pacify:'Change a living creature’s attitude through nonviolent social interaction. No medical item or healing.',
-  treat:'Medical care for target using carried cloth/fiber item; consumes the chosen bandage only on successful resolution.',
+  treat:'Medical care for target using an explicit carried cloth/fiber item ID (item must not be empty); consumes the chosen bandage only on successful resolution.',
   harvest:'Remove an existing listed part of target; name must identify that part.',
   travel:'Target must be an adjacent destination. Does not teleport or act on remote objects.',
   use:'Use carried tool item on target; server decides supported effects.',

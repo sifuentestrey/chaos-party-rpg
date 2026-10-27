@@ -2556,7 +2556,11 @@ function available(s, r, item) {
   }
   return item.location === s.current || r.players.some((p) => p.id === item.ownerId) || localCreatures(s).some((c) => c.id === item.ownerId);
 }
-function entityNamed(s, r, text, find) {
+function entityNamed(s, r, text, find, { exactIds = false } = {}) {
+  if (exactIds) {
+    if (typeof text !== "string") return null;
+    return localCreatures(s).find((c) => c.id === text) || r.players.find((p) => p.id === text) || find(s, r, text) || null;
+  }
   const norm2 = normalized(text), matches = [...localCreatures(s), ...r.players].filter((c) => c.id === text || normalized(c.name) === norm2);
   if (matches.length === 1) return matches[0];
   if (!matches.length) {
@@ -2587,14 +2591,14 @@ function parseEntityAttempt(text) {
   if (m = text.match(/^(inspect|open|close|unlock|repair|ignite|extinguish|drink|move|push) (.+)$/i)) return { verb: m[1].toLowerCase() === "push" ? "move" : m[1].toLowerCase(), target: m[2] };
   return null;
 }
-function planEntity(r, s, actor, attempt, find) {
+function planEntity(r, s, actor, attempt, find, { exactIds = false } = {}) {
   if (!attempt) return null;
   const blocked = (error2) => ({ ...attempt, error: error2, automatic: true, dc: 0, ability: "Interaction" });
   if (attempt.verb === "explore") {
     const next = s.locations[s.current].exits.find((id) => !s.locations[id]?.visited) || s.locations[s.current].exits.find((id) => id !== "tavern");
     return { ...attempt, destination: next, automatic: true, ability: "Exploration" };
   }
-  const target = entityNamed(s, r, attempt.target, find);
+  const target = entityNamed(s, r, attempt.target, find, { exactIds });
   if (!target) {
     if (s.current === "tavern" && !["harvest", "pacify", "fill"].includes(attempt.verb)) return null;
     return { ...blocked("That entity is not here. Use the displayed name or identity."), unresolvedTarget: true };
@@ -2613,8 +2617,9 @@ function planEntity(r, s, actor, attempt, find) {
     return { ...p, itemId: item.id };
   }
   if (attempt.verb === "treat") {
+    if (exactIds && !attempt.item) return blocked("Typed treatment requires an explicit carried bandage ID.");
     if (!creature && !player) return blocked("Choose an injured creature or adventurer.");
-    const requested = attempt.item ? Object.values(s.items).filter((i) => i.ownerId === actor.id && available(s, r, i) && (i.id === attempt.item || normalized(i.name) === normalized(attempt.item))) : [];
+    const requested = attempt.item ? Object.values(s.items).filter((i) => i.ownerId === actor.id && available(s, r, i) && (i.id === attempt.item || !exactIds && normalized(i.name) === normalized(attempt.item))) : [];
     const candidate = requested.length === 1 ? requested[0] : null;
     const bandage = (attempt.item ? [candidate] : Object.values(s.items)).find((i) => i && i.ownerId === actor.id && available(s, r, i) && ["cloth", "fiber"].includes(i.material) && i.condition === "intact");
     return bandage ? { ...p, itemId: bandage.id, automatic: false, dc: 8, ability: "Medicine" } : blocked("You need a carried cloth or fiber item for a bandage.");
@@ -2884,21 +2889,27 @@ function itemPlan(r, actor, text) {
   if (!attempt) return currentLocation(r) === "tavern" ? null : { verb: "unsupported", error: "Try taking, crafting, equipping, giving, separating, or using an object here, or travel to a connected place.", automatic: true, dc: 0, ability: "Interaction" };
   return planItemAttempt(r, actor, attempt);
 }
-function planItemAttempt(r, actor, attempt) {
+function planItemAttempt(r, actor, attempt, { exactIds = false } = {}) {
   const isExplicit = ["travel", "craft", "attach", "give", "use", "equip", "unequip", "separate", "drop"].includes(attempt.verb);
-  const s = ensureItems(r), item = attempt.item ? ["give", "use", "equip", "unequip", "drop", "separate"].includes(attempt.verb) ? findCarriedItem(s, r, actor, attempt.item) : findItem(s, r, attempt.item) : null;
+  const s = ensureItems(r);
+  const lookup = (text, carried = false) => {
+    if (!exactIds) return carried ? findCarriedItem(s, r, actor, text) : findItem(s, r, text);
+    const i = typeof text === "string" ? s.items[text] : null;
+    return i && available(s, r, i) && (!carried || i.ownerId === actor.id) ? i : null;
+  };
+  const item = attempt.item ? lookup(attempt.item, ["give", "use", "equip", "unequip", "drop", "separate"].includes(attempt.verb)) : null;
   if (!isExplicit && !item) {
     if (s.current === "tavern" && !/^item-\d+$/i.test(attempt.item || "")) return null;
   }
   const blocked = (message) => ({ ...attempt, itemId: item?.id, error: message, automatic: true, dc: 0, ability: "Interaction" });
   if (attempt.verb === "travel") {
-    const dest = Object.values(s.locations).find((l) => l.id === attempt.destination || norm(l.name) === attempt.destination);
+    const dest = Object.values(s.locations).find((l) => l.id === attempt.destination || !exactIds && norm(l.name) === attempt.destination);
     if (!dest || !s.locations[s.current].exits.includes(dest.id)) return blocked("That place is not connected to this location.");
     return { ...attempt, destination: dest.id, automatic: true, ability: "Travel" };
   }
   if (["craft", "attach"].includes(attempt.verb)) {
     if (attempt.verb === "craft" && (!attempt.name || attempt.name.length > 48 || /[<>]/.test(attempt.name))) return blocked("Use an item name of 1\u201348 plain characters.");
-    const sources = attempt.sources.map((name) => findCarriedItem(s, r, actor, name));
+    const sources = attempt.sources.map((name) => lookup(name, true));
     if (sources.length < 2 || sources.length > 4 || sources.some((i) => !i || i.ownerId !== actor.id || i.containerId || i.condition !== "intact") || new Set(sources.map((i) => i.id)).size !== sources.length) return blocked("Choose two to four different intact items from your own pockets; take them out of containers first. Use item IDs if names repeat.");
     if (Object.values(s.items).filter((i) => i.location === s.current || i.ownerId === actor.id).length >= 256) return blocked("This campaign has reached its 256-object crafting limit.");
     return { ...attempt, sourceIds: sources.map((i) => i.id), automatic: false, dc: 10, ability: "Craft" };
@@ -2912,7 +2923,7 @@ function planItemAttempt(r, actor, attempt) {
   }
   if (item.ownerId !== actor.id) return blocked("You must carry that item first.");
   if (attempt.verb === "give") {
-    const recipient = [...r.players, ...localCreatures(s)].find((p) => (norm(p.name) === norm(attempt.recipient) || p.id === attempt.recipient) && p.id !== actor.id);
+    const recipient = [...r.players, ...localCreatures(s)].find((p) => (p.id === attempt.recipient || !exactIds && norm(p.name) === norm(attempt.recipient)) && p.id !== actor.id);
     return recipient ? { ...plan, recipientId: recipient.id } : blocked("Choose another adventurer by their full name.");
   }
   if (["equip", "use"].includes(attempt.verb) && item.condition !== "intact") return blocked("That item is broken. Separate its components or use another item.");
@@ -2920,7 +2931,7 @@ function planItemAttempt(r, actor, attempt) {
   if (attempt.verb === "separate" && !item.components.length) return blocked("That item has no attached components to separate.");
   if (attempt.verb === "break") return item.condition === "broken" ? blocked("That item is already broken.") : { ...plan, automatic: false, dc: MATERIALS[item.material].hardness, ability: "Athletics" };
   if (attempt.verb === "use") {
-    const target = entityNamed(s, r, attempt.target, findItem);
+    const target = entityNamed(s, r, attempt.target, (s2, r2, text) => lookup(text), { exactIds });
     if (item.type !== "tool") return blocked("This action needs a tool. Wearables can be equipped; containers can be carried or combined.");
     if (!target || target.id === item.id || target.ownerId && target.ownerId !== actor.id || target.condition && target.condition !== "intact" || target.attitude && target.hp <= 0) return blocked("Choose an intact object here or in your own pockets.");
     return { ...plan, targetId: target.id, automatic: false, dc: Math.max(5, (MATERIALS[target.material]?.hardness || 10) - 2), ability: "Athletics" };
@@ -2929,24 +2940,27 @@ function planItemAttempt(r, actor, attempt) {
 }
 function planWorldProposal(r, actor, raw) {
   const s = ensureItems(r), verb = raw.verb;
+  const exactItem = (s2, r2, id) => typeof id === "string" && s2.items[id] && available(s2, r2, s2.items[id]) ? s2.items[id] : null;
+  const inventory = (attempt2) => planItemAttempt(r, actor, attempt2, { exactIds: true });
+  const entity = (attempt2) => planEntity(r, s, actor, attempt2, exactItem, { exactIds: true });
   if (verb === "unsupported") return { verb, error: "This attempt cannot be represented by the available game actions.", automatic: true, dc: 0, ability: "Interaction" };
   if (verb === "rest") return { verb, automatic: false, dc: 6, ability: "Recovery" };
-  if (verb === "craft") return planItemAttempt(r, actor, { verb, name: raw.name, sources: raw.sources });
-  if (["take", "drop", "equip", "unequip", "separate"].includes(verb)) return planItemAttempt(r, actor, { verb, item: raw.target });
-  if (verb === "travel") return planItemAttempt(r, actor, { verb, destination: raw.target });
-  if (verb === "give") return planItemAttempt(r, actor, { verb, item: raw.item, recipient: raw.target });
+  if (verb === "craft") return inventory({ verb, name: raw.name, sources: raw.sources });
+  if (["take", "drop", "equip", "unequip", "separate"].includes(verb)) return inventory({ verb, item: raw.target });
+  if (verb === "travel") return inventory({ verb, destination: raw.target });
+  if (verb === "give") return inventory({ verb, item: raw.item, recipient: raw.target });
   if (["use", "put", "fill"].includes(verb)) {
-    if (verb === "use") return planItemAttempt(r, actor, { verb, item: raw.item, target: raw.target });
-    const result2 = planEntity(r, s, actor, { verb, item: raw.item, target: raw.target }, findItem);
+    if (verb === "use") return inventory({ verb, item: raw.item, target: raw.target });
+    const result2 = entity({ verb, item: raw.item, target: raw.target });
     return result2 ? { ...result2, entityAction: true } : null;
   }
   if (verb === "attach") {
-    const result2 = planEntity(r, s, actor, { verb: "attachTo", item: raw.item, target: raw.target }, findItem);
-    return result2 ? { ...result2, entityAction: true } : planItemAttempt(r, actor, { verb, sources: [raw.item, raw.target] });
+    const result2 = entity({ verb: "attachTo", item: raw.item, target: raw.target });
+    return result2 ? { ...result2, entityAction: true } : inventory({ verb, sources: [raw.item, raw.target] });
   }
   const attempt = { verb, target: raw.target, ...raw.item ? { item: raw.item } : {}, ...verb === "harvest" ? { part: raw.name } : {} };
-  const result = planEntity(r, s, actor, attempt, findItem);
-  return result ? { ...result, entityAction: true } : planItemAttempt(r, actor, { verb, item: raw.target });
+  const result = entity(attempt);
+  return result ? { ...result, entityAction: true } : inventory({ verb, item: raw.target });
 }
 function remember(item, verb, actor, location) {
   item.history.push({ verb, actorId: actor.id, location });

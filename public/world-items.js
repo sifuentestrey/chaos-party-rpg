@@ -57,19 +57,25 @@ export function itemPlan(r,actor,text){
 }
 
 // Both native grammar and AI proposals use these same authoritative checks.
-export function planItemAttempt(r,actor,attempt){
+export function planItemAttempt(r,actor,attempt,{exactIds=false}={}){
   const isExplicit=['travel','craft','attach','give','use','equip','unequip','separate','drop'].includes(attempt.verb);
-  const s=ensureItems(r),item=attempt.item?(['give','use','equip','unequip','drop','separate'].includes(attempt.verb)?findCarriedItem(s,r,actor,attempt.item):findItem(s,r,attempt.item)):null;
+  const s=ensureItems(r);
+  const lookup=(text,carried=false)=>{
+   if(!exactIds)return carried?findCarriedItem(s,r,actor,text):findItem(s,r,text);
+   const i=typeof text==='string'?s.items[text]:null;
+   return i&&available(s,r,i)&&(!carried||i.ownerId===actor.id)?i:null;
+  };
+  const item=attempt.item?lookup(attempt.item,['give','use','equip','unequip','drop','separate'].includes(attempt.verb)):null;
   if(!isExplicit&&!item){if(s.current==='tavern'&&!/^item-\d+$/i.test(attempt.item||''))return null;}
   const blocked=message=>({...attempt,itemId:item?.id,error:message,automatic:true,dc:0,ability:'Interaction'});
   if(attempt.verb==='travel'){
-    const dest=Object.values(s.locations).find(l=>l.id===attempt.destination||norm(l.name)===attempt.destination);
+    const dest=Object.values(s.locations).find(l=>l.id===attempt.destination||!exactIds&&norm(l.name)===attempt.destination);
     if(!dest||!s.locations[s.current].exits.includes(dest.id))return blocked('That place is not connected to this location.');
     return {...attempt,destination:dest.id,automatic:true,ability:'Travel'};
   }
   if(['craft','attach'].includes(attempt.verb)){
     if(attempt.verb==='craft'&&(!attempt.name||attempt.name.length>48||/[<>]/.test(attempt.name)))return blocked('Use an item name of 1–48 plain characters.');
-    const sources=attempt.sources.map(name=>findCarriedItem(s,r,actor,name));
+    const sources=attempt.sources.map(name=>lookup(name,true));
     if(sources.length<2||sources.length>4||sources.some(i=>!i||i.ownerId!==actor.id||i.containerId||i.condition!=='intact')||new Set(sources.map(i=>i.id)).size!==sources.length)return blocked('Choose two to four different intact items from your own pockets; take them out of containers first. Use item IDs if names repeat.');
     if(Object.values(s.items).filter(i=>i.location===s.current||i.ownerId===actor.id).length>=256)return blocked('This campaign has reached its 256-object crafting limit.');
     return {...attempt,sourceIds:sources.map(i=>i.id),automatic:false,dc:10,ability:'Craft'};
@@ -80,7 +86,7 @@ export function planItemAttempt(r,actor,attempt){
   if(attempt.verb==='take'){if(item.portable===false||ITEM_TYPES[item.type]?.portable===false)return blocked('This fixture cannot be carried intact.');return !item.ownerId||item.ownerId===actor.id&&item.containerId?plan:blocked('That item is already carried; its owner must give or drop it.');}
   if(item.ownerId!==actor.id)return blocked('You must carry that item first.');
   if(attempt.verb==='give'){
-    const recipient=[...r.players,...localCreatures(s)].find(p=>(norm(p.name)===norm(attempt.recipient)||p.id===attempt.recipient)&&p.id!==actor.id);
+    const recipient=[...r.players,...localCreatures(s)].find(p=>(p.id===attempt.recipient||!exactIds&&norm(p.name)===norm(attempt.recipient))&&p.id!==actor.id);
     return recipient?{...plan,recipientId:recipient.id}:blocked('Choose another adventurer by their full name.');
   }
   if(['equip','use'].includes(attempt.verb)&&item.condition!=='intact')return blocked('That item is broken. Separate its components or use another item.');
@@ -88,7 +94,7 @@ export function planItemAttempt(r,actor,attempt){
   if(attempt.verb==='separate'&&!item.components.length)return blocked('That item has no attached components to separate.');
   if(attempt.verb==='break')return item.condition==='broken'?blocked('That item is already broken.'):{...plan,automatic:false,dc:MATERIALS[item.material].hardness,ability:'Athletics'};
   if(attempt.verb==='use'){
-    const target=entityNamed(s,r,attempt.target,findItem);
+    const target=entityNamed(s,r,attempt.target,(s,r,text)=>lookup(text),{exactIds});
     if(item.type!=='tool')return blocked('This action needs a tool. Wearables can be equipped; containers can be carried or combined.');
     if(!target||target.id===item.id||target.ownerId&&target.ownerId!==actor.id||target.condition&&target.condition!=='intact'||target.attitude&&target.hp<=0)return blocked('Choose an intact object here or in your own pockets.');
     return {...plan,targetId:target.id,automatic:false,dc:Math.max(5,(MATERIALS[target.material]?.hardness||10)-2),ability:'Athletics'};
@@ -98,23 +104,26 @@ export function planItemAttempt(r,actor,attempt){
 // Compile typed arguments directly. AI-generated names never become parser commands.
 export function planWorldProposal(r,actor,raw){
  const s=ensureItems(r),verb=raw.verb;
+ const exactItem=(s,r,id)=>typeof id==='string'&&s.items[id]&&available(s,r,s.items[id])?s.items[id]:null;
+ const inventory=attempt=>planItemAttempt(r,actor,attempt,{exactIds:true});
+ const entity=attempt=>planEntity(r,s,actor,attempt,exactItem,{exactIds:true});
  if(verb==='unsupported')return {verb,error:'This attempt cannot be represented by the available game actions.',automatic:true,dc:0,ability:'Interaction'};
  if(verb==='rest')return {verb,automatic:false,dc:6,ability:'Recovery'};
- if(verb==='craft')return planItemAttempt(r,actor,{verb,name:raw.name,sources:raw.sources});
- if(['take','drop','equip','unequip','separate'].includes(verb))return planItemAttempt(r,actor,{verb,item:raw.target});
- if(verb==='travel')return planItemAttempt(r,actor,{verb,destination:raw.target});
- if(verb==='give')return planItemAttempt(r,actor,{verb,item:raw.item,recipient:raw.target});
+ if(verb==='craft')return inventory({verb,name:raw.name,sources:raw.sources});
+ if(['take','drop','equip','unequip','separate'].includes(verb))return inventory({verb,item:raw.target});
+ if(verb==='travel')return inventory({verb,destination:raw.target});
+ if(verb==='give')return inventory({verb,item:raw.item,recipient:raw.target});
  if(['use','put','fill'].includes(verb)){
-  if(verb==='use')return planItemAttempt(r,actor,{verb,item:raw.item,target:raw.target});
-  const result=planEntity(r,s,actor,{verb,item:raw.item,target:raw.target},findItem);return result?{...result,entityAction:true}:null;
+  if(verb==='use')return inventory({verb,item:raw.item,target:raw.target});
+  const result=entity({verb,item:raw.item,target:raw.target});return result?{...result,entityAction:true}:null;
  }
  if(verb==='attach'){
-  const result=planEntity(r,s,actor,{verb:'attachTo',item:raw.item,target:raw.target},findItem);
-  return result?{...result,entityAction:true}:planItemAttempt(r,actor,{verb,sources:[raw.item,raw.target]});
+  const result=entity({verb:'attachTo',item:raw.item,target:raw.target});
+  return result?{...result,entityAction:true}:inventory({verb,sources:[raw.item,raw.target]});
  }
  const attempt={verb,target:raw.target,...(raw.item?{item:raw.item}:{}),...(verb==='harvest'?{part:raw.name}:{})};
- const result=planEntity(r,s,actor,attempt,findItem);
- return result?{...result,entityAction:true}:planItemAttempt(r,actor,{verb,item:raw.target});
+ const result=entity(attempt);
+ return result?{...result,entityAction:true}:inventory({verb,item:raw.target});
 }
 function remember(item,verb,actor,location){item.history.push({verb,actorId:actor.id,location});item.history=item.history.slice(-12);}
 export function resolveItem(r,actor,plan,success){

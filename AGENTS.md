@@ -23,3 +23,6 @@ No major feature development until a 90-second tavern sequence is visibly enjoya
 
 ## Boundaries
 Private family project. Never touch Family Board, Clinician Index, or unrelated apps. Do not purchase services, deploy publicly, expose secrets, or copy proprietary games/assets without permission. Keep proper third-party notices. REA is an optional code-analysis tool, NOT automatic permission to copy proprietary code. Save and test changes in small reversible commits.
+
+## Owner-requested coding team
+Use SOL 6.1 with max reasoning for delegated design/review and Luna 6 for bounded implementation/test tasks. The main chat model remains the owner's selection. Give workers explicit file ownership and acceptance criteria, review their diffs and test assumptions, and run the actual checks before accepting changes. This workflow does not authorize paid game services or bypassing request limits.

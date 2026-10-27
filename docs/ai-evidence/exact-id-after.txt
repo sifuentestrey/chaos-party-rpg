@@ -1,0 +1,17 @@
+✔ typed world proposals reject malformed structure and unsupported operation names (71.140844ms)
+✔ unknown targets and unavailable carried item references cannot be validated (3.663656ms)
+✔ unsupported is accepted as a typed no-effect result without interpreting argument text as a command (3.868638ms)
+✔ accepted proposal keeps its structured plan across JSON serialization and resolution (5.422922ms)
+✔ a typed target ID remains bound to that entity when another local entity uses the ID as its display name (4.824915ms)
+✔ a typed give recipient ID cannot be intercepted by a player named after that creature ID (5.370466ms)
+✔ craft resolution blocks if an original source changes owner even when a replacement is named after its ID (2.542661ms)
+✔ typed treatment requires an explicit carried item reference (2.851145ms)
+✔ treatment blocks if the explicit item changes owner even when another carried cloth is named after its ID (2.995713ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 418.695401
