@@ -50,9 +50,13 @@ export function parseItemAttempt(text){
 }
 export function itemPlan(r,actor,text){
   text=text.trim().replace(/^(?:I (?:try to |want to |attempt to )?)/i,'');
-  const state=ensureItems(r),extended=planEntity(r,state,actor,parseEntityAttempt(text),findItem);if(extended)return {...extended,entityAction:true};
+  const state=ensureItems(r),nativeAttempt=parseEntityAttempt(text),extended=planEntity(r,state,actor,nativeAttempt,findItem);if(extended)return {...extended,entityAction:true};
   if(currentLocation(r)!=='tavern'&&/^(?:rest|rest and heal|heal myself)$/i.test(text.trim()))return {verb:'rest',automatic:false,dc:6,ability:'Recovery'};
-  const attempt=parseItemAttempt(text);if(!attempt&&/\b(make|craft|create|fashion|weave|sew|build|turn.+into)\b/i.test(text))return {verb:'unsupported',error:'This creative attempt needs a validated interpretation. Use Make <name> from two carried components, or connect local AI.',automatic:true,dc:0,ability:'Interaction'};if(!attempt)return currentLocation(r)==='tavern'?null:{verb:'unsupported',error:'Try taking, crafting, equipping, giving, separating, or using an object here, or travel to a connected place.',automatic:true,dc:0,ability:'Interaction'};
+  const attempt=parseItemAttempt(text);
+  // Unparsed targeted medicine or ignition must not become generic tavern actions.
+  if(!nativeAttempt&&!attempt&&/\b(?:heal|bandage|bind|treat|revive|mend)\b/i.test(text)&&!/\b(?:rest|nap|sleep|drink|eat|snack|potion)\b/i.test(text))return {verb:'treat',unresolvedTarget:true,error:'That treatment could not be grounded. Name the patient and any carried bandage directly.',automatic:true,dc:0,ability:'Interaction'};
+  if(!nativeAttempt&&!attempt&&/\bon fire\b|\b(?:ablaze|alight)\b/i.test(text))return {verb:'ignite',unresolvedTarget:true,error:'That ignition could not be grounded. Name one available target directly.',automatic:true,dc:0,ability:'Interaction'};
+  if(!attempt&&/\b(make|craft|create|fashion|weave|sew|build|turn.+into)\b/i.test(text))return {verb:'unsupported',error:'This creative attempt needs a validated interpretation. Use Make <name> from two carried components, or connect local AI.',automatic:true,dc:0,ability:'Interaction'};if(!attempt)return currentLocation(r)==='tavern'?null:{verb:'unsupported',error:'Try taking, crafting, equipping, giving, separating, or using an object here, or travel to a connected place.',automatic:true,dc:0,ability:'Interaction'};
   return planItemAttempt(r,actor,attempt);
 }
 

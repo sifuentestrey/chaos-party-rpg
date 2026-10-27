@@ -30,6 +30,14 @@ export function environmentTarget(text){
   matches.sort((a,b)=>b.length-a.length);if(!matches.length)return null;
   const {kind,name}=matches[0];return {kind,name};
 }
+// A parsed noun phrase must match a whole reference, not a word inside an absent entity.
+export function exactEnvironmentTarget(text){
+  const norm=s=>String(s).trim().toLowerCase().replace(/^(?:a|an|the)\s+/,'');
+  const reference=norm(text),matches=Object.entries(OBJECTS).filter(([id,o])=>[id,o.name,...o.aliases].some(name=>norm(name)===reference));
+  if(matches.length===1)return {kind:matches[0][0],name:matches[0][1].name};
+  const unpunctuated=reference.replace(/[.!?]+$/,'');
+  return !matches.length&&unpunctuated!==reference?exactEnvironmentTarget(unpunctuated):null;
+}
 export function objectState(world,id){const o=OBJECTS[id];if(!o)return null;const legacy=world?.props?.[id];return {condition:legacy===false?'taken':legacy==='broken'?'broken':'intact',lit:!!o.lit,open:false,offset:[0,0],...world?.objects?.[id]};}
 export function environmentVerb(text,intent){
   for(const [verb,pattern] of Object.entries({extinguish:/\b(extinguish|douse|quench|put out|blow out)\b/i,repair:/\b(repair|fix|mend|restore)\b/i,ignite:/\b(ignite|light|burn|fire|flame|fireball|set.*on fire)\b/i,close:/\b(close|shut|lock)\b/i,open:/\b(unlock|pick.*lock|open)\b/i,push:/\b(push|shove|drag|move|pull|flip)\b/i,climb:/\b(sit|stand on|climb|jump on|dance on)\b/i,pour:/\b(pour|spill|empty|drink)\b/i,hide:/\b(hide|duck|crawl under)\b/i}))if(pattern.test(text)&&!(verb==='push'&&intent==='steal'))return verb;

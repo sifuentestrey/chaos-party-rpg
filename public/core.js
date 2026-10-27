@@ -1,7 +1,8 @@
 import {campaignView} from './campaign.js';
 import {recordDMMemory,redactDMMemory} from './dm-memory.js';
 import {ensureItems,itemPlan,planWorldProposal,resolveItem,currentLocation,advanceWorld} from './world-items.js';
-import {OBJECTS,objectState,environmentTarget,environmentCheck,interactEnvironment,advanceEnvironment} from './environment.js';
+import {parseEntityAttempt} from './entity-rules.js';
+import {OBJECTS,objectState,environmentTarget,exactEnvironmentTarget,environmentCheck,interactEnvironment,advanceEnvironment} from './environment.js';
 import {selectD20} from './vendor/dnd5e-advantage.js';
 // Authoritative game plugin, shared by PartyFrame and the labeled solo mode.
 import {Rng} from './vendor/partyframe-rng.js';
@@ -100,6 +101,10 @@ export function classify(text) {
 function targetFor(r,actor,text) {
   const t=text.toLowerCase();
   if(classify(text)==='flee')return {kind:'door',name:'the tavern exit'};
+  const attempt=parseEntityAttempt(text);
+  if(attempt&&['ignite','extinguish'].includes(attempt.verb)){
+    const exact=exactEnvironmentTarget(attempt.target);if(exact)return exact;
+  }
   const aimed=t.match(/\b(?:at|on|against|into|towards?)\s+(?:the\s+)?(.+?)(?:\s+(?:with|using)\b|$)/);
   if(aimed&&aimed[1]!==t)return targetFor(r,actor,aimed[1]);
   const other=r.players.find(p=>p.id!==actor.id&&t.includes(p.name.toLowerCase()));
@@ -143,7 +148,7 @@ export function submit(r, playerId, input, now=Date.now()) {
   const e=event(r,'declaration',text,now,{playerId:p.id,name:p.name});
   r.round++; r.turn={id:uid(),seq:e.id,actorId:p.id,action:text,intent,target:targetFor(r,p,text),at:now,
     deadline:now+r.reactionMs,reactions:[]};
-  if(dynamic){r.turn.worldAction=true;r.turn.worldLocked=dynamic.verb!=='unsupported'&&!dynamic.unresolvedTarget;if(dynamic.unresolvedTarget)r.turn.worldPendingVerb=dynamic.verb;const key=dynamic.targetId||dynamic.itemId||dynamic.sourceIds?.[0];const item=r.world.expedition.items[key]||r.world.expedition.creatures?.[key];r.turn.target={kind:'world',entityId:item?.id,name:item?.name||dynamic.destination||'materials',position:item?.ownerId?[480,335]:item?.position||[480,490]};}
+  if(dynamic){r.turn.worldAction=true;r.turn.worldLocked=dynamic.verb!=='unsupported'&&!dynamic.unresolvedTarget;if(dynamic.unresolvedTarget)r.turn.worldPendingVerb=dynamic.verb;const key=dynamic.targetId||dynamic.itemId||dynamic.sourceIds?.[0];const item=r.world.expedition.items[key]||r.world.expedition.creatures?.[key];r.turn.target={kind:'world',entityId:item?.id,name:item?.name||dynamic.destination||dynamic.target||'materials',position:item?.ownerId?[480,335]:item?.position||[480,490]};}
   r.phase='react'; r.deadline=r.turn.deadline; r.result=null; p.status='committed';p.cover=false;
   const ack={ok:true,accepted:true,kind:'action',seq:e.id,at:now,turnId:r.turn.id};
   r.requests[key]=ack;

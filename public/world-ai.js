@@ -1,10 +1,10 @@
 import {planWorldProposal,ensureItems,visibleItems,visibleCreatures} from './world-items.js';
+import {voicePacification} from './entity-rules.js';
+export {voicePacification} from './entity-rules.js';
 export const WORLD_VERBS=['craft','attach','give','equip','unequip','take','drop','separate','inspect','use','travel','explore','talk','pacify','attack','harvest','treat','fill','drink','open','close','unlock','move','ignite','extinguish','repair','put','rest','unsupported'];
 export const APPEARANCE_PALETTE={red:'#d87878',blue:'#7ea7d4',green:'#83b48a',gold:'#dfc16e',purple:'#bd88cf',white:'#e4dcc8',black:'#484552',brown:'#b88955',cyan:'#7dc7cf'};
 export const APPEARANCE_COLORS=Object.values(APPEARANCE_PALETTE);
 export const WORLD_PLAN_SCHEMA={type:'object',properties:{domain:{type:'string',enum:['world']},verb:{type:'string',enum:WORLD_VERBS},target:{type:'string'},item:{type:'string'},sources:{type:'array',items:{type:'string'},maxItems:4},name:{type:'string',maxLength:48},itemType:{type:'string',enum:['wearable','tool','container','fragment']},slot:{type:'string',enum:['head','body','hand']},color:{type:'string',enum:APPEARANCE_COLORS},summary:{type:'string',maxLength:160}},required:['domain','verb','target','item','sources','name','itemType','slot','color','summary'],additionalProperties:false};
-// A clearly vocal attempt must never silently spend a medical item.
-export const voicePacification=text=>/\b(soothe|calm|befriend|pacify|win .+ over)\b/i.test(text)&&/\b(voice|song|sing|rap|music|lullaby|joke)\b/i.test(text)&&!/\b(heal|bandage|bind|treat|wound|injury|pain)\b/i.test(text);
 export function validateWorldPlan(raw,room,actorId){
  if(voicePacification(room.turn?.action||'')&&!['pacify','unsupported'].includes(raw.verb))throw Error('A vocal pacification cannot become a different mechanical action');
  const allowed=Object.keys(WORLD_PLAN_SCHEMA.properties);
