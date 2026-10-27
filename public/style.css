@@ -84,3 +84,13 @@
 .object-control small{display:block;color:#bbaeae;font-size:11px}
 .object-actions{display:flex;gap:5px;flex-wrap:wrap;padding-top:7px}
 .object-actions button{min-height:40px}
+
+/* Supplemental narration keeps the canonical dice result visible. */
+.dm-story{margin:10px 0;padding:10px 12px;border-left:2px solid var(--gold);background:#120e1860;overflow-wrap:anywhere}.dm-story .eyebrow{font-size:9px;margin-bottom:6px}.dm-story p{font-size:12px;line-height:1.5;margin:5px 0;color:#e8d9bd}.dm-story .dm-dialogue{color:#cbb9d7}.dm-wait{margin-top:10px}.controller-shell .dm-story p{font-size:13px}
+@media(min-width:900px){
+  .tavern-tv .theatre>.story-card:has(.dm-story){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px 18px;max-height:260px}
+  .tavern-tv .story-card:has(.dm-story)>.dice-result{grid-column:1;margin:0}
+  .tavern-tv .story-card:has(.dm-story)>.story-text,.tavern-tv .story-card:has(.dm-story)>.change-list{grid-column:1;margin:0}
+  .tavern-tv .story-card>.dm-story{grid-column:2;grid-row:1/span 3;margin:0;padding:0 0 0 14px;background:none}
+  .tavern-tv .story-card:has(.dm-story)>.story-meta{grid-column:1/-1;margin:0}
+}

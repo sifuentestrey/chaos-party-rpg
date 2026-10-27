@@ -24,7 +24,7 @@ test('hosted adapter uses server-only authorization and the documented structure
  try{
   assert.equal((await ai.check()).available,true);const {r,p}=scene();const result=await ai.interpret(r,p.id,1000);assert.equal(result.plan.target,'rug');
   assert.ok(calls.every(c=>c.url.startsWith('https://api.groq.com/openai/v1/')));assert.equal(calls[1].options.headers.Authorization,'Bearer '+env.GROQ_API_KEY);assert.equal(calls[1].options.redirect,'error');
-  const body=JSON.parse(calls[1].options.body);assert.equal(body.reasoning_effort,'low');assert.equal(body.chat_template_kwargs,undefined);assert.equal(body.response_format.type,'json_schema');assert.equal(body.model,'openai/gpt-oss-20b');
+  const body=JSON.parse(calls[1].options.body);assert.equal(body.reasoning_effort,'low');assert.equal(body.include_reasoning,false);assert.equal(body.max_completion_tokens,1024);assert.equal(body.max_tokens,undefined);assert.equal(body.chat_template_kwargs,undefined);assert.equal(body.response_format.type,'json_schema');assert.equal(body.model,'openai/gpt-oss-20b');
   assert.equal(JSON.stringify(ai.status()).includes(env.GROQ_API_KEY),false);assert.equal(calls[1].options.body.includes(p.token),false);assert.equal(calls[1].options.body.includes(p.pin),false);assert.equal(JSON.parse(fs.readFileSync(path.join(dir,'ai-free-usage.json'))).count,1);
  }finally{ai.close();fs.rmSync(dir,{recursive:true,force:true});}
 });

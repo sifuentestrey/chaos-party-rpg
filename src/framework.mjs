@@ -1454,6 +1454,47 @@ var PartySessionRoom = class extends Room {
   }
 };
 
+// public/dm-memory.js
+var clean = (value, max) => String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+function recordDMMemory(room) {
+  const q = room.result;
+  if (!q) return;
+  const memory = room.dmMemory ||= { version: 1, entries: [], people: {} };
+  if (memory.entries.some((e) => e.id === q.id)) return;
+  const location = room.world.expedition?.current || "tavern";
+  const entry = {
+    id: q.id,
+    round: room.round,
+    location,
+    actorId: q.playerId,
+    actor: clean(q.name, 18),
+    attempt: clean(q.action, 180),
+    targetId: q.target?.entityId || q.target?.id || q.target?.kind || "room",
+    outcome: q.blocked ? "blocked" : q.success ? "success" : "failure",
+    fact: clean(q.narration, 600),
+    changes: q.changes.slice(0, 6).map((s) => clean(s, 100))
+  };
+  memory.entries.push(entry);
+  memory.entries = memory.entries.slice(-120);
+  const id = entry.targetId, creature = room.world.expedition?.creatures?.[id];
+  const name = { bartender: "Marnie", guard: "Captain Brick", goblin: "the goblin fiddler" }[id] || creature?.name;
+  if (name) {
+    const previous = memory.people[id] || { id, name: clean(name, 50), encounters: [] };
+    previous.location = location;
+    previous.round = room.round;
+    previous.encounters.push(entry);
+    previous.encounters = previous.encounters.slice(-4);
+    memory.people[id] = previous;
+    const keep = Object.values(memory.people).sort((a, b) => b.round - a.round).slice(0, 64);
+    memory.people = Object.fromEntries(keep.map((p) => [p.id, p]));
+  }
+}
+function redactDMMemory(room, id) {
+  if (!room.dmMemory) return;
+  room.dmMemory.entries = room.dmMemory.entries.filter((e) => e.id !== id);
+  for (const p of Object.values(room.dmMemory.people)) p.encounters = p.encounters.filter((e) => e.id !== id);
+}
+
 // public/vendor/dungeonz.js
 var __create = Object.create;
 var __defProp2 = Object.defineProperty;
@@ -3041,7 +3082,7 @@ var fail = (code, message) => {
   throw new RuleError(code, message);
 };
 var clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-var clean = (s, n) => String(s || "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
+var clean2 = (s, n) => String(s || "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
 function avatarSafe(a = {}) {
   const out = {};
   for (const [k, max] of Object.entries({ skin: 5, hair: 5, hairColor: 5, outfit: 3, color: 5, accessory: 5 })) out[k] = clamp(Math.floor(Number(a[k]) || 0), 0, max);
@@ -3066,6 +3107,7 @@ function createRoom({ code = "SOLO", seed = 12345, now = Date.now(), reactionMs 
     result: null,
     events: [],
     requests: {},
+    dmMemory: { version: 1, entries: [], people: {} },
     round: 0,
     chaos: 0,
     quest: { clues: 0, crown: false, carrierId: null, escaped: false },
@@ -3094,7 +3136,7 @@ function addPlayer(r, { token, name, avatar, role = "rogue", perk = "lucky", pin
     return p;
   }
   if (r.players.length >= 24) fail("FULL", "This tavern is full (24 adventurers).");
-  name = clean(name, 18);
+  name = clean2(name, 18);
   if (name.length < 1) fail("NAME", "Give your adventurer a name.");
   if (r.players.some((x) => x.name.toLowerCase() === name.toLowerCase())) fail("NAME_TAKEN", "That name is already in the tavern. Try a nickname.");
   const maxHp = perk === "tough" ? 13 : 10;
@@ -3127,7 +3169,7 @@ function addPlayer(r, { token, name, avatar, role = "rogue", perk = "lucky", pin
 function editPlayer(r, id, profile, now = Date.now()) {
   const p = r.players.find((x) => x.id === id);
   if (!p) fail("PLAYER", "Character not found.");
-  const name = clean(profile.name, 18);
+  const name = clean2(profile.name, 18);
   if (name && r.players.some((x) => x.id !== id && x.name.toLowerCase() === name.toLowerCase())) fail("NAME_TAKEN", "That name is taken.");
   if (name) p.name = name;
   p.avatar = avatarSafe(profile.avatar || p.avatar);
@@ -3144,7 +3186,7 @@ function editPlayer(r, id, profile, now = Date.now()) {
 }
 function publicRoom(r) {
   if (r.world.expedition) ensureItems(r);
-  const { requests, seed, ...s } = r;
+  const { requests, seed, dmMemory, ...s } = r;
   const projected = { ...s, world: { ...s.world, ...s.world.expedition ? { expedition: campaignView(r) } : {} } };
   return { ...structuredClone(projected), players: r.players.map(({ token, pin, ...p }) => structuredClone(p)) };
 }
@@ -3194,13 +3236,13 @@ function targetFor(r, actor, text) {
 function submit(r, playerId, input, now = Date.now()) {
   const p = r.players.find((x) => x.id === playerId);
   if (!p) fail("PLAYER", "Rejoin the tavern first.");
-  const key = p.id + ":" + clean(input.requestId, 90);
+  const key = p.id + ":" + clean2(input.requestId, 90);
   if (!input.requestId || typeof input.requestId !== "string" || input.requestId.length > 90) fail("REQUEST", "Please try again with a fresh action.");
   if (r.requests[key]) return { ...r.requests[key], duplicate: true };
   advance(r, now);
   if (r.paused) fail("PAUSED", "The host paused the story.");
   if (p.muted) fail("MUTED", "The host has muted your actions.");
-  const text = clean(input.text, 180);
+  const text = clean2(input.text, 180);
   if (text.length < 2) fail("TEXT", "Tell us what you try to do (at least 2 characters).");
   if (input.kind === "reaction") {
     if (r.phase !== "react" || !r.turn || input.turnId !== r.turn.id) fail("WINDOW_CLOSED", "That reaction window closed. Your next big idea is up next.");
@@ -3644,6 +3686,7 @@ function resolve(r, now) {
   };
   r.phase = "reveal";
   r.deadline = now + 6500;
+  recordDMMemory(r);
   event(r, "outcome", narration, now, { playerId: p.id, success, roll, turnId: t.id });
   touch(r, now);
 }
@@ -3719,9 +3762,16 @@ function hostCommand(r, command, now = Date.now()) {
       r.turn.reactions.forEach((x) => x.text = "[Hidden by the host]");
     }
     if (r.result) {
+      redactDMMemory(r, r.result.id);
       r.result.action = "[Hidden by the host]";
       r.result.narration = "The host moved this scene along.";
+      r.result.story = { status: "fallback" };
       r.result.reactions.forEach((x) => x.text = "[Hidden by the host]");
+    }
+    const turnId = e?.turnId || (e?.type === "declaration" ? r.events.find((x) => x.type === "outcome" && x.playerId === e.playerId && x.at >= e.at)?.turnId : null);
+    if (turnId) {
+      redactDMMemory(r, turnId);
+      for (const row of r.events) if (row.turnId === turnId) row.text = "[Hidden by the host]";
     }
   } else if (command.type === "newStory") {
     const fresh = createRoom({ code: r.code, seed: r.seed, now, reactionMs: r.reactionMs });
@@ -4046,6 +4096,7 @@ var ChaosPartyRoom = class extends PartySessionRoom {
   constructor() {
     super(...arguments);
     this.interpretedTurn = null;
+    this.narratedTurn = null;
     this.aiDisposed = false;
     this.savedRevision = -1;
     this.projectedRevision = -1;
@@ -4069,6 +4120,8 @@ var ChaosPartyRoom = class extends PartySessionRoom {
     if (services.store.regionStorage) bindRegionStorage(room, services.store.regionStorage(room.code));
     room.ai = services.ai.status();
     if (room.turn?.ai?.status === "thinking") room.turn.ai = { status: "fallback", reason: "The local model was interrupted by a restart." };
+    this.narratedTurn = room.result?.id || null;
+    if (room.result?.story?.status === "thinking") room.result.story = { status: "fallback", reason: "Narration was interrupted by a restart." };
     this.gameState = { room, seatMap: {}, receipts: {}, errors: {} };
     this.rng.restore(room.seed);
     this.gameOptions = { reactionMs: room.reactionMs };
@@ -4232,7 +4285,10 @@ var ChaosPartyRoom = class extends PartySessionRoom {
           const handled = this.applyGameAction(client.sessionId, validated.value, Date.now());
           const wrapped = this.gameState;
           if (!handled) return reply({ ok: false, ...wrapped.errors[client.sessionId] || { code: "BUSY", error: "The story is not accepting that action." }, room: this.snapshot() });
-          if (!wrapped.receipts[client.sessionId]?.duplicate && wrapped.receipts[client.sessionId]?.kind === "action") this.interpretAcceptedTurn();
+          if (!wrapped.receipts[client.sessionId]?.duplicate && wrapped.receipts[client.sessionId]?.kind === "action") {
+            services.ai.cancelNarration?.();
+            this.interpretAcceptedTurn();
+          }
           return reply({ ok: true, ...wrapped.receipts[client.sessionId], room: this.snapshot() });
         }
         error("COMMAND", "Unknown game request.");
@@ -4258,10 +4314,12 @@ var ChaosPartyRoom = class extends PartySessionRoom {
     void services.ai.interpret(structuredClone(room), turn.actorId, budget).then(({ plan, model }) => {
       if (this.aiDisposed || this.tavern !== room || room.turn?.id !== id || room.phase !== "react") return;
       if (!applyAIPlan(room, id, plan, model)) throw new Error("Interpretation arrived after its animation deadline");
+      room.ai = services.ai.status();
       this.finishTick(this.buildContext(Date.now()));
     }).catch(() => {
       if (this.aiDisposed || this.tavern !== room || room.turn?.id !== id || room.phase !== "react") return;
       turn.ai = { status: "fallback", model: status.model, reason: "AI was unavailable, rate-limited, slow, or returned an unsupported plan. Using the game rules." };
+      room.ai = services.ai.status();
       room.revision++;
       this.finishTick(this.buildContext(Date.now()));
     });
@@ -4270,6 +4328,34 @@ var ChaosPartyRoom = class extends PartySessionRoom {
     const auth = client.userData || {}, p = this.tavern.players.find((p2) => p2.id === auth.characterId);
     if (!p || !equal(p.token, auth.token)) error("PLAYER", "Your character moved to another device. Rejoin to recover it.");
     return p;
+  }
+  narrateResolvedTurn() {
+    const room = this.tavern, q = room?.result;
+    if (!q || this.narratedTurn === q.id || room.phase !== "reveal") return;
+    const status = services.ai.status();
+    this.narratedTurn = q.id;
+    if (!status.available || !status.narrationEnabled || !services.ai.narrate) return;
+    q.story = { status: "thinking", model: status.model };
+    room.revision++;
+    const snapshot = structuredClone(room), budget = Math.min(5500, room.deadline - Date.now() - 250);
+    const current = () => !this.aiDisposed && this.tavern === room && room.result === q && q.story?.status === "thinking";
+    void services.ai.narrate(snapshot, budget).then(({ story, model }) => {
+      if (!current()) return;
+      if (room.phase !== "reveal" || Date.now() >= room.deadline) throw Error("Narration arrived after its turn.");
+      q.story = { status: "ready", ...story, model };
+      room.events.push({ id: ++room.seq, type: "storyteller", turnId: q.id, text: [story.text, ...story.dialogue.map((d) => d.name + ": \u201C" + d.line + "\u201D")].join(" "), at: Date.now() });
+      if (room.events.length > 100) room.events.shift();
+      room.ai = services.ai.status();
+      room.revision++;
+      room.updatedAt = Date.now();
+      this.finishTick(this.buildContext(Date.now()));
+    }).catch(() => {
+      if (!current()) return;
+      q.story = { status: "fallback", reason: "Narration was unavailable, slow, or invalid. The dice result is unchanged." };
+      room.ai = services.ai.status();
+      room.revision++;
+      this.finishTick(this.buildContext(Date.now()));
+    });
   }
   identity(client) {
     if (client.userData?.role === "host") return { role: "host" };
@@ -4299,6 +4385,7 @@ var ChaosPartyRoom = class extends PartySessionRoom {
     this.projectedRevision = this.tavern.revision;
   }
   finishTick(ctx) {
+    this.narrateResolvedTurn();
     this.checkpoint();
     super.finishTick(ctx);
   }

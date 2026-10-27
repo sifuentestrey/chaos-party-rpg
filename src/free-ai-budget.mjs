@@ -5,7 +5,7 @@ import path from 'node:path';
 export function createFreeAIBudget(dataDir,{now=Date.now}={}){
  if(!dataDir)throw Error('Hosted free-tier AI requires a persistent data directory.');
  const file=path.join(dataDir,'ai-free-usage.json');
- return {reserve(){
+ const read=()=>{
   const time=now(),day=new Date(time).toISOString().slice(0,10);
   let state={version:1,day,count:0,recent:[]};
   if(fs.existsSync(file)){
@@ -15,6 +15,13 @@ export function createFreeAIBudget(dataDir,{now=Date.now}={}){
    if(day>state.day){state.day=day;state.count=0;}
   }
   state.recent=state.recent.filter(t=>t>time-60000);
+  return {state,time};
+ };
+ return {status(){
+  try{const {state}=read();return {dailyLimit:100,remaining:Math.max(0,100-state.count),perMinute:4,minuteRemaining:Math.max(0,4-state.recent.length),state:'ready'};}
+  catch{return {dailyLimit:100,remaining:0,perMinute:4,minuteRemaining:0,state:'blocked'};}
+ },reserve(){
+  const {state,time}=read();
   if(state.count>=100)throw Error('Free AI local daily allowance reached. Rules remain available.');
   if(state.recent.length>=4)throw Error('Free AI is cooling down. Rules remain available.');
   state.count++;state.recent.push(time);

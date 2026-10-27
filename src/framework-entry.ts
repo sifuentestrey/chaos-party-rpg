@@ -79,6 +79,7 @@ export const currentRooms=()=>liveRooms;
 
 export class ChaosPartyRoom extends PartySessionRoom {
   private interpretedTurn:string|null=null;
+  private narratedTurn:string|null=null;
   private aiDisposed=false;
   private savedRevision=-1;
   private projectedRevision=-1;
@@ -99,6 +100,8 @@ export class ChaosPartyRoom extends PartySessionRoom {
     if(services.store.regionStorage)bindRegionStorage(room,services.store.regionStorage(room.code));
     room.ai=services.ai.status();
     if(room.turn?.ai?.status==='thinking')room.turn.ai={status:'fallback',reason:'The local model was interrupted by a restart.'};
+    this.narratedTurn=room.result?.id||null;
+    if(room.result?.story?.status==='thinking')room.result.story={status:'fallback',reason:'Narration was interrupted by a restart.'};
     this.gameState={room,seatMap:{},receipts:{},errors:{}};this.rng.restore(room.seed);
     this.gameOptions={reactionMs:room.reactionMs};
     this.setStatus(room.phase==='lobby'?'LOBBY':room.phase==='ended'?'GAME_OVER':room.phase==='reveal'?'ROUND_END':'PLAYING');
@@ -200,7 +203,7 @@ export class ChaosPartyRoom extends PartySessionRoom {
           const handled=this.applyGameAction(client.sessionId,validated.value,Date.now());
           const wrapped:any=this.gameState;
           if(!handled)return reply({ok:false,...(wrapped.errors[client.sessionId]||{code:'BUSY',error:'The story is not accepting that action.'}),room:this.snapshot()});
-          if(!wrapped.receipts[client.sessionId]?.duplicate&&wrapped.receipts[client.sessionId]?.kind==='action')this.interpretAcceptedTurn();
+          if(!wrapped.receipts[client.sessionId]?.duplicate&&wrapped.receipts[client.sessionId]?.kind==='action'){services.ai.cancelNarration?.();this.interpretAcceptedTurn();}
           return reply({ok:true,...wrapped.receipts[client.sessionId],room:this.snapshot()});
         }
         error('COMMAND','Unknown game request.');
@@ -217,15 +220,38 @@ export class ChaosPartyRoom extends PartySessionRoom {
     void services.ai.interpret(structuredClone(room),turn.actorId,budget).then(({plan,model}:any)=>{
       if(this.aiDisposed||this.tavern!==room||room.turn?.id!==id||room.phase!=='react')return;
       if(!applyAIPlan(room,id,plan,model))throw new Error('Interpretation arrived after its animation deadline');
+      room.ai=services.ai.status();
       this.finishTick(this.buildContext(Date.now()));
     }).catch(()=>{
       if(this.aiDisposed||this.tavern!==room||room.turn?.id!==id||room.phase!=='react')return;
-      turn.ai={status:'fallback',model:status.model,reason:'AI was unavailable, rate-limited, slow, or returned an unsupported plan. Using the game rules.'};room.revision++;this.finishTick(this.buildContext(Date.now()));
+      turn.ai={status:'fallback',model:status.model,reason:'AI was unavailable, rate-limited, slow, or returned an unsupported plan. Using the game rules.'};room.ai=services.ai.status();room.revision++;this.finishTick(this.buildContext(Date.now()));
     });
   }
   private character(client:any){
     const auth=client.userData||{},p=this.tavern.players.find((p:any)=>p.id===auth.characterId);
     if(!p||!equal(p.token,auth.token))error('PLAYER','Your character moved to another device. Rejoin to recover it.');return p;
+  }
+  private narrateResolvedTurn(){
+    const room=this.tavern,q=room?.result;
+    if(!q||this.narratedTurn===q.id||room.phase!=='reveal')return;
+    const status=services.ai.status();
+    this.narratedTurn=q.id;
+    if(!status.available||!status.narrationEnabled||!services.ai.narrate)return;
+    q.story={status:'thinking',model:status.model};room.revision++;
+    const snapshot=structuredClone(room),budget=Math.min(5500,room.deadline-Date.now()-250);
+    const current=()=>!this.aiDisposed&&this.tavern===room&&room.result===q&&q.story?.status==='thinking';
+    void services.ai.narrate(snapshot,budget).then(({story,model}:any)=>{
+      if(!current())return;
+      if(room.phase!=='reveal'||Date.now()>=room.deadline)throw Error('Narration arrived after its turn.');
+      q.story={status:'ready',...story,model};
+      room.events.push({id:++room.seq,type:'storyteller',turnId:q.id,text:[story.text,...story.dialogue.map((d:any)=>d.name+': “'+d.line+'”')].join(' '),at:Date.now()});
+      if(room.events.length>100)room.events.shift();
+      room.ai=services.ai.status();room.revision++;room.updatedAt=Date.now();this.finishTick(this.buildContext(Date.now()));
+    }).catch(()=>{
+      if(!current())return;
+      q.story={status:'fallback',reason:'Narration was unavailable, slow, or invalid. The dice result is unchanged.'};
+      room.ai=services.ai.status();room.revision++;this.finishTick(this.buildContext(Date.now()));
+    });
   }
   private identity(client:any){if(client.userData?.role==='host')return {role:'host'};const p=this.character(client);return {role:'controller',playerId:p.id,token:p.token,recoveryPin:p.pin};}
   snapshot(){return {...projection(this.tavern),serverNow:Date.now()};}
@@ -238,5 +264,5 @@ export class ChaosPartyRoom extends PartySessionRoom {
     if(!this.tavern||this.tavern.revision===this.projectedRevision)return;
     super.projectGameState(now);this.projectedRevision=this.tavern.revision;
   }
-  protected override finishTick(ctx:any){this.checkpoint();super.finishTick(ctx);}
+  protected override finishTick(ctx:any){this.narrateResolvedTurn();this.checkpoint();super.finishTick(ctx);}
 }

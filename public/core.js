@@ -1,4 +1,5 @@
 import {campaignView} from './campaign.js';
+import {recordDMMemory,redactDMMemory} from './dm-memory.js';
 import {ensureItems,itemPlan,resolveItem,currentLocation,advanceWorld} from './world-items.js';
 import {OBJECTS,objectState,environmentTarget,environmentCheck,interactEnvironment,advanceEnvironment} from './environment.js';
 import {selectD20} from './vendor/dnd5e-advantage.js';
@@ -37,7 +38,7 @@ export function avatarSafe(a={}) {
 export function createRoom({ code='SOLO', seed=12345, now=Date.now(), reactionMs=8000 }={}) {
   return { version:VERSION, code, createdAt:now, updatedAt:now, seq:0, revision:0,
     seed: (seed >>> 0) || 12345, phase:'lobby', paused:false, deadline:0, reactionMs:clamp(reactionMs,4000,12000),
-    players:[], turn:null, result:null, events:[], requests:{}, round:0, chaos:0,
+    players:[], turn:null, result:null, events:[], requests:{}, dmMemory:{version:1,entries:[],people:{}}, round:0, chaos:0,
     quest:{ clues:0, crown:false, carrierId:null, escaped:false }, lastActorId:null, priorityUntil:0,
     world:{ bartender:'wary', guards:'bored', facts:['The Duke has terrible taste in hats.'], props:{rug:true} }, stats:{ actions:0, rolls:0 } };
 }
@@ -72,7 +73,7 @@ export function editPlayer(r,id,profile,now=Date.now()) {
 }
 export function publicRoom(r) {
   if(r.world.expedition)ensureItems(r);
-  const {requests,seed,...s}=r;
+  const {requests,seed,dmMemory,...s}=r;
   const projected={...s,world:{...s.world,...(s.world.expedition?{expedition:campaignView(r)}:{})}};
   return { ...structuredClone(projected), players:r.players.map(({token,pin,...p})=>structuredClone(p)) };
 }
@@ -297,6 +298,7 @@ function resolve(r,now) {
     roll,rerolled,modifier,skill,charm,assistance,interference,total:automatic?0:roll+modifier,dc,success,critical:critical&&success,automatic,dice,advantage,situation,check:check?.ability||t.intent,blocked:!!environmental?.blocked||unsupported,
     narration,changes,effects,reactions:sorted.map(x=>({playerId:x.playerId,kind:x.kind,text:x.text,seq:x.id})),at:now};
   r.phase='reveal';r.deadline=now+6500;
+  recordDMMemory(r);
   event(r,'outcome',narration,now,{playerId:p.id,success,roll,turnId:t.id});touch(r,now);
 }
 export function advance(r,now=Date.now()) {
@@ -327,7 +329,9 @@ export function hostCommand(r,command,now=Date.now()) {
   } else if(command.type==='redact') {
     const e=r.events.find(x=>x.id===command.eventId);if(e)e.text='[Hidden by the host]';
     if(r.turn){r.turn.action='[Hidden by the host]';r.turn.reactions.forEach(x=>x.text='[Hidden by the host]');}
-    if(r.result){r.result.action='[Hidden by the host]';r.result.narration='The host moved this scene along.';r.result.reactions.forEach(x=>x.text='[Hidden by the host]');}
+    if(r.result){redactDMMemory(r,r.result.id);r.result.action='[Hidden by the host]';r.result.narration='The host moved this scene along.';r.result.story={status:'fallback'};r.result.reactions.forEach(x=>x.text='[Hidden by the host]');}
+    const turnId=e?.turnId||(e?.type==='declaration'?r.events.find(x=>x.type==='outcome'&&x.playerId===e.playerId&&x.at>=e.at)?.turnId:null);
+    if(turnId){redactDMMemory(r,turnId);for(const row of r.events)if(row.turnId===turnId)row.text='[Hidden by the host]';}
   } else if(command.type==='newStory') {
     const fresh=createRoom({code:r.code,seed:r.seed,now,reactionMs:r.reactionMs});
     const players=r.players.map(p=>({...p,hp:p.maxHp,gold:3,inventory:['Bent spoon'],actions:0,assists:0,score:0,nat20:0,status:'ready',cover:false}));
