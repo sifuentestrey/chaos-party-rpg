@@ -53,6 +53,11 @@ export function itemPlan(r,actor,text){
   const state=ensureItems(r),extended=planEntity(r,state,actor,parseEntityAttempt(text),findItem);if(extended)return {...extended,entityAction:true};
   if(currentLocation(r)!=='tavern'&&/^(?:rest|rest and heal|heal myself)$/i.test(text.trim()))return {verb:'rest',automatic:false,dc:6,ability:'Recovery'};
   const attempt=parseItemAttempt(text);if(!attempt&&/\b(make|craft|create|fashion|weave|sew|build|turn.+into)\b/i.test(text))return {verb:'unsupported',error:'This creative attempt needs a validated interpretation. Use Make <name> from two carried components, or connect local AI.',automatic:true,dc:0,ability:'Interaction'};if(!attempt)return currentLocation(r)==='tavern'?null:{verb:'unsupported',error:'Try taking, crafting, equipping, giving, separating, or using an object here, or travel to a connected place.',automatic:true,dc:0,ability:'Interaction'};
+  return planItemAttempt(r,actor,attempt);
+}
+
+// Both native grammar and AI proposals use these same authoritative checks.
+export function planItemAttempt(r,actor,attempt){
   const isExplicit=['travel','craft','attach','give','use','equip','unequip','separate','drop'].includes(attempt.verb);
   const s=ensureItems(r),item=attempt.item?(['give','use','equip','unequip','drop','separate'].includes(attempt.verb)?findCarriedItem(s,r,actor,attempt.item):findItem(s,r,attempt.item)):null;
   if(!isExplicit&&!item){if(s.current==='tavern'&&!/^item-\d+$/i.test(attempt.item||''))return null;}
@@ -89,6 +94,27 @@ export function itemPlan(r,actor,text){
     return {...plan,targetId:target.id,automatic:false,dc:Math.max(5,(MATERIALS[target.material]?.hardness||10)-2),ability:'Athletics'};
   }
   return plan;
+}
+// Compile typed arguments directly. AI-generated names never become parser commands.
+export function planWorldProposal(r,actor,raw){
+ const s=ensureItems(r),verb=raw.verb;
+ if(verb==='unsupported')return {verb,error:'This attempt cannot be represented by the available game actions.',automatic:true,dc:0,ability:'Interaction'};
+ if(verb==='rest')return {verb,automatic:false,dc:6,ability:'Recovery'};
+ if(verb==='craft')return planItemAttempt(r,actor,{verb,name:raw.name,sources:raw.sources});
+ if(['take','drop','equip','unequip','separate'].includes(verb))return planItemAttempt(r,actor,{verb,item:raw.target});
+ if(verb==='travel')return planItemAttempt(r,actor,{verb,destination:raw.target});
+ if(verb==='give')return planItemAttempt(r,actor,{verb,item:raw.item,recipient:raw.target});
+ if(['use','put','fill'].includes(verb)){
+  if(verb==='use')return planItemAttempt(r,actor,{verb,item:raw.item,target:raw.target});
+  const result=planEntity(r,s,actor,{verb,item:raw.item,target:raw.target},findItem);return result?{...result,entityAction:true}:null;
+ }
+ if(verb==='attach'){
+  const result=planEntity(r,s,actor,{verb:'attachTo',item:raw.item,target:raw.target},findItem);
+  return result?{...result,entityAction:true}:planItemAttempt(r,actor,{verb,sources:[raw.item,raw.target]});
+ }
+ const attempt={verb,target:raw.target,...(raw.item?{item:raw.item}:{}),...(verb==='harvest'?{part:raw.name}:{})};
+ const result=planEntity(r,s,actor,attempt,findItem);
+ return result?{...result,entityAction:true}:planItemAttempt(r,actor,{verb,item:raw.target});
 }
 function remember(item,verb,actor,location){item.history.push({verb,actorId:actor.id,location});item.history=item.history.slice(-12);}
 export function resolveItem(r,actor,plan,success){

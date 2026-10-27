@@ -2851,9 +2851,13 @@ function ensureItems(r) {
   upgradeCampaign(r, state);
   return state;
 }
+var visibleItems = (r) => Object.values(r.world.expedition?.items || {}).filter((i) => available(r.world.expedition, r, i));
 function findItem(s, r, text) {
   const matches = Object.values(s.items).filter((i) => available(s, r, i) && (i.id === text.trim() || norm(i.name) === norm(text)));
   return matches.length === 1 ? matches[0] : null;
+}
+function visibleCreatures(r) {
+  return localCreatures(r.world.expedition || {});
 }
 function findCarriedItem(s, r, actor, text) {
   const reference = text.trim().replace(/^my /i, "");
@@ -2878,6 +2882,9 @@ function itemPlan(r, actor, text) {
   const attempt = parseItemAttempt(text);
   if (!attempt && /\b(make|craft|create|fashion|weave|sew|build|turn.+into)\b/i.test(text)) return { verb: "unsupported", error: "This creative attempt needs a validated interpretation. Use Make <name> from two carried components, or connect local AI.", automatic: true, dc: 0, ability: "Interaction" };
   if (!attempt) return currentLocation(r) === "tavern" ? null : { verb: "unsupported", error: "Try taking, crafting, equipping, giving, separating, or using an object here, or travel to a connected place.", automatic: true, dc: 0, ability: "Interaction" };
+  return planItemAttempt(r, actor, attempt);
+}
+function planItemAttempt(r, actor, attempt) {
   const isExplicit = ["travel", "craft", "attach", "give", "use", "equip", "unequip", "separate", "drop"].includes(attempt.verb);
   const s = ensureItems(r), item = attempt.item ? ["give", "use", "equip", "unequip", "drop", "separate"].includes(attempt.verb) ? findCarriedItem(s, r, actor, attempt.item) : findItem(s, r, attempt.item) : null;
   if (!isExplicit && !item) {
@@ -2919,6 +2926,27 @@ function itemPlan(r, actor, text) {
     return { ...plan, targetId: target.id, automatic: false, dc: Math.max(5, (MATERIALS[target.material]?.hardness || 10) - 2), ability: "Athletics" };
   }
   return plan;
+}
+function planWorldProposal(r, actor, raw) {
+  const s = ensureItems(r), verb = raw.verb;
+  if (verb === "unsupported") return { verb, error: "This attempt cannot be represented by the available game actions.", automatic: true, dc: 0, ability: "Interaction" };
+  if (verb === "rest") return { verb, automatic: false, dc: 6, ability: "Recovery" };
+  if (verb === "craft") return planItemAttempt(r, actor, { verb, name: raw.name, sources: raw.sources });
+  if (["take", "drop", "equip", "unequip", "separate"].includes(verb)) return planItemAttempt(r, actor, { verb, item: raw.target });
+  if (verb === "travel") return planItemAttempt(r, actor, { verb, destination: raw.target });
+  if (verb === "give") return planItemAttempt(r, actor, { verb, item: raw.item, recipient: raw.target });
+  if (["use", "put", "fill"].includes(verb)) {
+    if (verb === "use") return planItemAttempt(r, actor, { verb, item: raw.item, target: raw.target });
+    const result2 = planEntity(r, s, actor, { verb, item: raw.item, target: raw.target }, findItem);
+    return result2 ? { ...result2, entityAction: true } : null;
+  }
+  if (verb === "attach") {
+    const result2 = planEntity(r, s, actor, { verb: "attachTo", item: raw.item, target: raw.target }, findItem);
+    return result2 ? { ...result2, entityAction: true } : planItemAttempt(r, actor, { verb, sources: [raw.item, raw.target] });
+  }
+  const attempt = { verb, target: raw.target, ...raw.item ? { item: raw.item } : {}, ...verb === "harvest" ? { part: raw.name } : {} };
+  const result = planEntity(r, s, actor, attempt, findItem);
+  return result ? { ...result, entityAction: true } : planItemAttempt(r, actor, { verb, item: raw.target });
 }
 function remember(item, verb, actor, location) {
   item.history.push({ verb, actorId: actor.id, location });
@@ -3341,7 +3369,7 @@ function resolve(r, now) {
   const helpers = sorted.filter((x) => x.kind === "assist" || x.kind === "custom" && !/\b(stop|prevent|block|intervene)\b/i.test(x.text));
   const blockers = sorted.filter((x) => x.kind === "intervene" || x.kind === "custom" && /\b(stop|prevent|block|intervene)\b/i.test(x.text));
   const hostile = t.worldAction || ["attack", "steal", "magic", "break"].includes(t.intent);
-  const dynamic = t.worldAction ? itemPlan(r, p, t.rulesText || t.action) : null;
+  const dynamic = t.worldAction ? t.worldProposal ? planWorldProposal(r, p, t.worldProposal) || { verb: "unsupported", error: "The selected action is no longer available.", automatic: true, dc: 0, ability: "Interaction" } : itemPlan(r, p, t.rulesText || t.action) : null;
   if (dynamic && t.worldBlueprint) Object.assign(dynamic, t.worldBlueprint);
   const check = dynamic || environmentCheck(r.world, t.target, t.intent, t.rulesText || t.action);
   const automatic = !!check?.automatic;
@@ -3798,7 +3826,8 @@ function hostCommand(r, command, now = Date.now()) {
 
 // public/world-ai.js
 var WORLD_VERBS = ["craft", "attach", "give", "equip", "unequip", "take", "drop", "separate", "inspect", "use", "travel", "explore", "talk", "pacify", "attack", "harvest", "treat", "fill", "drink", "open", "close", "unlock", "move", "ignite", "extinguish", "repair", "put", "rest", "unsupported"];
-var APPEARANCE_COLORS = ["#d87878", "#7ea7d4", "#83b48a", "#dfc16e", "#bd88cf", "#e4dcc8", "#484552", "#b88955", "#7dc7cf"];
+var APPEARANCE_PALETTE = { red: "#d87878", blue: "#7ea7d4", green: "#83b48a", gold: "#dfc16e", purple: "#bd88cf", white: "#e4dcc8", black: "#484552", brown: "#b88955", cyan: "#7dc7cf" };
+var APPEARANCE_COLORS = Object.values(APPEARANCE_PALETTE);
 var WORLD_PLAN_SCHEMA = { type: "object", properties: { domain: { type: "string", enum: ["world"] }, verb: { type: "string", enum: WORLD_VERBS }, target: { type: "string" }, item: { type: "string" }, sources: { type: "array", items: { type: "string" }, maxItems: 4 }, name: { type: "string", maxLength: 48 }, itemType: { type: "string", enum: ["wearable", "tool", "container", "fragment"] }, slot: { type: "string", enum: ["head", "body", "hand"] }, color: { type: "string", enum: APPEARANCE_COLORS }, summary: { type: "string", maxLength: 160 } }, required: ["domain", "verb", "target", "item", "sources", "name", "itemType", "slot", "color", "summary"], additionalProperties: false };
 var voicePacification = (text) => /\b(soothe|calm|befriend|pacify|win .+ over)\b/i.test(text) && /\b(voice|song|sing|rap|music|lullaby|joke)\b/i.test(text) && !/\b(heal|bandage|bind|treat|wound|injury|pain)\b/i.test(text);
 function validateWorldPlan(raw, room, actorId) {
@@ -3810,65 +3839,19 @@ function validateWorldPlan(raw, room, actorId) {
   const actor = room.players.find((p) => p.id === actorId);
   if (!actor) throw Error("Unknown actor");
   const s = ensureItems(room), entity = (id) => s.items[id] || s.creatures[id] || room.players.find((p) => p.id === id);
-  const reference = (id) => {
-    if (!entity(id)) throw Error("Unknown world entity");
-    return id;
-  };
-  let text;
-  switch (raw.verb) {
-    case "unsupported":
-      text = "Make unsupported creation";
-      break;
-    case "craft":
-      if (!raw.name || raw.name.length > 48 || /[<>\r\n]/.test(raw.name) || raw.sources?.length < 2) throw Error("Invalid creation");
-      text = `Make ${raw.name} from ${raw.sources.map(reference).join(" and ")}`;
-      break;
-    case "attach":
-      text = `Attach ${reference(raw.item)} to ${reference(raw.target)}`;
-      break;
-    case "give":
-      text = `Give ${reference(raw.item)} to ${reference(raw.target)}`;
-      break;
-    case "use":
-      text = `Use ${reference(raw.item)} on ${reference(raw.target)}`;
-      break;
-    case "put":
-      text = `Put ${reference(raw.item)} into ${reference(raw.target)}`;
-      break;
-    case "fill":
-      text = `Fill ${reference(raw.item)} from ${reference(raw.target)}`;
-      break;
-    case "harvest":
-      if (!raw.name) throw Error("Name the actual part");
-      text = `Cut ${raw.name} from ${reference(raw.target)}`;
-      break;
-    case "talk":
-      text = `Talk to ${reference(raw.target)}`;
-      break;
-    case "pacify":
-      text = `Befriend ${reference(raw.target)}`;
-      break;
-    case "treat":
-      text = `Bandage ${reference(raw.target)}${raw.item ? " with " + reference(raw.item) : ""}`;
-      break;
-    case "attack":
-      text = `Attack ${reference(raw.target)}${raw.item ? " with " + reference(raw.item) : ""}`;
-      break;
-    case "travel":
+  const itemIds = new Set(visibleItems(room).map((i) => i.id));
+  const entityIds = /* @__PURE__ */ new Set([...itemIds, ...visibleCreatures(room).map((c) => c.id), ...room.players.map((p) => p.id)]);
+  const owned = new Set(visibleItems(room).filter((i) => i.ownerId === actorId).map((i) => i.id));
+  if (raw.verb !== "unsupported") {
+    if (raw.verb === "craft") {
+      if (!raw.name || raw.name.length > 48 || /[<>\r\n]/.test(raw.name) || !Array.isArray(raw.sources) || raw.sources.length < 2 || raw.sources.some((id) => !owned.has(id))) throw Error("Invalid carried crafting sources");
+    } else if (raw.verb === "travel") {
       if (!s.locations[s.current].exits.includes(raw.target)) throw Error("Unknown or disconnected destination");
-      text = "Travel to " + raw.target;
-      break;
-    case "explore":
-      text = "Explore";
-      break;
-    case "rest":
-      text = "Rest";
-      break;
-    default:
-      text = raw.verb + " " + reference(raw.target);
+    } else if (!["rest", "explore"].includes(raw.verb) && !entityIds.has(raw.target)) throw Error("Unknown or unavailable world entity");
+    if (raw.item && !owned.has(raw.item)) throw Error("Choose a carried item for this action");
   }
-  const plan = itemPlan(room, actor, text);
-  if (raw.verb === "unsupported") return { intent: "world", rulesText: text, target: { kind: "world", name: "the surroundings", position: [480, 335] }, worldAction: true, verb: raw.verb, summary: raw.summary };
+  const plan = planWorldProposal(room, actor, raw), text = raw.verb + " " + (raw.target || raw.name || "");
+  if (raw.verb === "unsupported") return { intent: "world", rulesText: text, target: { kind: "world", name: "the surroundings", position: [480, 335] }, worldAction: true, proposal: structuredClone(raw), verb: raw.verb, summary: raw.summary };
   if (!plan || plan.error) throw Error(plan?.error || "Unsupported world primitive");
   if (actor.hp <= 0 && plan.verb !== "rest") throw Error("Knocked out adventurers must recover");
   let blueprint;
@@ -3877,7 +3860,7 @@ function validateWorldPlan(raw, room, actorId) {
     blueprint = { creationType: raw.itemType, creationSlot: raw.slot, creationColor: raw.color };
   }
   const target = entity(plan.targetId || plan.itemId || plan.sourceIds?.[0]);
-  return { intent: plan.verb === "rest" ? "heal" : "world", rulesText: text, target: { kind: "world", entityId: target?.id, name: target?.name || plan.destination || "the surroundings", position: target?.position || [480, 335] }, worldAction: true, blueprint, verb: raw.verb, summary: raw.summary.replace(/[\u0000-\u001f\u007f]/g, " ").trim() };
+  return { intent: plan.verb === "rest" ? "heal" : "world", rulesText: text, target: { kind: "world", entityId: target?.id, name: target?.name || plan.destination || "the surroundings", position: target?.position || [480, 335] }, worldAction: true, proposal: structuredClone(raw), blueprint, verb: raw.verb, summary: raw.summary.replace(/[\u0000-\u001f\u007f]/g, " ").trim() };
 }
 
 // public/ai-plan.js
@@ -3905,7 +3888,7 @@ function validateAIPlan(raw, room, actorId) {
 }
 function applyAIPlan(room, turnId, raw, model, now = Date.now()) {
   const t = room.turn;
-  if (room.phase !== "react" || room.paused || !t || t.worldLocked || t.id !== turnId || now >= t.deadline - 800) return false;
+  if (room.phase !== "react" || room.paused || !t || t.ai?.status === "applied" || t.worldLocked || t.id !== turnId || now >= t.deadline - 800) return false;
   if (room.world.expedition?.current !== "tavern" && room.world.expedition?.current && raw?.domain !== "world") throw new Error("Tavern interpretations cannot affect remote locations");
   if (t.worldPendingVerb && raw.verb !== t.worldPendingVerb && raw.verb !== "unsupported") throw Error("Interpretation changed the declared action instead of resolving its target");
   const plan = validateAIPlan(raw, room, t.actorId);
@@ -3917,9 +3900,11 @@ function applyAIPlan(room, turnId, raw, model, now = Date.now()) {
   if (plan.worldAction) {
     t.worldAction = true;
     t.worldBlueprint = plan.blueprint;
+    t.worldProposal = plan.proposal;
   } else {
     t.worldAction = false;
     delete t.worldBlueprint;
+    delete t.worldProposal;
   }
   if (t.worldPendingVerb) {
     delete t.worldPendingVerb;

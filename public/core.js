@@ -1,6 +1,6 @@
 import {campaignView} from './campaign.js';
 import {recordDMMemory,redactDMMemory} from './dm-memory.js';
-import {ensureItems,itemPlan,resolveItem,currentLocation,advanceWorld} from './world-items.js';
+import {ensureItems,itemPlan,planWorldProposal,resolveItem,currentLocation,advanceWorld} from './world-items.js';
 import {OBJECTS,objectState,environmentTarget,environmentCheck,interactEnvironment,advanceEnvironment} from './environment.js';
 import {selectD20} from './vendor/dnd5e-advantage.js';
 // Authoritative game plugin, shared by PartyFrame and the labeled solo mode.
@@ -163,7 +163,7 @@ function resolve(r,now) {
   const helpers=sorted.filter(x=>x.kind==='assist'||(x.kind==='custom'&&!/\b(stop|prevent|block|intervene)\b/i.test(x.text)));
   const blockers=sorted.filter(x=>x.kind==='intervene'||(x.kind==='custom'&&/\b(stop|prevent|block|intervene)\b/i.test(x.text)));
   const hostile=t.worldAction||['attack','steal','magic','break'].includes(t.intent);
-  const dynamic=t.worldAction?itemPlan(r,p,t.rulesText||t.action):null;
+  const dynamic=t.worldAction?(t.worldProposal?(planWorldProposal(r,p,t.worldProposal)||{verb:'unsupported',error:'The selected action is no longer available.',automatic:true,dc:0,ability:'Interaction'}):itemPlan(r,p,t.rulesText||t.action)):null;
   if(dynamic&&t.worldBlueprint)Object.assign(dynamic,t.worldBlueprint);
   const check=dynamic||environmentCheck(r.world,t.target,t.intent,t.rulesText||t.action);
   const automatic=!!check?.automatic;

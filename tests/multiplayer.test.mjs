@@ -32,7 +32,11 @@ test('actual PartyFrame room: 20 clients, race, reactions, reconnection, PIN rec
     assert.equal(responses.filter(x=>x.ok).length,19);assert.equal(app.rooms()[code].turn.reactions.length,19);
     app.gameServer.simulateLatency(0);
     const reconnect=joins.find((_,i)=>i!==winner),persistentId=reconnect.identity.playerId;
-    const token=reconnect.room.reconnectionToken;reconnect.room.connection.close(1000);await pause(70);
+    const token=reconnect.room.reconnectionToken;reconnect.room.connection.close(1000);
+    // Wait for server-side disconnect/reconnection registration, not a guessed delay.
+    const disconnectDeadline=performance.now()+3000;
+    while(app.rooms()[code].players.find(p=>p.id===persistentId)?.connected&&performance.now()<disconnectDeadline)await pause(10);
+    assert.equal(app.rooms()[code].players.find(p=>p.id===persistentId)?.connected,false,'server must observe disconnect before reconnect');
     const again=await observe(await new Client('http://127.0.0.1:'+app.port).reconnect(token));clients.push(again);
     assert.equal(again.room.sessionId,reconnect.room.sessionId);assert.equal(again.identity.playerId,persistentId);assert.equal(again.identity.room.players.length,20);
     const recovered=await joinPlayer(app,id,{token:'new-device-recovery-token',name:'Ignored'},{recoveryPin:reconnect.identity.recoveryPin});clients.push(recovered);

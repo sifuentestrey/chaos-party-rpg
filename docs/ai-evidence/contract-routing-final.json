@@ -1,0 +1,63 @@
+{
+  "cases": [
+    {
+      "id": "peace-offering",
+      "setup": "craft",
+      "recipient": true,
+      "text": "I offer Moss my wood splinter as a peace offering, retaining my cloth strip",
+      "expected": {
+        "verb": "give",
+        "item": "item-2",
+        "target": "Moss"
+      }
+    }
+  ],
+  "rows": [
+    {
+      "id": "peace-offering",
+      "model": "openai/gpt-oss-120b",
+      "attempt": "I offer Moss my wood splinter as a peace offering, retaining my cloth strip",
+      "elapsedMs": 1439,
+      "actual": {
+        "domain": "world",
+        "verb": "give",
+        "target": "85174a77-94ba-4ea3-b436-4b3efabac1fb",
+        "item": "item-2",
+        "sources": [],
+        "name": "Peace offering",
+        "itemType": "tool",
+        "slot": "hand",
+        "color": "#bd88cf",
+        "summary": "Attempt: I offer Moss my wood splinter as a peace offering, retaining my cloth strip"
+      },
+      "usage": {
+        "promptTokens": 3027,
+        "completionTokens": 369
+      },
+      "correct": true,
+      "checks": {
+        "verb": true,
+        "target": true,
+        "item": true
+      },
+      "validated": true,
+      "nativeLocked": false,
+      "applied": true,
+      "resolution": {
+        "success": true,
+        "blocked": false,
+        "text": "Jinx: give wood splinter → Moss."
+      }
+    }
+  ],
+  "summary": [
+    {
+      "model": "openai/gpt-oss-120b",
+      "attempted": 1,
+      "passed": 1,
+      "p50Ms": 1439,
+      "p95Ms": 1439
+    }
+  ],
+  "note": "Five fresh cases per explicitly selected model; native locks and outcome resolution recorded. Not a general reliability guarantee."
+}
