@@ -1,5 +1,9 @@
 # Instructions for Codex / development agents
 
+## Owner product direction update (2026-10-27) — read before planning new work
+The owner supplied a new conversation handoff. **Read [docs/OWNER_HANDOFF_REACTIVE_HYBRID_WORLD_2026-10-27.md](docs/OWNER_HANDOFF_REACTIVE_HYBRID_WORLD_2026-10-27.md), [docs/QA_INDEPENDENT_READONLY_2026-10-27.md](docs/QA_INDEPENDENT_READONLY_2026-10-27.md), and [issue #9](https://github.com/sifuentestrey/chaos-party-rpg/issues/9)** before selecting work. Crucial decisions: **one shared TV game with phones as remotes (not phone-side adventures), majority votes only for major shared-party travel, a bounded hybrid handcrafted/procedural reactive island as a later direction, and both creative AI narration and grounded action interpretation**. **Do not** force a permanent-versus-episodic campaign decision, start the island expansion, enable unqualified narration, or incur paid usage merely because these plans were documented. The owner wants a successful first game night before larger scope decisions.
+
+
 ## Highest priority
 Recover and preserve the existing Work prototype before editing. The owner found it visually unattractive and difficult to play. Do NOT respond by creating yet another generic dashboard UI or one-shot scratch-built prototype.
 
