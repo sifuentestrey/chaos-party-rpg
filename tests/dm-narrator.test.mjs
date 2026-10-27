@@ -52,7 +52,8 @@ test('canonical memory survives save/reload and retains NPC encounters beyond re
   assert.equal(loaded.dmMemory.entries.length,120);assert.equal(loaded.dmMemory.people.bartender.encounters[0].id,first.id);
   assert.equal(relevantDMMemory(loaded,{targetId:'bartender',location:'ruins'})[0].id,first.id);
   loaded.result=room.result;loaded.result.story={text:'Marnie gives 900 coins.'};
-  assert.equal(JSON.stringify(loaded.dmMemory).includes('900'),false);
+  // Random entity UUIDs may contain 900; check the invented prose itself.
+  assert.equal(JSON.stringify(loaded.dmMemory).includes('Marnie gives 900 coins.'),false);
   hostCommand(loaded,{type:'redact',eventId:loaded.events.find(e=>e.type==='declaration').id},20000);
   assert.equal(JSON.stringify(loaded.dmMemory).includes('long-lost'),false);
   hostCommand(loaded,{type:'newStory'},21000);assert.deepEqual(loaded.dmMemory,{version:1,entries:[],people:{}});

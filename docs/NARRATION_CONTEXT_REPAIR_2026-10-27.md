@@ -15,6 +15,7 @@ Review also checked redaction while a newer narration request contains an earlie
 ## Local verification
 
 - `npm test`: **139/139 passed**, including six new context and lifecycle regressions.
+- A separate final review run caught a flaky older memory assertion: it searched all saved JSON for `900`, which can occur in random entity UUIDs. The assertion now checks the exact fabricated sentence instead; it still verifies that generated rewards never enter canonical memory. The complete suite was rerun after that correction.
 - Coverage includes actual generated patient injuries, JSON save/reload, player-target memory competing with newer unrelated entries, local versus remote fixtures, private nested fields, detached arrays, and a 20-participant context budget.
 - `npm run build` and `git diff --check`: passed. The tracked framework was rebuilt and remained byte-identical; this repair changes the separate server narrator module.
 - Tests use mock responses or local fixtures. No live inference or provider call was made, and the exhausted October 27 request allowance was not changed.
