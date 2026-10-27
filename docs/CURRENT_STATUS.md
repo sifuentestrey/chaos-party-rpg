@@ -6,7 +6,7 @@
 
 **Latest delivered Luna work:** [Polish marathon results](LUNA_POLISH_MARATHON_RESULTS.md), commit `da72db54f490cef62e7ea1f68b79737d1867fc96`, records all 39 dispositions and passing offline/browser checks, including a two-controller complete outdoor quest, revisit and restart/rejoin. Delivery is not stronger visual acceptance.
 
-**Next autonomous Luna milestone:** [Visual game-night release assignment](LUNA_VISUAL_GAME_NIGHT_RELEASE.md) on `luna/visual-game-night-release`: six continuous batches to materially improve outdoor art, TV composition, phone information density and the existing adventure ending. Assigned, not implemented. The first game-night release target and separate larger-world goals are defined there. Physical and live-AI gates remain open.
+**Next autonomous Luna milestone:** [Visual game-night release assignment](LUNA_VISUAL_GAME_NIGHT_RELEASE.md) on `luna/visual-game-night-release`: eight continuous batches to finish worker-owned visuals, all existing adventure screens/flow, first-session instructions, end-to-end evidence and an isolated packaged test candidate. Assigned, not implemented. The first game-night release target and separate larger-world goals are defined there. Physical and live-AI gates remain open.
 
 ## Completed repairs
 
