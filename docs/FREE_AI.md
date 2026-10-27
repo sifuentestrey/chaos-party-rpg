@@ -15,7 +15,7 @@ One provider connection serves the group; phone reactions do not each invoke a m
 
 ## Implemented, not yet live-qualified
 
-`CHAOS_AI_PROVIDER=groq-free` explicitly selects the fixed HTTPS Groq endpoint. `GROQ_API_KEY` is read only by the server and never projected into game state. Do not paste a key into chat, save it in source, or use a key from an organization with billing enabled. Starting the game without a key reports not configured and makes no provider request. `CHAOS_AI=off` overrides all providers. `CHAOS_AI_MODEL` may select GPT-OSS 20B or 120B; no other model/provider is silently selected on failure. The local Qwen path remains separate and unchanged by default.
+`CHAOS_AI_PROVIDER=groq-free` explicitly selects the fixed HTTPS Groq endpoint. `GROQ_API_KEY` is read only by the server and never projected into game state. Do not paste a key into chat, save it in source, or use a key from an organization with billing enabled. Starting the game without a key reports not configured and makes no provider request. `CHAOS_AI=off` overrides all providers. `CHAOS_AI_MODEL` may select GPT-OSS 20B or 120B (120B is the default after the live recovery comparison); no other model/provider is silently selected on failure. The local Qwen path remains separate and unchanged by default.
 
 The adapter uses the documented chat-completions structured-output protocol with low reasoning effort. It rejects redirects, bounds response bytes, reserves a persistent local request allowance before inference, performs no automatic retries, and pauses at least 60 seconds on HTTP 429 (longer when a numeric Retry-After requests it). The local allowance is 100 attempts per UTC day and four attempts in a rolling minute, shared by this game process/data directory and preserved in `ai-free-usage.json`. Failed requests count. Corrupt usage storage blocks requests rather than resetting the allowance. These are additional limits, not a billing guarantee, token budget, or substitute for the provider's quotas. One game process owns the data directory. Native rules continue on model/quota failure.
 
@@ -50,3 +50,5 @@ Google's official billing docs say new Gemini accounts begin on a Free Tier and 
 OpenRouter's official FAQ documents 50 free-model requests/day for accounts without the qualifying credit purchase: https://openrouter.ai/docs/faq . A higher allowance requiring a credit purchase does not meet this project's zero-spend requirement. Fifty requests would be tight when interpretation and narration may need separate calls, so it is not the first test candidate.
 
 A free API tier can be rate-limited, unavailable or discontinued. Offline play remains supported by game rules, but it does not provide the full AI-DM experience during an outage. Local models remain possible on suitable hardware; the reported Qwen3-1.7B Q8 CPU configuration was not suitable.
+
+Latest recovery measurements and remaining narration limitations: see `AI_RECOVERY_RESULTS.md`.

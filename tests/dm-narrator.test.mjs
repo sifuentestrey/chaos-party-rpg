@@ -17,7 +17,7 @@ function scene(){
   return {room,actor};
 }
 const answer=c=>({turnId:c.turnId,outcome:c.outcome.status,text:'The room pauses to appreciate the sheer confidence involved.',dialogue:[{speakerId:'bartender',line:'If you are family, you can start with the washing up.'}]});
-const models=()=>new Response(JSON.stringify({data:[{id:'openai/gpt-oss-20b'}]}));
+const models=()=>new Response(JSON.stringify({data:[{id:'openai/gpt-oss-120b'}]}));
 const response=value=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify(value)}}],usage:{prompt_tokens:700,completion_tokens:90}}));
 
 test('live narration qualification scenarios contain real canonical reactions, blocked powers and remembered NPCs',()=>{
