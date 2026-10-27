@@ -5,6 +5,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createGameServer } from '../server.mjs';
 import { createLocalGameMaster } from '../src/local-game-master.mjs';
+import { createHost, joinPlayer } from './colyseus-helpers.mjs';
 import { skipBrowserTimer } from './browser-timers.mjs';
 
 const playwrightPath = process.env.CHAOS_PLAYWRIGHT_MODULE || '/opt/codex/runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.js';
@@ -52,6 +53,13 @@ try {
   await host.goto(`http://127.0.0.1:${app.port}/`);
   await noHorizontalOverflow(host, 'home-1280x720');
   await screenshot(host, 'home-1280x720.png');
+  await host.keyboard.press('Tab');
+  assert.ok(await host.evaluate(() => document.activeElement.matches(':focus-visible') && parseFloat(getComputedStyle(document.activeElement).outlineWidth) >= 3), 'keyboard focus has a visible outline');
+  await host.emulateMedia({ reducedMotion: 'reduce' });
+  await host.evaluate(() => { const el = document.createElement('span'); el.className = 'loading-die'; document.body.append(el); });
+  assert.ok(await host.locator('.loading-die').evaluate(el => parseFloat(getComputedStyle(el).animationDuration) < 0.001), 'decorative animation respects reduced motion');
+  await host.locator('.loading-die').evaluate(el => el.remove());
+  await host.emulateMedia({ reducedMotion: 'no-preference' });
   await host.locator('[data-action=how]').click();
   await host.locator('dialog').waitFor({ state: 'visible' });
   assert.match(await host.locator('dialog').innerText(), /first valid declaration/i);
@@ -99,7 +107,10 @@ try {
     }
     await noHorizontalOverflow(page, `phone${index + 1}-join-${viewport.width}x${viewport.height}`);
     await screenshot(page, `phone${index + 1}-join.png`);
-    await page.locator('#character-name').fill(index ? 'Sir Snacks the Magnificent' : 'Jinx');
+    const nameInput = page.locator('#character-name');
+    await nameInput.fill('Moss the Incredibly Long Yet Entirely Memorable Adventurer');
+    await noHorizontalOverflow(page, `phone${index + 1}-long-name-${viewport.width}x${viewport.height}`);
+    await nameInput.fill(index ? 'Sir Snacks the Magnificent' : 'Jinx');
     await page.locator('[data-action=creatorTab][data-value=role]').click();
     await page.locator('[data-action=enter]').click();
     await page.waitForSelector('.player-card');
@@ -154,6 +165,7 @@ try {
     await waitForPhase('reveal');
     await skipBrowserTimer(host, roomState);
     await waitForPhase('open');
+    return roomState().result;
   };
   await takeTurn(phones[0], 'Travel to clearing');
   assert.equal(roomState().world.expedition.current, 'clearing', 'the existing clearing travel command resolves');
@@ -171,12 +183,69 @@ try {
   await takeTurn(phones[1], 'Travel to tavern');
   assert.equal(roomState().world.expedition.current, 'tavern', 'the party can return to the tavern');
 
+  // Two independent phone pages complete the generated supported chapter.
+  await takeTurn(phones[0], 'Travel to clearing');
+  const quest = roomState().world.expedition.regions.clearing.quest;
+  assert.ok(['recover', 'rescue', 'restore'].includes(quest.kind), 'clearing uses a supported authored quest');
+  const talk = await takeTurn(phones[1], 'Talk to ' + quest.patronId);
+  assert.ok(talk && !talk.blocked, 'second phone completes the quest introduction');
+  let befriended = false;
+  for (let attempt = 0; attempt < 24 && !befriended; attempt++) befriended = !!(await takeTurn(phones[0], 'Befriend ' + quest.threatId))?.success;
+  assert.equal(roomState().world.expedition.creatures[quest.threatId].attitude, 'friendly');
+  let returnedItem;
+  if (quest.kind === 'rescue') {
+    const cloth = Object.values(roomState().world.expedition.items).find(item => item.location === 'clearing' && item.material === 'cloth');
+    assert.ok(cloth, 'rescue quest has its authored treatment cloth');
+    await takeTurn(phones[0], 'Take ' + cloth.id);
+    await takeTurn(phones[1], 'Bandage ' + quest.patronId);
+  } else if (quest.kind === 'restore') {
+    await takeTurn(phones[1], 'Repair ' + quest.gateId);
+  } else {
+    let opened = false;
+    for (let attempt = 0; attempt < 24 && !opened; attempt++) opened = !!(await takeTurn(phones[1], 'Open ' + quest.chestId))?.success;
+    assert.equal(roomState().world.expedition.items[quest.chestId].open, true);
+    await takeTurn(phones[0], 'Take ' + quest.relicId);
+    await takeTurn(phones[1], 'Take item-5');
+    const crafterId = roomState().players.find(player => player.name === 'Jinx').id;
+    await takeTurn(phones[1], 'Give item-5 to ' + crafterId);
+    let crafted = false;
+    for (let attempt = 0; attempt < 24 && !crafted; attempt++) crafted = !!(await takeTurn(phones[0], 'Make a ridiculous heirloom hat from ' + quest.relicId + ' and item-5'))?.success;
+    const heirloom = Object.values(roomState().world.expedition.items).find(item => item.name === 'ridiculous heirloom hat');
+    assert.ok(crafted && heirloom, 'party crafts an item containing the recovered keepsake');
+    await takeTurn(phones[0], 'Give ' + heirloom.id + ' to ' + quest.patronId);
+    returnedItem = heirloom.id;
+  }
+  assert.equal(roomState().world.expedition.regions.clearing.quest.status, 'completed', JSON.stringify({ kind: quest.kind, steps: roomState().world.expedition.regions.clearing.quest.steps, relic: roomState().world.expedition.items[quest.relicId], patron: roomState().world.expedition.creatures[quest.patronId] }));
+  await host.waitForFunction(() => document.body.innerText.includes('This chapter is complete.'));
+  await noHorizontalOverflow(host, 'completed-clearing-1280x720');
+  await screenshot(host, 'completed-clearing-1280x720.png');
+  await noHorizontalOverflow(phones[0], 'completed-quest-phone-320x568');
+  await screenshot(phones[0], 'completed-quest-phone-320x568.png');
+  await noHorizontalOverflow(phones[1], 'completed-quest-phone-390x844');
+  await screenshot(phones[1], 'completed-quest-phone-390x844.png');
+  await takeTurn(phones[0], 'Travel to ruins');
+  await takeTurn(phones[1], 'Travel to clearing');
+  if (returnedItem) assert.equal(roomState().world.expedition.items[returnedItem].ownerId, quest.patronId, 'the keepsake remains with its recipient on revisit');
+  await host.waitForFunction(() => document.body.innerText.includes('This chapter is complete.'));
+  await screenshot(host, 'quest-revisit-1280x720.png');
+  const savedItem = returnedItem ? structuredClone(roomState().world.expedition.items[returnedItem]) : null;
+  const port = app.port;
+  await app.close();
+  app = await createGameServer({ port, host: '127.0.0.1', dataDir, ai });
+  const resumedHost = await createHost(app, { resumeCode: code });
+  const token = app.store.rooms[code].players.find(player => player.name === 'Jinx').token;
+  const rejoined = await joinPlayer(app, resumedHost.room.roomId, { token });
+  assert.equal(rejoined.identity.room.world.expedition.regions.clearing.quest.status, 'completed');
+  if (returnedItem) assert.deepEqual(rejoined.identity.room.world.expedition.items[returnedItem], savedItem);
+  assert.equal(rejoined.identity.room.world.expedition.creatures[quest.threatId].attitude, 'friendly');
+  await rejoined.room.leave(true);
+
   await host.setViewportSize({ width: 1920, height: 1080 });
   await host.waitForTimeout(150);
   await noHorizontalOverflow(host, 'host-result-1920x1080');
   await screenshot(host, 'host-result-1920x1080.png');
 
-  fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify({ syntheticOnly: true, liveInference: false, dataDirIsTemporary: true, host: '127.0.0.1', viewports: sizes, pageAndConsoleErrors: errors, state: { declarationAcceptedAndLocked: true, otherControllerReacted: true, dieResultDisplayed: true } }, null, 2));
+  fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify({ syntheticOnly: true, liveInference: false, dataDirIsTemporary: true, host: '127.0.0.1', viewports: sizes, pageAndConsoleErrors: errors, state: { declarationAcceptedAndLocked: true, otherControllerReacted: true, dieResultDisplayed: true, twoControllerQuestCompleted: true, questRevisit: true, serverRestart: true } }, null, 2));
   assert.deepEqual(errors, [], 'no page errors or browser console errors');
   console.log(`Game-night browser milestone passed: ${sizes.length} layout checks, two independent phone controllers, declaration/reaction/result, no browser errors. Evidence: ${output}`);
 } finally {

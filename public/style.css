@@ -119,3 +119,10 @@ button:hover:not(:disabled),.quick-action:hover:not(:disabled){filter:brightness
 button:active:not(:disabled){transform:translateY(1px)}
 button.selected,[aria-pressed="true"]{box-shadow:0 0 0 2px var(--gold)}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+.regional-quest{border-color:#78624c;background:linear-gradient(145deg,#292331,#211b29)}
+.regional-quest .eyebrow{line-height:1.6;letter-spacing:1.2px}
+.regional-quest h3{font-family:Georgia,serif;font-size:18px;line-height:1.35;overflow-wrap:anywhere;margin:7px 0}
+.regional-objective{color:#f0dfbf;font-size:13px;line-height:1.55;margin:8px 0}
+.regional-progress{display:grid;gap:6px;margin:10px 0;padding:9px 10px;border-left:2px solid var(--gold);background:#120e1860;color:#d8ccb9;font-size:11px;line-height:1.5}
+.roster-name{max-width:min(190px,22vw);white-space:normal;overflow-wrap:anywhere;line-height:1.4}
+.connection-banner{overflow-wrap:anywhere;line-height:1.55}

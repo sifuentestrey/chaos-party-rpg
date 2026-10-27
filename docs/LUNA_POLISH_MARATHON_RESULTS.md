@@ -1,36 +1,55 @@
 # Luna polish marathon results
 
-Date: October 27, 2026. Branch: `luna/polish-and-accessibility`. Baseline: `79ccd7c8565f51d06d9ccec343bf204189e0f95c`.
+Completed October 27, 2026 on `luna/polish-and-accessibility`. Implementation baseline: `79ccd7c8565f51d06d9ccec343bf204189e0f95c`.
 
-## Implemented
+## Item dispositions
 
-- Items 1–7: improved small-screen tap targets and wrapping, visible focus, hover/pressed/selected states, readable mobile input size, dialog bounds, and reduced-motion handling in `public/style.css`.
-- Items 8–15: clarified empty inventory and travel together copy, added empty pockets text, improved equipment details/readability and phone layout in `public/app.js` and CSS. Existing actions and their command strings were preserved.
-- Items 22–23: name fitting now measures using the label's actual font size and iterates Unicode code points in `public/render.js`.
-- Items 26–27: health, coin and experience labels are explicit for assistive technology; existing icon controls retain their accessible names.
-- Item 34: captured and visually inspected clearing and ruins at 1280×720 in `artifacts/luna-polish-marathon/`. The assigned browser runner also covers both phone sizes and landscape dialog.
+1. **Done:** primary phone actions, quick actions, creator tabs and link controls meet the 44px mobile target; reaction buttons already exceed it.
+2. **Done:** browser check confirms keyboard focus is visible; global `:focus-visible` covers controls and summaries.
+3. **Done:** selected, hovered, pressed, disabled and focus states have distinct presentation; disabled behavior is preserved.
+4. **Done:** long creator names are entered at both phone widths without horizontal overflow; item, player and quest text wrap.
+5. **Done:** recovery dialog captured at 320×568 and landscape 568×320; narrow-screen dialog bounds and scrolling are styled.
+6. **Done:** inputs use readable mobile text sizing and declaration controls remain reachable by scrolling.
+7. **Done:** reduced-motion browser check confirms decorative animation is reduced; deadlines and scene feedback are unchanged.
+8. **Done:** existing pocket and item groups retain hierarchy and receive consistent mobile spacing.
+9. **Done:** empty pockets and empty item lists display guidance only when their actual arrays are empty.
+10. **Done:** existing `worn`/equipped status remains visible; item detail labels wrap on phones.
+11. **Done:** condition/material text wraps without inferring additional properties.
+12. **Done:** existing item actions have larger, consistently spaced mobile targets; command strings and gates are unchanged.
+13. **Done:** existing location heading and path buttons remain easy to find; phone screen contains only controller controls.
+14. **Done:** controller copy says the whole party travels together; existing destination actions stay unchanged.
+15. **Done:** people, creatures and object controls wrap and space consistently without changing order or visibility.
+16. **Done:** regional quest styling provides readable objective and progress contrast on the TV.
+17. **Done:** existing saved quest status/step logic and disclosure conditions are retained and exercised through completion.
+18. **Done:** regional title and objective text wrap with clearer spacing.
+19. **Done:** TV overlays and quest cards remain legible over inspected clearing/ruins backgrounds.
+20. **Done:** room code, QR and joining instructions are visible in the TV evidence; no QR/address changes.
+21. **Done:** roster names wrap within a bounded width; roster order and moderation controls are unchanged.
+22. **Done:** canvas name fitting measures using the exact font size used by its label.
+23. **Done:** name fitting counts Unicode code points and preserves the canonical name.
+24. **Done:** existing host instructions already explain TV, Wi-Fi, join code/QR and recovery PIN; no flow change needed.
+25. **Done:** the existing submit/reaction/result states were confirmed in the two-controller browser flow.
+26. **Done:** HP, coins and experience values have explicit accessible labels without changing values.
+27. **Done:** icon controls in assigned markup already have accessible names; retained.
+28. **Done:** host canvas description now names the current saved location and player count, with escaped dynamic text.
+29. **Done:** existing labels and input associations were inspected; no ID or validation changes were needed.
+30. **Done:** connection and recovery copy wraps on narrow screens; no token or private connection data is rendered.
+31. **Done:** two independent phone pages submit quest actions in one clearing campaign; both contribute accepted actions to the complete generated quest.
+32. **Done:** after completion, the same party travels to ruins and back; canonical consequence and quest UI are checked after the browser receives its snapshot.
+33. **Done:** same disposable campaign survives server restart; existing host/player helpers resume it and rejoin Jinx by the saved identity token. Quest, friendly creature and keepsake ownership are rechecked. The token is not logged.
+34. **Done:** captured and visually inspected TV clearing, ruins, completed quest and revisit at 1280×720; phones at 320×568 and 390×844; original landscape dialog evidence is retained. Recovery PIN areas are masked. Screenshots are under ignored `artifacts/luna-polish-marathon/`.
+35. **Done:** browser assertions cover focus visibility, long names at both phone sizes and reduced-motion behavior.
+36. **Done:** final diff review found only allowed app presentation markup, renderer label fitting, CSS, assigned browser runner and this report. No command/event, networking, save schema, identity, rules, provider or generated output was changed.
+37. **Done:** checks below passed. Browser scripts ran sequentially, AI was disabled, and the failure reruns followed diagnosed fixture/flow issues.
+38. **Done:** this is the single delivery report; evidence files and logs stay ignored.
+39. **Done:** committed and pushed to the assigned branch; remote head confirmed below.
 
-## Existing behavior or partial evidence
+## Checks
 
-- Items 2, 9, 10, 13, 14, 16–18, 20, 24, 27 and 29 were already substantially present; no redundant markup rewrite was made. The new CSS improves their narrow layout. Existing regional quest status already uses saved quest steps and disclosure checks.
-- Items 19 and 21 received general wrapping/contrast styles, but a focused crowded roster and post-completion TV screenshot were not produced.
-- Item 25 has existing separate declaration/reaction/result states; copy was not changed without a focused browser review.
-- Item 28 still describes the host canvas as a tavern in the inspected `hostScreen` markup; changing this needs an additional dynamic description check and remains open.
-- Item 30 existing recovery text remains in place; no dedicated narrow connection-loss screenshot was captured.
-- Item 35 remains open: no browser assertions were added for focus outline, injected long names, or reduced-motion computation.
+- `npm run verify`: passed, 184 tests across 29 files, seven generated outputs checked, static build passed; AI disabled.
+- `tests/luna-game-night-browser.mjs`: passed, 18 layout/overflow checks, failed-boot handling, two independent phone controllers, full generated quest, revisit, restart and identity rejoin, focus/reduced-motion/long-name checks; no browser errors.
+- `tests/campaign-browser.mjs`: passed the existing keepsake quest, crafting, travel, restart and character rejoin.
+- `tests/world-items-browser.mjs`: passed item creation/equipment/transfer/drop/take, travel, restart and identity rejoin.
+- `node --check` passed on the edited JavaScript files; `git diff --check` passed.
 
-## Blocked and remaining
-
-- Items 31–33 remain incomplete. The campaign browser script that exercises quest completion, revisit, restart and rejoin is explicitly read-only per this assignment; the assigned runner's two-phone travel check does not itself complete a quest. A dual-controller full-quest restart flow was not added, so this core evidence gap remains for stronger review.
-- Item 34 is partial: no completed-quest TV capture or dedicated 320×568 and 390×844 quest/inventory/travel captures were inspected.
-- Items 36–39: this report records only the performed review/checks. Final stronger review is pending.
-
-## Checks performed
-
-- `node --check public/app.js` and `node --check public/render.js`: passed.
-- `git diff --check`: passed.
-- `node tests/luna-game-night-browser.mjs` with AI disabled and isolated evidence directory: passed, 13 layout checks, two controllers, travel/return, no browser errors.
-- `npm run verify`: passed, 184 tests, seven generated outputs checked, static build passed with AI disabled.
-- Campaign and world-items browser scripts were not rerun during this marathon.
-
-No live model, paid service or physical device was used. The original Mac archive, physical acceptance and live AI qualification remain open. This branch is for stronger review; not all 39 items are complete.
+No live model, paid service, new asset or physical device was used. Live AI qualification, original Mac archive provenance, physical game-night acceptance and Mac performance remain separate open gates.
