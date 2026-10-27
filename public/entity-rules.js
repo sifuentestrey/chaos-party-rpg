@@ -6,7 +6,14 @@ export const MATERIAL_RULES={
 export const normalized=text=>String(text).trim().toLowerCase().replace(/^(?:a|an|the)\s+/,'');
 export function available(s,r,item){
  if(item.parentId||item.condition==='disassembled')return false;
- if(item.containerId){const box=s.items[item.containerId];if(!box?.open&&box?.condition!=='broken')return false;}
+ const seen=new Set([item.id]);let child=item;
+ while(child.containerId){
+  const parent=s.items[child.containerId];
+  if(!parent||seen.has(parent.id)||(parent.type!=='container'&&!(parent.type==='fixture'&&Array.isArray(parent.contents)))||parent.parentId||parent.condition==='disassembled')return false;
+  seen.add(parent.id);
+  if(!parent.open&&parent.condition!=='broken')return false;
+  child=parent;
+ }
  return item.location===s.current||r.players.some(p=>p.id===item.ownerId)||localCreatures(s).some(c=>c.id===item.ownerId);
 }
 export function entityNamed(s,r,text,find,{exactIds=false}={}){
@@ -85,7 +92,9 @@ export function planEntity(r,s,actor,attempt,find,{exactIds=false}={}){
  if(target.ownerId&&target.ownerId!==actor.id)return blocked('Ask its owner to transfer or drop it first.');
  if(attempt.verb==='put'){
   const item=find(s,r,attempt.item);if(!item||item.ownerId!==actor.id||target.type!=='container'||!target.open||target.ownerId!==actor.id||item.id===target.id)return blocked('Choose a carried item and an open container you carry.');
-  let parent=target;for(let n=0;parent&&n<256;n++){if(parent.id===item.id)return blocked('A container cannot contain itself or its parent.');parent=s.items[parent.containerId];}
+  if(item.containerId===target.id||(target.contents||[]).includes(item.id))return blocked('That item is already in this container.');
+  if(item.containerId){const oldParent=s.items[item.containerId];if(!oldParent||oldParent.type!=='container'||oldParent.ownerId!==actor.id||!(oldParent.contents||[]).includes(item.id))return blocked('The item has inconsistent or unavailable container ownership.');}
+  let parent=target;const seen=new Set();while(parent){if(seen.has(parent.id))return blocked('The container ancestry is invalid.');seen.add(parent.id);if(parent.id===item.id)return blocked('A container cannot contain itself or its parent.');if(parent.containerId&&!s.items[parent.containerId])return blocked('The container ancestry is incomplete.');parent=parent.containerId?s.items[parent.containerId]:null;}
   if((target.contents||[]).length>=8)return blocked('That container is full (eight objects).');return {...p,itemId:item.id};
  }
  if(attempt.verb==='fill'){
@@ -130,7 +139,15 @@ export function resolveEntity(r,s,actor,p,success){
   const item=spawnItem(s,null,{name:p.part,material:p.material,ownerId:actor.id,originId:p.targetId,appearance:{shape:'shard',color:MATERIAL_RULES[p.material].color}});
   return reply(`${actor.name} separates ${item.name} (${item.id}) from ${target?.name||OBJECTS[p.targetId.slice(8)]?.name}. It is now a real crafting component.`,'HARVESTED: '+item.name);
  }
- case 'put':{const item=s.items[p.itemId];target.contents||=[];target.contents.push(item.id);item.containerId=target.id;item.ownerId=target.ownerId;item.location=target.location;item.equipped=false;break;}
+ case 'put':{
+  const item=s.items[p.itemId];
+  if(!item||!target||target.type!=='container'||!target.open||target.ownerId!==actor.id||item.ownerId!==actor.id||item.id===target.id||item.containerId===target.id||(target.contents||[]).includes(item.id))return {success:false,blocked:true,text:'The item or container is no longer available for placement.'};
+  let oldParent=null;
+  if(item.containerId){oldParent=s.items[item.containerId];if(!oldParent||oldParent.type!=='container'||oldParent.ownerId!==actor.id||!(oldParent.contents||[]).includes(item.id))return {success:false,blocked:true,text:'The item has inconsistent or unavailable container ownership.'};}
+  if((target.contents||[]).length>=8)return {success:false,blocked:true,text:'That container is full (eight objects).'};
+  if(oldParent)oldParent.contents=oldParent.contents.filter(id=>id!==item.id);
+  target.contents||=[];target.contents.push(item.id);item.containerId=target.id;item.ownerId=target.ownerId;item.location=target.location;item.equipped=false;break;
+ }
  case 'attachTo':{const item=s.items[p.itemId];for(const other of Object.values(s.items))if(other.ownerId===target.id&&other.slot===item.slot)other.equipped=false;item.ownerId=target.id;item.location=null;item.equipped=true;item.attachedTo=target.id;break;}
  case 'fill':s.items[p.itemId].liquid={kind:'water',amount:3};break;
  case 'drink':target.liquid.amount--;actor.hp=Math.min(actor.maxHp,actor.hp+1);break;

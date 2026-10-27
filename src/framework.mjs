@@ -2550,9 +2550,14 @@ var MATERIAL_RULES = {
 var normalized = (text) => String(text).trim().toLowerCase().replace(/^(?:a|an|the)\s+/, "");
 function available(s, r, item) {
   if (item.parentId || item.condition === "disassembled") return false;
-  if (item.containerId) {
-    const box = s.items[item.containerId];
-    if (!box?.open && box?.condition !== "broken") return false;
+  const seen = /* @__PURE__ */ new Set([item.id]);
+  let child = item;
+  while (child.containerId) {
+    const parent = s.items[child.containerId];
+    if (!parent || seen.has(parent.id) || parent.type !== "container" && !(parent.type === "fixture" && Array.isArray(parent.contents)) || parent.parentId || parent.condition === "disassembled") return false;
+    seen.add(parent.id);
+    if (!parent.open && parent.condition !== "broken") return false;
+    child = parent;
   }
   return item.location === s.current || r.players.some((p) => p.id === item.ownerId) || localCreatures(s).some((c) => c.id === item.ownerId);
 }
@@ -2642,10 +2647,19 @@ function planEntity(r, s, actor, attempt, find, { exactIds = false } = {}) {
   if (attempt.verb === "put") {
     const item = find(s, r, attempt.item);
     if (!item || item.ownerId !== actor.id || target.type !== "container" || !target.open || target.ownerId !== actor.id || item.id === target.id) return blocked("Choose a carried item and an open container you carry.");
+    if (item.containerId === target.id || (target.contents || []).includes(item.id)) return blocked("That item is already in this container.");
+    if (item.containerId) {
+      const oldParent = s.items[item.containerId];
+      if (!oldParent || oldParent.type !== "container" || oldParent.ownerId !== actor.id || !(oldParent.contents || []).includes(item.id)) return blocked("The item has inconsistent or unavailable container ownership.");
+    }
     let parent = target;
-    for (let n = 0; parent && n < 256; n++) {
+    const seen = /* @__PURE__ */ new Set();
+    while (parent) {
+      if (seen.has(parent.id)) return blocked("The container ancestry is invalid.");
+      seen.add(parent.id);
       if (parent.id === item.id) return blocked("A container cannot contain itself or its parent.");
-      parent = s.items[parent.containerId];
+      if (parent.containerId && !s.items[parent.containerId]) return blocked("The container ancestry is incomplete.");
+      parent = parent.containerId ? s.items[parent.containerId] : null;
     }
     if ((target.contents || []).length >= 8) return blocked("That container is full (eight objects).");
     return { ...p, itemId: item.id };
@@ -2754,6 +2768,14 @@ function resolveEntity(r, s, actor, p, success) {
     }
     case "put": {
       const item = s.items[p.itemId];
+      if (!item || !target || target.type !== "container" || !target.open || target.ownerId !== actor.id || item.ownerId !== actor.id || item.id === target.id || item.containerId === target.id || (target.contents || []).includes(item.id)) return { success: false, blocked: true, text: "The item or container is no longer available for placement." };
+      let oldParent = null;
+      if (item.containerId) {
+        oldParent = s.items[item.containerId];
+        if (!oldParent || oldParent.type !== "container" || oldParent.ownerId !== actor.id || !(oldParent.contents || []).includes(item.id)) return { success: false, blocked: true, text: "The item has inconsistent or unavailable container ownership." };
+      }
+      if ((target.contents || []).length >= 8) return { success: false, blocked: true, text: "That container is full (eight objects)." };
+      if (oldParent) oldParent.contents = oldParent.contents.filter((id) => id !== item.id);
       target.contents ||= [];
       target.contents.push(item.id);
       item.containerId = target.id;
