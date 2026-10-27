@@ -6,7 +6,7 @@
 
 The tested foundation already protects multiplayer turn ownership, authoritative dice/state, exact item identities, ownership and saves. It is not a finished creative DM or a physically accepted game-night build. Passing tests does not establish fun, truthful prose, or every possible action.
 
-Luna is useful for small tasks with explicit inputs, allowed files and observable results. It is not an appropriate sole designer/reviewer for a new mechanic, save format, network protocol or AI authority boundary. No architecture can make arbitrary unreviewed code changes harmless.
+Luna can complete substantial predesigned milestones autonomously when file boundaries, acceptance criteria and escalation rules are explicit. Small commits are an internal implementation practice, not a requirement to ask the owner between steps. It is not an appropriate sole designer/reviewer for a new mechanic, save format, network protocol or AI authority boundary. No architecture can make arbitrary unreviewed code changes harmless.
 
 ## Task lanes
 
@@ -16,7 +16,7 @@ Luna is useful for small tasks with explicit inputs, allowed files and observabl
 | Yellow | A specified visual/copy adjustment, licensed sprite integration, a small adapter or renderer change | A clear reference/acceptance case, screenshots when relevant, and SOL or human review before promotion. Some frontend files also contain critical controller code. |
 | Red | New action behavior, physics/materials, rewards/difficulty, NPC/item aliases, save migrations, multiplayer/credentials, provider/quota settings, AI validation, new region types, build/security rules | SOL designs the change and acceptance tests; Luna may implement a bounded part. Strong review is required. |
 
-Do not give Luna an open-ended “build the rest of the game” task. Break the work into approved small changes. Major world expansion and travel voting still wait for the physical game-night gate.
+Give Luna a complete milestone rather than an undefined “build the rest of the game” request. It may work continuously through the milestone, commit intermediate steps, fix in-scope failures and queue independent blocked items for one stronger review. See [the assigned game-night presentation and QA milestone](LUNA_MILESTONE_GAME_NIGHT.md). This is an explicitly specified yellow-lane assignment; it does not expand the content-only checker. Major world expansion and travel voting still wait for the physical game-night gate.
 
 ## First enforced content lane
 

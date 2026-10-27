@@ -4,6 +4,8 @@
 
 **Cheaper-worker foundation:** [review and enforcement](FOUNDATION_FOR_CHEAPER_WORKERS_2026-10-27.md) and [Luna task guide](LUNA_WORKFLOW.md). The foundation now includes content-task scope enforcement before and after offline verification. The latest integrated verification passes 184 tests and checks seven generated outputs. Browser/full-heist and archived Mac-candidate evidence below remains the earlier `840ba59` readiness checkpoint; live-model and physical acceptance gates are unchanged.
 
+**Next autonomous Luna milestone:** [finish existing game-night presentation and browser QA](LUNA_MILESTONE_GAME_NIGHT.md). This is an assigned work package, not completed implementation or new acceptance evidence. Luna may execute its full queue without approval between internal steps; stronger review is batched at delivery.
+
 ## Completed repairs
 
 - **Native fallback grounding:** explicit ignition, vocal calming and treatment requests validate their targets before generic tavern fallback. Missing patients, absent creatures and unavailable claimed carried items cannot silently become unrelated healing, dancing or fireplace actions. This is bounded grammar, not general language understanding. Some complex wording is rejected; legacy string-only stolen inventory has not been migrated into canonical item instances. [Repair and limits](OFFLINE_FALLBACK_REPAIR_2026-10-27.md).
