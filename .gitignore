@@ -25,3 +25,6 @@ artifacts/
 .openai/local/
 # Site deployment identity is deliberately not imported
 .openai/
+
+# Local validation tools, model caches and scratch work
+/work/

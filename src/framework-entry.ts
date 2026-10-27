@@ -1,3 +1,4 @@
+import {bindRegionStorage} from '../public/campaign.js';
 // A game plugin and narrow persistence/security extension of the real PartyFrame runtime.
 // The vendored framework remains the owner of Colyseus sessions, roster, clocks,
 // reconnection, lobby lifecycle, projections, rate limits, and bot scheduling.
@@ -95,6 +96,7 @@ export class ChaosPartyRoom extends PartySessionRoom {
       if(services.store.rooms[this.state.publicCode])this.state.publicCode=await generateUniqueRoomCode(async code=>!!services.store.rooms[code]||liveRooms.has(code));
       room=createRoom({code:this.state.publicCode,seed:randomInt(1,0xffffffff),reactionMs:options.reactionMs||10000});
     }
+    if(services.store.regionStorage)bindRegionStorage(room,services.store.regionStorage(room.code));
     room.ai=services.ai.status();
     if(room.turn?.ai?.status==='thinking')room.turn.ai={status:'fallback',reason:'The local model was interrupted by a restart.'};
     this.gameState={room,seatMap:{},receipts:{},errors:{}};this.rng.restore(room.seed);
@@ -207,7 +209,7 @@ export class ChaosPartyRoom extends PartySessionRoom {
   }
   private interpretAcceptedTurn(){
     const room=this.tavern,turn=room.turn,status=services.ai.status();
-    if(!turn||turn.worldAction||this.interpretedTurn===turn.id)return;
+    if(!turn||turn.worldLocked||this.interpretedTurn===turn.id)return;
     this.interpretedTurn=turn.id;
     if(!status.available){turn.ai={status:'fallback',reason:status.message};room.revision++;this.finishTick(this.buildContext(Date.now()));return;}
     turn.ai={status:'thinking',model:status.model};room.revision++;this.finishTick(this.buildContext(Date.now()));
@@ -230,7 +232,7 @@ export class ChaosPartyRoom extends PartySessionRoom {
   private checkpoint(){
     if(!this.tavern||this.tavern.revision===this.savedRevision)return;
     try{services.store.checkpoint(this.tavern);this.savedRevision=this.tavern.revision;this.lastSaved=structuredClone(this.tavern);}
-    catch(e){if(this.lastSaved)(this.gameState as any).room=structuredClone(this.lastSaved);throw e;}
+    catch(e){if(this.lastSaved){(this.gameState as any).room=structuredClone(this.lastSaved);bindRegionStorage((this.gameState as any).room,services.store.regionStorage(this.lastSaved.code));}throw e;}
   }
   protected override projectGameState(now:number){
     if(!this.tavern||this.tavern.revision===this.projectedRevision)return;

@@ -1,5 +1,7 @@
 # Dynamic object proof
 
+For the later persistent campaign changes and current limitations, see [PERSISTENT_CAMPAIGN.md](PERSISTENT_CAMPAIGN.md). This document describes the earlier proof and retains its historical limits.
+
 This development slice extends the recovered tavern and its PartyFrame/Colyseus authority. It introduces shared object templates and saved instances, with no per-creation art or recipe. It is not a complete generated campaign or unrestricted physics simulation.
 
 ## Try it privately

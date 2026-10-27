@@ -1,4 +1,5 @@
-import {ensureItems,itemPlan,resolveItem,currentLocation} from './world-items.js';
+import {campaignView} from './campaign.js';
+import {ensureItems,itemPlan,resolveItem,currentLocation,advanceWorld} from './world-items.js';
 import {OBJECTS,objectState,environmentTarget,environmentCheck,interactEnvironment,advanceEnvironment} from './environment.js';
 import {selectD20} from './vendor/dnd5e-advantage.js';
 // Authoritative game plugin, shared by PartyFrame and the labeled solo mode.
@@ -70,8 +71,10 @@ export function editPlayer(r,id,profile,now=Date.now()) {
   touch(r,now); return p;
 }
 export function publicRoom(r) {
+  if(r.world.expedition)ensureItems(r);
   const {requests,seed,...s}=r;
-  return { ...structuredClone(s), players:r.players.map(({token,pin,...p})=>structuredClone(p)) };
+  const projected={...s,world:{...s.world,...(s.world.expedition?{expedition:campaignView(r)}:{})}};
+  return { ...structuredClone(projected), players:r.players.map(({token,pin,...p})=>structuredClone(p)) };
 }
 export function startGame(r,now=Date.now()) {
   if(r.phase!=='lobby') fail('PHASE','This story has already started.');
@@ -139,7 +142,7 @@ export function submit(r, playerId, input, now=Date.now()) {
   const e=event(r,'declaration',text,now,{playerId:p.id,name:p.name});
   r.round++; r.turn={id:uid(),seq:e.id,actorId:p.id,action:text,intent,target:targetFor(r,p,text),at:now,
     deadline:now+r.reactionMs,reactions:[]};
-  if(dynamic){r.turn.worldAction=true;const item=r.world.expedition.items[dynamic.targetId||dynamic.itemId||dynamic.sourceIds?.[0]];r.turn.target={kind:'world',name:item?.name||dynamic.destination||'materials',position:item?.ownerId?[480,335]:item?.position||[480,490]};}
+  if(dynamic){r.turn.worldAction=true;r.turn.worldLocked=dynamic.verb!=='unsupported';const key=dynamic.targetId||dynamic.itemId||dynamic.sourceIds?.[0];const item=r.world.expedition.items[key]||r.world.expedition.creatures?.[key];r.turn.target={kind:'world',entityId:item?.id,name:item?.name||dynamic.destination||'materials',position:item?.ownerId?[480,335]:item?.position||[480,490]};}
   r.phase='react'; r.deadline=r.turn.deadline; r.result=null; p.status='committed';p.cover=false;
   const ack={ok:true,accepted:true,kind:'action',seq:e.id,at:now,turnId:r.turn.id};
   r.requests[key]=ack;
@@ -159,7 +162,8 @@ function resolve(r,now) {
   const helpers=sorted.filter(x=>x.kind==='assist'||(x.kind==='custom'&&!/\b(stop|prevent|block|intervene)\b/i.test(x.text)));
   const blockers=sorted.filter(x=>x.kind==='intervene'||(x.kind==='custom'&&/\b(stop|prevent|block|intervene)\b/i.test(x.text)));
   const hostile=t.worldAction||['attack','steal','magic','break'].includes(t.intent);
-  const dynamic=t.worldAction?itemPlan(r,p,t.action):null;
+  const dynamic=t.worldAction?itemPlan(r,p,t.rulesText||t.action):null;
+  if(dynamic&&t.worldBlueprint)Object.assign(dynamic,t.worldBlueprint);
   const check=dynamic||environmentCheck(r.world,t.target,t.intent,t.rulesText||t.action);
   const automatic=!!check?.automatic;
   const situation=[];
@@ -170,14 +174,16 @@ function resolve(r,now) {
   if(t.intent==='steal'&&r.world.guards==='distracted'){advantage=1;situation.push('Guards distracted');}
   if(['sneak','steal'].includes(t.intent)&&Object.entries(r.world.objects||{}).filter(([id,s])=>OBJECTS[id]?.lit&&s.lit===false).length>=3){advantage=1;situation.push('Room dimmed');}
   if(['dance','flee','attack','break'].includes(t.intent)&&Object.values(r.world.objects||{}).some(s=>s.spilled)){advantage=-1;situation.push('Slippery floor');}
+  if(p.injuries?.length&&check?.ability==='Athletics'){advantage=-1;situation.push('Injured');}
   const dice=automatic?[]:[1+Math.floor(random(r)*20)];
   if(!automatic&&advantage)dice.push(1+Math.floor(random(r)*20));
   let roll=automatic?0:advantage?selectD20(dice,advantage):dice[0],rerolled=null;
   if(!automatic&&p.perk==='lucky'&&roll<=3) {rerolled=roll;roll=1+Math.floor(random(r)*20);}
-  const skill=ROLES[p.role].skills.includes(t.intent)||(t.intent==='interact'&&((check?.ability==='Athletics'&&p.role==='knight')||(check?.ability==='Arcana'&&p.role==='wizard')||(check?.ability==='Sleight of hand'&&p.role==='rogue')))?3:0;
+  const skill=ROLES[p.role].skills.includes(t.intent)||(['interact','world'].includes(t.intent)&&((check?.ability==='Athletics'&&p.role==='knight')||(check?.ability==='Arcana'&&p.role==='wizard')||(check?.ability==='Sleight of hand'&&p.role==='rogue')))?3:0;
   const charm=p.perk==='charming'&&['social','dance'].includes(t.intent)?2:0;
   const assistance=Math.min(4,helpers.length),interference=hostile?Math.min(4,blockers.length):0;
-  const modifier=skill+charm+assistance-interference;
+  const training=Math.min(3,Math.floor((p.level||1)/3));
+  const modifier=skill+charm+assistance-interference+training;
   const dc=automatic?0:check?.dc??({heal:6,flee:r.quest.crown?12:8,inspect:9,social:10,dance:9,sneak:10,steal:13,magic:12,attack:12,break:11,weird:10,interact:10})[t.intent];
   const critical=roll===20;let success=automatic||critical||(roll!==1&&roll+modifier>=dc);
   const effects=[],changes=[]; let narration='',unsupported=false;
@@ -255,6 +261,7 @@ function resolve(r,now) {
       fx('weird');
       success=false;unsupported=true;narration=`${p.name} tries “${t.action}”. This attempt is not supported yet. Name a person or object and try inspecting, moving, taking, breaking, talking, hiding, or casting a spell.`;break;
   }
+  for(const change of advanceWorld(r))add(change);
   if(success&&!automatic&&!environmental?.blocked)p.score+=critical?5:2;
   if(currentLocation(r)==='tavern')for(const change of advanceEnvironment(r.world))add(change);
   if(Object.values(r.world.objects||{}).some(s=>s.condition==='burning'))r.chaos++;
@@ -282,6 +289,7 @@ function resolve(r,now) {
     r.chaos=5;r.world.guards='alert';add('Guard sweep: exposed players −1 HP');
     narration+=' The guards sweep the room. Anyone who stayed in the open takes a hit.';effects.push({verb:'alarm',actorId:p.id,target:'guard'});
   }
+  for(const rp of r.players){const level=Math.min(20,1+Math.floor(rp.score/20));if(level>(rp.level||1)){const gained=level-(rp.level||1);rp.maxHp+=gained*2;rp.hp=Math.min(rp.maxHp,rp.hp+gained*2);add(rp.name+' LEVEL '+level);}rp.level=level;}
   for(const rp of r.players) if(rp.hp===0)rp.status='knocked out';
   if(r.quest.crown)r.world.guards='searching';
   r.lastActorId=p.id;r.priorityUntil=now+12500;
@@ -295,13 +303,14 @@ export function advance(r,now=Date.now()) {
   if(r.paused)return false;
   if(r.phase==='react'&&now>=r.deadline) {resolve(r,now);return true;}
   if(r.phase==='reveal'&&now>=r.deadline) {
-    r.phase=r.quest.escaped?'ended':'open';r.deadline=0;
+    r.phase=r.quest.escaped&&!r.world.expedition?.campaign?.continuing?'ended':'open';r.deadline=0;
     for(const p of r.players)if(p.hp>0)p.status=p.cover?'hiding':'ready';
     touch(r,now);return true;
   }
   return false;
 }
 export function hostCommand(r,command,now=Date.now()) {
+  if(command.type==='continueCampaign'){ensureItems(r).campaign.heistCompleted=r.quest.escaped;ensureItems(r).campaign.continuing=true;r.phase='open';r.quest.escaped=false;r.deadline=0;event(r,'story','The crown job was only the beginning. The road beyond the tavern is open.',now);touch(r,now);return;}
   if(command.type==='start')return startGame(r,now);
   if(command.type==='pause') {
     if(!r.paused) {r.remaining=Math.max(0,r.deadline-now);r.paused=true;} else {r.paused=false;if(r.deadline){r.deadline=now+(r.remaining||0);if(r.turn&&r.phase==='react')r.turn.deadline=r.deadline;}}

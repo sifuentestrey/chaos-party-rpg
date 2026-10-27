@@ -1,5 +1,5 @@
-import {currentLocation,visibleItems} from './world-items.js';
-import {drawItemGlyph,drawGeneratedLocation} from './world-render.js';
+import {currentLocation,visibleItems,visibleCreatures} from './world-items.js';
+import {drawItemGlyph,drawGeneratedLocation,drawBeast} from './world-render.js';
 import {drawEnvironment} from './environment-render.js';
 import {approachPath,pointOnPath} from './navigation.js';
 import { seats as slots, landmarks as npcPositions, targetPosition, actorPosition, recoil } from './tavern-motion.js';
@@ -91,7 +91,8 @@ export class TavernScene {
     }
     if(outdoors)drawGeneratedLocation(g,r);
     const layers=outdoors?[]:drawEnvironment(g,r,this.reduced?0:t,sprites);
-    if(r)for(const item of visibleItems(r).filter(i=>!i.ownerId))layers.push({y:item.position[1],draw:()=>{drawItemGlyph(g,item,...item.position,2);this.label(g,item.name,item.position[0],item.position[1]+25,'#e5d0a3',10);}});
+    if(r)for(const item of visibleItems(r).filter(i=>!i.ownerId))layers.push({y:item.position[1],draw:()=>{drawItemGlyph(g,item,...item.position,item.type==='fixture'?3:2);this.label(g,item.name,item.position[0],item.position[1]+25,'#e5d0a3',10);}});
+    if(r&&outdoors)for(const c of visibleCreatures(r)){const hit=r.result?.success&&r.result.target?.entityId===c.id&&['attack','use'].includes(r.turn?.ai?.verb||r.turn?.action?.split(' ')[0]?.toLowerCase());const pos=[c.position[0]+(hit?recoil(t-this.fxAt,this.reduced):0),c.position[1]];layers.push({y:pos[1],draw:()=>{if(c.kind==='beast'){drawBeast(g,c,...pos,hit&&t-this.fxAt<650);this.label(g,c.name,pos[0],pos[1]+19,c.attitude==='friendly'?'#a6d8a4':'#e9beaf',10);this.label(g,c.hp+'/'+c.maxHp+' · '+c.attitude,pos[0],pos[1]+31,'#eee0c8',9);}else this.person(g,{...c,avatar:c.appearance,connected:true,npc:true,hit:hit&&t-this.fxAt<650},pos,second,0,t);}});}
     // Render all 24 possible player slots; labels are separate from their sprite.
     const players=r?.players||[];
     if(!players.length){
@@ -128,7 +129,6 @@ export class TavernScene {
       if(!this.escapePaths.has(p.id))this.escapePaths.set(p.id,[...approachPath(home,[480,500],r.world),[480,515]]);
       return pointOnPath(this.escapePaths.get(p.id),Math.max(0,(t-this.fxAt-i*70)/1800));
     }
-    if(turn?.actorId===p.id&&turn.ai?.status==='thinking')return home;
     if(turn?.actorId!==p.id)return home;
     const target=targetPosition(turn.target,r.players,home);
     if(this.reduced)return home;
@@ -159,7 +159,7 @@ export class TavernScene {
     const crowded=(this.state?.players.length||0)>12&&!p.npc;
     const scale=crowded?2:2.5;
     g.drawImage(sprite,Math.round(x-10*scale),Math.round(y-28*scale+bob),20*scale,28*scale);
-    if(!p.npc&&r){const carried=visibleItems(r).filter(item=>item.ownerId===p.id);for(const item of carried.filter(i=>i.equipped))drawItemGlyph(g,item,x+(item.slot==='hand'?23:0),y-(item.slot==='body'?10:item.slot==='hand'?9:20)*scale+bob,item.slot==='head'?2:1.5);const held=carried.find(i=>!i.equipped);if(held)drawItemGlyph(g,held,x+23,y-24+bob,1.5);}
+    if(r){const carried=visibleItems(r).filter(item=>item.ownerId===p.id);for(const item of carried.filter(i=>i.equipped))drawItemGlyph(g,item,x+(item.slot==='hand'?23:0),y-(item.slot==='body'?10:item.slot==='hand'?9:20)*scale+bob,item.slot==='head'?2:1.5);const held=carried.find(i=>!i.equipped);if(held)drawItemGlyph(g,held,x+23,y-24+bob,1.5);}
     if(!p.ambient)this.label(g,p.name?.slice(0,crowded&&!active?12:16)||'Adventurer',x,p.id==='guard'?y-77:y+14,active?'#ffe4a2':p.isBot?'#bdb4cb':'#f5e7cf',crowded?9:11);
     if(p.maxHp&&p.hp<p.maxHp){g.fillStyle='#261e2e';g.fillRect(x-17,y+19,34,3);g.fillStyle=p.hp<4?'#d96d7e':'#86b89b';g.fillRect(x-17,y+19,34*p.hp/p.maxHp,3);}
     if(reaction){const glyph={assist:'+',intervene:'!',flee:'»',custom:'?'}[reaction.kind];g.fillStyle='#221b30';g.fillRect(x+17,y-69,18,18);this.label(g,glyph,x+26,y-55,'#c2afe9',14);}

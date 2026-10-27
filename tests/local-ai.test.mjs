@@ -30,7 +30,7 @@ test('actual multiplayer locks before AI reply, calls AI once, preserves reactio
   try{
     const host=await createHost(app);clients.push(host);const a=await joinPlayer(app,host.room.roomId,{token:'ai-network-actor-token',name:'Jinx'}),b=await joinPlayer(app,host.room.roomId,{token:'ai-network-other-token',name:'Moss'});clients.push(a,b);await host.request('host:command',{command:{type:'start'}});
     const [ack,loser]=await Promise.all([a.request('player:submit',{requestId:'first',text:'Make that carpet mine',plan:{verb:'take',target:'crown'}}),b.request('player:submit',{requestId:'second',text:'Steal the crown'})]);
-    assert.equal(ack.accepted,true);assert.equal(loser.ok,false);const room=()=>app.rooms()[host.identity.room.code];assert.equal(room().turn.ai.status,'thinking');assert.equal(room().turn.intent,'weird');
+    assert.equal(ack.accepted,true);assert.equal(loser.ok,false);const room=()=>app.rooms()[host.identity.room.code];assert.equal(room().turn.ai.status,'thinking');assert.equal(room().turn.intent,'world');assert.equal(room().turn.worldLocked,false);
     assert.equal((await a.request('player:submit',{requestId:'first',text:'Changed my mind'})).duplicate,true);
     await b.request('player:submit',{requestId:'rx',kind:'reaction',reaction:'assist',turnId:ack.turnId,text:'I distract Marnie'});
     for(let i=0;i<50&&room().turn.ai.status==='thinking';i++)await pause(20);
