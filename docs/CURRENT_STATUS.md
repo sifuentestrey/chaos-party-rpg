@@ -2,7 +2,7 @@
 
 **Updated: October 27, 2026 (UTC).** Working branch: `fix/grounded-action-contract`. Read this before interpreting older checkpoint reports as current status. See Git history and each evidence report for the exact code tested.
 
-**Cheaper-worker foundation:** [review and enforcement](FOUNDATION_FOR_CHEAPER_WORKERS_2026-10-27.md) and [Luna task guide](LUNA_WORKFLOW.md). The latest integrated verification passes 169 tests and checks seven generated outputs. Browser/full-heist and archived Mac-candidate evidence below remains the earlier `840ba59` readiness checkpoint; live-model and physical acceptance gates are unchanged.
+**Cheaper-worker foundation:** [review and enforcement](FOUNDATION_FOR_CHEAPER_WORKERS_2026-10-27.md) and [Luna task guide](LUNA_WORKFLOW.md). The foundation now includes content-task scope enforcement before and after offline verification. The latest integrated verification passes 184 tests and checks seven generated outputs. Browser/full-heist and archived Mac-candidate evidence below remains the earlier `840ba59` readiness checkpoint; live-model and physical acceptance gates are unchanged.
 
 ## Completed repairs
 
@@ -13,7 +13,7 @@
 
 ## Completed readiness checks
 
-- **169 automated tests passed**, and the build passed, in the later foundation verification run (the earlier readiness run had 151). This includes multiplayer, restart/rejoin, exact identities, state stress, target grounding, narration context, quota-aware qualification tooling, content validation, safe test isolation and generated-output enforcement. These tests include synthetic model replies; they do not establish live model quality.
+- **184 automated tests passed**, and the build passed, in the later foundation verification run (the earlier readiness run had 151). This includes multiplayer, restart/rejoin, exact identities, state stress, target grounding, narration context, quota-aware qualification tooling, content validation, safe test isolation and generated-output enforcement. These tests include synthetic model replies; they do not establish live model quality.
 - **Tavern browser check:** two independent phone-sized browsers completed six normally paced opening rounds in **92.723 seconds**, then the complete crown heist. No browser errors. This is cloud-browser evidence, not two physical phones or proof of enjoyment.
 - **Inventory/campaign browser checks:** creation, wearing, transfer, travel, quest completion, region restoration, server restart and character rejoin. The narrative browser fixture also passed with explicitly synthetic replies and no story-panel overflow at 1280×720.
 - **Standalone packaging:** official pinned Intel and Apple Silicon Node runtimes were checksum verified. The bundled server was tested outside the checkout without development dependencies. The package includes a dated source manifest and a [short physical test guide](TEST_BEFORE_GAME_NIGHT.md); neither is Mac acceptance.

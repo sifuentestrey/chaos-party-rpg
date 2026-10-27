@@ -29,7 +29,7 @@ For a text-only task:
 1. Record the base commit and exact wording goal. Work on a small separate branch and preserve unrelated files.
 2. Edit only `public/content/campaign-text.json` by hand. Keep the existing keys and array counts. Do not modify the validator or tests to make bad data pass.
 3. Run `npm run build`. It regenerates `public/content/campaign-text.generated.js` and the bundled `src/framework.mjs`; include their resulting diffs, but never hand-edit them.
-4. Run `npm run verify`. If it reports generated drift, regenerate and inspect the generated diff before rerunning. Do not suppress the check.
+4. Run `node scripts/accept-content-task.mjs <approved-full-base-sha>`. This enforces the content file boundary before and after `npm run verify`. If it reports generated drift, regenerate and inspect the generated diff before rerunning. Do not suppress the check.
 5. Inspect `git diff --name-only`. Stop and report if the task needs any additional engine, schema, test-oracle or infrastructure edits.
 6. Commit the small patch with the verification result. Passing CI is evidence, not automatic approval to merge or deploy.
 
@@ -65,3 +65,17 @@ Use SOL once to define a consequential change and its boundaries, then let Luna 
 Read only the assigned paths and their relevant tests after the short handoff. Keep full verification output in an ignored log file and report its summary plus any failures; do not paste the whole suite or repeatedly enumerate assets. Do not manufacture busywork or add features just to keep a worker active when the next real acceptance gate is blocked.
 
 Live Groq calls, `ai:check`, qualification scripts in live mode and provider configuration are outside ordinary Luna tasks. They consume a separate game-service allowance and need the existing approved procedure. A new task/chat is not a quota reset. No paid service, deployment, model activation or save replacement follows from this guide.
+
+## Enforced content-task acceptance
+
+A reviewer records the full immutable base commit **before** Luna starts. Run:
+
+```sh
+node scripts/accept-content-task.mjs <approved-full-base-sha>
+```
+
+The content policy permits exactly the JSON catalog and its two generated outputs. It checks the entire change since that base, including committed, staged, working-tree and non-ignored untracked files. It rejects changes outside those paths, missing files, symlinks, executable modes and non-ancestor/abbreviated bases. Scope is checked before and after offline verification. Documentation or test changes need their own task and review; do not expand the content allowlist to accommodate them.
+
+The reviewer chooses and retains the base SHA. Luna must not move the base to hide changes. Run the approved checker from trusted code: inspect that acceptance/check/verification scripts, package scripts, tests and CI match the approved base before executing worker code. This local check is not independent protection against an assistant deliberately modifying the checker, choosing another base, racing filesystem changes or editing ignored local files. Ignored data and credentials must remain outside the worker's assignment; isolated checkouts and separate disposable test data remain required. Passing this command does not authorize merge, deployment or a new mechanic.
+
+Review still checks wording for unsupported promises, invented world facts and misleading rewards. Automated schema checks cannot judge those meanings. A worker reports the exact base, command/result, changed paths and unresolved questions. Never weaken an oracle or update a golden baseline merely because a task fails.
