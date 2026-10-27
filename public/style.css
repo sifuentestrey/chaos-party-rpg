@@ -94,3 +94,28 @@
   .tavern-tv .story-card>.dm-story{grid-column:2;grid-row:1/span 3;margin:0;padding:0 0 0 14px;background:none}
   .tavern-tv .story-card:has(.dm-story)>.story-meta{grid-column:1/-1;margin:0}
 }
+
+/* Luna polish marathon: readable touch controls and narrow-screen content. */
+@media(max-width:600px){
+  .controller-shell{padding-inline:12px}
+  .action-card .button,.quick-actions .quick-action,.object-actions button,.choice,.creator-tab,.host-controls .button,.link-button{min-height:44px}
+  .quick-actions{gap:8px;flex-wrap:wrap}
+  .quick-action{max-width:100%;overflow-wrap:anywhere;white-space:normal}
+  .controller-status h2,.sidebar-card h3,.regional-quest h3,.regional-objective,.object-control summary,.object-control small,.saved-room,.recovery,.controller-story{overflow-wrap:anywhere;word-break:normal}
+  .player-card{min-width:0;gap:10px;padding:13px}
+  .player-card>div{min-width:0}
+  .player-stats{gap:8px;flex-wrap:wrap}
+  .inventory-list{gap:7px;flex-wrap:wrap}
+  .item{max-width:100%;overflow-wrap:anywhere}
+  .environment-controls>summary,.object-control>summary{min-height:44px;display:flex;align-items:center}
+  .object-actions{gap:8px}
+  .join-callout,.saved-room{min-width:0;flex-wrap:wrap;overflow-wrap:anywhere}
+  .roster-name{max-width:clamp(90px,32vw,170px);white-space:normal;overflow-wrap:anywhere}
+  .dialogue,dialog{max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto}
+  input,textarea,select{font-size:16px}
+}
+:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+button:hover:not(:disabled),.quick-action:hover:not(:disabled){filter:brightness(1.14)}
+button:active:not(:disabled){transform:translateY(1px)}
+button.selected,[aria-pressed="true"]{box-shadow:0 0 0 2px var(--gold)}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
