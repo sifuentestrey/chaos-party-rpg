@@ -11,7 +11,7 @@ const bundle=path.join(dir,'server.cjs');
 fs.copyFileSync(path.resolve('release/Chaos_Party_Mac/server.cjs'),bundle);
 fs.cpSync(path.resolve('release/Chaos_Party_Mac/public'),path.join(dir,'public'),{recursive:true});
 const require=createRequire(import.meta.url),{createGameServer}=require(bundle);
-const app=await createGameServer({port:0,dataDir:path.join(dir,'data')});
+const app=await createGameServer({port:0,host:'127.0.0.1',dataDir:path.join(dir,'data')});
 const clients=[];
 try{
   const origin='http://127.0.0.1:'+app.port;

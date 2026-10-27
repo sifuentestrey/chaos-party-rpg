@@ -5,10 +5,12 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import {pathToFileURL} from 'node:url';
 import {createGameServer} from '../server.mjs';
+import {skipBrowserTimer} from './browser-timers.mjs';
 const modulePath=process.env.CHAOS_PLAYWRIGHT_MODULE||'/opt/codex/runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.js';
 const playwright=await import(pathToFileURL(modulePath));const {chromium}=playwright.default||playwright;
 const output=path.resolve(process.env.CHAOS_QA_OUTPUT||'artifacts/beta');fs.mkdirSync(output,{recursive:true});
-const app=await createGameServer({port:0,dataDir:fs.mkdtempSync(path.join(os.tmpdir(),'chaos-beta-browser-'))});
+const dataDir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-beta-browser-'));
+const app=await createGameServer({port:0,host:'127.0.0.1',dataDir});
 const browser=await chromium.launch({executablePath:process.env.CHAOS_CHROMIUM||'/usr/bin/chromium',args:['--no-sandbox']});
 const errors=[],rounds=[];
 try{
@@ -24,21 +26,35 @@ try{
   }
   await host.locator('[data-action=startStory]').click();await host.screenshot({path:path.join(output,'01-tavern.png')});
   let turn=0;
-  const skip=async()=>{await host.locator('[data-action=settings]').click();await host.locator('[data-host=resolve]').click();};
+  const skip=()=>skipBrowserTimer(host,()=>app.rooms()[code]);
+  const waitForState=async predicate=>{
+    const end=Date.now()+15000;
+    while(!predicate()){
+      if(Date.now()>end)throw Error('The browser action did not reach its expected server phase.');
+      await new Promise(resolve=>setTimeout(resolve,25));
+    }
+  };
   const action=async(text,fast=false)=>{
     const p=phones[turn%2],other=phones[(turn+1)%2],room=app.rooms()[code];
     if(room.players[turn%2].hp<=2)text='Rest and heal';
-    await p.waitForSelector('#action-text',{timeout:20000});await p.locator('#action-text').fill(text);await p.locator('#action-form button').click();await other.waitForSelector('[data-action=react]');await other.locator('[data-action=react][data-kind=assist]').click();
+    await p.waitForSelector('#action-text',{timeout:20000});await p.locator('#action-text').fill(text);await p.locator('#action-form button').click();
+    await waitForState(()=>app.rooms()[code].phase==='react'&&app.rooms()[code].turn.action===text);
+    await other.waitForSelector('[data-action=react]');await other.locator('[data-action=react][data-kind=assist]').click();
     if(turn===1){await host.waitForTimeout(950);await host.screenshot({path:path.join(output,'02-approach.png')});}
     if(fast)await skip();
-    await host.waitForSelector('.dice-result',{timeout:15000});await host.waitForTimeout(1100);
+    try{await host.waitForSelector('.dice-result',{timeout:15000});}
+    catch(error){const state=app.rooms()[code];console.error(JSON.stringify({requested:text,phase:state.phase,paused:state.paused,lastAction:state.result?.action,errors}));throw error;}
+    await host.waitForTimeout(1100);
     const result=app.rooms()[code].result;rounds.push({action:text,success:result.success,automatic:result.automatic,changes:result.changes});
     if(turn<6)await host.screenshot({path:path.join(output,`result-${turn}.png`)});
     if(fast)await skip();
-    if(!app.rooms()[code].quest.escaped)await p.waitForSelector('#action-text',{timeout:12000});turn++;console.log(JSON.stringify(rounds.at(-1)));return result;
+    // The next actor is the other controller; this actor may still have a fairness cooldown.
+    if(!app.rooms()[code].quest.escaped)await other.waitForSelector('#action-text',{timeout:20000});turn++;console.log(JSON.stringify(rounds.at(-1)));return result;
   };
   // Six rounds at real reaction/reveal pace: approximately ninety seconds.
+  const normalStarted=Date.now();
   for(const text of ['Extinguish the fireplace','Smash the upper left table','Spill the barrel','Open the tavern door','Steal the tavern rug','Hide behind the upper right table'])await action(text);
+  const normalPaceElapsedMs=Date.now()-normalStarted;
   const live=()=>app.rooms()[code];let r=live();assert.equal(r.world.objects.hearth.lit,false);assert.equal(r.world.objects.barrel.spilled,true);assert.equal(r.world.objects.door.open,true);
   // Continue actual controller submissions with host-controlled timer skips.
   for(let i=0;i<8&&live().world.props.rug!==false;i++)await action('Steal the tavern rug',true);
@@ -52,8 +68,13 @@ try{
   for(let i=0;i<16&&!live().quest.escaped;i++)await action('Flee through the door with the crown',true);
   r=live();assert.equal(r.quest.escaped,true);
   await host.waitForTimeout(3200);
-  await host.screenshot({path:path.join(output,'03-victory.png')});await phones[0].screenshot({path:path.join(output,'04-controller.png'),fullPage:true});
+  for(const [index,phone] of phones.entries()){
+    const player=r.players[index];
+    await phone.getByText(`You have ${player.score} XP and ${player.gold} coins.`,{exact:false}).waitFor();
+    assert.equal((await phone.locator('.controller-status').innerText()).includes('You earned'),false);
+  }
+  await host.screenshot({path:path.join(output,'03-victory.png')});await phones[0].screenshot({path:path.join(output,'04-controller.png'),fullPage:true,mask:[phones[0].locator('.recovery')]});
   assert.deepEqual(errors,[]);
-  fs.writeFileSync(path.join(output,'browser-results.json'),JSON.stringify({errors,rounds,quest:r.quest,objects:r.world.objects,players:r.players.map(p=>({name:p.name,avatar:p.avatar,inventory:p.inventory}))},null,2));
+  fs.writeFileSync(path.join(output,'browser-results.json'),JSON.stringify({errors,normalPaceRounds:6,normalPaceElapsedMs,rounds,quest:r.quest,objects:r.world.objects,players:r.players.map(p=>({name:p.name,avatar:p.avatar,inventory:p.inventory}))},null,2));
   await context.close();console.log('BETA BROWSER PASS: live host, two browser controllers, reactive objects, complete heist.');
-}finally{await browser.close();await app.close();}
+}finally{await app.close();await browser.close();fs.rmSync(dataDir,{recursive:true,force:true});}

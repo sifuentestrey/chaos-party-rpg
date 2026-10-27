@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { build } from 'esbuild';
+import { createReleaseMetadata } from './release-metadata.mjs';
 const root=process.cwd(),out=path.join(root,'release','Chaos_Party_Mac');
 const downloads=process.env.CHAOS_RUNTIME_DOWNLOADS||path.resolve(root,'../runtime-downloads');
 fs.rmSync(out,{recursive:true,force:true});fs.mkdirSync(out,{recursive:true});
@@ -35,6 +37,9 @@ notices+='\nPartyFrame — '+fs.readFileSync(path.join(root,'vendor/partyframe/L
 fs.writeFileSync(path.join(out,'licenses','THIRD_PARTY_NOTICES.txt'),notices);
 for(const name of ['README.md','CREDITS.md','TEST_REPORT.md','RESEARCH.md','FOUNDATION_AUDIT.md'])if(fs.existsSync(path.join(root,name)))fs.copyFileSync(path.join(root,name),path.join(out,name));
 for(const name of ['BETA.md','BETA_AUDIT.md','LOCAL_AI.md'])if(fs.existsSync(path.join(root,'docs',name)))fs.copyFileSync(path.join(root,'docs',name),path.join(out,name));
+if(fs.existsSync(path.join(root,'docs','TEST_BEFORE_GAME_NIGHT.md')))fs.copyFileSync(path.join(root,'docs','TEST_BEFORE_GAME_NIGHT.md'),path.join(out,'TEST_BEFORE_GAME_NIGHT.md'));
+const releaseInfo=createReleaseMetadata({execGit:args=>execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','ignore']})});
+fs.writeFileSync(path.join(out,'release-info.json'),JSON.stringify(releaseInfo,null,2)+'\n');
 const launcher=`#!/bin/bash
 set -eu
 game_dir="$(cd "$(dirname "$0")" && pwd)"
