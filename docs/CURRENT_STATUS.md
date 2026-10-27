@@ -4,7 +4,9 @@
 
 **Cheaper-worker foundation:** [review and enforcement](FOUNDATION_FOR_CHEAPER_WORKERS_2026-10-27.md) and [Luna task guide](LUNA_WORKFLOW.md). The foundation now includes content-task scope enforcement before and after offline verification. The latest integrated verification passes 184 tests and checks seven generated outputs. Browser/full-heist and archived Mac-candidate evidence below remains the earlier `840ba59` readiness checkpoint; live-model and physical acceptance gates are unchanged.
 
-**Next autonomous Luna milestone:** [39-item polish and accessibility marathon](LUNA_POLISH_MARATHON.md), assigned on branch `luna/polish-and-accessibility` after playable-beta checkpoint `16e823c`. The prior [playable-beta results](LUNA_PLAYABLE_BETA_RESULTS.md) record presentation changes and passing offline/browser checks; the full quest/restart browser run used one controller while the two-controller run covered travel separately. The new queue includes closing that evidence gap. This is an assignment, not completed implementation or stronger acceptance. Luna may execute its full queue without approval between steps; review is batched at delivery. The working-branch label above describes the earlier foundation checkpoint.
+**Latest delivered Luna work:** [Polish marathon results](LUNA_POLISH_MARATHON_RESULTS.md), commit `da72db54f490cef62e7ea1f68b79737d1867fc96`, records all 39 dispositions and passing offline/browser checks, including a two-controller complete outdoor quest, revisit and restart/rejoin. Delivery is not stronger visual acceptance.
+
+**Next autonomous Luna milestone:** [Visual game-night release assignment](LUNA_VISUAL_GAME_NIGHT_RELEASE.md) on `luna/visual-game-night-release`: six continuous batches to materially improve outdoor art, TV composition, phone information density and the existing adventure ending. Assigned, not implemented. The first game-night release target and separate larger-world goals are defined there. Physical and live-AI gates remain open.
 
 ## Completed repairs
 
