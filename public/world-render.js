@@ -25,21 +25,28 @@ export function drawGeneratedLocation(g,room){
   const fill=(color,x,y,w,h)=>{g.fillStyle=color;g.fillRect(x,y,w,h);};
   fill(marsh?'#263e4a':ruins?'#292a3a':'#253d4c',0,0,960,540);
   fill(ruins?'#4b4959':marsh?'#45636a':'#416052',0,85,960,53);
+  // Layered, coordinate-derived silhouettes keep scenery stable across visits.
   for(let i=0;i<11;i++){
     const x=i*98-18,h=18+(i*17%35);
     if(ruins){fill(i%2?'#646171':'#555363',x,116-h,76,h);fill('#817b83',x+10,109-h,48,5);}
     else if(marsh){fill('#314c54',x,111-h,72,h);fill('#5b8279',x+9,102-h,42,4);}
-    else{fill(i%2?'#314f43':'#385748',x,109-h,84,h);fill('#59765c',x+12,103-h,52,5);}
+    else{fill(i%2?'#243e37':'#29463a',x+8,107-h,10,h+51);fill(i%2?'#315747':'#385f4a',x-3,102-h,82,h+8);fill(i%2?'#4f7556':'#57815d',x+7,94-h,64,h);fill('#73906a',x+20,91-h,38,7);fill('#87a276',x+28,87-h,18,4);}
   }
   fill(palette.ground,35,136,890,376);
+  // Low contrast grass/stone flecks add texture without creating new targets.
+  for(let i=0;i<70;i++){const x=46+(i*137)%862,y=150+(i*83)%350;fill(ruins?(i%3?'#777482':'#918987'):marsh?(i%3?'#55746a':'#789078'):(i%3?'#52725a':'#638263'),x,y,i%4===0?7:3,2);}
   g.beginPath();g.moveTo(440,512);g.bezierCurveTo(ruins?530:370,430,ruins?360:585,320,480,136);g.lineTo(548,136);g.bezierCurveTo(640,318,ruins?450:440,422,520,512);g.closePath();g.fillStyle=ruins?'#77736c':marsh?'#8a8064':'#a48b68';g.fill();
-  if(ruins){fill('#363542',91,160,72,68);fill('#716c6b',84,154,86,12);fill('#363542',797,179,57,91);fill('#716c6b',790,172,70,12);fill('#242635',439,136,16,62);fill('#8b8276',435,133,90,8);fill('#514e5a',457,143,47,4);}
+  if(ruins){
+    for(const [x,y,w,h] of [[91,160,72,68],[797,179,57,91]]){fill('#292a38',x-7,y-5,w+15,h+8);fill('#625d69',x,y,w,h);fill('#77717a',x+8,y+8,w-16,7);fill('#454451',x+12,y+20,w-24,h-20);fill('#817b7b',x-7,y-6,w+15,7);for(let row=0;row<3;row++)fill('#a29384',x+(row%2?5:-4),y+24+row*17,w/2,3);}
+    fill('#242635',439,136,16,62);fill('#8b8276',435,133,90,8);fill('#514e5a',457,143,47,4);
+    for(let i=0;i<9;i++){const x=65+i*99,y=485+(i%3)*8;fill('#686674',x,y,42,18);fill('#827b7e',x+4,y-4,34,4);fill('#4d4c5d',x+12,y+4,2,9);}
+  }
   else if(marsh){for(let i=0;i<6;i++){const x=78+i*156;fill(i%2?'#64837c':'#587770',x,300+(i%3)*47,83,12);fill('#9aa17c',x+18,306+(i%3)*47,42,3);}}
   else{for(let i=0;i<7;i++){const x=52+i*143;fill('#2d493c',x,114+(i%2)*17,12,102);fill(palette.accent,x-31,115+(i%2)*17,74,46);fill('#568161',x-22,94+(i%2)*17,57,26);}}
   for(const [x,y] of location.decor){
     if(ruins){fill('#363542',x,y,34,28);fill(palette.accent,x+4,y-19,27,20);fill('#827b76',x-3,y-23,40,6);}
     else if(marsh){fill('#294750',x,y+5,38,12);fill(palette.accent,x+7,y-19,4,28);fill('#a9b88a',x+20,y-28,4,36);}
-    else{fill('#243f3b',x+11,y-9,8,30);fill(palette.accent,x-8,y-38,46,28);fill('#5d8264',x-1,y-45,32,12);}
+    else{fill('#243f3b',x+11,y-9,8,30);fill('#1d382f',x-12,y-18,54,25);fill(palette.accent,x-8,y-38,46,28);fill('#5d8264',x-1,y-45,32,12);fill('#77916d',x+7,y-42,18,5);}
   }
   fill(ruins?'#c6ab78':'#d9c68f',455,485,50,8);
   g.font='bold 21px monospace';g.textAlign='center';g.fillStyle='#f3e7cb';g.fillText(location.name.toUpperCase(),480,52);
@@ -49,9 +56,14 @@ export function drawGeneratedLocation(g,room){
 export function drawBeast(g,c,x,y,hit=false){
  g.save();g.translate(Math.round(x),Math.round(y));g.scale(3,3);
  if(c.hp<=0)g.scale(1,.4);
- g.fillStyle='#20242b';g.fillRect(-10,-11,21,10);
+ g.fillStyle='#20242b';g.beginPath();g.ellipse(0,1,11,3,0,0,Math.PI*2);g.fill();
  g.fillStyle=hit?'#eed5bc':c.attitude==='friendly'?'#8eaa83':'#9b897c';
- if(c.species==='crow'){g.fillRect(-6,-10,12,8);g.fillRect(4,-14,5,6);g.fillRect(-12,-7,6,3);g.fillStyle='#d6bb78';g.fillRect(9,-11,4,2);}
- else {g.fillRect(-9,-10,17,7);g.fillRect(5,-14,7,9);g.fillRect(-8,-3,3,4);g.fillRect(5,-3,3,4);g.fillRect(-13,-12,5,3);if(c.species==='boar'){g.fillRect(-5,-13,11,4);g.fillStyle='#e3d6b8';g.fillRect(10,-6,3,2);}}
- g.fillStyle='#171d22';g.fillRect(8,-12,2,2);g.restore();
+ if(c.species==='crow'){
+   g.fillRect(-6,-12,11,8);g.fillRect(2,-15,6,7);g.fillRect(-11,-11,5,3);g.fillRect(-3,-17,4,5);g.fillRect(-5,-9,8,4);g.fillStyle='#d6bb78';g.fillRect(7,-12,5,2);g.fillStyle='#171d22';g.fillRect(5,-13,2,2);g.fillStyle='#c59b62';g.fillRect(-3,-4,2,4);g.fillRect(2,-4,2,4);
+ } else {
+   g.fillRect(-9,-12,16,8);g.fillRect(4,-16,8,10);g.fillRect(7,-19,3,5);g.fillRect(11,-18,3,4);g.fillRect(-7,-5,3,5);g.fillRect(4,-5,3,5);g.fillRect(-11,-13,4,3);g.fillStyle='#171d22';g.fillRect(8,-13,2,2);
+   if(c.species==='boar'){g.fillStyle='#ccb49a';g.fillRect(9,-8,3,3);g.fillRect(5,-8,3,3);g.fillStyle='#e3d6b8';g.fillRect(12,-7,2,2);g.fillRect(4,-7,2,2);}
+   else {g.fillStyle='#8f695f';g.fillRect(-12,-11,4,3);g.fillRect(-9,-7,4,2);g.fillRect(-6,-4,3,3);g.fillRect(4,-4,3,3);}
+ }
+ g.restore();
 }

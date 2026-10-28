@@ -27,7 +27,7 @@ async function noHorizontalOverflow(page, label) {
 
 async function screenshot(page, name) {
   const masks = await page.locator('.recovery').count() ? [page.locator('.recovery')] : [];
-  await page.screenshot({ path: path.join(output, name), fullPage: true, mask: masks });
+  await page.screenshot({ path: path.join(output, name), fullPage: true, mask: masks, maskColor: "#282131" });
 }
 
 try {
@@ -249,7 +249,8 @@ try {
   assert.deepEqual(errors, [], 'no page errors or browser console errors');
   console.log(`Game-night browser milestone passed: ${sizes.length} layout checks, two independent phone controllers, declaration/reaction/result, no browser errors. Evidence: ${output}`);
 } finally {
-  if (browser) await browser.close();
+  // Stop reconnecting clients at the server before closing browser contexts.
   if (app) await app.close();
+  if (browser) await browser.close();
   fs.rmSync(dataDir, { recursive: true, force: true });
 }
