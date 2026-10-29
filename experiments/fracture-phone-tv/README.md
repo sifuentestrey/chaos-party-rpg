@@ -2,7 +2,7 @@
 
 This is an **isolated one-character experimental bridge**, not a migrated multiplayer Chaos Party game. It does not modify the old Chaos Party world, inventory, saves, or server. It does not activate AI, require any provider keys, or create Fracture user accounts.
 
-Fracture upstream pinned for review: `georgeglarson/Fracture` at `642c00a8a2d3a95979e85bbfa3f62deee611a4a6`. Original license: MPL 2.0 code and CC BY-SA 3.0 content. Preserve upstream notices, credits, and asset provenance. Fracture's character system stores account passwords; create a throwaway test character, never use or copy real Chaos recovery credentials.
+Fracture upstream pinned for review: `georgeglarson/Fracture` at `642c00a8a2d3a95979e85bbfa3f62deee611a4a6`. Original license: MPL 2.0 code and CC BY-SA 3.0 content. Preserve upstream notices, credits, and asset provenance. Fracture's character system stores account passwords; create a throwaway test character, never use or copy real Chaos recovery credentials. The adapter copies `server/config.example.json` to ignored `server/config.json` only if the latter is absent; upstream will not boot without a local config.
 
 ## What is working now
 
