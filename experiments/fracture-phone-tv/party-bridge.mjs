@@ -25,6 +25,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
  const persist=()=>{const tmp=save+'.tmp';fs.writeFileSync(tmp,JSON.stringify(room),{mode:0o600});fs.renameSync(tmp,save);};persist();
  const sessions=new Map(),events=room.events||[];room.turn=null;persist();
  const meaningful=new Set(['attack','talk','quest','open','loot','manipulate','unknown']);
+ const liveCount=()=>room.players.filter(p=>!p.parked).length;
  function record(event){events.push({...event,at:Date.now()});if(events.length>80)events.shift();room.events=events;persist();}
  function connect(player){
   const socket=io(`http://127.0.0.1:${fracturePort}`,{transports:['websocket'],reconnection:true,autoConnect:false,auth:{chaosActorKey:actorKey}});
@@ -48,25 +49,50 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
  function refresh(s){if(s.socket.connected&&s.actor)s.socket.timeout(1500).emit('chaos:state',{key:actorKey},(err,r)=>{if(!err&&r?.ok)s.actor=r.actor;});}
  room.players.forEach(connect);
  const polling=setInterval(()=>{for(const s of sessions.values()){
+   if(s.player.parked)continue;
    if(s.socket.connected&&s.actor&&Date.now()-s.lastSeen>idleMs&&!s.suspending){s.suspending=true;s.socket.timeout(2000).emit('chaos:save',{key:actorKey},()=>{if(Date.now()-s.lastSeen>idleMs)s.socket.disconnect();s.suspending=false;});}
    else refresh(s);
   }},1000);
  const publicPlayer=s=>({name:s.player.name,color:s.player.color,actor:s.actor,error:s.error});
- const roster=()=>[...sessions.values()].map(publicPlayer);
+ const roster=()=>[...sessions.values()].filter(s=>!s.player.parked).map(publicPlayer);
  const json=(res,code,value)=>{res.writeHead(code,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify(value));};
  const body=async req=>{let chunks='',bytes=0;for await(const c of req){bytes+=c.length;if(bytes>4096)throw Error('Body too large');chunks+=c;}return JSON.parse(chunks);};
  const server=http.createServer(async(req,res)=>{
   try{
    const url=new URL(req.url,'http://localhost'),p=url.pathname;
    if(req.method==='POST'&&req.headers.origin&&req.headers.origin!==`http://${req.headers.host}`)return json(res,403,{error:'Invalid origin'});
-   if(p==='/health')return json(res,200,{ok:true,players:sessions.size,connected:[...sessions.values()].filter(s=>s.actor).length});
+   if(p==='/health')return json(res,200,{ok:true,players:liveCount(),registered:sessions.size,connected:[...sessions.values()].filter(s=>!s.player.parked&&s.actor).length});
    if(p==='/host'&&req.method==='GET'){
     if(url.searchParams.get('key')!==room.host)return json(res,403,{error:'Private host link required'});
     const host=(req.headers.host||'localhost').split(':')[0],actual=server.address().port;
     const lan=Object.values(os.networkInterfaces()).flat().find(x=>x.family==='IPv4'&&!x.internal)?.address||host;
     const join=`http://${['localhost','127.0.0.1'].includes(host)?lan:host}:${actual}/join?key=${room.join}`;
     const tv=`http://${host}:${fracturePort}/?chaosTV=${encodeURIComponent(`http://${host}:${actual}`)}&tvKey=${tvKey}`;
-    res.writeHead(200,{'content-type':'text/html','cache-control':'no-store'});return res.end(page('Chaos Party host',`<h1>Chaos Party</h1><p>Local game-night beta · Fracture world</p><div class="card"><a href="${esc(tv)}" target="_blank" rel="noopener">Open shared TV</a><p>Each phone joins here:</p><a href="${esc(join)}">${esc(join)}</a><div style="width:220px;background:white;margin:16px auto">${qrSvg(join)}</div><button id="dm">Optional free Groq interpretation: ${dm.enabled?'ON':'OFF'}</button><script>document.getElementById('dm').onclick=async()=>{const r=await fetch('/dm',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key:${JSON.stringify(room.host)},enabled:${!dm.enabled}})});const v=await r.json();if(r.ok)location.reload();else alert(v.error);};</script><p>Keep this host link private. Each phone gets its own character.</p></div><p>Adventure: meet a villager, defeat a rat, collect loot, then explore north together. Use “look around” to discover real targets.</p><div class="card"><h2>Recover a character</h2>${room.players.map(p=>`<p>${esc(p.name)}: <a href="${esc(join)}#recover=${p.token}">personal reconnect link</a></p>`).join('')}<small>Share each personal link only with its player. It never contains the Fracture password.</small></div><p>12–20-player performance and physical Mac acceptance remain unverified.</p>`));
+    res.writeHead(200,{'content-type':'text/html','cache-control':'no-store'});return res.end(page('Chaos Party host',`<h1>Chaos Party</h1><p>Local game-night beta · Fracture world</p><div class="card"><a href="${esc(tv)}" target="_blank" rel="noopener">Open shared TV</a><p>Each phone joins here:</p><a href="${esc(join)}">${esc(join)}</a><div style="width:220px;background:white;margin:16px auto">${qrSvg(join)}</div><button id="dm">Optional free Groq interpretation: ${dm.enabled?'ON':'OFF'}</button><script>document.getElementById('dm').onclick=async()=>{const r=await fetch('/dm',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key:${JSON.stringify(room.host)},enabled:${!dm.enabled}})});const v=await r.json();if(r.ok)location.reload();else alert(v.error);};</script><p>Keep this host link private. Each phone gets its own character.</p></div><p>Adventure: meet a villager, defeat a rat, collect loot, then explore north together. Use “look around” to discover real targets.</p><div class="card"><h2>Recover a character</h2>${room.players.map(p=>`<p>${esc(p.name)} (${p.parked?'benched':'playing'}): <a href="${esc(join)}#recover=${p.token}">personal reconnect link</a> <button type="button" data-roster="${p.token}" data-park="${!p.parked}">${p.parked?'Restore player':'Bench player'}</button></p>`).join('')}<small>Share each personal link only with its player. It never contains the Fracture password.</small><script>document.querySelectorAll('[data-roster]').forEach(button=>button.onclick=async()=>{if(button.dataset.park==='true'&&!confirm('Bench this player? Their character will be saved and can be restored.'))return;const r=await fetch('/host/player',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key:${JSON.stringify(room.host)},token:button.dataset.roster,parked:button.dataset.park==='true'})});const v=await r.json();if(r.ok)location.reload();else alert(v.error);});</script></div><p>12–20-player performance and physical Mac acceptance remain unverified.</p>`));
+   }
+   if(p==='/host/player'&&req.method==='POST'){
+    const b=await body(req);
+    if(b.key!==room.host)return json(res,403,{error:'Private host link required'});
+    const s=sessions.get(b.token);
+    if(!s||typeof b.parked!=='boolean')return json(res,400,{error:'Unknown player or action'});
+    if(!b.parked&&s.player.parked&&liveCount()>=20)return json(res,409,{error:'Room is full. Bench another player first.'});
+    if(s.player.parked===b.parked)return json(res,200,{ok:true,parked:b.parked,name:s.player.name});
+    // Parked actors retain their private credentials and saved Fracture state.
+    s.player.parked=b.parked;persist();
+    if(b.parked){
+      s.epoch++;s.lastSeen=0;
+      if(s.socket.connected&&s.actor){
+        s.suspending=true;
+        s.socket.timeout(2500).emit('chaos:save',{key:actorKey},(error,result)=>{
+          if(error||result?.error)console.error('[Chaos Party] Bench save acknowledgment failed; native disconnect save will run.');
+          s.socket.disconnect();s.actor=null;s.suspending=false;
+        });
+      }else{s.socket.disconnect();s.actor=null;}
+      record({player:s.player.name,status:'benched',message:'Character benched by host; progress preserved.'});
+    }else{
+      record({player:s.player.name,status:'restored',message:'Host restored a slot. Rejoin with your personal link.'});
+    }
+    return json(res,200,{ok:true,parked:b.parked,name:s.player.name});
    }
    if(p==='/join'&&req.method==='GET'){
     if(url.searchParams.get('key')!==room.join)return json(res,403,{error:'Valid room link required'});
@@ -84,7 +110,7 @@ setInterval(poll,750);poll();
    if(p==='/dm'&&req.method==='POST'){const b=await body(req);if(b.key!==room.host)return json(res,403,{error:'Private host required'});if(!dm.available)return json(res,409,{error:'No approved Groq key is configured. Offline actions remain available.'});dm.enabled=b.enabled===true;return json(res,200,{enabled:dm.enabled});}
    if(p==='/pair'&&req.method==='POST'){
     const b=await body(req);if(b.key!==room.join)return json(res,403,{error:'Wrong room'});
-    if(sessions.size>=20)return json(res,409,{error:'Room is full'});
+    if(liveCount()>=20)return json(res,409,{error:'Room is full. Ask the host to bench an inactive player.'});
     const name=typeof b.name==='string'?b.name.trim():'';
     if(!/^[\p{L}\p{N} _-]{2,18}$/u.test(name))return json(res,400,{error:'Use a name of 2–18 letters or numbers.'});
     if(room.players.some(p=>p.name.toLowerCase()===name.toLowerCase()))return json(res,409,{error:'That name is taken. Reconnect with the same phone or choose another.'});
@@ -93,6 +119,7 @@ setInterval(poll,750);poll();
    }
    if(p==='/state'&&req.method==='GET'){
     const s=sessions.get(url.searchParams.get('token'));if(!s)return json(res,403,{error:'Reconnect using your original phone and room link.'});
+    if(s.player.parked)return json(res,409,{error:'Your character is benched. Ask the host to restore your slot; your progress is saved.'});
     s.lastSeen=Date.now();if(!s.socket.connected&&!s.socket.active)s.socket.connect();
     return json(res,200,{...publicPlayer(s),dialogue:s.dialogue,quest:s.quest,turn:room.turn&&room.turn.deadline>Date.now()?{actor:room.turn.actor,text:room.turn.text,deadline:room.turn.deadline}:null,results:[...s.results.entries()].slice(-12).map(([id,r])=>({id,...r}))});
    }
@@ -104,6 +131,7 @@ setInterval(poll,750);poll();
    }
    if(p==='/action'&&req.method==='POST'){
     const b=await body(req),s=sessions.get(b.token);if(!s)return json(res,403,{error:'Invalid personal controller'});
+    if(s.player.parked)return json(res,409,{error:'Your character is benched. Ask the host to restore your slot.'});
     if(typeof b.text!=='string'||b.text.trim().length<2||b.text.length>180)return json(res,400,{error:'Action must contain 2–180 characters'});
     s.lastSeen=Date.now();
     if(!s.actor?.ready)return json(res,503,{error:'Your character is connecting. Try again shortly.'});
