@@ -38,3 +38,23 @@ test('host may bench and restore registered characters without deleting saves; 2
  assert.equal(savedAfter.players[1].parked,true);
  assert.ok((fs.statSync(path.join(dir,'room.json')).mode&0o077)===0);
 });
+
+test('rapid combat receipts are buffered without losing the event log',async t=>{
+ const {app,base,dir}=await setup(t);
+ const paired=await post(base,'/pair',{key:app.room.join,name:'Fighter'});
+ assert.equal(paired.status,201);
+ const {token}=await paired.json(),s=app.sessions.get(token);
+ for(let i=0;i<15;i++){
+   const id='combat-'+i;
+   s.results.set(id,{status:'received'});
+   s.socket.emit('chaos:receipt',{id,status:'started',message:'rat HP '+i});
+ }
+ const file=path.join(dir,'room.json');
+ const before=JSON.parse(fs.readFileSync(file,'utf8'));
+ assert.ok((before.events||[]).length<15,'transient combat logs should not trigger a disk save per hit');
+ await new Promise(r=>setTimeout(r,650));
+ const after=JSON.parse(fs.readFileSync(file,'utf8'));
+ assert.equal(after.events.length,15);
+ assert.equal(after.events.at(-1).message,'rat HP 14');
+ assert.equal(after.players[0].token,token);
+});
