@@ -1,3 +1,5 @@
+> Superseded by the [Dawn Bell candidate](DAWN_BELL_RELEASE.md). This report describes the preserved earlier 9a3417b package.
+
 # October 29 game-night candidate
 
 **Playable candidate; not the fully accepted final game.**

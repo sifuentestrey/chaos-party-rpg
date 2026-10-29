@@ -1,3 +1,5 @@
+> **Latest implementation — October 29, 2026:** The owner’s final-game directive superseded the consolidation backlog below. Continue from this canonical branch. The Crown Job and bounded **Dawn Bell** expedition are implemented. Current build, source/checksum and acceptance evidence: [Dawn Bell release](docs/DAWN_BELL_RELEASE.md). Compact resumption state: [checkpoint](docs/GAME_COMPLETION_CHECKPOINT.md). Creative live AI qualification and physical hardware acceptance remain blocked; do not treat the historical queues below as unfinished active assignments.
+
 # Chaos Party — start here
 
 Updated October 29, 2026. Single current handoff for the next chat.

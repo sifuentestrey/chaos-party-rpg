@@ -1,0 +1,214 @@
+{
+  "packagedServer": true,
+  "aiInference": false,
+  "errors": [],
+  "bufferWarnings": [],
+  "rounds": [
+    {
+      "action": "Read tavern map",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Travel to clearing",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Travel to ruins",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Travel to forest-trail",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Travel to deep-woods",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Travel to riverbank",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Travel to old-bridge",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Travel to east-road",
+      "success": false,
+      "blocked": true
+    },
+    {
+      "action": "Talk to person-old-bridge",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Befriend beast-old-bridge",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Repair item-52",
+      "success": false,
+      "blocked": false
+    },
+    {
+      "action": "Repair item-52",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Travel to east-road",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Travel to market-square",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Talk to person-market-square",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Befriend beast-market-square",
+      "success": false,
+      "blocked": false
+    },
+    {
+      "action": "Befriend beast-market-square",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Take item-61",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Inspect person-market-square",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Bandage person-market-square",
+      "success": false,
+      "blocked": false
+    },
+    {
+      "action": "Inspect person-market-square",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Bandage person-market-square",
+      "success": false,
+      "blocked": false
+    },
+    {
+      "action": "Inspect person-market-square",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Bandage person-market-square",
+      "success": false,
+      "blocked": false
+    },
+    {
+      "action": "Inspect person-market-square",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Bandage person-market-square",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Travel to castle-road",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Travel to castle-gate",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Travel to castle-yard",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Travel to castle-cellar",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Talk to person-castle-cellar",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Befriend beast-castle-cellar",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Repair item-100",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Travel to bell-vault",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Talk to person-bell-vault",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Befriend beast-bell-vault",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Open item-105",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Take item-106",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Inspect person-bell-vault",
+      "success": true,
+      "blocked": false
+    },
+    {
+      "action": "Give item-106 to person-bell-vault",
+      "success": true,
+      "blocked": false
+    }
+  ],
+  "map": true,
+  "bridgeRepair": true,
+  "questEnding": true,
+  "restart": true,
+  "phoneViewports": "390x844",
+  "tvViewport": "1280x720"
+}
