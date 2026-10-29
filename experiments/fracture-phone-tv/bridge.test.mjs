@@ -53,4 +53,5 @@ test('remote website cannot hijack TV events or submit browser action',async t=>
  assert.equal((await fetch(`${base}/events?key=tv`,{headers:{Origin:'https://bad.example:8000'}})).status,403);
  assert.equal((await post(base,{key:'phone',text:'tackle goblin'},{Origin:'http://bad.example:3000'})).status,403);
  assert.equal((await post(base,{key:'phone',text:'x'})).status,400);
+ assert.equal((await post(base,{key:'phone',text:'<img src=x onerror=alert(1)>'})).status,400);
 });
