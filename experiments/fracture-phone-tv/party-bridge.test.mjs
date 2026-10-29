@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import {EventEmitter} from 'node:events';
 import {createPartyBridge} from './party-bridge.mjs';
 const post=(base,p,b,headers={})=>fetch(base+p,{method:'POST',headers:{'content-type':'application/json',...headers},body:JSON.stringify(b)});
-async function setup(t){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-room-test-'));const sockets=[];const app=createPartyBridge({root:dir,dataDir:dir,actorKey:'actor-key',tvKey:'tv-key',port:0,bind:'127.0.0.1',ioFactory:()=>{const s=new EventEmitter();s.connected=true;s.connect=()=>{s.connected=true;return s;};s.disconnect=()=>{s.connected=false;s.emit('disconnect');};s.timeout=()=>s;const emit=s.emit.bind(s);s.emit=(event,...args)=>{if(event==='chaos:state'){args[1](null,{ok:true,actor:{id:sockets.indexOf(s)+1,ready:true,x:12,y:12,hp:100}});return true;}if(event==='chaos:save'){args[1](null,{ok:true});return true;}if(event==='chaos:action'){s.lastAction=args[0];const status=s.nextOutcome||'started';s.nextOutcome=null;emit('chaos:receipt',{id:args[0].id,status,message:status});const ackError=s.nextAckError;s.nextAckError=null;args[1](ackError?new Error('Delayed transport acknowledgment'):null,ackError?null:{ok:true});return true;}return emit(event,...args);};sockets.push(s);queueMicrotask(()=>s.emit('message',[1,sockets.length,'Test',12,12,100,100]));return s;}});await app.start();t.after(async()=>{await app.close();fs.rmSync(dir,{force:true,recursive:true});});return {app,dir,sockets,base:`http://127.0.0.1:${app.server.address().port}`};}
+async function setup(t){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-room-test-'));const sockets=[];const app=createPartyBridge({root:dir,dataDir:dir,actorKey:'actor-key',tvKey:'tv-key',port:0,bind:'127.0.0.1',ioFactory:()=>{const s=new EventEmitter();s.connected=true;s.connect=()=>{s.connected=true;return s;};s.disconnect=()=>{s.connected=false;s.emit('disconnect');};s.timeout=()=>s;const emit=s.emit.bind(s);s.emit=(event,...args)=>{if(event==='chaos:state'){args[1](null,{ok:true,actor:{id:sockets.indexOf(s)+1,ready:true,x:12+sockets.indexOf(s)*2,y:12,zone:'Town',hp:100,maxHp:100,dead:false}});return true;}if(event==='chaos:save'){args[1](null,{ok:true});return true;}if(event==='chaos:action'){s.lastAction=args[0];const status=s.nextOutcome||'started';s.nextOutcome=null;emit('chaos:receipt',{id:args[0].id,status,message:status});const ackError=s.nextAckError;s.nextAckError=null;args[1](ackError?new Error('Delayed transport acknowledgment'):null,ackError?null:{ok:true});return true;}return emit(event,...args);};sockets.push(s);queueMicrotask(()=>s.emit('message',[1,sockets.length,'Test',12,12,100,100]));return s;}});await app.start();t.after(async()=>{await app.close();fs.rmSync(dir,{force:true,recursive:true});});return {app,dir,sockets,base:`http://127.0.0.1:${app.server.address().port}`};}
 test('controller script parses and credentials stay off phone',async t=>{const {app,base}=await setup(t);const html=await(await fetch(base+'/join?key='+app.room.join)).text();assert.doesNotThrow(()=>new Function(html.match(/<script>([\s\S]*)<\/script>/)[1]));assert.ok(!html.includes('actor-key'));assert.ok(!html.includes('tv-key'));assert.ok(!html.includes('password'));});
 test('two identities route to distinct actors, results stay private, and reconnect keeps credentials',async t=>{const {app,base,sockets,dir}=await setup(t);const pair=async name=>(await(await post(base,'/pair',{key:app.room.join,name})).json()).token;const a=await pair('Ada'),b=await pair('Bryn');assert.notEqual(a,b);await new Promise(r=>setTimeout(r,20));const r=await post(base,'/action',{token:a,text:'walk north 3'});assert.equal(r.status,202);const {id}=await r.json();assert.equal(sockets[0].lastAction.id,id);assert.equal(sockets[1].lastAction,undefined);const unknown=await post(base,'/action',{token:app.room.join,text:'stop'});assert.equal(unknown.status,403);const state=await(await fetch(base+'/state?token='+b)).json();assert.ok(!state.results.some(r=>r.id===id));assert.ok(!JSON.stringify(state).includes(app.room.players[0].password));const saved=JSON.parse(fs.readFileSync(path.join(dir,'room.json')));assert.equal(saved.players[0].token,a);assert.ok((fs.statSync(path.join(dir,'room.json')).mode&0o077)===0);});
 test('room pairing, origin, and TV state access are separated',async t=>{const {app,base}=await setup(t);assert.equal((await post(base,'/pair',{key:'wrong',name:'Ada'})).status,403);assert.equal((await post(base,'/pair',{key:app.room.join,name:'Ada'},{Origin:'https://evil.example'})).status,403);assert.equal((await fetch(base+'/tv-state?key='+app.room.join)).status,403);assert.equal((await fetch(base+'/host?key='+app.room.join)).status,403);assert.equal((await fetch(base+'/tv-state?key=tv-key',{headers:{Origin:'http://evil.example:8000'}})).status,403);});
@@ -92,4 +92,62 @@ test('a late socket acknowledgement failure cannot erase a real engine-started a
  assert.equal(s.results.get(id).status,'started');
  assert.equal(app.room.turn.id,id,'a real engine-started declaration remains valid');
  assert.equal((await post(base,'/action',{token,text:'attack rat'})).status,409);
+});
+
+test('majority-approved rally sends independent native go actions; a vote is not movement proof',async t=>{
+ const {app,base,sockets}=await setup(t);
+ const tokens=[];
+ for(const name of ['Ari','Bex','Cal']){
+  const response=await post(base,'/pair',{key:app.room.join,name});
+  assert.equal(response.status,201);
+  tokens.push((await response.json()).token);
+ }
+ await new Promise(r=>setTimeout(r,30));
+ const proposed=await post(base,'/rally/propose',{token:tokens[0]});
+ assert.equal(proposed.status,201);
+ const {rally}=await proposed.json();
+ assert.equal(rally.required,2);
+ assert.equal(rally.yes,1);
+ assert.equal(rally.status,'pending');
+ assert.equal(sockets[1].lastAction,undefined,'proposing is not movement');
+ assert.equal((await post(base,'/rally/vote',{token:app.room.join,id:rally.id,yes:true})).status,403);
+ const tv=await(await fetch(base+'/tv-state?key=tv-key')).json();
+ assert.equal(tv.rally.proposer,'Ari');
+ assert.equal(JSON.stringify(tv.rally).includes(tokens[0]),false,'TV cannot see controller tokens');
+ const before=await(await fetch(base+'/state?token='+tokens[1])).json();
+ assert.equal(before.rally.eligible,true);
+ assert.equal(before.rally.voted,false);
+ const vote=await post(base,'/rally/vote',{token:tokens[1],id:rally.id,yes:true});
+ assert.equal(vote.status,200);
+ assert.equal((await vote.json()).rally.status,'approved');
+ assert.equal(sockets[0].lastAction,undefined,'proposer already at the meeting point');
+ for(const i of [1,2]){
+  assert.equal(sockets[i].lastAction.intent.verb,'go');
+  assert.deepEqual([sockets[i].lastAction.intent.x,sockets[i].lastAction.intent.y],[12,12]);
+  assert.equal(app.sessions.get(tokens[i]).results.get(sockets[i].lastAction.id).status,'started');
+ }
+ assert.equal((await post(base,'/rally/vote',{token:tokens[2],id:rally.id,yes:true})).status,409);
+ const state=await(await fetch(base+'/state?token='+tokens[2])).json();
+ assert.equal(state.rally.status,'approved');
+ assert.equal(state.results.at(-1).status,'started','rally does not fabricate arrival');
+ await new Promise(r=>setTimeout(r,220));
+ assert.equal((await post(base,'/action',{token:tokens[1],text:'stop'})).status,202);
+ assert.equal(sockets[1].lastAction.intent.verb,'cancel','STOP remains available after majority movement');
+});
+
+test('rally proposal is rejected for distant, disconnected, dead or single active actors',async t=>{
+ const {app,base,sockets}=await setup(t);
+ const a=(await(await post(base,'/pair',{key:app.room.join,name:'Ari'})).json()).token;
+ await new Promise(r=>setTimeout(r,20));
+ assert.equal((await post(base,'/rally/propose',{token:a})).status,409);
+ const b=(await(await post(base,'/pair',{key:app.room.join,name:'Bex'})).json()).token;
+ await new Promise(r=>setTimeout(r,20));
+ app.sessions.get(b).actor.x=200;
+ assert.equal((await post(base,'/rally/propose',{token:a})).status,409);
+ app.sessions.get(b).actor.x=14;
+ app.sessions.get(b).actor.dead=true;
+ assert.equal((await post(base,'/rally/propose',{token:a})).status,409);
+ app.sessions.get(b).actor.dead=false;
+ sockets[1].disconnect();
+ assert.equal((await post(base,'/rally/propose',{token:a})).status,409);
 });
