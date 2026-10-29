@@ -23,10 +23,16 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
  const save=path.join(dataDir,'room.json');
  let room=fs.existsSync(save)?JSON.parse(fs.readFileSync(save,'utf8')):{host:token(),join:token(),players:[]};
  const persist=()=>{const tmp=save+'.tmp';fs.writeFileSync(tmp,JSON.stringify(room),{mode:0o600});fs.renameSync(tmp,save);};persist();
+ // Combat/notification events are not credentials or character saves. Write their
+ // room log at most twice per second; identity and host slot changes stay durable
+ // immediately. STOP/close flush the latest events before shutting down.
+ let pendingEventFlush=null;
+ const scheduleEventFlush=()=>{if(pendingEventFlush)return;pendingEventFlush=setTimeout(()=>{pendingEventFlush=null;persist();},500);pendingEventFlush.unref?.();};
+ const flushEvents=()=>{if(pendingEventFlush){clearTimeout(pendingEventFlush);pendingEventFlush=null;}persist();};
  const sessions=new Map(),events=room.events||[];room.turn=null;persist();
  const meaningful=new Set(['attack','talk','quest','open','loot','manipulate','unknown']);
  const liveCount=()=>room.players.filter(p=>!p.parked).length;
- function record(event){events.push({...event,at:Date.now()});if(events.length>80)events.shift();room.events=events;persist();}
+ function record(event){events.push({...event,at:Date.now()});if(events.length>80)events.shift();room.events=events;scheduleEventFlush();}
  function connect(player){
   const socket=io(`http://127.0.0.1:${fracturePort}`,{transports:['websocket'],reconnection:true,autoConnect:false,auth:{chaosActorKey:actorKey}});
   const session={player,socket,actor:null,results:new Map(),lastAction:0,epoch:0,lastSeen:0,suspending:false};sessions.set(player.token,session);
@@ -157,6 +163,6 @@ setInterval(poll,750);poll();
   }catch(e){json(res,400,{error:'Invalid request'});}
  });
  server.requestTimeout=5000;server.headersTimeout=5000;
- return {server,room,sessions,async start(){await new Promise((resolve,reject)=>server.once('error',reject).listen(port,bind,resolve));return server.address();},async close(){clearInterval(polling);await Promise.all([...sessions.values()].filter(s=>s.socket.connected&&s.actor).map(s=>new Promise(resolve=>s.socket.timeout(2000).emit('chaos:save',{key:actorKey},(error,result)=>{if(error||result?.error)console.error('[Chaos Party] Save acknowledgment failed; attempting native disconnect save.');resolve();}))));persist();for(const s of sessions.values())s.socket.disconnect();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}};
+ return {server,room,sessions,async start(){await new Promise((resolve,reject)=>server.once('error',reject).listen(port,bind,resolve));return server.address();},async close(){clearInterval(polling);await Promise.all([...sessions.values()].filter(s=>s.socket.connected&&s.actor).map(s=>new Promise(resolve=>s.socket.timeout(2000).emit('chaos:save',{key:actorKey},(error,result)=>{if(error||result?.error)console.error('[Chaos Party] Save acknowledgment failed; attempting native disconnect save.');resolve();}))));flushEvents();for(const s of sessions.values())s.socket.disconnect();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){const app=createPartyBridge();app.start().then(()=>console.log(`Chaos Fracture local bridge: http://localhost:4748/host?key=${app.room.host}`)).catch(e=>{console.error(e.message);process.exit(1);});let stopping=false;for(const sig of ['SIGTERM','SIGINT'])process.on(sig,async()=>{if(stopping)return;stopping=true;await app.close();process.exit(0);});}
