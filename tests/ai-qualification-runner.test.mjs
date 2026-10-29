@@ -24,9 +24,9 @@ test('live preflight requires a valid existing ledger and enough allowance befor
     assert.equal(qualificationPreflight({dataDir,requestBudget:1,now:FIXED_NOW}).allowed,false,'future-dated ledger is blocked');
     writeLedger(dataDir,{count:100});
     assert.equal(qualificationPreflight({dataDir,requestBudget:1,now:FIXED_NOW}).allowed,false,'exhausted ledger is blocked');
-    writeLedger(dataDir,{count:95});
+    writeLedger(dataDir,{count:995});
     assert.equal(qualificationPreflight({dataDir,requestBudget:6,now:FIXED_NOW}).allowed,false,'daily allowance must cover the whole requested batch');
-    writeLedger(dataDir,{count:0,recent:[FIXED_NOW-1000,FIXED_NOW-2000,FIXED_NOW-3000,FIXED_NOW-4000]});
+    writeLedger(dataDir,{count:0,recent:Array.from({length:30},(_,i)=>FIXED_NOW-1000-i*1000)});
     assert.equal(qualificationPreflight({dataDir,requestBudget:1,now:FIXED_NOW}).allowed,false,'minute allowance must be available');
   });
   let constructed=0,metadataCalls=0;
