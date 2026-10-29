@@ -96,5 +96,5 @@ export function campaignView(r){
  const include=id=>{const i=s.items[id];if(!i)return;keep.add(id);for(const child of [...i.components||[],...i.contents||[]])if(!keep.has(child))include(child);};
  for(const id of [...keep])include(id);
  const {regionRefs,...local}=s;
- return {...local,locations,items:Object.fromEntries([...keep].map(id=>[id,s.items[id]])),creatures,regions:s.regions[s.current]?{[s.current]:s.regions[s.current]}:{},campaign:{...s.campaign,history:s.campaign.history.slice(-30),completed:s.campaign.completed.slice(-20)}};
+ return {...local,routeMap:s.mapFound?Object.values(s.locations).filter(l=>l.visited||Object.values(s.locations).some(v=>v.visited&&v.exits.includes(l.id))).map(l=>({id:l.id,name:l.name,visited:!!l.visited,exits:l.exits})):[],locations,items:Object.fromEntries([...keep].map(id=>[id,s.items[id]])),creatures,regions:s.regions[s.current]?{[s.current]:s.regions[s.current]}:{},campaign:{...s.campaign,history:s.campaign.history.slice(-30),completed:s.campaign.completed.slice(-20)}};
 }

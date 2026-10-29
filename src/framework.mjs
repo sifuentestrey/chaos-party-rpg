@@ -236,7 +236,7 @@ function campaignView(r) {
   };
   for (const id of [...keep]) include(id);
   const { regionRefs, ...local } = s;
-  return { ...local, locations, items: Object.fromEntries([...keep].map((id) => [id, s.items[id]])), creatures, regions: s.regions[s.current] ? { [s.current]: s.regions[s.current] } : {}, campaign: { ...s.campaign, history: s.campaign.history.slice(-30), completed: s.campaign.completed.slice(-20) } };
+  return { ...local, routeMap: s.mapFound ? Object.values(s.locations).filter((l) => l.visited || Object.values(s.locations).some((v) => v.visited && v.exits.includes(l.id))).map((l) => ({ id: l.id, name: l.name, visited: !!l.visited, exits: l.exits })) : [], locations, items: Object.fromEntries([...keep].map((id) => [id, s.items[id]])), creatures, regions: s.regions[s.current] ? { [s.current]: s.regions[s.current] } : {}, campaign: { ...s.campaign, history: s.campaign.history.slice(-30), completed: s.campaign.completed.slice(-20) } };
 }
 
 // src/framework-entry.ts
@@ -2972,6 +2972,7 @@ function itemPlan(r, actor, text) {
   const state = ensureItems(r), nativeAttempt = parseEntityAttempt(text), extended = planEntity(r, state, actor, nativeAttempt, findItem);
   if (extended) return { ...extended, entityAction: true };
   if (currentLocation(r) !== "tavern" && /^(?:rest|rest and heal|heal myself)$/i.test(text.trim())) return { verb: "rest", automatic: false, dc: 6, ability: "Recovery" };
+  if (/^(?:find|read|consult|take) (?:the )?(?:tavern )?map$/i.test(text)) return { verb: "map", automatic: true, dc: 0, ability: "Discovery", ...!state.mapFound && state.current !== "tavern" ? { error: "The route map is on the tavern wall. Return there to copy it." } : {} };
   const attempt = parseItemAttempt(text);
   if (!nativeAttempt && !attempt && /\b(?:heal|bandage|bind|treat|revive|mend)\b/i.test(text) && !/\b(?:rest|nap|sleep|drink|eat|snack|potion)\b/i.test(text)) return { verb: "treat", unresolvedTarget: true, error: "That treatment could not be grounded. Name the patient and any carried bandage directly.", automatic: true, dc: 0, ability: "Interaction" };
   if (!nativeAttempt && !attempt && /\bon fire\b|\b(?:ablaze|alight)\b/i.test(text)) return { verb: "ignite", unresolvedTarget: true, error: "That ignition could not be grounded. Name one available target directly.", automatic: true, dc: 0, ability: "Interaction" };
@@ -3060,6 +3061,10 @@ function resolveItem(r, actor, plan, success) {
   const s = ensureItems(r), item = s.items[plan.itemId];
   const out = { success: success && !plan.error, blocked: !!plan.error, text: "", change: null };
   if (plan.error) return { ...out, text: plan.error };
+  if (plan.verb === "map") {
+    s.mapFound = true;
+    return { ...out, text: "You copy the tavern route map. The party can consult known paths on their controllers; new discoveries are marked as you travel.", change: "PARTY MAP DISCOVERED" };
+  }
   if (plan.entityAction && plan.verb !== "explore") return resolveEntity(r, s, actor, plan, success);
   if (plan.verb === "use") return resolveEntity(r, s, actor, { ...plan, verb: "attack" }, success);
   if (!success) return { ...out, text: plan.verb === "rest" ? `${actor.name} cannot settle down yet. Try resting again.` : `${actor.name} tries, but the materials resist. Nothing is consumed or changed.` };
@@ -3421,7 +3426,8 @@ function submit(r, playerId, input, now = Date.now()) {
     target: targetFor(r, p, text),
     at: now,
     deadline: now + r.reactionMs,
-    reactions: []
+    reactions: [],
+    travelElectorate: r.players.filter((x) => x.id === p.id || x.connected && !x.muted && !x.isBot).map((x) => x.id)
   };
   if (dynamic) {
     r.turn.worldAction = true;
@@ -3479,6 +3485,13 @@ function resolve(r, now) {
   const blockers = sorted.filter((x) => x.kind === "intervene" || x.kind === "custom" && /\b(stop|prevent|block|intervene)\b/i.test(x.text));
   const hostile = t.worldAction || ["attack", "steal", "magic", "break"].includes(t.intent);
   const dynamic = t.worldAction ? t.worldProposal ? planWorldProposal(r, p, t.worldProposal) || { verb: "unsupported", error: "The selected action is no longer available.", automatic: true, dc: 0, ability: "Interaction" } : itemPlan(r, p, t.rulesText || t.action) : null;
+  if (dynamic && !dynamic.error && ["travel", "explore"].includes(dynamic.verb)) {
+    const electorate = t.travelElectorate || r.players.filter((x) => x.connected && !x.muted && !x.isBot).map((x) => x.id);
+    const yes = /* @__PURE__ */ new Set([t.actorId, ...sorted.filter((x) => x.kind === "assist").map((x) => x.playerId)]);
+    const votes = electorate.filter((id) => yes.has(id)).length, required = Math.floor(electorate.length / 2) + 1;
+    t.travelVote = { yes: votes, required };
+    if (votes < required) dynamic.error = `The party stays here: travel received ${votes}/${required} required votes. Choose Help them to vote yes during the reaction window.`;
+  }
   if (dynamic && t.worldBlueprint) Object.assign(dynamic, t.worldBlueprint);
   const check = dynamic || environmentCheck(r.world, t.target, t.intent, t.rulesText || t.action);
   const automatic = !!check?.automatic;

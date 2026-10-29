@@ -8,7 +8,7 @@ import {ensureItems,visibleItems,itemPlan} from '../public/world-items.js';
 import {applyAIPlan} from '../public/ai-plan.js';
 import {openCampaignStore} from '../src/campaign-store.mjs';
 function game(){const r=createRoom({seed:73825,now:0}),p=addPlayer(r,{token:'world-test-token-long',name:'Jinx'},0),q=addPlayer(r,{token:'other-world-token-long',name:'Moss'},0);q.connected=false;startGame(r,0);return {r,p,q,now:1000};}
-function act(g,text,p=g.p){submit(g.r,p.id,{requestId:'world-'+g.now,text},g.now);advance(g.r,g.now+9000);const result=g.r.result;advance(g.r,g.now+16000);g.now+=17000;return result;}
+function act(g,text,p=g.p){submit(g.r,p.id,{requestId:'world-'+g.now,text},g.now);if(/^Travel to /i.test(text))for(const voter of g.r.players.filter(x=>x.id!==p.id&&x.connected))submit(g.r,voter.id,{requestId:'approve-'+g.now,kind:'reaction',reaction:'assist',text:'Travel together',turnId:g.r.turn.id},g.now+1);advance(g.r,g.now+9000);const result=g.r.result;advance(g.r,g.now+16000);g.now+=17000;return result;}
 function craft(g,name='Ridiculous hat'){
  assert.equal(act(g,'Take item-1').success,true);assert.equal(act(g,'Take item-2').success,true);
  for(let n=0;n<30;n++){if(act(g,`Make a ${name} from item-1 and item-2`).success)return Object.values(g.r.world.expedition.items).find(i=>i.name===name);}

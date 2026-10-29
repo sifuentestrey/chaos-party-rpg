@@ -161,12 +161,17 @@ try {
     await page.locator('#action-text').fill(declaration);
     await page.locator('#action-form button').click();
     await waitForPhase('react');
+    if (/^(Travel to |Explore)/i.test(declaration)) {
+      for (const other of phones.filter(phone => phone !== page)) await other.locator('[data-action=react][data-kind=assist]').click();
+    }
     await skipBrowserTimer(host, roomState);
     await waitForPhase('reveal');
     await skipBrowserTimer(host, roomState);
     await waitForPhase('open');
     return roomState().result;
   };
+  await takeTurn(phones[0], 'Read tavern map');
+  assert.equal(roomState().world.expedition.mapFound, true);
   await takeTurn(phones[0], 'Travel to clearing');
   assert.equal(roomState().world.expedition.current, 'clearing', 'the existing clearing travel command resolves');
   await noHorizontalOverflow(host, 'clearing-1280x720');

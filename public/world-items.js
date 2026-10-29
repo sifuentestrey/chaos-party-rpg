@@ -52,6 +52,7 @@ export function itemPlan(r,actor,text){
   text=text.trim().replace(/^(?:I (?:try to |want to |attempt to )?)/i,'');
   const state=ensureItems(r),nativeAttempt=parseEntityAttempt(text),extended=planEntity(r,state,actor,nativeAttempt,findItem);if(extended)return {...extended,entityAction:true};
   if(currentLocation(r)!=='tavern'&&/^(?:rest|rest and heal|heal myself)$/i.test(text.trim()))return {verb:'rest',automatic:false,dc:6,ability:'Recovery'};
+  if(/^(?:find|read|consult|take) (?:the )?(?:tavern )?map$/i.test(text))return {verb:'map',automatic:true,dc:0,ability:'Discovery',...(!state.mapFound&&state.current!=='tavern'?{error:'The route map is on the tavern wall. Return there to copy it.'}:{})};
   const attempt=parseItemAttempt(text);
   // Unparsed targeted medicine or ignition must not become generic tavern actions.
   if(!nativeAttempt&&!attempt&&/\b(?:heal|bandage|bind|treat|revive|mend)\b/i.test(text)&&!/\b(?:rest|nap|sleep|drink|eat|snack|potion)\b/i.test(text))return {verb:'treat',unresolvedTarget:true,error:'That treatment could not be grounded. Name the patient and any carried bandage directly.',automatic:true,dc:0,ability:'Interaction'};
@@ -134,6 +135,7 @@ export function resolveItem(r,actor,plan,success){
   const s=ensureItems(r),item=s.items[plan.itemId];
   const out={success:success&&!plan.error,blocked:!!plan.error,text:'',change:null};
   if(plan.error)return {...out,text:plan.error};
+  if(plan.verb==='map'){s.mapFound=true;return {...out,text:'You copy the tavern route map. The party can consult known paths on their controllers; new discoveries are marked as you travel.',change:'PARTY MAP DISCOVERED'};}
   if(plan.entityAction&&plan.verb!=='explore')return resolveEntity(r,s,actor,plan,success);
   if(plan.verb==='use')return resolveEntity(r,s,actor,{...plan,verb:'attack'},success);
   if(!success)return {...out,text:plan.verb==='rest'?`${actor.name} cannot settle down yet. Try resting again.`:`${actor.name} tries, but the materials resist. Nothing is consumed or changed.`};

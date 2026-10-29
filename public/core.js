@@ -147,7 +147,7 @@ export function submit(r, playerId, input, now=Date.now()) {
   if(p.hp<=0 && intent!=='heal') fail('KNOCKED_OUT','You’re on the floor. Rest, eat, or drink to get back up.');
   const e=event(r,'declaration',text,now,{playerId:p.id,name:p.name});
   r.round++; r.turn={id:uid(),seq:e.id,actorId:p.id,action:text,intent,target:targetFor(r,p,text),at:now,
-    deadline:now+r.reactionMs,reactions:[]};
+    deadline:now+r.reactionMs,reactions:[],travelElectorate:r.players.filter(x=>x.id===p.id||x.connected&&!x.muted&&!x.isBot).map(x=>x.id)};
   if(dynamic){r.turn.worldAction=true;r.turn.worldLocked=dynamic.verb!=='unsupported'&&!dynamic.unresolvedTarget;if(dynamic.unresolvedTarget)r.turn.worldPendingVerb=dynamic.verb;const key=dynamic.targetId||dynamic.itemId||dynamic.sourceIds?.[0];const item=r.world.expedition.items[key]||r.world.expedition.creatures?.[key];r.turn.target={kind:'world',entityId:item?.id,name:item?.name||dynamic.destination||dynamic.target||'materials',position:item?.ownerId?[480,335]:item?.position||[480,490]};}
   r.phase='react'; r.deadline=r.turn.deadline; r.result=null; p.status='committed';p.cover=false;
   const ack={ok:true,accepted:true,kind:'action',seq:e.id,at:now,turnId:r.turn.id};
@@ -169,6 +169,13 @@ function resolve(r,now) {
   const blockers=sorted.filter(x=>x.kind==='intervene'||(x.kind==='custom'&&/\b(stop|prevent|block|intervene)\b/i.test(x.text)));
   const hostile=t.worldAction||['attack','steal','magic','break'].includes(t.intent);
   const dynamic=t.worldAction?(t.worldProposal?(planWorldProposal(r,p,t.worldProposal)||{verb:'unsupported',error:'The selected action is no longer available.',automatic:true,dc:0,ability:'Interaction'}):itemPlan(r,p,t.rulesText||t.action)):null;
+  if(dynamic&&!dynamic.error&&['travel','explore'].includes(dynamic.verb)){
+    const electorate=t.travelElectorate||r.players.filter(x=>x.connected&&!x.muted&&!x.isBot).map(x=>x.id);
+    const yes=new Set([t.actorId,...sorted.filter(x=>x.kind==='assist').map(x=>x.playerId)]);
+    const votes=electorate.filter(id=>yes.has(id)).length,required=Math.floor(electorate.length/2)+1;
+    t.travelVote={yes:votes,required};
+    if(votes<required)dynamic.error=`The party stays here: travel received ${votes}/${required} required votes. Choose Help them to vote yes during the reaction window.`;
+  }
   if(dynamic&&t.worldBlueprint)Object.assign(dynamic,t.worldBlueprint);
   const check=dynamic||environmentCheck(r.world,t.target,t.intent,t.rulesText||t.action);
   const automatic=!!check?.automatic;

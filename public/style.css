@@ -126,3 +126,11 @@ button.selected,[aria-pressed="true"]{box-shadow:0 0 0 2px var(--gold)}
 .regional-progress{display:grid;gap:6px;margin:10px 0;padding:9px 10px;border-left:2px solid var(--gold);background:#120e1860;color:#d8ccb9;font-size:11px;line-height:1.5}
 .roster-name{max-width:min(190px,22vw);white-space:normal;overflow-wrap:anywhere;line-height:1.4}
 .connection-banner{overflow-wrap:anywhere;line-height:1.55}
+
+/* Leave the lower playfield visible between turns on the shared TV. */
+@media(min-width:901px){
+ .tavern-tv .theatre>.story-open{width:auto;max-width:calc(100vw - 80px);padding:8px 18px;bottom:8px}
+ .tavern-tv .story-open .story-title{font-size:20px;margin:0}
+ .tavern-tv .story-open>.eyebrow,.tavern-tv .story-open>.story-text,.tavern-tv .story-open .tiny{display:none}
+ .tavern-tv .story-open>.story-meta{margin-top:4px}
+}
