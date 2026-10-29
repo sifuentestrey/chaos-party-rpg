@@ -7,6 +7,9 @@
 import { Mob } from './entity/character/mob/mob';
 import { Npc } from './entity/character/npc/npc';
 
+// Fracture's legacy BubbleManager inserts HTML, so never pass unescaped phone text.
+const escapeHtml = (s: string) => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c] as string));
+
 function entityLabel(entity: any): string {
   return String(entity.name || entity.getSpriteName?.() || entity.constructor?.name || '').toLowerCase();
 }
@@ -31,7 +34,7 @@ export function interpretFractureCommand(game: any, raw: string): string {
   if(!game.started||!game.player||!controller)return 'Character is not in the game yet.';
   if(game.player.isDead)return 'Character is knocked out.';
   // Show the actual action, not a generic "Idea locked" banner.
-  game.showBubbleFor(game.player,text.slice(0,52));
+  game.showBubbleFor(game.player,escapeHtml(text.slice(0,52)));
   let match=text.match(/^(?:i\s+)?(?:try to\s+)?(?:attack|tackle|hit|fight|strike|punch|kick)\s+(.+)$/i);
   if(match){
     const mob=selectEntity(game,'mob',match[1]);
@@ -64,11 +67,13 @@ export function startChaosRemote(game: any): void {
   const params=new URLSearchParams(window.location.search);
   const base=params.get('chaosBridge'),key=params.get('tvKey');
   if(!base||!key)return; // Ordinary Fracture play stays unchanged.
+  if(game.__chaosRemoteStarted)return; // Fracture may invoke game-start again after reconnect.
   let endpoint:URL;
   try{
     endpoint=new URL(base);
     if(endpoint.protocol!=='http:'||endpoint.hostname!==window.location.hostname||endpoint.port!=='4748')throw new Error('Bridge must be on this Mac/LAN host at port 4748');
   }catch(e){console.error('[Chaos Party] Invalid bridge origin',e);return;}
+  game.__chaosRemoteStarted=true;
   const panel=document.createElement('div');
   panel.id='chaos-party-recent-events';
   Object.assign(panel.style,{position:'fixed',left:'12px',bottom:'12px',maxWidth:'min(370px, 42vw)',zIndex:'10000',padding:'9px 12px',background:'rgba(5,10,18,.7)',color:'#f6f7fa',borderRadius:'8px',font:'13px system-ui',pointerEvents:'none'});
@@ -84,7 +89,7 @@ export function startChaosRemote(game: any): void {
       if(typeof data?.text!=='string')return;
       const result=interpretFractureCommand(game,data.text);
       add(result);
-      game.showNotification?.(result);
+      game.showNotification?.(escapeHtml(result));
     }catch(e){console.warn('[Chaos Party] Action error',e);add('Action could not be completed.');}
   });
   source.onerror=()=>add('Phone controller disconnected; trying to reconnect.');
