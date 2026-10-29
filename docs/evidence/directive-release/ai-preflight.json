@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "createdAt": "2026-10-29T15:26:31.743Z",
+  "sourceCommit": "0bd3c2537c23ccfde69248707960b0d20cf3f52a",
+  "sourceDirty": false,
+  "mode": "interpretation",
+  "dryRun": false,
+  "evidence": "live-provider",
+  "inferenceRun": false,
+  "qualified": false,
+  "productionBudgetMs": 5500,
+  "preflight": {
+    "allowed": false,
+    "ledger": "/workspace/chaos-party-rpg/data/ai-free-usage.json",
+    "day": "2026-10-29",
+    "count": 100,
+    "allowance": {
+      "dailyLimit": 100,
+      "remaining": 0,
+      "perMinute": 4,
+      "minuteRemaining": 0,
+      "state": "ready"
+    },
+    "reason": "The shared daily or minute allowance cannot cover this batch."
+  },
+  "requestBudget": 6,
+  "hardwareIsTargetMac": false,
+  "results": [],
+  "manualReviewRequired": false,
+  "stopped": "The shared daily or minute allowance cannot cover this batch.",
+  "summary": {
+    "completed": 0,
+    "completeCaseSet": false,
+    "passed": 0,
+    "boundedBatchPassed": false,
+    "semanticReviewRequired": false,
+    "qualified": false
+  }
+}

@@ -22,11 +22,11 @@ Canonical branch: `luna/visual-game-night-release`. This checklist evaluates the
 
 - [x] Distinct engine-owned scene-event recipes for outdoor physical effects, healing, fire, repair, sound and speech. Effects must target the actual victim, not a tool or missing-player fallback. Failed/blocked actions cannot show successful target damage.
 - [x] Native theft of an actual NPC-owned item, visible NPC possessions, remembered attitude/trust consequences, failed-theft ownership protection, durable NPC witness memory and no player-inventory theft.
-- [ ] Fresh full offline gate and packaged browser evidence for those additions; latest clean-source ZIP/checksum and source backup.
+- [x] Fresh full offline gate and packaged browser evidence for those additions; latest clean-source ZIP/checksum and source backup.
 
 ## Implemented infrastructure; external qualification blocked
 
-- [ ] **Genuine creative AI DM accepted.** Existing typed interpretation, authority checks, canonical narrator context, bounded rolling memory, cancellation/timeouts, opt-in provider and shared 100/day + four/minute guard are implemented. Real-model accuracy, dialogue truthfulness/quality, latency and actual selective game-night capacity remain unqualified. Interpretation/narration preflights refused provider contact because the existing shared usage ledger is unavailable; do not invent/reset a replacement allowance. Narration remains off by default. Restore the existing ledger to run the prepared bounded cases.
+- [ ] **Genuine creative AI DM accepted.** Existing typed interpretation, authority checks, canonical narrator context, bounded rolling memory, cancellation/timeouts, opt-in provider and shared 100/day + four/minute guard are implemented. Real-model accuracy, dialogue truthfulness/quality, latency and actual selective game-night capacity remain unqualified. The missing request counter was recovered conservatively on October 29 by reserving the entire current-day allowance: zero extra attempts granted and no provider calls made. A fresh interpretation preflight correctly refused contact with zero remaining allowance. Narration stays off. After the normal UTC-day rollover (October 30), run the prepared bounded interpretation and narration cases using this same persistent counter; never reset it to gain attempts.
 - [ ] **Physical release acceptance.** Run the actual early-2015 Intel Mac/macOS, TV/audio, home Wi-Fi/firewall/QR, two real phones for at least 90 seconds, save/rejoin and performance checks; then test the intended family group. Cloud browsers and Linux Node cannot certify these.
 
 ## Missing external references, handled without copying
@@ -38,4 +38,4 @@ Canonical branch: `luna/visual-game-night-release`. This checklist evaluates the
 
 - `docs/DAWN_BELL_RELEASE.md` and `docs/evidence/dawn-bell-release/`: clean source 06bcad3, 195-test baseline, twenty-client tests, two complete browser adventures, packaged Node 22 expedition, restart/rejoin, no blank canvas or encoder warnings.
 - `tests/expedition*.mjs`, `tests/multiplayer.test.mjs`, `tests/travel-vote.test.mjs`: connected campaign, alternate routes, crossing damage/repair, final ending, memory/identity and real multiplayer.
-- `tests/reactive-scenes.test.mjs`: six action-scene, canonical target, NPC-theft and memory regressions; source integration gate passed 201 tests and a complete two-controller browser adventure. Updated packaged evidence pending above.
+- `tests/reactive-scenes.test.mjs`: six action-scene, canonical target, NPC-theft and memory regressions; source integration gate passed 201 tests and the packaged Node 22 two-controller adventure also passed. Current evidence: docs/evidence/directive-release/.
