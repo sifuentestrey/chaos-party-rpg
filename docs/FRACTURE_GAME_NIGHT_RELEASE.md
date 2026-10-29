@@ -1,5 +1,7 @@
 # Chaos Party — local Fracture beta acceptance
 
+> **MIGRATION WARNING (owner correction, Oct 29): This is NOT the original Chaos Party game migrated to Fracture.** It is an isolated *Fracture multiplayer/phone-to-TV technology demo*. Major existing Chaos features—Crown Job, Dawn Bell's seventeen scenes, custom characters/classes, server dice/advantage, ownership/crafting/fire/repair, NPC memory, campaign persistence, group travel voting and qualified creative storytelling—are **not** present here. Passing tests do not establish gameplay equivalence. See [full parity audit](CHAOS_TO_FRACTURE_PARITY.md). Keep original Chaos project as canonical until approved migration/renderer decision.
+
 October 29, 2026. Experimental branch only: `spike/fracture-phone-tv`. Work order: [issue #12](https://github.com/sifuentestrey/chaos-party-rpg/issues/12). **Playable beta prepared for physical Mac rehearsal; not a claim of completed hardware acceptance.** No merge, public game deployment or paid service was performed.
 
 ## Verified behavior
