@@ -72,3 +72,34 @@ jobs:
           if [ "$ready" -ne 1 ]; then tail -80 "$RUNNER_TEMP/fracture-startup.log"; exit 1; fi
           test -s "$RUNNER_TEMP/fracture-index.html"
           echo 'Fracture game server responds to HTTP, AI unset.'
+
+  mac-source-kit:
+    name: Verified Mac beta source kit
+    needs: [bridge-unit, pinned-fracture-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package committed isolated game-night beta (no secrets or saved games)
+        run: |
+          python3 experiments/fracture-phone-tv/package-beta.py "$RUNNER_TEMP/Chaos_Party_Fracture_Beta.zip"
+          unzip -t "$RUNNER_TEMP/Chaos_Party_Fracture_Beta.zip"
+          python3 - "$RUNNER_TEMP/Chaos_Party_Fracture_Beta.zip" <<'PY'
+          import sys,zipfile
+          p=sys.argv[1]
+          with zipfile.ZipFile(p) as z:
+              names=z.namelist()
+              assert any(n.endswith('/Start_Chaos_Party.command') for n in names)
+              assert any(n.endswith('/SOURCE.txt') for n in names)
+              assert not any(n.endswith(('.db','.sqlite','.env')) or '/node_modules/' in n or '/data/' in n for n in names)
+              print('Confirmed: launcher + source identity; no databases, credentials or installed dependencies')
+          PY
+      - name: Attach downloadable Mac beta kit to this successful build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Chaos-Party-Fracture-Mac-Source-Kit
+          path: |
+            ${{ runner.temp }}/Chaos_Party_Fracture_Beta.zip
+            ${{ runner.temp }}/Chaos_Party_Fracture_Beta.zip.sha256
+          if-no-files-found: error
+          retention-days: 7
