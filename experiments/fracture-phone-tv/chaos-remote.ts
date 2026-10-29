@@ -35,6 +35,30 @@ export function interpretFractureCommand(game: any, raw: string): string {
   if(game.player.isDead)return 'Character is knocked out.';
   // Show the actual action, not a generic "Idea locked" banner.
   game.showBubbleFor(game.player,escapeHtml(text.slice(0,52)));
+  // STOP interrupts this TV actor immediately, even during the party action window.
+  // Fracture's MOVE handler clears the server's attack target; coordinates are the
+  // player's *actual* tile and are not an arbitrary teleport or damage message.
+  if(/^(?:stop|halt|cancel|stop moving|stop attacking|stop fighting|wait|hold still)[.!]?$/i.test(text)){
+    const player=game.player;
+    player.disengage();
+    player.stop();
+    player.idle();
+    game.client?.sendMove?.(player.gridX,player.gridY);
+    return 'Stopping your character.';
+  }
+  const direction=text.match(/^(?:i\s+)?(?:try to\s+)?(?:move|walk|go|run|step)\s+(?:(?:one|1)\s+(?:step\s+)?)?(left|right|up|down|north|south|east|west)[.!]?$/i);
+  if(direction){
+    const vectors:Record<string,[number,number]>={left:[-1,0],west:[-1,0],right:[1,0],east:[1,0],up:[0,-1],north:[0,-1],down:[0,1],south:[0,1]};
+    const [dx,dy]=vectors[direction[1].toLowerCase()];
+    const player=game.player;
+    const x=(player.isMoving() ? player.nextGridX : player.gridX)+dx;
+    const y=(player.isMoving() ? player.nextGridY : player.gridY)+dy;
+    if(game.isZoning?.()||x<0||y<0||x>=game.map.width||y>=game.map.height||game.map.isColliding(x,y))return 'Cannot move that way: blocked.';
+    if(game.getEntityAt?.(x,y))return 'There is something in the way. Try interacting with it.';
+    if(game.map.isPlateau && player.isOnPlateau!==game.map.isPlateau(x,y))return 'Cannot cross that ledge.';
+    game.movePlayerInDirection(dx,dy);
+    return `Moving ${direction[1].toLowerCase()}.`;
+  }
   let match=text.match(/^(?:i\s+)?(?:try to\s+)?(?:attack|tackle|hit|fight|strike|punch|kick)\s+(.+)$/i);
   if(match){
     const mob=selectEntity(game,'mob',match[1]);
@@ -60,7 +84,10 @@ export function interpretFractureCommand(game: any, raw: string): string {
     const labels=Object.values(game.entities||{}).filter((e:any)=>e instanceof Mob||e instanceof Npc).slice(0,8).map(entityLabel);
     return labels.length?`Nearby: ${labels.join(', ')}.`:'No nearby characters are visible.';
   }
-  return `Not yet supported: ${text}. Try attack, talk to, look around, or walk to x,y.`;
+  if(/^(?:move|push|drag|lift|carry)\s+(?:the\s+)?(?:tent|tree|wall|building|house|rock|crate)\b/i.test(text)){
+    return 'I cannot move that environmental object with the available Fracture actions.';
+  }
+  return `Not yet supported: ${text}. Try move left, stop, attack, talk to, look around, or walk to x,y.`;
 }
 
 export function startChaosRemote(game: any): void {
