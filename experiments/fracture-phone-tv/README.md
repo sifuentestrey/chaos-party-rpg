@@ -10,7 +10,7 @@ The local bridge provides paired host/TV/phone URLs, a plain phone text field, a
 
 ## One-click Mac trial
 
-On a Mac with Node 22+ installed: double-click `Start_Fracture_Chaos_Test.command` (or run it in Terminal). It will create its own checkout in `~/Fracture-Chaos-Spike`, install/build there, run six offline tests, start ports 8000/4748 and open the host page. It does not alter original Chaos Party. On first use, network download/install may take time. If macOS blocks the downloaded script, inspect it and run from Terminal instead; do not bypass security prompts blindly. Press Control-C in the launcher Terminal to stop.
+On a Mac with Node 22+ installed: double-click `Start_Fracture_Chaos_Test.command` (or run it in Terminal). The launcher intentionally invokes `npx --yes pnpm@10`, which respects the upstream Fracture `pnpm.onlyBuiltDependencies` allowlist for `better-sqlite3` and `esbuild`; pnpm 12 ignores this legacy field and produces `ERR_PNPM_IGNORED_BUILDS`. No global pnpm installation or blanket build-script approval is required. It will create its own checkout in `~/Fracture-Chaos-Spike`, install/build there, run six offline tests, start ports 8000/4748 and open the host page. It does not alter original Chaos Party. On first use, network download/install may take time. If macOS blocks the downloaded script, inspect it and run from Terminal instead; do not bypass security prompts blindly. Press Control-C in the launcher Terminal to stop.
 
 ## Run a one-character trial on a Mac with Node 22+ and pnpm
 
@@ -32,3 +32,18 @@ On a Mac with Node 22+ installed: double-click `Start_Fracture_Chaos_Test.comman
 - This script intentionally refuses repeated patches or targeting a non-Fracture checkout.
 
 After an actual attack-and-response demo passes and visual quality satisfies the owner, evaluate an authenticated headless character-per-phone architecture and spectator camera. Otherwise stop and change foundation instead of spending more effort on poor fit.
+
+
+## macOS error: `ERR_PNPM_IGNORED_BUILDS` from pnpm 12
+
+The original launcher selected Corepack's latest pnpm (12.16.1 on the first physical Mac test), which ignores Fracture's version-10 `pnpm.onlyBuiltDependencies` field. The pinned-major launcher above fixes that and reuses the existing `~/Fracture-Chaos-Spike` clone. Do **not** approve all arbitrary install scripts or alter the original Chaos Party checkout.
+
+If you previously downloaded a ZIP, replace **only** the launcher script in the unpacked folder using the current branch copy:
+
+```sh
+cd ~/Downloads/chaos-fracture-spike
+curl -fsSL https://raw.githubusercontent.com/sifuentestrey/chaos-party-rpg/spike/fracture-phone-tv/experiments/fracture-phone-tv/Start_Fracture_Chaos_Test.command -o Start_Fracture_Chaos_Test.command
+bash Start_Fracture_Chaos_Test.command
+```
+
+This keeps the sibling scripts from the ZIP and may reinstall dependency artifacts if pnpm 10 cannot reuse the modules initially created by pnpm 12. That reinstall affects only `~/Fracture-Chaos-Spike/node_modules`, never original Chaos saves. If pnpm reports an incompatible modules store, stop and share the exact error; do not delete any unrelated folder.
