@@ -170,13 +170,18 @@ setInterval(poll,750);poll();
     if(intent.verb!=='cancel'&&now-s.lastAction<200)return json(res,429,{error:'Give your character a moment.'});s.lastAction=now;
     const id=randomUUID();s.results.set(id,{status:'received',message:b.text.trim()});
     if(s.results.size>80)s.results.delete(s.results.keys().next().value);
-    if(meaningful.has(intent.verb))s.declarations.set(id,{text:b.text.trim()});
+    if(meaningful.has(intent.verb)){
+      s.declarations.set(id,{text:b.text.trim()});
+      if(s.declarations.size>80)s.declarations.delete(s.declarations.keys().next().value);
+    }
     s.socket.timeout(2000).emit('chaos:action',{key:actorKey,id,intent,actorId:s.actor.id,issuedAt:Date.now()},(error,r)=>{
       if(error||r?.error){
         s.declarations.delete(id);
         // A completed/cancelled result is authoritative; never downgrade a late receipt.
         const previous=s.results.get(id);
-        if(previous&&!['succeeded','cancelled','failed','blocked'].includes(previous.status)){
+        // A started result came from the authenticated native actor; a late
+        // transport ACK error cannot retroactively declare that action blocked.
+        if(previous?.status==='received'){
           const result={status:'blocked',message:r?.error||'No engine acknowledgment. Please stop before retrying.'};
           s.results.set(id,result);record({player:s.player.name,id,...result});
         }
