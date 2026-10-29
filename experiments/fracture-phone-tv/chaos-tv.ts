@@ -71,7 +71,9 @@ export function startChaosTV(game:any):void {
     if(!players.some((p:any)=>String(p.actor.id)===select.value))selected=String(players[0]?.actor.id||'');else selected=select.value;
     select.textContent='';for(const p of players){const option=document.createElement('option');option.value=String(p.actor.id);option.textContent=`${p.name} · HP ${p.actor.hp}/${p.actor.maxHp}`;select.append(option);}select.value=selected;
     game.client.connection.emit('chaos:watch',{key:config.key,actorId:selected||null},()=>{});
-    log.textContent='';for(const e of data.events.slice(-3)){const row=document.createElement('div');row.textContent=`${e.player}: ${e.message}`;log.append(row);}
+    log.textContent='';
+    if(data.rally?.status==='pending'){const row=document.createElement('div');row.textContent=`Party rally vote: ${data.rally.yes}/${data.rally.required} yes · ${Math.max(0,Math.ceil((data.rally.deadline-Date.now())/1000))}s`;log.append(row);}
+    for(const e of data.events.slice(-3)){const row=document.createElement('div');row.textContent=`${e.player}: ${e.message}`;log.append(row);}
     if(!players.length&&connected.length)log.textContent='Party knocked out — respawn on your phones.';
     lobby.hidden=connected.length>0;lobby.style.display=connected.length?'none':'grid';if(!connected.length){lobby.textContent='';const title=document.createElement('h1');title.textContent='Chaos Party';lobby.append(title);const qr=document.createElement('div');qr.style.cssText='width:260px;margin:auto;background:white';qr.innerHTML=data.lobby.qr;lobby.append(qr);const message=document.createElement('p');message.textContent='Scan to join. Your phone is your character.';lobby.append(message);log.textContent='Waiting for phones to join the adventure…';}
   }catch{log.textContent='Room connection lost; reconnecting…';}};
