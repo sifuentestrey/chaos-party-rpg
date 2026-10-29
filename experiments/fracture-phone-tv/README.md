@@ -8,6 +8,10 @@ Fracture upstream pinned for review: `georgeglarson/Fracture` at `642c00a8a2d3a9
 
 The local bridge provides paired host/TV/phone URLs, a plain phone text field, a shared eight-second lock, and a tiny recent-action stream. Six Node.js offline tests verify host/phone/TV separation, missing TV behavior, event forwarding and action lock, and cross-origin rejection. This is not proof that the whole Fracture game has booted or executed a live attack.
 
+## One-click Mac trial
+
+On a Mac with Node 22+ installed: double-click `Start_Fracture_Chaos_Test.command` (or run it in Terminal). It will create its own checkout in `~/Fracture-Chaos-Spike`, install/build there, run six offline tests, start ports 8000/4748 and open the host page. It does not alter original Chaos Party. On first use, network download/install may take time. If macOS blocks the downloaded script, inspect it and run from Terminal instead; do not bypass security prompts blindly. Press Control-C in the launcher Terminal to stop.
+
 ## Run a one-character trial on a Mac with Node 22+ and pnpm
 
 1. Open Terminal in this `experiments/fracture-phone-tv` folder. Run `node --test bridge.test.mjs`.
