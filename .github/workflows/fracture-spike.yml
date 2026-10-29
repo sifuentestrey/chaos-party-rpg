@@ -17,11 +17,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --test experiments/fracture-phone-tv/bridge.test.mjs experiments/fracture-phone-tv/apply-overlay.test.mjs
-      - name: Validate Mac launcher and pnpm 10 compatibility selection
+      - name: Test current multiplayer bridge and action contract (plus legacy regressions)
+        run: node --test experiments/fracture-phone-tv/*.test.mjs
+      - name: Validate current Mac beta launcher and pinned package manager
         run: |
           bash -n experiments/fracture-phone-tv/Start_Fracture_Chaos_Test.command
-          grep -Fq 'npx --yes pnpm@10 "$@"' experiments/fracture-phone-tv/Start_Fracture_Chaos_Test.command
+          grep -Fq 'pnpm@10.34.9' experiments/fracture-phone-tv/Start_Fracture_Chaos_Test.command
+          grep -Fq 'apply-party-overlay.mjs' experiments/fracture-phone-tv/Start_Fracture_Chaos_Test.command
+          grep -Fq 'party-bridge.mjs' experiments/fracture-phone-tv/Start_Fracture_Chaos_Test.command
   pinned-fracture-build:
     runs-on: ubuntu-latest
     timeout-minutes: 13
@@ -40,18 +43,21 @@ jobs:
           npm install --global pnpm@10
           cd "$RUNNER_TEMP/Fracture"
           pnpm install --frozen-lockfile
-      - name: Apply narrow TV adapter only to disposable Fracture clone
-        run: node experiments/fracture-phone-tv/apply-overlay.mjs "$RUNNER_TEMP/Fracture"
+      - name: Apply actual game-night party adapter to disposable Fracture clone
+        run: node experiments/fracture-phone-tv/apply-party-overlay.mjs "$RUNNER_TEMP/Fracture"
+      - name: Verify safe repeat application and protection of saved state
+        run: |
+          FRACTURE_TEST_ROOT="$RUNNER_TEMP/Fracture" node --test experiments/fracture-phone-tv/party-overlay.test.mjs
       - name: Compile Fracture client and server with adapter
         run: |
           cd "$RUNNER_TEMP/Fracture"
           pnpm run build:server
           pnpm run build:client
-      - name: Run pinned upstream automated tests
+      - name: Run pinned Fracture tests with multiplayer beta adapter included
         run: |
           cd "$RUNNER_TEMP/Fracture"
           pnpm test
-      - name: Verify real Fracture server boots and serves a client without AI keys
+      - name: Verify real beta-adapted Fracture server boots and serves a client without AI keys
         run: |
           cd "$RUNNER_TEMP/Fracture"
           NO_DEBUG=1 node dist/server/ts/main.js > "$RUNNER_TEMP/fracture-startup.log" 2>&1 &
