@@ -11,7 +11,7 @@ const json = (res, code, value) => {res.writeHead(code, {'content-type':'applica
 const wrap = (title, body) => `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>body{font:16px system-ui,sans-serif;background:#151b24;color:#edf1fa;margin:0;padding:28px}main{max-width:600px;margin:auto}a{color:#91c5ff}input,button{font:inherit;padding:15px;border-radius:10px}input{box-sizing:border-box;width:100%;background:#263344;color:#fff;border:1px solid #647386}button{margin-top:14px;background:#a8d6ff;color:#101927;border:0;cursor:pointer;width:100%;font-weight:700}small{color:#aebbd0}.panel{padding:18px;background:#222c3b;border-radius:14px;margin-top:18px;overflow-wrap:anywhere}#status{min-height:22px}</style></head><body><main>${body}</main></body></html>`;
 const discoverLan = () => Object.values(os.networkInterfaces()).flat().find(x=>x && x.family==='IPv4' && !x.internal)?.address || 'localhost';
 
-export function createBridge({port=4748, bind='0.0.0.0', fracturePort=8000, clock=()=>Date.now(), tokens=null}={}) {
+export function createBridge({port=4748, bind='0.0.0.0', fracturePort=8000, clock=()=>Date.now(), tokens=null, lanIp=discoverLan}={}) {
   const secrets=tokens||{host:token(), phone:token(), tv:token()};
   const clients=new Set(); let busyUntil=0; const recent=[];
   const roomState=()=>({connectedTv:clients.size>0,readyAt:busyUntil,recent:[...recent]});
@@ -28,8 +28,10 @@ export function createBridge({port=4748, bind='0.0.0.0', fracturePort=8000, cloc
     if(pathname==='/host' && req.method==='GET'){
       if(url.searchParams.get('key')!==secrets.host)return json(res,403,{error:'Invalid host link'});
       const remoteHost=(req.headers.host||'localhost').split(':')[0];
-      const bridgeOrigin=`http://${remoteHost}:${port}`;
-      const join=`${bridgeOrigin}/join?key=${secrets.phone}`;
+      const livePort=server.address()?.port || port;
+      const bridgeOrigin=`http://${remoteHost}:${livePort}`;
+      const phoneHost=['localhost','127.0.0.1'].includes(remoteHost)?lanIp():remoteHost;
+      const join=`http://${phoneHost}:${livePort}/join?key=${secrets.phone}`;
       const tvOrigin=`http://${remoteHost}:${fracturePort}`;
       const launch=`${tvOrigin}/?chaosBridge=${encodeURIComponent(bridgeOrigin)}&tvKey=${secrets.tv}`;
       res.writeHead(200,{'content-type':'text/html; charset=utf-8','cache-control':'no-store'});
