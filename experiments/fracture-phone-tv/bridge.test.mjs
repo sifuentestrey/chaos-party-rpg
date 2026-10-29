@@ -4,7 +4,7 @@ import {createBridge} from './bridge.mjs';
 
 async function setup(t){
   let now=1000;
-  const app=createBridge({port:0,bind:'127.0.0.1',clock:()=>now,tokens:{host:'host',phone:'phone',tv:'tv'}});
+  const app=createBridge({port:0,bind:'127.0.0.1',clock:()=>now,tokens:{host:'host',phone:'phone',tv:'tv'},lanIp:()=> '192.168.5.22'});
   await app.start(); t.after(()=>app.close());
   return {app,base:`http://127.0.0.1:${app.server.address().port}`,setTime:v=>now=v};
 }
@@ -13,7 +13,11 @@ const post=(base,data,headers={})=>fetch(`${base}/action`,{method:'POST',headers
 test('host and phone pairing secrets are independent', async t=>{
  const {base}=await setup(t);
  assert.equal((await fetch(`${base}/host?key=phone`)).status,403);
- assert.equal((await fetch(`${base}/host?key=host`)).status,200);
+ const host=await fetch(`${base}/host?key=host`);
+ assert.equal(host.status,200);
+ const hostHtml=await host.text();
+ assert.match(hostHtml,new RegExp('http://192\\.168\\.5\\.22:'+new URL(base).port+'/join'));
+ assert.match(hostHtml,/http:\/\/127\.0\.0\.1:8000/);
  assert.equal((await fetch(`${base}/join?key=host`)).status,403);
  assert.equal((await fetch(`${base}/join?key=phone`)).status,200);
  assert.equal((await fetch(`${base}/events?key=phone`)).status,403);
