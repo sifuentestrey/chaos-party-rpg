@@ -13,7 +13,7 @@ const discoverLan = () => Object.values(os.networkInterfaces()).flat().find(x=>x
 
 export function createBridge({port=4748, bind='0.0.0.0', fracturePort=8000, clock=()=>Date.now(), tokens=null, lanIp=discoverLan}={}) {
   const secrets=tokens||{host:token(), phone:token(), tv:token()};
-  const clients=new Set(); let busyUntil=0; const recent=[];
+  const clients=new Set(); let busyUntil=0; const recent=[]; const outcomes=new Map();
   const roomState=()=>({connectedTv:clients.size>0,readyAt:busyUntil,recent:[...recent]});
   const broadcast=(type,data)=>{for(const res of clients){try{res.write(`event: ${type}\ndata: ${JSON.stringify(data)}\n\n`);}catch{clients.delete(res);}}};
   const readBody=async req=>{
@@ -40,7 +40,7 @@ export function createBridge({port=4748, bind='0.0.0.0', fracturePort=8000, cloc
     if(pathname==='/join' && req.method==='GET'){
       if(url.searchParams.get('key')!==secrets.phone)return json(res,403,{error:'Invalid controller link'});
       res.writeHead(200,{'content-type':'text/html; charset=utf-8','cache-control':'no-store'});
-      return res.end(wrap('Chaos Party phone controller',`<h1>Chaos Party</h1><p>Type an action for the character shown on TV.</p><form id="f"><input id="action" placeholder="What do you do?" maxlength="180" autocomplete="off" autofocus required><button id="send" type="submit">Send</button></form><div class="panel" id="status" aria-live="polite">Ready.</div><p><small>Test examples: attack the rat; talk to the guard; look around. Other actions are not implemented yet.</small></p><script>const key=${JSON.stringify(secrets.phone)};const f=document.getElementById('f'),a=document.getElementById('action'),s=document.getElementById('status');f.addEventListener('submit',async(e)=>{e.preventDefault();const text=a.value.trim();if(text.length<2)return;s.textContent='Sending…';try{const r=await fetch('/action',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key,text})});const v=await r.json();s.textContent=v.error||v.message;if(r.ok)a.value='';}catch{s.textContent='Connection failed. Check Wi-Fi and the host.'}})</script>`));
+      return res.end(wrap('Chaos Party phone controller',`<h1>Chaos Party</h1><p>Type an action for the character shown on TV.</p><form id="f"><input id="action" placeholder="What do you do?" maxlength="180" autocomplete="off" autofocus required><button id="send" type="submit">Send</button></form><div class="panel" id="status" aria-live="polite">Ready.</div><p><small>Test examples: attack the rat; talk to the guard; look around. Other actions are not implemented yet.</small></p><script>const key=${JSON.stringify(secrets.phone)};const f=document.getElementById('f'),a=document.getElementById('action'),s=document.getElementById('status');f.addEventListener('submit',async(e)=>{e.preventDefault();const text=a.value.trim();if(text.length<2)return;s.textContent='Sending…';try{const r=await fetch('/action',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key,text})});const v=await r.json();s.textContent=v.error||v.message;if(r.ok){a.value='';for(let i=0;i<18;i++){await new Promise(done=>setTimeout(done,250));const status=await fetch('/result?key='+encodeURIComponent(key)+'&id='+encodeURIComponent(v.id)).then(x=>x.json());if(status.status&&status.status!=='queued'){s.textContent=status.status.toUpperCase()+': '+status.message;break;}}}}catch{s.textContent='Connection failed. Check Wi-Fi and the host.'}})</script>`));
     }
     if(pathname==='/events' && req.method==='GET'){
       if(url.searchParams.get('key')!==secrets.tv)return json(res,403,{error:'Invalid TV pairing'});
@@ -52,6 +52,28 @@ export function createBridge({port=4748, bind='0.0.0.0', fracturePort=8000, cloc
       clients.add(res);res.write(`event: ready\ndata: {"paired":true}\n\n`);
       req.on('close',()=>clients.delete(res));return;
     }
+    if(pathname==='/result' && req.method==='GET'){
+      if(url.searchParams.get('key')!==secrets.phone)return json(res,403,{error:'Invalid controller pairing'});
+      const result=outcomes.get(url.searchParams.get('id'));
+      return result?json(res,200,result):json(res,404,{error:'No such action'});
+    }
+    if(pathname==='/outcome' && req.method==='OPTIONS'){
+      const origin=req.headers.origin||'';
+      let parsed;try{parsed=new URL(origin);}catch{return json(res,403,{error:'Invalid TV origin'});}
+      if(parsed.protocol!=='http:'||Number(parsed.port)!==fracturePort||!['localhost','127.0.0.1',discoverLan(),(req.headers.host||'').split(':')[0]].includes(parsed.hostname))return json(res,403,{error:'TV origin not allowed'});
+      res.writeHead(204,{'access-control-allow-origin':origin,'access-control-allow-headers':'content-type','access-control-allow-methods':'POST, OPTIONS','vary':'Origin'});return res.end();
+    }
+    if(pathname==='/outcome' && req.method==='POST'){
+      const origin=req.headers.origin||'';
+      let parsed;try{parsed=new URL(origin);}catch{return json(res,403,{error:'Invalid TV origin'});}
+      if(parsed.protocol!=='http:'||Number(parsed.port)!==fracturePort||!['localhost','127.0.0.1',discoverLan(),(req.headers.host||'').split(':')[0]].includes(parsed.hostname))return json(res,403,{error:'TV origin not allowed'});
+      const headers={'access-control-allow-origin':origin,'vary':'Origin','cache-control':'no-store'};
+      let body;try{body=await readBody(req);}catch{return json(res,400,{error:'Invalid outcome'});}
+      if(body?.key!==secrets.tv)return json(res,403,{error:'Invalid TV pairing'});
+      if(!outcomes.has(body.id)||!['started','blocked','completed'].includes(body.status)||typeof body.message!=='string'||body.message.length>250)return json(res,400,{error:'Invalid action outcome'});
+      outcomes.set(body.id,{status:body.status,message:body.message});
+      res.writeHead(200,{'content-type':'application/json',...headers});return res.end('{"ok":true}');
+    }
     if(pathname==='/action' && req.method==='POST'){
       if(req.headers['content-type']?.split(';')[0].trim()!=='application/json')return json(res,415,{error:'Send JSON'});
       const origin=req.headers.origin;
@@ -61,10 +83,12 @@ export function createBridge({port=4748, bind='0.0.0.0', fracturePort=8000, cloc
       const text=typeof body.text==='string'?body.text.trim():'';
       if(text.length<2||text.length>180||/[<>\x00-\x08\x0e-\x1f]/.test(text))return json(res,400,{error:'Action must be 2–180 characters'});
       if(!clients.size)return json(res,503,{error:'Open the Fracture game on the TV first'});
-      if(clock()<busyUntil)return json(res,409,{error:'Another action is resolving. Try again shortly.'});
-      busyUntil=clock()+8000;
+      const isStop=/^(?:stop|halt|cancel|stop moving|stop attacking|stop fighting|wait|hold still)[.!]?$/i.test(text);
+      if(clock()<busyUntil&&!isStop)return json(res,409,{error:'Another action is resolving. Try again shortly.'});
+      busyUntil=isStop?clock():clock()+8000;
       const action={id:randomUUID(),text,at:clock()};recent.push(action);if(recent.length>3)recent.shift();
-      broadcast('action',action);return json(res,202,{ok:true,id:action.id,message:`Sent: ${text}`});
+      outcomes.set(action.id,{status:'queued',message:'Waiting for TV interpreter'});if(outcomes.size>50)outcomes.delete(outcomes.keys().next().value);
+      broadcast('action',action);return json(res,202,{ok:true,id:action.id,message:`Received: ${text}. Waiting for TV.`});
     }
     json(res,404,{error:'Not found'});
   });
