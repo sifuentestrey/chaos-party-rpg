@@ -42,9 +42,9 @@ fi
 [[ -d "$TARGET/.git" ]] || fail 'Target exists but is not a Git checkout; refusing overwrite.'
 [[ "$(git -C "$TARGET" remote get-url origin)" == *'georgeglarson/Fracture.git' ]] || fail 'Target has an unexpected Git origin; refusing overwrite.'
 [[ "$(git -C "$TARGET" rev-parse HEAD)" == "$PIN" ]] || fail 'Existing Fracture checkout is a different version; refusing overwrite.'
-if ! grep -q 'startChaosRemote(game)' "$TARGET/client/ts/main.ts"; then
-  node "$HERE/apply-overlay.mjs" "$TARGET"
-fi
+# Reapply only the known Chaos-owned adapter, never rewrite upstream gameplay or saves.
+# This refreshes directional/STOP handling when the launcher is updated.
+node "$HERE/apply-overlay.mjs" "$TARGET"
 if [[ ! -f "$TARGET/server/config.json" ]]; then
   cp "$TARGET/server/config.example.json" "$TARGET/server/config.json"
 fi
