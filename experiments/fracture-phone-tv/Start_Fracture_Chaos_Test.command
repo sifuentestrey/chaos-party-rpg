@@ -26,9 +26,11 @@ command -v curl >/dev/null || fail 'curl is required.'
 if lsof -nP -iTCP:8000 -sTCP:LISTEN 2>/dev/null | grep -q LISTEN; then fail 'Port 8000 is in use. Close only your existing Fracture test session first.'; fi
 if lsof -nP -iTCP:4748 -sTCP:LISTEN 2>/dev/null | grep -q LISTEN; then fail 'Port 4748 is in use. Close only an existing Chaos Fracture bridge first.'; fi
 pnpm_cmd() {
-  if command -v pnpm >/dev/null; then pnpm "$@"
-  elif command -v corepack >/dev/null; then corepack pnpm "$@"
-  else npx --yes pnpm@10 "$@"; fi
+  # Fracture's package.json still uses pnpm.onlyBuiltDependencies.
+  # pnpm 12 ignores this legacy field and refuses required native builds.
+  # Use the same pnpm 10 major version as our passing CI, regardless of
+  # whether Mac Corepack has installed pnpm 12 globally.
+  npx --yes pnpm@10 "$@"
 }
 echo '=== Chaos Party on Fracture: separate first test ==='
 echo "Fracture goes into: $TARGET"
