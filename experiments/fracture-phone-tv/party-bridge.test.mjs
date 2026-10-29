@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import {EventEmitter} from 'node:events';
 import {createPartyBridge} from './party-bridge.mjs';
 const post=(base,p,b,headers={})=>fetch(base+p,{method:'POST',headers:{'content-type':'application/json',...headers},body:JSON.stringify(b)});
-async function setup(t){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-room-test-'));const sockets=[];const app=createPartyBridge({root:dir,dataDir:dir,actorKey:'actor-key',tvKey:'tv-key',port:0,bind:'127.0.0.1',ioFactory:()=>{const s=new EventEmitter();s.connected=true;s.connect=()=>{s.connected=true;return s;};s.disconnect=()=>{s.connected=false;s.emit('disconnect');};s.timeout=()=>s;const emit=s.emit.bind(s);s.emit=(event,...args)=>{if(event==='chaos:state'){args[1](null,{ok:true,actor:{id:sockets.indexOf(s)+1,ready:true,x:12,y:12,hp:100}});return true;}if(event==='chaos:save'){args[1](null,{ok:true});return true;}if(event==='chaos:action'){s.lastAction=args[0];args[1](null,{ok:true});return true;}return emit(event,...args);};sockets.push(s);queueMicrotask(()=>s.emit('message',[1,sockets.length,'Test',12,12,100,100]));return s;}});await app.start();t.after(async()=>{await app.close();fs.rmSync(dir,{force:true,recursive:true});});return {app,dir,sockets,base:`http://127.0.0.1:${app.server.address().port}`};}
+async function setup(t){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-room-test-'));const sockets=[];const app=createPartyBridge({root:dir,dataDir:dir,actorKey:'actor-key',tvKey:'tv-key',port:0,bind:'127.0.0.1',ioFactory:()=>{const s=new EventEmitter();s.connected=true;s.connect=()=>{s.connected=true;return s;};s.disconnect=()=>{s.connected=false;s.emit('disconnect');};s.timeout=()=>s;const emit=s.emit.bind(s);s.emit=(event,...args)=>{if(event==='chaos:state'){args[1](null,{ok:true,actor:{id:sockets.indexOf(s)+1,ready:true,x:12,y:12,hp:100}});return true;}if(event==='chaos:save'){args[1](null,{ok:true});return true;}if(event==='chaos:action'){s.lastAction=args[0];const status=s.nextOutcome||'started';s.nextOutcome=null;emit('chaos:receipt',{id:args[0].id,status,message:status});args[1](null,{ok:true});return true;}return emit(event,...args);};sockets.push(s);queueMicrotask(()=>s.emit('message',[1,sockets.length,'Test',12,12,100,100]));return s;}});await app.start();t.after(async()=>{await app.close();fs.rmSync(dir,{force:true,recursive:true});});return {app,dir,sockets,base:`http://127.0.0.1:${app.server.address().port}`};}
 test('controller script parses and credentials stay off phone',async t=>{const {app,base}=await setup(t);const html=await(await fetch(base+'/join?key='+app.room.join)).text();assert.doesNotThrow(()=>new Function(html.match(/<script>([\s\S]*)<\/script>/)[1]));assert.ok(!html.includes('actor-key'));assert.ok(!html.includes('tv-key'));assert.ok(!html.includes('password'));});
 test('two identities route to distinct actors, results stay private, and reconnect keeps credentials',async t=>{const {app,base,sockets,dir}=await setup(t);const pair=async name=>(await(await post(base,'/pair',{key:app.room.join,name})).json()).token;const a=await pair('Ada'),b=await pair('Bryn');assert.notEqual(a,b);await new Promise(r=>setTimeout(r,20));const r=await post(base,'/action',{token:a,text:'walk north 3'});assert.equal(r.status,202);const {id}=await r.json();assert.equal(sockets[0].lastAction.id,id);assert.equal(sockets[1].lastAction,undefined);const unknown=await post(base,'/action',{token:app.room.join,text:'stop'});assert.equal(unknown.status,403);const state=await(await fetch(base+'/state?token='+b)).json();assert.ok(!state.results.some(r=>r.id===id));assert.ok(!JSON.stringify(state).includes(app.room.players[0].password));const saved=JSON.parse(fs.readFileSync(path.join(dir,'room.json')));assert.equal(saved.players[0].token,a);assert.ok((fs.statSync(path.join(dir,'room.json')).mode&0o077)===0);});
 test('room pairing, origin, and TV state access are separated',async t=>{const {app,base}=await setup(t);assert.equal((await post(base,'/pair',{key:'wrong',name:'Ada'})).status,403);assert.equal((await post(base,'/pair',{key:app.room.join,name:'Ada'},{Origin:'https://evil.example'})).status,403);assert.equal((await fetch(base+'/tv-state?key='+app.room.join)).status,403);assert.equal((await fetch(base+'/host?key='+app.room.join)).status,403);assert.equal((await fetch(base+'/tv-state?key=tv-key',{headers:{Origin:'http://evil.example:8000'}})).status,403);});
@@ -57,4 +57,23 @@ test('rapid combat receipts are buffered without losing the event log',async t=>
  assert.equal(after.events.length,15);
  assert.equal(after.events.at(-1).message,'rat HP 14');
  assert.equal(after.players[0].token,token);
+});
+
+test('unsupported object manipulation and engine-blocked attacks never consume a declaration',async t=>{
+ const {app,base,sockets}=await setup(t);
+ const r=await post(base,'/pair',{key:app.room.join,name:'Dara'});const {token}=await r.json();
+ await new Promise(r=>setTimeout(r,20));
+ assert.equal((await post(base,'/action',{token,text:'move the tent'})).status,202);
+ assert.equal(app.room.turn,null,'manipulation rejection must not lock a turn');
+ sockets[0].nextOutcome='blocked';
+ const invalid=await post(base,'/action',{token,text:'attack rat'});
+ assert.equal(invalid.status,429,'brief spam throttle remains in force');
+ await new Promise(r=>setTimeout(r,220));
+ sockets[0].nextOutcome='blocked';
+ assert.equal((await post(base,'/action',{token,text:'attack rat'})).status,202);
+ assert.equal(app.room.turn,null,'a blocked engine action must not reserve the first-valid declaration');
+ await new Promise(r=>setTimeout(r,220));
+ assert.equal((await post(base,'/action',{token,text:'attack rat'})).status,202);
+ assert.equal(app.room.turn.text,'attack rat');
+ assert.equal((await post(base,'/action',{token,text:'attack rat'})).status,409,'a started meaningful action consumes the turn');
 });
