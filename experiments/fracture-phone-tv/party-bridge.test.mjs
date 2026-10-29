@@ -6,3 +6,35 @@ test('controller script parses and credentials stay off phone',async t=>{const {
 test('two identities route to distinct actors, results stay private, and reconnect keeps credentials',async t=>{const {app,base,sockets,dir}=await setup(t);const pair=async name=>(await(await post(base,'/pair',{key:app.room.join,name})).json()).token;const a=await pair('Ada'),b=await pair('Bryn');assert.notEqual(a,b);await new Promise(r=>setTimeout(r,20));const r=await post(base,'/action',{token:a,text:'walk north 3'});assert.equal(r.status,202);const {id}=await r.json();assert.equal(sockets[0].lastAction.id,id);assert.equal(sockets[1].lastAction,undefined);const unknown=await post(base,'/action',{token:app.room.join,text:'stop'});assert.equal(unknown.status,403);const state=await(await fetch(base+'/state?token='+b)).json();assert.ok(!state.results.some(r=>r.id===id));assert.ok(!JSON.stringify(state).includes(app.room.players[0].password));const saved=JSON.parse(fs.readFileSync(path.join(dir,'room.json')));assert.equal(saved.players[0].token,a);assert.ok((fs.statSync(path.join(dir,'room.json')).mode&0o077)===0);});
 test('room pairing, origin, and TV state access are separated',async t=>{const {app,base}=await setup(t);assert.equal((await post(base,'/pair',{key:'wrong',name:'Ada'})).status,403);assert.equal((await post(base,'/pair',{key:app.room.join,name:'Ada'},{Origin:'https://evil.example'})).status,403);assert.equal((await fetch(base+'/tv-state?key='+app.room.join)).status,403);assert.equal((await fetch(base+'/host?key='+app.room.join)).status,403);assert.equal((await fetch(base+'/tv-state?key=tv-key',{headers:{Origin:'http://evil.example:8000'}})).status,403);});
 test('one immutable declaration per reaction window, parallel reactions, movement and STOP bypass',async t=>{const {app,base}=await setup(t);const pair=async name=>(await(await post(base,'/pair',{key:app.room.join,name})).json()).token;const a=await pair('Ada'),b=await pair('Bryn');await new Promise(r=>setTimeout(r,20));assert.equal((await post(base,'/action',{token:a,text:'attack rat'})).status,202);assert.equal((await post(base,'/action',{token:a,text:'attack goblin'})).status,409);assert.equal((await post(base,'/action',{token:b,text:'attack rat'})).status,202);assert.equal(app.room.turn.participants.length,2);assert.equal((await post(base,'/action',{token:a,text:'stop running'})).status,202);await new Promise(r=>setTimeout(r,220));assert.equal((await post(base,'/action',{token:a,text:'walk west'})).status,202);assert.equal(app.room.turn.text,'attack rat');app.room.turn.deadline=Date.now()-1;await new Promise(r=>setTimeout(r,220));assert.equal((await post(base,'/action',{token:a,text:'talk to guard'})).status,202);assert.equal(app.room.turn.text,'talk to guard');});
+
+test('host may bench and restore registered characters without deleting saves; 20 is an active-slot limit',async t=>{
+ const {app,base,dir}=await setup(t);
+ const postHost=(token,parked,key=app.room.host)=>post(base,'/host/player',{key,token,parked});
+ const tokens=[];
+ for(let i=0;i<20;i++){
+  const r=await post(base,'/pair',{key:app.room.join,name:'Player'+i});
+  assert.equal(r.status,201,'join '+i);tokens.push((await r.json()).token);
+ }
+ assert.equal((await post(base,'/pair',{key:app.room.join,name:'Extra'})).status,409);
+ const savedBefore=JSON.parse(fs.readFileSync(path.join(dir,'room.json')));
+ assert.equal((await postHost(tokens[0],true,'wrong')).status,403);
+ assert.equal((await postHost('not-a-person',true)).status,400);
+ assert.equal((await postHost(tokens[0],true)).status,200);
+ assert.equal((await fetch(base+'/state?token='+tokens[0])).status,409);
+ assert.equal((await post(base,'/action',{token:tokens[0],text:'move left'})).status,409);
+ assert.equal((await post(base,'/pair',{key:app.room.join,name:'Extra'})).status,201);
+ assert.equal((await postHost(tokens[0],false)).status,409);
+ assert.equal((await postHost(tokens[1],true)).status,200);
+ assert.equal((await postHost(tokens[0],false)).status,200);
+ const recovered=await fetch(base+'/state?token='+tokens[0]);
+ assert.equal(recovered.status,200);
+ assert.equal((await (await fetch(base+'/health')).json()).players,20);
+ const savedAfter=JSON.parse(fs.readFileSync(path.join(dir,'room.json')));
+ assert.equal(savedAfter.players.length,21);
+ assert.equal(savedAfter.players[0].token,savedBefore.players[0].token);
+ assert.equal(savedAfter.players[0].account,savedBefore.players[0].account);
+ assert.equal(savedAfter.players[0].password,savedBefore.players[0].password);
+ assert.equal(savedAfter.players[0].parked,false);
+ assert.equal(savedAfter.players[1].parked,true);
+ assert.ok((fs.statSync(path.join(dir,'room.json')).mode&0o077)===0);
+});
