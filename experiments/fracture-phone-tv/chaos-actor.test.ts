@@ -52,7 +52,7 @@ describe('authenticated actor lifecycle',()=>{
  it('directional controls stop at the first wall instead of walking around it',async()=>{
   const {socket,player,world}=fixture();player.isDead=false;
   const receipts:any[]=[];socket.on('chaos:receipt',r=>receipts.push(r));
-  world.isValidPosition=(x:number,y:number)=>!(x===11&&y===10);
+  (world as any).isValidPosition=(x:number,y:number)=>!(x===11&&y===10);
   shared.route.mockImplementation(async(_player:any,msg:any[])=>{
     if(msg.length===3&&typeof msg[1]==='number'&&typeof msg[2]==='number'){
       _player.x=msg[1];_player.y=msg[2];
