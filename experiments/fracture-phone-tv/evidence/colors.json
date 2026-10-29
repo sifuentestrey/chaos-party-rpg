@@ -1,0 +1,23 @@
+{
+  "status": "passed",
+  "checks": [
+    "two new phone joins select Blue and Rose",
+    "native actors visible with distinct markers and names",
+    "website HUD hidden on TV",
+    "phone receipt is above the fold",
+    "no browser errors"
+  ],
+  "players": [
+    {
+      "name": "Terraf8h",
+      "stats": "HP 100/100 · The Refuge · position 40, 209",
+      "receipt": "SUCCEEDED: sword2 (34,210); rat (44,208); rat (43,213); rat (42,224); rat (46,221); Loady00z_35b926 (57,210); Loady00z_9c86ff (31,207); Loady00z_5e29b8 (56,207); Loady00z_a81847 (31,207); Loady00z_a35f70 (31,208); Loady00z_be2f3a (47,205); Loady00z_556dba (31,209)"
+    },
+    {
+      "name": "Flintf8h",
+      "stats": "HP 100/100 · The Refuge · position 57, 210",
+      "receipt": "SUCCEEDED: sword2 (60,206); rat (44,208); rat (43,213); Loady00z_35b926 (57,210); Loady00z_5e29b8 (56,207); Loady00z_be2f3a (47,205); Loady00z_600275 (57,210); Loady00z_ec851d (56,208); Terraf8h_3c04ef (40,209); Loady00z_9eab6e (57,210); Loady00z_df3e43 (47,205); Loady00z_c429d6 (56,208)"
+    }
+  ],
+  "errors": []
+}

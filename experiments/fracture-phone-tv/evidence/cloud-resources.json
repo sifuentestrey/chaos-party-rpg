@@ -1,0 +1,66 @@
+{
+  "platform": "Linux x64 cloud; server only; not Intel Mac or TV browser",
+  "durationSeconds": 60.05,
+  "samples": [
+    {
+      "elapsedSeconds": 5.002,
+      "cpuPercentOfOneCore": 5.597760895641744,
+      "rssMiB": 211.58203125
+    },
+    {
+      "elapsedSeconds": 10.006,
+      "cpuPercentOfOneCore": 2.997601918465228,
+      "rssMiB": 211.58984375
+    },
+    {
+      "elapsedSeconds": 15.011,
+      "cpuPercentOfOneCore": 3.196803196803197,
+      "rssMiB": 212.0234375
+    },
+    {
+      "elapsedSeconds": 20.014,
+      "cpuPercentOfOneCore": 2.9982010793523886,
+      "rssMiB": 212.0234375
+    },
+    {
+      "elapsedSeconds": 25.018,
+      "cpuPercentOfOneCore": 3.1974420463629096,
+      "rssMiB": 212.0859375
+    },
+    {
+      "elapsedSeconds": 30.023,
+      "cpuPercentOfOneCore": 6.593406593406594,
+      "rssMiB": 226.30078125
+    },
+    {
+      "elapsedSeconds": 35.028,
+      "cpuPercentOfOneCore": 2.9970029970029968,
+      "rssMiB": 226.31640625
+    },
+    {
+      "elapsedSeconds": 40.033,
+      "cpuPercentOfOneCore": 3.3966033966033966,
+      "rssMiB": 226.328125
+    },
+    {
+      "elapsedSeconds": 45.038,
+      "cpuPercentOfOneCore": 3.196803196803197,
+      "rssMiB": 226.3359375
+    },
+    {
+      "elapsedSeconds": 50.042,
+      "cpuPercentOfOneCore": 3.9968025579536373,
+      "rssMiB": 226.40625
+    },
+    {
+      "elapsedSeconds": 55.047,
+      "cpuPercentOfOneCore": 3.996003996003996,
+      "rssMiB": 226.40625
+    },
+    {
+      "elapsedSeconds": 60.05,
+      "cpuPercentOfOneCore": 3.3979612232660403,
+      "rssMiB": 226.41015625
+    }
+  ]
+}

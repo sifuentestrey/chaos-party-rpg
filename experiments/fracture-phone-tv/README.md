@@ -37,6 +37,6 @@ The old `bridge.mjs`, `chaos-remote.ts`, and `apply-overlay.mjs` remain intact a
 
 ## Credits and licenses
 
-Fracture by George Larson, pinned above: https://github.com/georgeglarson/Fracture. Code: MPL 2.0; content: CC BY-SA 3.0. Originally based on Mozilla BrowserQuest, with sprites/map by Little Workshop (Franck and Guillaume Lecollinet): https://github.com/mozilla/BrowserQuest. Native source headers, LICENSE and credits remain in the separate checkout. This source kit does not bundle upstream game art or databases.
+Fracture by George Larson, pinned above: https://github.com/georgeglarson/Fracture. Code: MPL 2.0; content: CC BY-SA 3.0. Originally based on Mozilla BrowserQuest, with sprites/map by Little Workshop (Franck and Guillaume Lecollinet): https://github.com/mozilla/BrowserQuest. Native source headers, LICENSE and credits remain in the separate checkout. This kit obtains raw upstream assets separately and does not bundle databases. Included derived gameplay screenshots are CC BY-SA 3.0 with the attribution above.
 
 QR Code Generator 2.0.4 by Kazuhiko Arase is reused under MIT; source and notice are in `vendor/`. The optional AI quota ledger is reused from original Chaos code with a separate data directory; original networking and databases are never imported.

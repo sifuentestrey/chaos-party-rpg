@@ -58,8 +58,9 @@ for(const [file,a,b,c,d] of patches){
 }
 for(const [source,dest] of [['chaos-actor.test.ts','server/ts/__tests__/chaos-actor.test.ts'],['chaos-actor.ts','server/ts/chaos-actor.ts'],['action-contract.ts','server/ts/chaos-action-contract.ts'],['chaos-tv.ts','client/ts/chaos-tv.ts']]){
  const p=path.join(root,dest);
- if(fs.existsSync(p)&&!fs.readFileSync(p,'utf8').startsWith('/** Chaos-owned'))throw Error(`Unrecognized ${dest}`);
- writes.push([dest,fs.readFileSync(path.join(dir,source),'utf8')]);
+ const canonical=fs.readFileSync(path.join(dir,source),'utf8');
+ if(fs.existsSync(p)){const current=fs.readFileSync(p,'utf8');if(!current.startsWith('/** Chaos-owned')||(current!==canonical&&previous[dest]!==digest(current)))throw Error(`Local or unrecognized edits in ${dest}; refusing overwrite`);}
+ writes.push([dest,canonical]);
 }
 for(const [file,content] of writes)fs.writeFileSync(path.join(root,file),content);
 fs.writeFileSync(manifestPath,JSON.stringify(Object.fromEntries(writes.map(([file,content])=>[file,digest(content)]))));

@@ -17,6 +17,7 @@ export function installChaosActor(player:any, connection:any): void {
   const key=process.env.CHAOS_ACTOR_KEY;
   if(!key)return;
   const socket=connection._connection, world=player.getWorld();
+  if(socket.handshake.auth?.chaosTVKey&&socket.handshake.auth.chaosTVKey!==process.env.CHAOS_TV_KEY){connection.close('TV pairing expired; reopen the current host link');return;}
   const local=['127.0.0.1','::1','::ffff:127.0.0.1'].includes(connection.clientIp);
   let active:any=null, ticking=false, lastHit=0, watchId:any=null;
   const spectator=!!process.env.CHAOS_TV_KEY&&socket.handshake.auth?.chaosTVKey===process.env.CHAOS_TV_KEY;
@@ -104,7 +105,7 @@ export function installChaosActor(player:any, connection:any): void {
         if(watched?.chaosControlled){
           player.spawnProtectionUntil=Number.MAX_SAFE_INTEGER;
           player.setPosition(watched.x,watched.y);player.zoneCallback?.();world.pushRelevantEntityListTo(player);
-          socket.emit('chaos:camera',{x:watched.x,y:watched.y,id:watched.id});
+          socket.emit('chaos:camera',{x:watched.x,y:watched.y,id:watched.id,observers:(Object.values(world.players) as any[]).filter(p=>p.chaosSpectator).map(p=>p.id)});
         }return;
       }
       if(player.isDead){finish('failed','Your character was knocked out.');return;}

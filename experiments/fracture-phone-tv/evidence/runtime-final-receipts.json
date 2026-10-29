@@ -1,0 +1,58 @@
+{
+  "upstream": "642c00a8a2d3a95979e85bbfa3f62deee611a4a6",
+  "requestedActors": 4,
+  "checks": [
+    "4 distinct real authenticated actors",
+    "Concurrent movement: 3/4 moved; other requests truthfully blocked",
+    "Scoped cancellation, immediate override, stable engine position",
+    "Real Socket.IO reconnect preserves character and saved position",
+    "Unknown controller rejected",
+    "90s real-actor soak"
+  ],
+  "samples": [
+    {
+      "elapsedSeconds": 3,
+      "connected": 4,
+      "requestBatchMs": 9,
+      "bridgeRssMiB": 88,
+      "accepted": 4
+    },
+    {
+      "elapsedSeconds": 18,
+      "connected": 4,
+      "requestBatchMs": 11,
+      "bridgeRssMiB": 89,
+      "accepted": 4
+    },
+    {
+      "elapsedSeconds": 33,
+      "connected": 4,
+      "requestBatchMs": 12,
+      "bridgeRssMiB": 89,
+      "accepted": 4
+    },
+    {
+      "elapsedSeconds": 48,
+      "connected": 4,
+      "requestBatchMs": 9,
+      "bridgeRssMiB": 89,
+      "accepted": 4
+    },
+    {
+      "elapsedSeconds": 63,
+      "connected": 4,
+      "requestBatchMs": 8,
+      "bridgeRssMiB": 89,
+      "accepted": 4
+    },
+    {
+      "elapsedSeconds": 78,
+      "connected": 4,
+      "requestBatchMs": 9,
+      "bridgeRssMiB": 89,
+      "accepted": 4
+    }
+  ],
+  "elapsedSeconds": 90,
+  "status": "passed"
+}

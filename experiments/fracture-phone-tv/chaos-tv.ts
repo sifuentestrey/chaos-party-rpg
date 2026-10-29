@@ -24,8 +24,9 @@ export function startChaosTV(game:any):void {
   const lobby=document.createElement('div');Object.assign(lobby.style,{position:'fixed',inset:'0',background:'#121922',color:'#f4eddc',zIndex:'19000',display:'grid',placeContent:'center',textAlign:'center',font:'24px system-ui'});document.body.append(lobby);
   const log=document.createElement('div');log.id='chaos-tv-log';document.body.append(log);
   // Spectator does not issue HURT for party actors; their server driver owns cadence.
-  let cameraKey='';
+  let cameraKey='';let observerIds=new Set<string>();
   game.client.connection.on('chaos:camera',(p:any)=>{
+    observerIds=new Set((p.observers||[]).map(String));
     const nextKey=`${p.id}:${p.x},${p.y}:${window.innerWidth},${window.innerHeight}`;if(nextKey===cameraKey)return;cameraKey=nextKey;
     game.player.disengage();game.player.stop();
     game.makeCharacterTeleportTo(game.player,p.x,p.y);game.player.idle();
@@ -40,7 +41,7 @@ export function startChaosTV(game:any):void {
   const appearances=new Map();
   const originalDraw=game.renderer.drawEntity.bind(game.renderer);
   game.renderer.drawEntity=(entity:any)=>{
-    if(entity.id===game.playerId)return;
+    if(entity.id===game.playerId||observerIds.has(String(entity.id)))return;
     const appearance=appearances.get(String(entity.id));
     if(!appearance){originalDraw(entity);return;}
     const context=game.renderer.context;context.save();context.strokeStyle=colors[appearance.color];context.lineWidth=2;context.beginPath();context.ellipse((entity.x+8)*game.renderer.scale,(entity.y+14)*game.renderer.scale,8*game.renderer.scale,3*game.renderer.scale,0,0,Math.PI*2);context.stroke();context.filter=hues[appearance.color]||'none';originalDraw(entity);context.restore();
@@ -53,7 +54,7 @@ export function startChaosTV(game:any):void {
   let selected='';
   const poll=async()=>{try{
     const u=new URL('/tv-state',config.base);u.searchParams.set('key',config.key);
-    const r=await fetch(u.toString());if(!r.ok)return;const data=await r.json();
+    const r=await fetch(u.toString());if(!r.ok){log.textContent='TV pairing expired. Reopen the TV from the current host page.';return;}const data=await r.json();
     const connected=data.players.filter((p:any)=>p.actor?.ready);
     const players=connected.filter((p:any)=>!p.actor.dead);
     for(const p of players){

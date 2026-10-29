@@ -40,7 +40,7 @@ with zipfile.ZipFile(output, 'w', compression=zipfile.ZIP_DEFLATED, compressleve
     add('README_FIRST.txt', blob('experiments/fracture-phone-tv/package/README_FIRST.txt'))
     add('package.json', blob('experiments/fracture-phone-tv/package/package.json'))
     add('THIRD_PARTY_NOTICES.txt', blob('experiments/fracture-phone-tv/package/THIRD_PARTY_NOTICES.txt'))
-    add('SOURCE.txt', f'Chaos Party experimental beta\nSource commit: {sha}\nBranch: spike/fracture-phone-tv\nFracture: 642c00a8a2d3a95979e85bbfa3f62deee611a4a6\npnpm: 10.34.9\nNo accounts, credentials, databases, node_modules or upstream art are bundled.\n'.encode())
+    add('SOURCE.txt', f'Chaos Party experimental beta\nSource commit: {sha}\nBranch: spike/fracture-phone-tv\nFracture: 642c00a8a2d3a95979e85bbfa3f62deee611a4a6\npnpm: 10.34.9\nNo accounts, credentials, databases, node_modules or raw upstream assets are bundled.\n'.encode())
 digest = hashlib.sha256(output.read_bytes()).hexdigest()
 output.with_suffix('.zip.sha256').write_text(f'{digest}  {output.name}\n')
 print(json.dumps({'zip': str(output), 'bytes': output.stat().st_size, 'sha256': digest, 'source': sha}))

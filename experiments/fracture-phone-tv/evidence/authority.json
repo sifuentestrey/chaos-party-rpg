@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "checks": [
+    "wrong private key rejected",
+    "cross-actor identity rejected",
+    "stale queued action rejected",
+    "invented damage rejected",
+    "arbitrary teleport rejected",
+    "duplicate action rejected"
+  ]
+}

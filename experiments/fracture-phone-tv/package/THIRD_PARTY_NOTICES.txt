@@ -10,11 +10,14 @@ https://github.com/mozilla/BrowserQuest
 http://www.littleworkshop.fr
 
 This kit supplies reconstructible adapter source and patch instructions, not
-upstream game art or databases. The launcher obtains the exact upstream source;
+raw upstream game assets or databases. The launcher obtains the exact upstream source;
 its LICENSE, authorship credits and source headers remain in that checkout.
 Modified upstream files and adapter source remain available in the local clone
 and experimental Chaos Party source. No proprietary replacement game is bundled.
 
 QR Code Generator 2.0.4 — Kazuhiko Arase — MIT
 https://github.com/kazuhikoarase/qrcode-generator
-Full notice and source: ../vendor/QRCODE_LICENSE.txt and ../vendor/qrcode.mjs
+Full notice and source: experiments/fracture-phone-tv/vendor/QRCODE_LICENSE.txt and qrcode.mjs
+
+Included derived gameplay screenshots are CC BY-SA 3.0, with the Fracture,
+Mozilla and Little Workshop attribution above.

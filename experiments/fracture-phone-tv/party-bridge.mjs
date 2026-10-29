@@ -41,7 +41,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
    if(msg[0]===32){session.quest={...session.quest,completed:true,description:msg[3]};record({player:player.name,status:'succeeded',message:'Quest completed! '+String(msg[3])});}
    if(msg[0]===86)session.error='Character authentication failed.';
   }});
-  socket.on('chaos:receipt',r=>{if(!session.results.has(r.id))return;session.results.set(r.id,r);if(r.actor)session.actor=r.actor;record({player:player.name,...r,actor:undefined});});
+  socket.on('chaos:receipt',r=>{if(!session.results.has(r.id))return;const {actor,...outcome}=r;session.results.set(r.id,outcome);if(actor)session.actor=actor;record({player:player.name,...r,actor:undefined});});
   socket.on('chaos:position',s=>session.actor=s);
   return session;
  }

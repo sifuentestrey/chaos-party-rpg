@@ -11,7 +11,7 @@ cleanup() {
   echo ''
   echo "Stopping only the test processes started by this launcher. Logs: $LOG_DIR"
   if [[ -n "$BRIDGE_PID" ]]; then kill "$BRIDGE_PID" 2>/dev/null || true; wait "$BRIDGE_PID" 2>/dev/null || true; fi
-  if [[ -n "$FR_PID" ]]; then kill "$FR_PID" 2>/dev/null || true; fi
+  if [[ -n "$FR_PID" ]]; then kill "$FR_PID" 2>/dev/null || true; wait "$FR_PID" 2>/dev/null || true; fi
 }
 trap cleanup EXIT
 trap 'exit 130' INT
