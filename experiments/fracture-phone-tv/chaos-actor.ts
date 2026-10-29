@@ -132,13 +132,29 @@ export function installChaosActor(player:any, connection:any): void {
       const goal=(x:number,y:number)=>target?(intent.verb==='loot'?x===target.x&&y===target.y:Math.abs(x-target.x)+Math.abs(y-target.y)===1):x===action.destination[0]&&y===action.destination[1];
       if(!goal(player.x,player.y)){
         const targetPosition=target?`${target.x},${target.y}`:'';
-        if(!action.path?.length||action.targetPosition!==targetPosition||!walkable(...action.path[0] as [number,number])){action.path=shortestPath([player.x,player.y],goal,walkable);action.targetPosition=targetPosition;}
+        if(intent.verb==='move'){
+          // Directional controls must NEVER route around an obstacle merely
+          // to reach a coordinate. Three steps left means three straight tiles.
+          const x=player.x+intent.dx,y=player.y+intent.dy;
+          if(!walkable(x,y)){
+            const steps=action.stepsMoved||0;
+            finish(steps?'succeeded':'blocked',steps
+              ?`Walked ${steps} tile${steps===1?'':'s'} before an obstacle stopped you.`
+              :'That direction is blocked.',{},action);
+            return;
+          }
+          action.path=[[x,y]];
+        }else if(!action.path?.length||action.targetPosition!==targetPosition||!walkable(...action.path[0] as [number,number])){
+          action.path=shortestPath([player.x,player.y],goal,walkable);
+          action.targetPosition=targetPosition;
+        }
         const path=action.path;
         if(!path?.length){finish('blocked','No walkable path to that destination.');return;}
         const [x,y]=path.shift();
         const moved=await move(x,y);
         if(active!==action)return; // STOP may arrive while native MOVE/checkpoint is in flight.
         if(!moved){finish('blocked','The engine rejected that movement.',{},action);return;}
+        if(intent.verb==='move')action.stepsMoved=(action.stepsMoved||0)+1;
         const doorway=geometry.doors.find((d:any)=>d.x===player.x&&d.y===player.y);
         if(doorway&&world.isValidPosition(doorway.tx,doorway.ty)){
           await router.route(player,[Types.Messages.TELEPORT,doorway.tx,doorway.ty]);
@@ -157,7 +173,7 @@ export function installChaosActor(player:any, connection:any): void {
         player.zoneCallback?.();player.checkZoneChange(player.x,player.y);
         socket.emit('chaos:position',state());finish('succeeded','Travelled through the door into another area.',{},action);return;
       }
-      if(!target||intent.verb==='go'){finish('succeeded','Reached your destination.');return;}
+      if(!target||intent.verb==='go'){finish('succeeded',intent.verb==='move'?`Walked ${action.stepsMoved||intent.steps} tile${(action.stepsMoved||intent.steps)===1?'':'s'}.`:'Reached your destination.',{},action);return;}
       if(intent.verb==='attack'){
         if(Date.now()-lastHit<800)return;lastHit=Date.now();
         await router.route(player,[Types.Messages.ATTACK,target.id]);
