@@ -18,6 +18,10 @@ jobs:
         with:
           node-version: 22
       - run: node --test experiments/fracture-phone-tv/bridge.test.mjs experiments/fracture-phone-tv/apply-overlay.test.mjs
+      - name: Validate Mac launcher and pnpm 10 compatibility selection
+        run: |
+          bash -n experiments/fracture-phone-tv/Start_Fracture_Chaos_Test.command
+          grep -Fq 'npx --yes pnpm@10 "$@"' experiments/fracture-phone-tv/Start_Fracture_Chaos_Test.command
   pinned-fracture-build:
     runs-on: ubuntu-latest
     timeout-minutes: 13
