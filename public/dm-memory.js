@@ -8,8 +8,9 @@ export function recordDMMemory(room){
   const entry={id:q.id,round:room.round,location,actorId:q.playerId,actor:clean(q.name,18),attempt:clean(q.action,180),
     targetId:q.target?.entityId||q.target?.id||q.target?.kind||'room',outcome:q.blocked?'blocked':q.success?'success':'failure',
     fact:clean(q.narration,600),changes:q.changes.slice(0,6).map(s=>clean(s,100))};
+  const witnesses=[...new Set((q.sceneEvents||[]).filter(e=>e.type==='witness').map(e=>e.entityId))];if(witnesses.length)entry.witnessIds=witnesses;
   memory.entries.push(entry);memory.entries=memory.entries.slice(-120);
-  const id=entry.targetId,creature=room.world.expedition?.creatures?.[id];
+  for(const id of new Set([entry.targetId,...witnesses])){const creature=room.world.expedition?.creatures?.[id];
   const name=({bartender:'Marnie',guard:'Captain Brick',goblin:'the goblin fiddler'})[id]||creature?.name;
   if(name){
     const previous=memory.people[id]||{id,name:clean(name,50),encounters:[]};
@@ -18,13 +19,13 @@ export function recordDMMemory(room){
     memory.people[id]=previous;
     const keep=Object.values(memory.people).sort((a,b)=>b.round-a.round).slice(0,64);
     memory.people=Object.fromEntries(keep.map(p=>[p.id,p]));
-  }
+  }}
 }
 export function relevantDMMemory(room,{targetId,location,excludeId}={}){
   const memory=room.dmMemory;if(!memory)return [];
   const all=[...memory.entries,...Object.values(memory.people).flatMap(p=>p.encounters)];
   const unique=[...new Map(all.filter(e=>e.id!==excludeId).map(e=>[e.id,e])).values()];
-  const score=e=>(targetId&&e.targetId===targetId?4:0)+(e.location===location?2:0);
+  const score=e=>(targetId&&(e.targetId===targetId||e.witnessIds?.includes(targetId))?4:0)+(e.location===location?2:0);
   return unique.sort((a,b)=>score(b)-score(a)||b.round-a.round).slice(0,3);
 }
 export function redactDMMemory(room,id){

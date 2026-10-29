@@ -1,3 +1,4 @@
+import {createWorldScene,worldEntityPosition} from './scene-events.js';
 import {beginExpedition} from './expedition.js';
 import {campaignView} from './campaign.js';
 import {recordDMMemory,redactDMMemory} from './dm-memory.js';
@@ -149,7 +150,7 @@ export function submit(r, playerId, input, now=Date.now()) {
   const e=event(r,'declaration',text,now,{playerId:p.id,name:p.name});
   r.round++; r.turn={id:uid(),seq:e.id,actorId:p.id,action:text,intent,target:targetFor(r,p,text),at:now,
     deadline:now+r.reactionMs,reactions:[],travelElectorate:r.players.filter(x=>x.id===p.id||x.connected&&!x.muted&&!x.isBot).map(x=>x.id)};
-  if(dynamic){r.turn.worldAction=true;r.turn.worldLocked=dynamic.verb!=='unsupported'&&!dynamic.unresolvedTarget;if(dynamic.unresolvedTarget)r.turn.worldPendingVerb=dynamic.verb;const key=dynamic.targetId||dynamic.itemId||dynamic.sourceIds?.[0];const item=r.world.expedition.items[key]||r.world.expedition.creatures?.[key];r.turn.target={kind:'world',entityId:item?.id,name:item?.name||dynamic.destination||dynamic.target||'materials',position:item?.ownerId?[480,335]:item?.position||[480,490]};}
+  if(dynamic){r.turn.worldAction=true;r.turn.worldLocked=dynamic.verb!=='unsupported'&&!dynamic.unresolvedTarget;if(dynamic.unresolvedTarget)r.turn.worldPendingVerb=dynamic.verb;const key=dynamic.targetId||dynamic.recipientId||dynamic.itemId||dynamic.sourceIds?.[0];const item=r.world.expedition.items[key]||r.world.expedition.creatures?.[key];r.turn.target={kind:'world',entityId:item?.id,name:item?.name||dynamic.destination||dynamic.target||'materials',position:item?worldEntityPosition(r,item):[480,490]};}
   r.phase='react'; r.deadline=r.turn.deadline; r.result=null; p.status='committed';p.cover=false;
   const ack={ok:true,accepted:true,kind:'action',seq:e.id,at:now,turnId:r.turn.id};
   r.requests[key]=ack;
@@ -200,7 +201,7 @@ function resolve(r,now) {
   const modifier=skill+charm+assistance-interference+training;
   const dc=automatic?0:check?.dc??({heal:6,flee:r.quest.crown?12:8,inspect:9,social:10,dance:9,sneak:10,steal:13,magic:12,attack:12,break:11,weird:10,interact:10})[t.intent];
   const critical=roll===20;let success=automatic||critical||(roll!==1&&roll+modifier>=dc);
-  const effects=[],changes=[]; let narration='',unsupported=false;
+  const effects=[],changes=[],sceneEvents=[]; let narration='',unsupported=false;
   const add=(s)=>changes.push(s);
   const fx=(verb,target=t.target.kind)=>effects.push({verb,actorId:p.id,target,targetId:t.target.id||null});
   const damage=(who,n)=>{let d=hurt(who,n);if(d)add(`${who.name} −${d} HP`);};
@@ -210,7 +211,7 @@ function resolve(r,now) {
   const damageNpc=n=>{if(!['guard','bartender','goblin'].includes(t.target.kind))return;const npcs=r.world.npcs||={},npc=npcs[t.target.kind]||={hp:8,maxHp:8};npc.hp=Math.max(0,npc.hp-n);add(`${t.target.name} ${npc.hp}/8 HP`);if(!npc.hp){npc.status='knocked out';add(`${t.target.name} KNOCKED OUT`);if(t.target.kind==='guard')r.world.guards='distracted';}};
   const props=r.world.props||(r.world.props={rug:true});
   const environmental=dynamic?null:interactEnvironment(r.world,t.target,t.intent,success,p,{text:t.rulesText||t.action});
-  if(dynamic){const outcome=resolveItem(r,p,dynamic,success);success=outcome.success;unsupported=outcome.blocked;narration=outcome.text;if(outcome.change)add(outcome.change);fx(dynamic.verb==='break'||dynamic.verb==='use'?'impact':'inspect');}
+  if(dynamic){const outcome=resolveItem(r,p,dynamic,success);success=outcome.success;unsupported=outcome.blocked;narration=outcome.text;if(outcome.change)add(outcome.change);const scene=createWorldScene(r,p,dynamic,outcome,t.target);effects.push(...scene.effects);sceneEvents.push(...scene.events);}
   else if(environmental){success=environmental.success;narration=environmental.text;if(environmental.change)add(environmental.change);fx(({break:'impact',ignite:'fire',extinguish:'smoke',take:'steal',repair:'hearts',push:'impact'})[environmental.verb]||'inspect');r.chaos+=environmental.chaos;if(environmental.damage)damage(p,environmental.damage);if(environmental.cover){p.status='hiding';p.cover=true;}}
   else switch(t.intent) {
     case 'heal':
@@ -309,7 +310,7 @@ function resolve(r,now) {
   r.lastActorId=p.id;r.priorityUntil=now+12500;
   r.result={id:t.id,playerId:p.id,name:p.name,action:t.action,intent:t.intent,target:t.target,ai:t.ai?structuredClone(t.ai):null,
     roll,rerolled,modifier,skill,charm,assistance,interference,total:automatic?0:roll+modifier,dc,success,critical:critical&&success,automatic,dice,advantage,situation,check:check?.ability||t.intent,blocked:!!environmental?.blocked||unsupported,
-    narration,changes,effects,reactions:sorted.map(x=>({playerId:x.playerId,kind:x.kind,text:x.text,seq:x.id})),at:now};
+    narration,changes,effects,...(dynamic?{sceneEvents}:{}),reactions:sorted.map(x=>({playerId:x.playerId,kind:x.kind,text:x.text,seq:x.id})),at:now};
   r.phase='reveal';r.deadline=now+6500;
   recordDMMemory(r);
   event(r,'outcome',narration,now,{playerId:p.id,success,roll,turnId:t.id});touch(r,now);

@@ -1,3 +1,4 @@
+import {effectPosition,sceneReactionAge} from './scene-events.js';
 import {currentLocation,visibleItems,visibleCreatures} from './world-items.js';
 import {drawItemGlyph,drawGeneratedLocation,drawBeast} from './world-render.js';
 import {drawEnvironment} from './environment-render.js';
@@ -93,7 +94,7 @@ export class TavernScene {
     if(outdoors)drawGeneratedLocation(g,r);
     const layers=outdoors?[]:drawEnvironment(g,r,this.reduced?0:t,sprites);
     if(r)for(const item of visibleItems(r).filter(i=>!i.ownerId))layers.push({y:item.position[1],draw:()=>{drawItemGlyph(g,item,...item.position,item.type==='fixture'?3:2);this.label(g,item.name,item.position[0],item.position[1]+25,'#e5d0a3',10);}});
-    if(r&&outdoors)for(const c of visibleCreatures(r)){const hit=r.result?.success&&r.result.target?.entityId===c.id&&['attack','use'].includes(r.turn?.ai?.verb||r.turn?.action?.split(' ')[0]?.toLowerCase());const pos=[c.position[0]+(hit?recoil(t-this.fxAt,this.reduced):0),c.position[1]];layers.push({y:pos[1],draw:()=>{if(c.kind==='beast'){drawBeast(g,c,...pos,hit&&t-this.fxAt<650);this.label(g,c.name,pos[0],pos[1]+19,c.attitude==='friendly'?'#a6d8a4':'#e9beaf',10);this.label(g,c.hp+'/'+c.maxHp+' · '+c.attitude,pos[0],pos[1]+31,'#eee0c8',9);}else this.person(g,{...c,avatar:c.appearance,connected:true,npc:true,hit:hit&&t-this.fxAt<650},pos,second,0,t);}});}
+    if(r&&outdoors)for(const c of visibleCreatures(r)){const reactionAge=sceneReactionAge(r.result,c.id,t-this.fxAt);const hit=reactionAge!==null;const pos=[c.position[0]+(hit?recoil(reactionAge,this.reduced):0),c.position[1]];layers.push({y:pos[1],draw:()=>{if(c.kind==='beast'){drawBeast(g,c,...pos,hit&&t-this.fxAt<650);this.label(g,c.name,pos[0],pos[1]+19,c.attitude==='friendly'?'#a6d8a4':'#e9beaf',10);this.label(g,c.hp+'/'+c.maxHp+' · '+c.attitude,pos[0],pos[1]+31,'#eee0c8',9);}else this.person(g,{...c,avatar:c.appearance,connected:true,npc:true,hit:hit&&t-this.fxAt<650},pos,second,0,t);}});}
     // Render all 24 possible player slots; labels are separate from their sprite.
     const players=r?.players||[];
     if(!players.length){
@@ -171,9 +172,10 @@ export class TavernScene {
     const players=this.state?.players||[],i=players.findIndex(p=>p.id===res.playerId);const pos=this.position(players[i],Math.max(0,i),this.fxAt+elapsed);const f=Math.max(0,1-elapsed/3400);
     for(const effect of res.effects){
       const j=players.findIndex(p=>p.id===effect.actorId),from=this.position(players[j],Math.max(0,j),this.fxAt+elapsed);
-      const target=effect.target==='self'?from:effect.targetId?slots[Math.max(0,players.findIndex(p=>p.id===effect.targetId))]:targetPosition(effect.target===res.target?.kind?res.target:{kind:effect.target},players,pos);
+      const target=effectPosition(effect,res,players,from);
+      const effectElapsed=elapsed-(effect.at||0);if(effectElapsed<0)continue;
       const [x,y]=target;
-      const licensed=drawNinjaEffect(g,effect.verb,x,y-35,elapsed,1.8);
+      const licensed=drawNinjaEffect(g,effect.verb,x,y-35,effectElapsed,1.8);
       if(licensed&&!['crown','alarm','flee'].includes(effect.verb))continue;
       if(['melee','impact','spell','steal','weird','inspect'].includes(effect.verb)){
         const progress=Math.min(1,elapsed/700),xx=from[0]+(x-from[0])*progress,yy=from[1]-45+(y-from[1])*progress;

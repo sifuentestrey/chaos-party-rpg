@@ -1,7 +1,8 @@
+import {worldEntityPosition} from './scene-events.js';
 import {planWorldProposal,ensureItems,visibleItems,visibleCreatures} from './world-items.js';
 import {voicePacification} from './entity-rules.js';
 export {voicePacification} from './entity-rules.js';
-export const WORLD_VERBS=['craft','attach','give','equip','unequip','take','drop','separate','inspect','use','travel','explore','talk','pacify','attack','harvest','treat','fill','drink','open','close','unlock','move','ignite','extinguish','repair','put','rest','unsupported'];
+export const WORLD_VERBS=['craft','attach','give','equip','unequip','take','steal','drop','separate','inspect','use','travel','explore','talk','pacify','attack','harvest','treat','fill','drink','open','close','unlock','move','ignite','extinguish','repair','put','rest','unsupported'];
 export const APPEARANCE_PALETTE={red:'#d87878',blue:'#7ea7d4',green:'#83b48a',gold:'#dfc16e',purple:'#bd88cf',white:'#e4dcc8',black:'#484552',brown:'#b88955',cyan:'#7dc7cf'};
 export const APPEARANCE_COLORS=Object.values(APPEARANCE_PALETTE);
 export const WORLD_PLAN_SCHEMA={type:'object',properties:{domain:{type:'string',enum:['world']},verb:{type:'string',enum:WORLD_VERBS},target:{type:'string'},item:{type:'string'},sources:{type:'array',items:{type:'string'},maxItems:4},name:{type:'string',maxLength:48},itemType:{type:'string',enum:['wearable','tool','container','fragment']},slot:{type:'string',enum:['head','body','hand']},color:{type:'string',enum:APPEARANCE_COLORS},summary:{type:'string',maxLength:160}},required:['domain','verb','target','item','sources','name','itemType','slot','color','summary'],additionalProperties:false};
@@ -34,6 +35,6 @@ export function validateWorldPlan(raw,room,actorId){
   if(!['wearable','tool','container','fragment'].includes(raw.itemType)||!['head','body','hand'].includes(raw.slot)||!APPEARANCE_COLORS.includes(raw.color))throw Error('Unsupported appearance');
   blueprint={creationType:raw.itemType,creationSlot:raw.slot,creationColor:raw.color};
  }
- const target=entity(plan.targetId||plan.itemId||plan.sourceIds?.[0]);
- return {intent:plan.verb==='rest'?'heal':'world',rulesText:text,target:{kind:'world',entityId:target?.id,name:target?.name||plan.destination||'the surroundings',position:target?.position||[480,335]},worldAction:true,proposal:structuredClone(raw),blueprint,verb:raw.verb,summary:raw.summary.replace(/[\u0000-\u001f\u007f]/g,' ').trim()};
+ const target=entity(plan.targetId||plan.recipientId||plan.itemId||plan.sourceIds?.[0]);
+ return {intent:plan.verb==='rest'?'heal':'world',rulesText:text,target:{kind:'world',entityId:target?.id,name:target?.name||plan.destination||'the surroundings',position:target?worldEntityPosition(room,target):[480,335]},worldAction:true,proposal:structuredClone(raw),blueprint,verb:raw.verb,summary:raw.summary.replace(/[\u0000-\u001f\u007f]/g,' ').trim()};
 }

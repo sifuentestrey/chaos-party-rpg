@@ -1572,47 +1572,6 @@ var PartySessionRoom = class extends Room {
   }
 };
 
-// public/dm-memory.js
-var clean = (value, max) => String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
-function recordDMMemory(room) {
-  const q = room.result;
-  if (!q) return;
-  const memory = room.dmMemory ||= { version: 1, entries: [], people: {} };
-  if (memory.entries.some((e) => e.id === q.id)) return;
-  const location = room.world.expedition?.current || "tavern";
-  const entry = {
-    id: q.id,
-    round: room.round,
-    location,
-    actorId: q.playerId,
-    actor: clean(q.name, 18),
-    attempt: clean(q.action, 180),
-    targetId: q.target?.entityId || q.target?.id || q.target?.kind || "room",
-    outcome: q.blocked ? "blocked" : q.success ? "success" : "failure",
-    fact: clean(q.narration, 600),
-    changes: q.changes.slice(0, 6).map((s) => clean(s, 100))
-  };
-  memory.entries.push(entry);
-  memory.entries = memory.entries.slice(-120);
-  const id = entry.targetId, creature = room.world.expedition?.creatures?.[id];
-  const name = { bartender: "Marnie", guard: "Captain Brick", goblin: "the goblin fiddler" }[id] || creature?.name;
-  if (name) {
-    const previous = memory.people[id] || { id, name: clean(name, 50), encounters: [] };
-    previous.location = location;
-    previous.round = room.round;
-    previous.encounters.push(entry);
-    previous.encounters = previous.encounters.slice(-4);
-    memory.people[id] = previous;
-    const keep = Object.values(memory.people).sort((a, b) => b.round - a.round).slice(0, 64);
-    memory.people = Object.fromEntries(keep.map((p) => [p.id, p]));
-  }
-}
-function redactDMMemory(room, id) {
-  if (!room.dmMemory) return;
-  room.dmMemory.entries = room.dmMemory.entries.filter((e) => e.id !== id);
-  for (const p of Object.values(room.dmMemory.people)) p.encounters = p.encounters.filter((e) => e.id !== id);
-}
-
 // public/vendor/dungeonz.js
 var __create = Object.create;
 var __defProp2 = Object.defineProperty;
@@ -2661,6 +2620,104 @@ function advanceEnvironment(world) {
   return changes;
 }
 
+// public/tavern-motion.js
+var seats = [
+  [430, 285],
+  [550, 285],
+  [190, 225],
+  [310, 225],
+  [430, 225],
+  [550, 225],
+  [670, 225],
+  [790, 225],
+  [190, 285],
+  [310, 285],
+  [670, 285],
+  [790, 285],
+  [190, 345],
+  [310, 345],
+  [430, 345],
+  [550, 345],
+  [670, 345],
+  [790, 345],
+  [190, 405],
+  [310, 405],
+  [430, 405],
+  [550, 405],
+  [670, 405],
+  [790, 405]
+];
+
+// public/scene-events.js
+var recipes = { attack: ["melee", "hit"], use: ["impact", "hit"], break: ["impact", "slash"], harvest: ["impact", "slash"], ignite: ["fire", "fire"], extinguish: ["smoke", "fire"], treat: ["hearts", "heal"], rest: ["hearts", "heal"], drink: ["hearts", "heal"], pacify: ["hearts", "success"], repair: ["spell", "magic"], craft: ["spell", "magic"], attach: ["spell", "magic"], steal: ["steal", "coin"], take: ["steal", "coin"], give: ["steal", "coin"], equip: ["spell", "success"], unequip: ["smoke", "success"], separate: ["smoke", "slash"], open: ["inspect", "success"], close: ["inspect", "success"], unlock: ["spell", "success"], talk: ["inspect", "success"] };
+var ownPosition = (room, id) => seats[Math.max(0, room.players.findIndex((p) => p.id === id)) % seats.length];
+function worldEntityPosition(room, entity) {
+  return entity?.ownerId ? room.world.expedition.creatures?.[entity.ownerId]?.position || ownPosition(room, entity.ownerId) : entity?.position || ownPosition(room, entity?.id);
+}
+function createWorldScene(room, actor, plan, outcome, target) {
+  const state = room.world.expedition, events = [], effects = [];
+  if (plan.previousOwnerId && state.creatures[plan.previousOwnerId]?.hp > 0 && !outcome.blocked) events.push({ type: "witness", entityId: plan.previousOwnerId, at: 0 });
+  if (outcome.blocked) return { events, effects };
+  const id = plan.targetId || plan.recipientId || plan.itemId || plan.sourceIds?.[0];
+  const entity = state.creatures?.[id] || state.items[id] || room.players.find((p) => p.id === id);
+  const self = ["craft", "attach", "equip", "unequip", "rest", "drink", "separate"].includes(plan.verb);
+  const position = [...self || !outcome.success ? ownPosition(room, actor.id) : plan.previousOwnerId ? worldEntityPosition(room, state.creatures[plan.previousOwnerId]) : entity ? worldEntityPosition(room, entity) : target?.position || ownPosition(room, actor.id)];
+  const [verb, clip] = outcome.success ? recipes[plan.verb] || ["inspect", "success"] : ["smoke", null];
+  const effect = { verb, actorId: actor.id, target: self ? "self" : "world", entityId: self ? actor.id : entity?.id || null, position, at: 0 };
+  effects.push(effect);
+  events.push({ type: "animation", ...effect });
+  if (clip) events.push({ type: "sound", clip, at: 200 });
+  if (outcome.success && ["attack", "use", "break", "harvest"].includes(plan.verb) && entity) events.push({ type: "reaction", entityId: entity.id, position, at: 150, duration: 500 });
+  if (outcome.success && plan.verb === "talk") events.push({ type: "speech", entityId: entity?.id || null, text: outcome.text.slice(0, 480), at: 300 });
+  if (outcome.change) events.push({ type: "consequence", text: outcome.change.slice(0, 300), at: 0 });
+  return { events, effects };
+}
+
+// public/dm-memory.js
+var clean = (value, max) => String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+function recordDMMemory(room) {
+  const q = room.result;
+  if (!q) return;
+  const memory = room.dmMemory ||= { version: 1, entries: [], people: {} };
+  if (memory.entries.some((e) => e.id === q.id)) return;
+  const location = room.world.expedition?.current || "tavern";
+  const entry = {
+    id: q.id,
+    round: room.round,
+    location,
+    actorId: q.playerId,
+    actor: clean(q.name, 18),
+    attempt: clean(q.action, 180),
+    targetId: q.target?.entityId || q.target?.id || q.target?.kind || "room",
+    outcome: q.blocked ? "blocked" : q.success ? "success" : "failure",
+    fact: clean(q.narration, 600),
+    changes: q.changes.slice(0, 6).map((s) => clean(s, 100))
+  };
+  const witnesses = [...new Set((q.sceneEvents || []).filter((e) => e.type === "witness").map((e) => e.entityId))];
+  if (witnesses.length) entry.witnessIds = witnesses;
+  memory.entries.push(entry);
+  memory.entries = memory.entries.slice(-120);
+  for (const id of /* @__PURE__ */ new Set([entry.targetId, ...witnesses])) {
+    const creature = room.world.expedition?.creatures?.[id];
+    const name = { bartender: "Marnie", guard: "Captain Brick", goblin: "the goblin fiddler" }[id] || creature?.name;
+    if (name) {
+      const previous = memory.people[id] || { id, name: clean(name, 50), encounters: [] };
+      previous.location = location;
+      previous.round = room.round;
+      previous.encounters.push(entry);
+      previous.encounters = previous.encounters.slice(-4);
+      memory.people[id] = previous;
+      const keep = Object.values(memory.people).sort((a, b) => b.round - a.round).slice(0, 64);
+      memory.people = Object.fromEntries(keep.map((p) => [p.id, p]));
+    }
+  }
+}
+function redactDMMemory(room, id) {
+  if (!room.dmMemory) return;
+  room.dmMemory.entries = room.dmMemory.entries.filter((e) => e.id !== id);
+  for (const p of Object.values(room.dmMemory.people)) p.encounters = p.encounters.filter((e) => e.id !== id);
+}
+
 // public/entity-rules.js
 var MATERIAL_RULES = {
   cloth: { color: "#bd88cf", hardness: 7, burns: true },
@@ -2883,7 +2940,7 @@ function resolveEntity(r, s, actor, p, success) {
       const q = s.regions[s.current]?.quest;
       if (q && target.id === q.patronId) {
         if (q.status === "available") q.status = "active";
-        return reply(`${target.name}: \u201C${q.status === "completed" ? "You helped us. We remember." : q.objective}\u201D ${s.regions[s.current].rumor}`, "ADVENTURE: " + q.title);
+        return reply(`${target.name}: \u201C${target.history?.some((h) => h.verb === "theft" && h.actorId === actor.id) ? "I remember your theft attempt. " : ""}${q.status === "completed" ? "You helped us. We remember." : q.objective}\u201D ${s.regions[s.current].rumor}`, "ADVENTURE: " + q.title);
       }
       return reply(`${target.name} ${target.attitude === "hostile" ? "growls a warning. You could try befriending it or fighting." : "shares a story about the road ahead."}`);
     }
@@ -3057,6 +3114,7 @@ function parseItemAttempt(text) {
   if (m = text.match(/^(?:travel|go) to (.+)$/i)) return { verb: "travel", destination: norm(m[1]) };
   if (m = text.match(/^(?:make|craft|create) (.+?) from (.+)$/i)) return { verb: "craft", name: m[1].replace(/^(a|an|the)\s+/i, "").trim(), sources: m[2].replace(/\s+to wear (?:on )?(?:my |the )?(?:head|body|hand)$/i, "").split(/\s+and\s+|\s*\+\s*/i) };
   if (m = text.match(/^attach (.+?) to (.+)$/i)) return { verb: "attach", sources: [m[1], m[2]] };
+  if (m = text.match(/^steal (.+?)(?: from (.+))?$/i)) return { verb: "steal", item: m[1], from: m[2] };
   if (m = text.match(/^give (.+?) to (.+)$/i)) return { verb: "give", item: m[1], recipient: m[2] };
   if (m = text.match(/^use (.+?) on (.+)$/i)) return { verb: "use", item: m[1], target: m[2] };
   if (m = text.match(/^(take|drop|equip|wear|unequip|separate|inspect|break|smash) (.+)$/i)) return { verb: { wear: "equip", smash: "break" }[m[1].toLowerCase()] || m[1].toLowerCase(), item: m[2] };
@@ -3076,7 +3134,7 @@ function itemPlan(r, actor, text) {
   return planItemAttempt(r, actor, attempt);
 }
 function planItemAttempt(r, actor, attempt, { exactIds = false } = {}) {
-  const isExplicit = ["travel", "craft", "attach", "give", "use", "equip", "unequip", "separate", "drop"].includes(attempt.verb);
+  const isExplicit = ["travel", "craft", "attach", "give", "steal", "use", "equip", "unequip", "separate", "drop"].includes(attempt.verb);
   const s = ensureItems(r);
   const lookup = (text, carried = false) => {
     if (!exactIds) return carried ? findCarriedItem(s, r, actor, text) : findItem(s, r, text);
@@ -3088,6 +3146,7 @@ function planItemAttempt(r, actor, attempt, { exactIds = false } = {}) {
     if (s.current === "tavern" && !/^item-\d+$/i.test(attempt.item || "")) return null;
   }
   const blocked = (message) => ({ ...attempt, itemId: item?.id, error: message, automatic: true, dc: 0, ability: "Interaction" });
+  if (attempt.verb === "steal" && !item && s.current === "tavern" && (!attempt.from && exactEnvironmentTarget(attempt.item) || /^(?:the )?crown$/i.test(attempt.item) && (!attempt.from || /^(?:the )?chest(?: behind the bar)?$/i.test(attempt.from)))) return null;
   if (attempt.verb === "travel") {
     const dest = Object.values(s.locations).find((l) => l.id === attempt.destination || !exactIds && norm(l.name) === attempt.destination);
     if (!dest || !s.locations[s.current].exits.includes(dest.id)) return blocked("That place is not connected to this location.");
@@ -3105,6 +3164,13 @@ function planItemAttempt(r, actor, attempt, { exactIds = false } = {}) {
   if (!item) return blocked("No unique item matches that name here. Choose a visible item ID.");
   const plan = { ...attempt, itemId: item.id, automatic: true, dc: 0, ability: "Interaction" };
   if (attempt.verb === "inspect") return plan;
+  if (attempt.verb === "steal") {
+    const owner = localCreatures(s).find((c) => c.id === item.ownerId);
+    if (!owner) return blocked("Steal only an item carried by an NPC here; players must give or drop their own belongings.");
+    if (attempt.from && attempt.from !== owner.id && norm(attempt.from) !== norm(owner.name)) return blocked("That NPC does not own this item.");
+    if (item.portable === false || ITEM_TYPES[item.type]?.portable === false) return blocked("This fixture cannot be carried intact.");
+    return { ...plan, previousOwnerId: owner.id, automatic: owner.hp <= 0, dc: 11 + (s.locations[s.current].danger || 0), ability: "Sleight of Hand" };
+  }
   if (attempt.verb === "take") {
     if (item.portable === false || ITEM_TYPES[item.type]?.portable === false) return blocked("This fixture cannot be carried intact.");
     return !item.ownerId || item.ownerId === actor.id && item.containerId ? plan : blocked("That item is already carried; its owner must give or drop it.");
@@ -3134,7 +3200,7 @@ function planWorldProposal(r, actor, raw) {
   if (verb === "unsupported") return { verb, error: "This attempt cannot be represented by the available game actions.", automatic: true, dc: 0, ability: "Interaction" };
   if (verb === "rest") return { verb, automatic: false, dc: 6, ability: "Recovery" };
   if (verb === "craft") return inventory({ verb, name: raw.name, sources: raw.sources });
-  if (["take", "drop", "equip", "unequip", "separate"].includes(verb)) return inventory({ verb, item: raw.target });
+  if (["take", "steal", "drop", "equip", "unequip", "separate"].includes(verb)) return inventory({ verb, item: raw.target });
   if (verb === "travel") return inventory({ verb, destination: raw.target });
   if (verb === "give") return inventory({ verb, item: raw.item, recipient: raw.target });
   if (["use", "put", "fill"].includes(verb)) {
@@ -3164,6 +3230,19 @@ function resolveItem(r, actor, plan, success) {
   }
   if (plan.entityAction && plan.verb !== "explore") return resolveEntity(r, s, actor, plan, success);
   if (plan.verb === "use") return resolveEntity(r, s, actor, { ...plan, verb: "attack" }, success);
+  if (plan.verb === "steal") {
+    const owner = s.creatures[plan.previousOwnerId];
+    if (owner?.hp > 0) {
+      owner.trust ||= {};
+      owner.trust[actor.id] = Math.max(-10, (owner.trust[actor.id] || 0) - 2);
+      owner.attitude = "hostile";
+      owner.history ||= [];
+      owner.history.push({ verb: "theft", actorId: actor.id, itemId: item.id, success, round: r.round });
+      owner.history = owner.history.slice(-12);
+      out.change = owner.name + " remembers the theft attempt";
+    }
+    if (!success) return { ...out, text: actor.name + " is caught trying to steal " + item.name + ". Ownership is unchanged. " + owner.name + " remembers." };
+  }
   if (!success) return { ...out, text: plan.verb === "rest" ? `${actor.name} cannot settle down yet. Try resting again.` : `${actor.name} tries, but the materials resist. Nothing is consumed or changed.` };
   if (plan.verb === "rest") {
     s.campaign.day++;
@@ -3198,6 +3277,7 @@ function resolveItem(r, actor, plan, success) {
   switch (plan.verb) {
     case "inspect":
       return { ...out, text: `${item.name} (${item.id}): ${item.condition} ${item.material} ${item.type}; ${item.components.length} components. ${item.ownerId ? "Carried by " + [...r.players, ...localCreatures(s)].find((p) => p.id === item.ownerId)?.name : "On the ground"}.` };
+    case "steal":
     case "take":
       if (item.containerId) {
         const box = s.items[item.containerId];
@@ -3260,6 +3340,10 @@ function resolveItem(r, actor, plan, success) {
   };
   follow(item);
   remember(item, plan.verb, actor, s.current);
+  if (plan.verb === "steal") {
+    const owner = s.creatures[plan.previousOwnerId];
+    return { ...out, text: `${actor.name} steals ${item.name} from ${owner.name}.${owner.hp > 0 ? " " + owner.name + " notices and remembers." : ""}`, change: "STOLEN: " + item.name };
+  }
   return { ...out, text: `${actor.name}: ${plan.verb} ${item.name}${plan.recipientId ? " \u2192 " + [...r.players, ...localCreatures(s)].find((p) => p.id === plan.recipientId).name : ""}${plan.targetId ? " strikes " + (s.items[plan.targetId] || s.creatures[plan.targetId]).name : ""}.`, change: plan.verb.toUpperCase() + ": " + item.name };
 }
 function advanceWorld(r) {
@@ -3532,9 +3616,9 @@ function submit(r, playerId, input, now = Date.now()) {
     r.turn.worldAction = true;
     r.turn.worldLocked = dynamic.verb !== "unsupported" && !dynamic.unresolvedTarget;
     if (dynamic.unresolvedTarget) r.turn.worldPendingVerb = dynamic.verb;
-    const key2 = dynamic.targetId || dynamic.itemId || dynamic.sourceIds?.[0];
+    const key2 = dynamic.targetId || dynamic.recipientId || dynamic.itemId || dynamic.sourceIds?.[0];
     const item = r.world.expedition.items[key2] || r.world.expedition.creatures?.[key2];
-    r.turn.target = { kind: "world", entityId: item?.id, name: item?.name || dynamic.destination || dynamic.target || "materials", position: item?.ownerId ? [480, 335] : item?.position || [480, 490] };
+    r.turn.target = { kind: "world", entityId: item?.id, name: item?.name || dynamic.destination || dynamic.target || "materials", position: item ? worldEntityPosition(r, item) : [480, 490] };
   }
   r.phase = "react";
   r.deadline = r.turn.deadline;
@@ -3639,7 +3723,7 @@ function resolve(r, now) {
   const dc = automatic ? 0 : check?.dc ?? { heal: 6, flee: r.quest.crown ? 12 : 8, inspect: 9, social: 10, dance: 9, sneak: 10, steal: 13, magic: 12, attack: 12, break: 11, weird: 10, interact: 10 }[t.intent];
   const critical = roll === 20;
   let success = automatic || critical || roll !== 1 && roll + modifier >= dc;
-  const effects = [], changes = [];
+  const effects = [], changes = [], sceneEvents = [];
   let narration = "", unsupported = false;
   const add2 = (s) => changes.push(s);
   const fx = (verb, target2 = t.target.kind) => effects.push({ verb, actorId: p.id, target: target2, targetId: t.target.id || null });
@@ -3675,7 +3759,9 @@ function resolve(r, now) {
     unsupported = outcome.blocked;
     narration = outcome.text;
     if (outcome.change) add2(outcome.change);
-    fx(dynamic.verb === "break" || dynamic.verb === "use" ? "impact" : "inspect");
+    const scene = createWorldScene(r, p, dynamic, outcome, t.target);
+    effects.push(...scene.effects);
+    sceneEvents.push(...scene.events);
   } else if (environmental) {
     success = environmental.success;
     narration = environmental.text;
@@ -3942,6 +4028,7 @@ function resolve(r, now) {
     narration,
     changes,
     effects,
+    ...dynamic ? { sceneEvents } : {},
     reactions: sorted.map((x) => ({ playerId: x.playerId, kind: x.kind, text: x.text, seq: x.id })),
     at: now
   };
@@ -4049,7 +4136,7 @@ function hostCommand(r, command, now = Date.now()) {
 }
 
 // public/world-ai.js
-var WORLD_VERBS = ["craft", "attach", "give", "equip", "unequip", "take", "drop", "separate", "inspect", "use", "travel", "explore", "talk", "pacify", "attack", "harvest", "treat", "fill", "drink", "open", "close", "unlock", "move", "ignite", "extinguish", "repair", "put", "rest", "unsupported"];
+var WORLD_VERBS = ["craft", "attach", "give", "equip", "unequip", "take", "steal", "drop", "separate", "inspect", "use", "travel", "explore", "talk", "pacify", "attack", "harvest", "treat", "fill", "drink", "open", "close", "unlock", "move", "ignite", "extinguish", "repair", "put", "rest", "unsupported"];
 var APPEARANCE_PALETTE = { red: "#d87878", blue: "#7ea7d4", green: "#83b48a", gold: "#dfc16e", purple: "#bd88cf", white: "#e4dcc8", black: "#484552", brown: "#b88955", cyan: "#7dc7cf" };
 var APPEARANCE_COLORS = Object.values(APPEARANCE_PALETTE);
 var WORLD_PLAN_SCHEMA = { type: "object", properties: { domain: { type: "string", enum: ["world"] }, verb: { type: "string", enum: WORLD_VERBS }, target: { type: "string" }, item: { type: "string" }, sources: { type: "array", items: { type: "string" }, maxItems: 4 }, name: { type: "string", maxLength: 48 }, itemType: { type: "string", enum: ["wearable", "tool", "container", "fragment"] }, slot: { type: "string", enum: ["head", "body", "hand"] }, color: { type: "string", enum: APPEARANCE_COLORS }, summary: { type: "string", maxLength: 160 } }, required: ["domain", "verb", "target", "item", "sources", "name", "itemType", "slot", "color", "summary"], additionalProperties: false };
@@ -4082,8 +4169,8 @@ function validateWorldPlan(raw, room, actorId) {
     if (!["wearable", "tool", "container", "fragment"].includes(raw.itemType) || !["head", "body", "hand"].includes(raw.slot) || !APPEARANCE_COLORS.includes(raw.color)) throw Error("Unsupported appearance");
     blueprint = { creationType: raw.itemType, creationSlot: raw.slot, creationColor: raw.color };
   }
-  const target = entity(plan.targetId || plan.itemId || plan.sourceIds?.[0]);
-  return { intent: plan.verb === "rest" ? "heal" : "world", rulesText: text, target: { kind: "world", entityId: target?.id, name: target?.name || plan.destination || "the surroundings", position: target?.position || [480, 335] }, worldAction: true, proposal: structuredClone(raw), blueprint, verb: raw.verb, summary: raw.summary.replace(/[\u0000-\u001f\u007f]/g, " ").trim() };
+  const target = entity(plan.targetId || plan.recipientId || plan.itemId || plan.sourceIds?.[0]);
+  return { intent: plan.verb === "rest" ? "heal" : "world", rulesText: text, target: { kind: "world", entityId: target?.id, name: target?.name || plan.destination || "the surroundings", position: target ? worldEntityPosition(room, target) : [480, 335] }, worldAction: true, proposal: structuredClone(raw), blueprint, verb: raw.verb, summary: raw.summary.replace(/[\u0000-\u001f\u007f]/g, " ").trim() };
 }
 
 // public/ai-plan.js

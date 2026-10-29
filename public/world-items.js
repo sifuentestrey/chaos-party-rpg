@@ -1,3 +1,4 @@
+import {exactEnvironmentTarget} from './environment.js';
 import {expeditionTravelError,advanceExpedition} from './expedition.js';
 import {upgradeCampaign,describeRegion,enterRegion,spawnItem,progressAdventure,recordCampaign,localCreatures} from './campaign.js';
 import {MATERIAL_RULES,available,entityNamed,parseEntityAttempt,planEntity,resolveEntity,damageEntity,advanceEntities} from './entity-rules.js';
@@ -44,6 +45,7 @@ export function parseItemAttempt(text){
   if((m=text.match(/^(?:travel|go) to (.+)$/i)))return {verb:'travel',destination:norm(m[1])};
   if((m=text.match(/^(?:make|craft|create) (.+?) from (.+)$/i)))return {verb:'craft',name:m[1].replace(/^(a|an|the)\s+/i,'').trim(),sources:m[2].replace(/\s+to wear (?:on )?(?:my |the )?(?:head|body|hand)$/i,'').split(/\s+and\s+|\s*\+\s*/i)};
   if((m=text.match(/^attach (.+?) to (.+)$/i)))return {verb:'attach',sources:[m[1],m[2]]};
+  if((m=text.match(/^steal (.+?)(?: from (.+))?$/i)))return {verb:'steal',item:m[1],from:m[2]};
   if((m=text.match(/^give (.+?) to (.+)$/i)))return {verb:'give',item:m[1],recipient:m[2]};
   if((m=text.match(/^use (.+?) on (.+)$/i)))return {verb:'use',item:m[1],target:m[2]};
   if((m=text.match(/^(take|drop|equip|wear|unequip|separate|inspect|break|smash) (.+)$/i)))return {verb:({wear:'equip',smash:'break'})[m[1].toLowerCase()]||m[1].toLowerCase(),item:m[2]};
@@ -64,7 +66,7 @@ export function itemPlan(r,actor,text){
 
 // Both native grammar and AI proposals use these same authoritative checks.
 export function planItemAttempt(r,actor,attempt,{exactIds=false}={}){
-  const isExplicit=['travel','craft','attach','give','use','equip','unequip','separate','drop'].includes(attempt.verb);
+  const isExplicit=['travel','craft','attach','give','steal','use','equip','unequip','separate','drop'].includes(attempt.verb);
   const s=ensureItems(r);
   const lookup=(text,carried=false)=>{
    if(!exactIds)return carried?findCarriedItem(s,r,actor,text):findItem(s,r,text);
@@ -74,6 +76,7 @@ export function planItemAttempt(r,actor,attempt,{exactIds=false}={}){
   const item=attempt.item?lookup(attempt.item,['give','use','equip','unequip','drop','separate'].includes(attempt.verb)):null;
   if(!isExplicit&&!item){if(s.current==='tavern'&&!/^item-\d+$/i.test(attempt.item||''))return null;}
   const blocked=message=>({...attempt,itemId:item?.id,error:message,automatic:true,dc:0,ability:'Interaction'});
+  if(attempt.verb==='steal'&&!item&&s.current==='tavern'&&(!attempt.from&&exactEnvironmentTarget(attempt.item)||/^(?:the )?crown$/i.test(attempt.item)&&(!attempt.from||/^(?:the )?chest(?: behind the bar)?$/i.test(attempt.from))))return null;
   if(attempt.verb==='travel'){
     const dest=Object.values(s.locations).find(l=>l.id===attempt.destination||!exactIds&&norm(l.name)===attempt.destination);
     if(!dest||!s.locations[s.current].exits.includes(dest.id))return blocked('That place is not connected to this location.');
@@ -90,6 +93,13 @@ export function planItemAttempt(r,actor,attempt,{exactIds=false}={}){
   if(!item)return blocked('No unique item matches that name here. Choose a visible item ID.');
   const plan={...attempt,itemId:item.id,automatic:true,dc:0,ability:'Interaction'};
   if(attempt.verb==='inspect')return plan;
+  if(attempt.verb==='steal'){
+    const owner=localCreatures(s).find(c=>c.id===item.ownerId);
+    if(!owner)return blocked('Steal only an item carried by an NPC here; players must give or drop their own belongings.');
+    if(attempt.from&&attempt.from!==owner.id&&norm(attempt.from)!==norm(owner.name))return blocked('That NPC does not own this item.');
+    if(item.portable===false||ITEM_TYPES[item.type]?.portable===false)return blocked('This fixture cannot be carried intact.');
+    return {...plan,previousOwnerId:owner.id,automatic:owner.hp<=0,dc:11+(s.locations[s.current].danger||0),ability:'Sleight of Hand'};
+  }
   if(attempt.verb==='take'){if(item.portable===false||ITEM_TYPES[item.type]?.portable===false)return blocked('This fixture cannot be carried intact.');return !item.ownerId||item.ownerId===actor.id&&item.containerId?plan:blocked('That item is already carried; its owner must give or drop it.');}
   if(item.ownerId!==actor.id)return blocked('You must carry that item first.');
   if(attempt.verb==='give'){
@@ -117,7 +127,7 @@ export function planWorldProposal(r,actor,raw){
  if(verb==='unsupported')return {verb,error:'This attempt cannot be represented by the available game actions.',automatic:true,dc:0,ability:'Interaction'};
  if(verb==='rest')return {verb,automatic:false,dc:6,ability:'Recovery'};
  if(verb==='craft')return inventory({verb,name:raw.name,sources:raw.sources});
- if(['take','drop','equip','unequip','separate'].includes(verb))return inventory({verb,item:raw.target});
+ if(['take','steal','drop','equip','unequip','separate'].includes(verb))return inventory({verb,item:raw.target});
  if(verb==='travel')return inventory({verb,destination:raw.target});
  if(verb==='give')return inventory({verb,item:raw.item,recipient:raw.target});
  if(['use','put','fill'].includes(verb)){
@@ -140,6 +150,7 @@ export function resolveItem(r,actor,plan,success){
   if(plan.verb==='map'){s.mapFound=true;return {...out,text:'You copy the tavern route map. The party can consult known paths on their controllers; new discoveries are marked as you travel.',change:'PARTY MAP DISCOVERED'};}
   if(plan.entityAction&&plan.verb!=='explore')return resolveEntity(r,s,actor,plan,success);
   if(plan.verb==='use')return resolveEntity(r,s,actor,{...plan,verb:'attack'},success);
+  if(plan.verb==='steal'){const owner=s.creatures[plan.previousOwnerId];if(owner?.hp>0){owner.trust||={};owner.trust[actor.id]=Math.max(-10,(owner.trust[actor.id]||0)-2);owner.attitude='hostile';owner.history||=[];owner.history.push({verb:'theft',actorId:actor.id,itemId:item.id,success,round:r.round});owner.history=owner.history.slice(-12);out.change=owner.name+' remembers the theft attempt';}if(!success)return {...out,text:actor.name+' is caught trying to steal '+item.name+'. Ownership is unchanged. '+owner.name+' remembers.'};}
   if(!success)return {...out,text:plan.verb==='rest'?`${actor.name} cannot settle down yet. Try resting again.`:`${actor.name} tries, but the materials resist. Nothing is consumed or changed.`};
   if(plan.verb==='rest'){s.campaign.day++;actor.injuries=[];actor.hp=Math.min(actor.maxHp,actor.hp+4);return {...out,text:`${actor.name} rests and recovers.`,change:'+4 HP (up to maximum)'};}
   if(plan.verb==='travel'||plan.verb==='explore'){enterRegion(r,s,plan.destination);recordCampaign(r,s,'travel',actor.name+' led the party to '+s.locations[s.current].name,{location:s.current});return {...out,text:`The party travels to ${s.locations[s.current].name}. Carried objects come along.`,change:'LOCATION: '+s.locations[s.current].name};}
@@ -158,7 +169,7 @@ export function resolveItem(r,actor,plan,success){
   }
   switch(plan.verb){
     case 'inspect':return {...out,text:`${item.name} (${item.id}): ${item.condition} ${item.material} ${item.type}; ${item.components.length} components. ${item.ownerId?'Carried by '+[...r.players,...localCreatures(s)].find(p=>p.id===item.ownerId)?.name:'On the ground'}.`};
-    case 'take':if(item.containerId){const box=s.items[item.containerId];box.contents=box.contents.filter(id=>id!==item.id);delete item.containerId;}item.ownerId=actor.id;item.location=null;break;
+    case 'steal':case 'take':if(item.containerId){const box=s.items[item.containerId];box.contents=box.contents.filter(id=>id!==item.id);delete item.containerId;}item.ownerId=actor.id;item.location=null;break;
     case 'drop':item.ownerId=null;item.location=s.current;item.equipped=false;break;
     case 'give':item.ownerId=plan.recipientId;item.equipped=false;break;
     case 'equip':for(const other of Object.values(s.items))if(other.ownerId===actor.id&&other.slot===item.slot)other.equipped=false;item.equipped=true;break;
@@ -169,6 +180,7 @@ export function resolveItem(r,actor,plan,success){
   }
   const follow=(parent,seen=new Set())=>{if(seen.has(parent.id))return;seen.add(parent.id);for(const id of parent.contents||[]){const child=s.items[id];child.ownerId=parent.ownerId;child.location=parent.location;follow(child,seen);}};follow(item);
   remember(item,plan.verb,actor,s.current);
+  if(plan.verb==='steal'){const owner=s.creatures[plan.previousOwnerId];return {...out,text:`${actor.name} steals ${item.name} from ${owner.name}.${owner.hp>0?' '+owner.name+' notices and remembers.':''}`,change:'STOLEN: '+item.name};}
   return {...out,text:`${actor.name}: ${plan.verb} ${item.name}${plan.recipientId?' → '+[...r.players,...localCreatures(s)].find(p=>p.id===plan.recipientId).name:''}${plan.targetId?' strikes '+(s.items[plan.targetId]||s.creatures[plan.targetId]).name:''}.`,change:plan.verb.toUpperCase()+': '+item.name};
 }
 
