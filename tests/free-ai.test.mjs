@@ -36,9 +36,9 @@ test('rate-limit responses stop further calls, count attempts, and never retry o
 test('persistent local quotas survive restart; malformed or future ledgers fail conservatively',()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-free-usage-'));let time=Date.UTC(2026,9,27);
  try{
-  let budget=createFreeAIBudget(dir,{now:()=>time});for(let n=0;n<4;n++)budget.reserve();assert.throws(()=>budget.reserve(),/cooling/);
+  let budget=createFreeAIBudget(dir,{now:()=>time});for(let n=0;n<30;n++)budget.reserve();assert.throws(()=>budget.reserve(),/cooling/);
   budget=createFreeAIBudget(dir,{now:()=>time});assert.throws(()=>budget.reserve(),/cooling/);
-  for(let n=4;n<100;n++){time+=61000;budget.reserve();}assert.throws(()=>budget.reserve(),/daily/);
+  for(let n=30;n<1000;n++){time+=61000;budget.reserve();}assert.throws(()=>budget.reserve(),/daily/);
   time-=86400000;assert.throws(()=>budget.reserve(),/daily/);
   time+=2*86400000;budget.reserve();assert.equal(JSON.parse(fs.readFileSync(path.join(dir,'ai-free-usage.json'))).count,1);
   fs.writeFileSync(path.join(dir,'ai-free-usage.json'),'broken');assert.throws(()=>budget.reserve());
