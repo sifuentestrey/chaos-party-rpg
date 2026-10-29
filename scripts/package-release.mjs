@@ -48,6 +48,13 @@ case "$(uname -m)" in
   x86_64) game_arch="x64" ;;
   *) echo "This build supports Intel and Apple Silicon Macs."; read -r -p "Press Return to close."; exit 1 ;;
 esac
+mac_version="$(sw_vers -productVersion)"
+if [ "\${mac_version%%.*}" -lt 11 ]; then
+  echo "Chaos Party requires macOS 11 (Big Sur) or newer."
+  echo "This copy has not changed your installation or saves."
+  read -r -p "Press Return to close."
+  exit 1
+fi
 export CHAOS_LAUNCH=1
 export CHAOS_OPEN=1
 export CHAOS_DATA_DIR="$HOME/Library/Application Support/Chaos Party"
@@ -59,5 +66,5 @@ if ! "$game_dir/runtime/$game_arch/node" "$game_dir/server.cjs"; then
 fi
 `;
 fs.writeFileSync(path.join(out,'Start Chaos Party.command'),launcher,{mode:0o755});
-fs.writeFileSync(path.join(out,'START_HERE.txt'),'CHAOS PARTY — 0.3 BETA CANDIDATE\n\n1. Double-click Start Chaos Party.command.\n2. Choose Host a party, then Create a private room.\n3. Show the browser on your TV. Friends join by scanning the QR on the same Wi-Fi.\n4. Start the heist when everyone has a character.\n\nFind three clues, steal the crown, and escape together. Then choose Begin The Dawn Bell for the connected forest / river / town / castle adventure and its own ending. Copy the tavern wall map from phone object controls. Shared Travel / Explore requires majority approval through Help them. Read DAWN_BELL.md for commands, objectives and saving. The host can also begin the expedition between turns using host controls.\n\nThe native adventures need no account, internet connection, or paid service. For AI interpretation, open host controls on the Mac and choose Dungeon Master setup. Use a Groq Free Plan key; it stays private on this computer. Creative narration remains off pending qualification. Keep the launcher window open while playing.\n\nIf macOS blocks the downloaded launcher, right-click it and choose Open. Review Privacy & Security if your macOS version requires confirmation. Allow local network access for phones.\n\nRead BETA.md and BETA_AUDIT.md for supported mechanics and honest test limits. Physical Mac/phone acceptance is still pending.\n');
+fs.writeFileSync(path.join(out,'START_HERE.txt'),'CHAOS PARTY — 0.3 BETA CANDIDATE\n\n1. Double-click Start Chaos Party.command.\n2. Choose Host a party, then Create a private room.\n3. Show the browser on your TV. Friends join by scanning the QR on the same Wi-Fi.\n4. Start the heist when everyone has a character.\n\nFind three clues, steal the crown, and escape together. Then choose Begin The Dawn Bell for the connected forest / river / town / castle adventure and its own ending. Copy the tavern wall map from phone object controls. Shared Travel / Explore requires majority approval through Help them. Read DAWN_BELL.md for commands, objectives and saving. The host can also begin the expedition between turns using host controls.\n\nThe native adventures need no account, internet connection, or paid service. For AI interpretation, open host controls on the Mac and choose Dungeon Master setup. Use a Groq Free Plan key; it stays private on this computer. Creative narration remains off pending qualification. Keep the launcher window open while playing.\n\nRequires macOS 11 (Big Sur) or newer; the bundled Intel and ARM runtimes both declare this minimum. If macOS blocks the downloaded launcher, right-click it and choose Open. Review Privacy & Security if your macOS version requires confirmation. Allow local network access for phones.\n\nRead BETA.md and BETA_AUDIT.md for supported mechanics and honest test limits. Physical Mac/phone acceptance is still pending.\n');
 console.log(JSON.stringify({release:out,files:fs.readdirSync(out),thirdPartyNotices:seen.size}));

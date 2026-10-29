@@ -1,3 +1,5 @@
+> Bundled Node 22.16.0 Intel/ARM executables declare minimum macOS 11.0 (verified from their Mach-O load commands). Confirm the 2015 Mac runs Big Sur 11 or newer before rehearsal; the launcher now explains this requirement. No OS update or installation change is performed by the game.
+
 # Test before game night
 
 This beta is intended for a small, local game night. The shared game appears on one TV or computer screen; each player uses a phone as a remote.
