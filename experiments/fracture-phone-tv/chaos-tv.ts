@@ -60,7 +60,8 @@ export function startChaosTV(game:any):void {
     // Roster changes may leave stale IDs in the browser's renderer state.
     // Never recolor a new native entity using a departed player's appearance.
     const present=new Set(players.map((p:any)=>String(p.actor.id)));
-    for(const id of appearances.keys())if(!present.has(id))appearances.delete(id);
+    // Native Fracture compiles this client to ES5; Map.forEach avoids TS2802.
+    appearances.forEach((_appearance:any,id:string)=>{if(!present.has(id))appearances.delete(id);});
     for(const p of players){
       appearances.set(String(p.actor.id),{name:p.name,color:p.color});
       for(const e of p.actor.nearby||[]){const entity=game.getEntityById(e.id);if(entity&&e.hp!==undefined){entity.hitPoints=e.hp;entity.maxHitPoints=e.maxHp;}}
