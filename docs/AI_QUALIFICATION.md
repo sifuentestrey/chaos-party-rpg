@@ -1,3 +1,5 @@
+> October 29 update: request accounting is conservatively held at zero remaining allowance for the current UTC day. `scripts/schedule-ai-qualification.mjs` can wait for the normal renewal and run exactly six interpretation plus three narration cases. It requires a clean unchanged source commit, the existing persistent counter, the existing private provider connection and a stopped local game server. It never resets the counter or enables narration; source changes/provider failures block execution. No real inference has been run for the current release. Status/evidence: `artifacts/scheduled-ai/`. The workspace must remain available for a waiting process to run. Do not launch duplicate qualification or game processes against the same counter.
+
 # AI qualification before gameplay activation
 
 The creative Dungeon Master is a core product feature. A model must be tested for both faithful interpretation and useful response time before it becomes the default. Structured JSON alone is not a passing result.

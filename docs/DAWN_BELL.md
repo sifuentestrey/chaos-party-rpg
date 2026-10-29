@@ -22,6 +22,8 @@ The host can keep exploring after the Dawn Bell ending. A fresh heist resets sto
 
 ## AI and acceptance
 
+On the Mac, open host controls and choose **Dungeon Master setup**. Paste your Groq Free Plan connection key and confirm the Free Plan, then save. The key is stored privately outside the game package and is never sent to phones. No terminal commands are needed. Connect or disconnect between turns. The existing request limits are preserved.
+
 Creative hosted AI remains optional and unqualified. Native supported commands remain available when it is absent, slow or limited; unrepresentable stunts may be rejected. This candidate has no claim of measured live-model quality or all-night free AI capacity. The 100/day and four/minute shared request guards remain intact.
 
 Use a new test room first. Physical Mac/macOS, TV, audio, Wi-Fi, two real phones and group performance still require rehearsal. See TEST_BEFORE_GAME_NIGHT.md. Keep earlier installations and saves intact.

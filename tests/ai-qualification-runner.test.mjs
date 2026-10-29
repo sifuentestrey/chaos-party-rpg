@@ -126,3 +126,4 @@ test('a simulated provider rate limit stops the batch without retries or later r
     assert.equal(JSON.parse(fs.readFileSync(path.join(dataDir,'ai-free-usage.json'))).count,1);
   });
 });
+test('a rejected provider credential stops after one attempt instead of spending later cases',async()=>{await withDataDir(async dataDir=>{writeLedger(dataDir);let completions=0;const report=await runQualification({live:true,requestBudget:6,dataDir,now:()=>FIXED_NOW,wait:async()=>{},env:{CHAOS_AI_PROVIDER:'groq-free',GROQ_API_KEY:'synthetic-key-only'},fetcher:async url=>{if(url.endsWith('/models'))return new Response(JSON.stringify({data:[{id:'openai/gpt-oss-120b'}]}));completions++;return new Response('{}',{status:401});}});assert.equal(completions,1);assert.equal(report.results.length,1);assert.match(report.stopped,/no retry/);assert.equal(JSON.parse(fs.readFileSync(path.join(dataDir,'ai-free-usage.json'))).count,1);});});

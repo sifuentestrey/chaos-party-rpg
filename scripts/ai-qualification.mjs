@@ -105,6 +105,7 @@ export async function runQualification({mode='interpretation',requestBudget,live
       row.providerEvidence=evidence.slice(evidenceStart);row.inferenceRun=report.evidence==='live-provider'&&row.providerEvidence.length>0;
       report.results.push(row);report.inferenceRun||=row.inferenceRun;onProgress(report);
       if(live&&ai.status?.().state==='rate-limited'){report.stopped='Provider rate limit reached; no retry or further case was sent.';break;}
+      if(live&&row.error&&/AI provider returned HTTP|Free AI quota|Free AI is cooling down|fetch failed/i.test(row.error)){report.stopped='Provider request failed; no retry or further case was sent.';break;}
       if(live&&report.results.length<Math.min(requestBudget,caps[mode]))await wait(26000);
     }
     return finish();

@@ -147,3 +147,5 @@ button.selected,[aria-pressed="true"]{box-shadow:0 0 0 2px var(--gold)}
  .tavern-tv .story-card:has(.quote) .quote{font-size:20px;margin:4px 0}
  .tavern-tv .story-card:has(.quote) .story-meta,.tavern-tv .story-card:has(.quote) .timer-track{margin-top:5px}
 }
+
+.ai-check{display:flex;align-items:center;gap:9px;margin:14px 0;font-size:12px;font-weight:600}.ai-check input{width:16px;height:16px;min-height:16px;margin:0;flex:0 0 16px;accent-color:#edc878}
