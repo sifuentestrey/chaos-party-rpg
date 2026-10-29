@@ -3,12 +3,14 @@
  * This is not original Chaos Party expedition travel or world-state migration.
  */
 export function proposeRally(actors,proposer,now,id){
- if(!Array.isArray(actors)||actors.length<2||actors.length>20)throw Error('At least two nearby active characters are needed.');
+ if(!Array.isArray(actors)||actors.length<2)throw Error('At least two nearby active characters are needed.');
+ if(actors.length>20)throw Error('A local rally supports at most 20 active characters.');
  if(!id||typeof id!=='string')throw Error('A unique rally ID is required.');
  const lead=actors.find(p=>p.token===proposer);
  if(!lead)throw Error('Your character is not eligible for this rally.');
  const valid=p=>p&&typeof p.token==='string'&&p.ready===true&&!p.dead&&
-   typeof p.zone==='string'&&Number.isInteger(p.x)&&Number.isInteger(p.y);
+   typeof p.zone==='string'&&Number.isInteger(p.x)&&Number.isInteger(p.y)&&
+   p.x>0&&p.y>0&&p.x<1000&&p.y<1000;
  if(!actors.every(valid)||new Set(actors.map(p=>p.token)).size!==actors.length)throw Error('Every participant must have a distinct, ready character.');
  if(actors.some(p=>p.zone!==lead.zone))throw Error('The party must be in the same area.');
  if(actors.some(p=>Math.abs(p.x-lead.x)+Math.abs(p.y-lead.y)>12))throw Error('Move within twelve tiles of the group before proposing a rally.');
