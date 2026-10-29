@@ -55,3 +55,28 @@ test('remote website cannot hijack TV events or submit browser action',async t=>
  assert.equal((await post(base,{key:'phone',text:'x'})).status,400);
  assert.equal((await post(base,{key:'phone',text:'<img src=x onerror=alert(1)>'})).status,400);
 });
+
+test('STOP bypasses action lock and interpreter results distinguish queued from started or blocked', async t=>{
+ const {base}=await setup(t);
+ const controller=new AbortController();
+ const event=await fetch(`${base}/events?key=tv`,{signal:controller.signal,headers:{Origin:'http://localhost:8000'}});
+ assert.equal(event.status,200);
+ const reader=event.body.getReader(); await reader.read();
+ const attack=await post(base,{key:'phone',text:'attack the rat'});
+ assert.equal(attack.status,202);
+ const a=await attack.json();
+ assert.equal((await (await fetch(`${base}/result?key=phone&id=${a.id}`)).json()).status,'queued');
+ assert.equal((await post(base,{key:'phone',text:'move left'})).status,409);
+ const stop=await post(base,{key:'phone',text:'stop'});
+ assert.equal(stop.status,202);
+ const s=await stop.json();
+ assert.equal((await post(base,{key:'phone',text:'move left'})).status,202);
+ assert.equal((await fetch(`${base}/result?key=host&id=${s.id}`)).status,403);
+ assert.equal((await fetch(`${base}/outcome`,{method:'POST',headers:{'content-type':'application/json',Origin:'https://evil.example:8000'},body:JSON.stringify({key:'tv',id:s.id,status:'started',message:'Stopped'})})).status,403);
+ assert.equal((await fetch(`${base}/outcome`,{method:'POST',headers:{'content-type':'application/json',Origin:'http://localhost:8000'},body:JSON.stringify({key:'host',id:s.id,status:'started',message:'Stopped'})})).status,403);
+ const outcome=await fetch(`${base}/outcome`,{method:'POST',headers:{'content-type':'application/json',Origin:'http://localhost:8000'},body:JSON.stringify({key:'tv',id:s.id,status:'started',message:'Stopping your character.'})});
+ assert.equal(outcome.status,200);
+ assert.deepEqual(await (await fetch(`${base}/result?key=phone&id=${s.id}`)).json(),{status:'started',message:'Stopping your character.'});
+ assert.equal((await fetch(`${base}/outcome`,{method:'OPTIONS',headers:{Origin:'http://localhost:8000','access-control-request-method':'POST','access-control-request-headers':'content-type'}})).status,204);
+ await reader.cancel();controller.abort();
+});
