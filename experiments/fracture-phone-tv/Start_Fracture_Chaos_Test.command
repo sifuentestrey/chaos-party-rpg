@@ -43,6 +43,9 @@ fi
 if ! grep -q 'startChaosRemote(game)' "$TARGET/client/ts/main.ts"; then
   node "$HERE/apply-overlay.mjs" "$TARGET"
 fi
+if [[ ! -f "$TARGET/server/config.json" ]]; then
+  cp "$TARGET/server/config.example.json" "$TARGET/server/config.json"
+fi
 cd "$TARGET"
 echo 'Installing Fracture dependencies and building client/server...'
 pnpm_cmd install --frozen-lockfile
