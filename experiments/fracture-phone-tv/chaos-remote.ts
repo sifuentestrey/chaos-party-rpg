@@ -117,6 +117,14 @@ export function startChaosRemote(game: any): void {
       const result=interpretFractureCommand(game,data.text);
       add(result);
       game.showNotification?.(escapeHtml(result));
+      // "Sent" only means the phone request reached the bridge; report whether
+      // the TV parser actually attempted the action, rejected it, or finished
+      // a read-only observation. Real combat outcomes remain server-owned.
+      const blocked=/^(?:Not yet supported|No nearby|Cannot|There is|Character is|I cannot move|That location is blocked)/i.test(result);
+      const status=blocked?'blocked':/^Nearby:|^No nearby characters/i.test(result)?'completed':'started';
+      const outcomeUrl=new URL('/outcome',endpoint);
+      void fetch(outcomeUrl.toString(),{method:'POST',headers:{'content-type':'application/json'},
+        body:JSON.stringify({key,id:data.id,status,message:result})}).catch(err=>console.warn('[Chaos Party] Could not report outcome',err));
     }catch(e){console.warn('[Chaos Party] Action error',e);add('Action could not be completed.');}
   });
   source.onerror=()=>add('Phone controller disconnected; trying to reconnect.');
