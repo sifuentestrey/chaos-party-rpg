@@ -22,7 +22,7 @@ test('live preflight requires a valid existing ledger and enough allowance befor
     assert.equal(qualificationPreflight({dataDir,requestBudget:1,now:FIXED_NOW}).allowed,false,'malformed ledger is blocked');
     writeLedger(dataDir,{day:'2026-10-28'});
     assert.equal(qualificationPreflight({dataDir,requestBudget:1,now:FIXED_NOW}).allowed,false,'future-dated ledger is blocked');
-    writeLedger(dataDir,{count:100});
+    writeLedger(dataDir,{count:1000});
     assert.equal(qualificationPreflight({dataDir,requestBudget:1,now:FIXED_NOW}).allowed,false,'exhausted ledger is blocked');
     writeLedger(dataDir,{count:995});
     assert.equal(qualificationPreflight({dataDir,requestBudget:6,now:FIXED_NOW}).allowed,false,'daily allowance must cover the whole requested batch');
@@ -31,7 +31,7 @@ test('live preflight requires a valid existing ledger and enough allowance befor
   });
   let constructed=0,metadataCalls=0;
   await withDataDir(async dataDir=>{
-    for(const count of [95,100]){
+    for(const count of [995,1000]){
     writeLedger(dataDir,{count});
     const report=await runQualification({live:true,mode:'interpretation',requestBudget:6,dataDir,env:{CHAOS_AI_PROVIDER:'groq-free'},now:()=>FIXED_NOW,
       aiFactory:()=>{constructed++;return {check:async()=>{metadataCalls++;return {available:true};},close(){}};}});
