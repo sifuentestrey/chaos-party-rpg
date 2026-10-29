@@ -1,3 +1,4 @@
+import {expeditionTravelError,advanceExpedition} from './expedition.js';
 import {upgradeCampaign,describeRegion,enterRegion,spawnItem,progressAdventure,recordCampaign,localCreatures} from './campaign.js';
 import {MATERIAL_RULES,available,entityNamed,parseEntityAttempt,planEntity,resolveEntity,damageEntity,advanceEntities} from './entity-rules.js';
 import {Rng} from './vendor/partyframe-rng.js';
@@ -76,6 +77,7 @@ export function planItemAttempt(r,actor,attempt,{exactIds=false}={}){
   if(attempt.verb==='travel'){
     const dest=Object.values(s.locations).find(l=>l.id===attempt.destination||!exactIds&&norm(l.name)===attempt.destination);
     if(!dest||!s.locations[s.current].exits.includes(dest.id))return blocked('That place is not connected to this location.');
+    const routeError=expeditionTravelError(s,dest.id);if(routeError)return blocked(routeError);
     return {...attempt,destination:dest.id,automatic:true,ability:'Travel'};
   }
   if(['craft','attach'].includes(attempt.verb)){
@@ -170,4 +172,4 @@ export function resolveItem(r,actor,plan,success){
   return {...out,text:`${actor.name}: ${plan.verb} ${item.name}${plan.recipientId?' → '+[...r.players,...localCreatures(s)].find(p=>p.id===plan.recipientId).name:''}${plan.targetId?' strikes '+(s.items[plan.targetId]||s.creatures[plan.targetId]).name:''}.`,change:plan.verb.toUpperCase()+': '+item.name};
 }
 
-export function advanceWorld(r){const s=r.world.expedition;if(!s)return [];const changes=advanceEntities(r,s),done=progressAdventure(r,s);if(done)changes.push(done);return changes;}
+export function advanceWorld(r){const s=r.world.expedition;if(!s)return [];const changes=advanceEntities(r,s),done=progressAdventure(r,s);if(done)changes.push(done);const ending=advanceExpedition(s);if(ending)changes.push(ending);return changes;}

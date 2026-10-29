@@ -134,3 +134,5 @@ button.selected,[aria-pressed="true"]{box-shadow:0 0 0 2px var(--gold)}
  .tavern-tv .story-open>.eyebrow,.tavern-tv .story-open>.story-text,.tavern-tv .story-open .tiny{display:none}
  .tavern-tv .story-open>.story-meta{margin-top:4px}
 }
+
+.route-map{display:block;width:100%;max-height:440px;background:#211c25;border:1px solid #71583f;border-radius:5px;margin:12px 0}

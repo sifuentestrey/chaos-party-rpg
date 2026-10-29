@@ -106,6 +106,7 @@ test('a valid alternative catalog flows through actual campaign code without cha
     fs.mkdirSync(path.join(dir,'vendor'));fs.mkdirSync(path.join(dir,'content'));
     fs.writeFileSync(path.join(dir,'package.json'),'{"type":"module"}');
     fs.copyFileSync(new URL('../public/campaign.js',import.meta.url),path.join(dir,'campaign.js'));
+    fs.copyFileSync(new URL('../public/expedition.js',import.meta.url),path.join(dir,'expedition.js'));
     fs.copyFileSync(new URL('../public/vendor/partyframe-rng.js',import.meta.url),path.join(dir,'vendor/partyframe-rng.js'));
     const input=path.join(dir,'content/campaign-text.json'),output=path.join(dir,'content/campaign-text.generated.js');
     fs.writeFileSync(input,JSON.stringify(alternative));buildCampaignText({input,output});

@@ -23,7 +23,7 @@ export function narrationContext(room){
     {id:'guard',name:'Captain Brick',role:'weary guard captain',attitude:room.world.guards},{id:'goblin',name:'the goblin fiddler',role:'mischievous musician'}]
     .map(n=>{const saved=room.world.npcs?.[n.id]||{};return {...n,...health({hp:saved.hp??8,maxHp:saved.maxHp??8,status:saved.status,injuries:saved.injuries})};});
   const creatures=visibleCreatures(room),items=visibleItems(room);
-  const speakers=location==='tavern'?tavernNPCs.filter(n=>n.hp>0):creatures.filter(c=>c.kind==='person'&&c.hp>0).slice(0,6).map(c=>({id:c.id,name:clean(c.name,50),attitude:c.attitude,...health(c),trust:Number.isFinite(c.trust?.[q.playerId])?c.trust[q.playerId]:0}));
+  const speakers=location==='tavern'?tavernNPCs.filter(n=>n.hp>0):creatures.filter(c=>c.kind==='person'&&c.hp>0).slice(0,6).map(c=>({id:c.id,name:clean(c.name,50),...(c.goal?{goal:clean(c.goal,240),activity:clean(c.activity||c.routine?.activity,60)}:{}),attitude:c.attitude,...health(c),trust:Number.isFinite(c.trust?.[q.playerId])?c.trust[q.playerId]:0}));
   const targetId=q.target?.entityId||q.target?.id||q.target?.kind;
   const targetEntity=room.players.find(p=>p.id===targetId)||creatures.find(c=>c.id===targetId);
   const targetItem=items.find(i=>i.id===targetId),targetNPC=location==='tavern'?tavernNPCs.find(n=>n.id===targetId):null;

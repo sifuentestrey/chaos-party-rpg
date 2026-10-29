@@ -1,3 +1,4 @@
+import {expeditionTravelError} from './expedition.js';
 import {spawnItem,localCreatures,recordCampaign} from './campaign.js';
 import {OBJECTS,objectState,exactEnvironmentTarget} from './environment.js';
 export const MATERIAL_RULES={
@@ -75,7 +76,7 @@ export function planEntity(r,s,actor,attempt,find,{exactIds=false}={}){
  if(attempt.error)return blocked(attempt.error);
  if(attempt.verb==='explore'){
   const next=s.locations[s.current].exits.find(id=>!s.locations[id]?.visited)||s.locations[s.current].exits.find(id=>id!=='tavern');
-  return {...attempt,destination:next,automatic:true,ability:'Exploration'};
+  return {...attempt,destination:next,automatic:true,ability:'Exploration',...(!next?{error:'There are no further paths here.'}:expeditionTravelError(s,next)?{error:expeditionTravelError(s,next)}:{})};
  }
  // Simple self recovery in the tavern keeps its existing native rules.
  if(!exactIds&&s.current==='tavern'&&attempt.verb==='treat'&&!attempt.item&&/^(?:myself|me|self)[.!?]*$/i.test(attempt.target))return null;
@@ -162,7 +163,7 @@ export function resolveEntity(r,s,actor,p,success){
  if(p.targetId?.startsWith('fixture:')&&p.verb==='attack'){const id=p.targetId.slice(8);r.world.objects||={};r.world.objects[id]={...objectState(r.world,id),condition:'broken'};r.world.props||={};r.world.props[id]='broken';return reply(actor.name+' breaks '+OBJECTS[id].name,'BROKEN: '+OBJECTS[id].name);}
  switch(p.verb){
  case 'inspect':return reply(`${target.name} (${target.id}): ${target.attitude||target.condition}; ${target.material}; ${target.hp??4}/${target.maxHp??4} HP. Parts: ${(target.parts||[]).filter(p=>p.count>0).map(p=>p.name+' ×'+p.count).join(', ')||'none'}. ${target.locked?'Locked. ':''}${target.open?'Open. ':''}${target.liquid?'Contains '+target.liquid.amount+' water. ':''}${target.injuries?.length?'Injuries: '+target.injuries.join(', '):''}`);
- case 'talk':{const q=s.regions[s.current]?.quest;if(q&&target.id===q.patronId){if(q.status==='available')q.status='active';return reply(`${target.name}: “${q.objective}” ${s.regions[s.current].rumor}`,'ADVENTURE: '+q.title);}return reply(`${target.name} ${target.attitude==='hostile'?'growls a warning. You could try befriending it or fighting.':'shares a story about the road ahead.'}`);}
+ case 'talk':{const q=s.regions[s.current]?.quest;if(q&&target.id===q.patronId){if(q.status==='available')q.status='active';return reply(`${target.name}: “${q.status==='completed'?'You helped us. We remember.':q.objective}” ${s.regions[s.current].rumor}`,'ADVENTURE: '+q.title);}return reply(`${target.name} ${target.attitude==='hostile'?'growls a warning. You could try befriending it or fighting.':'shares a story about the road ahead.'}`);}
  case 'pacify':target.attitude='friendly';target.trust[actor.id]=(target.trust[actor.id]||0)+1;break;
  case 'attack':damageEntity(r,s,actor,target,p.itemId?4+(s.items[p.itemId]?.properties?.sharp?1:0):2);break;
  case 'treat':{const bandage=s.items[p.itemId];bandage.parentId=target.id;bandage.ownerId=null;bandage.location=null;bandage.attachedTo=target.id;target.hp=Math.min(target.maxHp,target.hp+4);target.injuries=[];if(target.status==='knocked out')target.status='ready';if(target.attitude==='defeated')target.attitude='wary';if(target.trust)target.trust[actor.id]=(target.trust[actor.id]||0)+1;break;}
@@ -198,6 +199,8 @@ export function resolveEntity(r,s,actor,p,success){
 }
 export function advanceEntities(r,s){
  const changes=[];
+ // Ordinary routines run locally, only when a meaningful turn advances.
+ for(const c of localCreatures(s))if(c.routine&&c.hp>0&&c.hp===c.maxHp){const home=c.routine.home,step=r.round%6;c.position=[home[0]+(step<3?0:24),home[1]];c.activity=step<3?c.routine.activity:'checking the path';}
  for(const item of Object.values(s.items))if((item.location===s.current||r.players.some(p=>p.id===item.ownerId))&&item.condition==='burning'){
   item.heat=(item.heat||0)+1;
   for(const c of localCreatures(s))if(c.hp>0&&Math.hypot(c.position[0]-item.position[0],c.position[1]-item.position[1])<65){damageEntity(r,s,{id:'fire'},c,1);changes.push(c.name+' takes fire damage');}

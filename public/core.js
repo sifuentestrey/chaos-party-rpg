@@ -1,3 +1,4 @@
+import {beginExpedition} from './expedition.js';
 import {campaignView} from './campaign.js';
 import {recordDMMemory,redactDMMemory} from './dm-memory.js';
 import {ensureItems,itemPlan,planWorldProposal,resolveItem,currentLocation,advanceWorld} from './world-items.js';
@@ -317,14 +318,14 @@ export function advance(r,now=Date.now()) {
   if(r.paused)return false;
   if(r.phase==='react'&&now>=r.deadline) {resolve(r,now);return true;}
   if(r.phase==='reveal'&&now>=r.deadline) {
-    r.phase=r.quest.escaped&&!r.world.expedition?.campaign?.continuing?'ended':'open';r.deadline=0;
+    r.phase=r.world.expedition?.expedition?.status==='completed'||r.quest.escaped&&!r.world.expedition?.campaign?.continuing?'ended':'open';r.deadline=0;
     for(const p of r.players)if(p.hp>0)p.status=p.cover?'hiding':'ready';
     touch(r,now);return true;
   }
   return false;
 }
 export function hostCommand(r,command,now=Date.now()) {
-  if(command.type==='continueCampaign'){ensureItems(r).campaign.heistCompleted=r.quest.escaped;ensureItems(r).campaign.continuing=true;r.phase='open';r.quest.escaped=false;r.deadline=0;event(r,'story','The crown job was only the beginning. The road beyond the tavern is open.',now);touch(r,now);return;}
+  if(command.type==='continueCampaign'){if(['react','reveal','lobby'].includes(r.phase))fail('PHASE','Finish the current scene before continuing the campaign.');beginExpedition(ensureItems(r));if(r.world.expedition.expedition.status==='completed')r.world.expedition.expedition.status='epilogue';ensureItems(r).campaign.heistCompleted=ensureItems(r).campaign.heistCompleted||r.quest.escaped;ensureItems(r).campaign.continuing=true;r.phase='open';r.quest.escaped=false;r.deadline=0;event(r,'story','The crown job was only the beginning. The road beyond the tavern is open.',now);touch(r,now);return;}
   if(command.type==='start')return startGame(r,now);
   if(command.type==='pause') {
     if(!r.paused) {r.remaining=Math.max(0,r.deadline-now);r.paused=true;} else {r.paused=false;if(r.deadline){r.deadline=now+(r.remaining||0);if(r.turn&&r.phase==='react')r.turn.deadline=r.deadline;}}

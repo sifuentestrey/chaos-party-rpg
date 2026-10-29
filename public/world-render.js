@@ -1,5 +1,8 @@
 import {CAMPAIGN_TYPES} from './campaign.js';
 import {currentLocation} from './world-items.js';
+// Reuse the licensed Kenney atlas already shipped with the game.
+const townTiles=typeof Image==='undefined'?null:new Image();
+if(townTiles)townTiles.src=new URL('./assets/kenney/town.png',import.meta.url).href;
 export function drawItemGlyph(g,item,x,y,scale=2){
   const {color,accent=color,shape}=item.appearance;
   g.save();g.translate(Math.round(x),Math.round(y));g.scale(scale,scale);
@@ -46,11 +49,28 @@ export function drawGeneratedLocation(g,room){
   for(const [x,y] of location.decor){
     if(ruins){fill('#363542',x,y,34,28);fill(palette.accent,x+4,y-19,27,20);fill('#827b76',x-3,y-23,40,6);}
     else if(marsh){fill('#294750',x,y+5,38,12);fill(palette.accent,x+7,y-19,4,28);fill('#a9b88a',x+20,y-28,4,36);}
+    else if(townTiles?.complete&&townTiles.naturalWidth){g.drawImage(townTiles,64,0,16,32,x-16,y-63,40,80);}
     else{fill('#243f3b',x+11,y-9,8,30);fill('#1d382f',x-12,y-18,54,25);fill(palette.accent,x-8,y-38,46,28);fill('#5d8264',x-1,y-45,32,12);fill('#77916d',x+7,y-42,18,5);}
   }
+  if(location.id==='riverbank'||kind==='bridge'){
+    const bridge=kind==='bridge',x=bridge?35:730,y=bridge?190:136,w=bridge?890:195,h=bridge?80:376;
+    fill('#24475c',x,y,w,h);fill('#356b82',x+5,y+7,w-10,h-14);
+    for(let i=0;i<16;i++)fill('#72a7ad',x+12+(i*53)%(w-32),y+13+(i*29)%(h-22),18,2);
+    if(bridge){const q=room.world.expedition.regions[location.id]?.quest,span=room.world.expedition.items[q?.gateId],intact=span?.condition==='intact';
+      for(let i=0;i<10;i++)if(intact||i<3||i>7){fill('#70513b',444,178+i*10,83,9);fill('#b89361',449,178+i*10,73,3);}
+      fill('#4d392f',438,170,7,115);fill('#4d392f',526,170,7,115);
+    }
+  }
+  if(kind==='village'||kind==='interior'){
+    for(const x of [80,735]){fill('#443b3d',x,120,140,118);fill('#b9976e',x+8,132,124,100);fill('#763f42',x-12,110,164,24);fill('#a36352',x,101,140,12);fill('#3c3037',x+50,181,35,51);fill('#e4c583',x+17,153,23,24);fill('#654637',x+14,164,29,4);}
+    if(kind==='village'&&townTiles?.complete&&townTiles.naturalWidth){g.drawImage(townTiles,0,64,64,64,70,105,160,160);g.drawImage(townTiles,64,64,64,64,725,105,160,160);}
+    if(location.id==='castle-gate'){fill('#393746',360,105,248,106);fill('#929095',366,105,62,106);fill('#929095',542,105,62,106);fill('#929095',420,105,128,25);fill('#b6aaa0',365,102,64,9);fill('#b6aaa0',540,102,64,9);}
+    if(kind==='interior'){fill('#6b4a38',35,137,890,376);for(let i=0;i<12;i++)fill('#88634a',35,146+i*30,890,2);fill('#382d32',80,160,140,72);fill('#d78d4f',114,187,66,31);fill('#edc878',133,193,22,22);}
+  }
+  if(kind==='road'){for(const x of [110,800]){fill('#4f4034',x,170,7,70);fill('#b69363',x-22,172,58,18);}}
   fill(ruins?'#c6ab78':'#d9c68f',455,485,50,8);
   g.font='bold 21px monospace';g.textAlign='center';g.fillStyle='#f3e7cb';g.fillText(location.name.toUpperCase(),480,52);
-  g.font='13px monospace';g.fillStyle='#e2d4b7';g.fillText('PATHS: '+location.exits.join(' · ').toUpperCase(),480,78);
+  g.font='13px monospace';g.fillStyle='#e2d4b7';g.fillText('PATHS: '+location.exits.map(id=>room.world.expedition.locations[id]?.name||id).join(' · ').toUpperCase(),480,78);
 }
 
 export function drawBeast(g,c,x,y,hit=false){

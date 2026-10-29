@@ -1,8 +1,12 @@
+import {decorateExpeditionRegion} from './expedition.js';
 import {Rng} from './vendor/partyframe-rng.js';
 import {CAMPAIGN_TEXT} from './content/campaign-text.generated.js';
 // Deterministic region generation is independent of the authoritative dice stream.
 const hash=text=>{let h=2166136261;for(const c of text)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0;};
 export const CAMPAIGN_TYPES={
+ bridge:{name:'Bridge',ground:'#466756',accent:'#78968b'},
+ road:{name:'Road',ground:'#70634c',accent:'#b79868'},
+ interior:{name:'Inn',ground:'#74604d',accent:'#b79868'},
  clearing:{name:'Clearing',ground:'#466756',accent:'#638368'},
  ruins:{name:'Ruins',ground:'#575663',accent:'#91909c'},
  forest:{name:'Forest',ground:'#355646',accent:'#497859'},
@@ -21,7 +25,7 @@ export function describeRegion(s,id){
  if(s.locations[id])return s.locations[id];
  const m=id.match(/^wild-(-?\d+)-(-?\d+)$/);if(!m)return null;
  const [x,y]=m.slice(1).map(Number);if(!Number.isSafeInteger(x)||!Number.isSafeInteger(y)||Math.abs(x)>100000||Math.abs(y)>100000)return null;
- const rng=new Rng(hash(s.worldSeed+':'+id)),kind=rng.pick(Object.keys(CAMPAIGN_TYPES));
+ const rng=new Rng(hash(s.worldSeed+':'+id)),kind=rng.pick(['clearing','ruins','forest','marsh','village','cavern']);
  const exits=[`wild-${x+1}-${y}`,`wild-${x}-${y+1}`,`wild-${x-1}-${y}`,`wild-${x}-${y-1}`];if(x===0&&y===0)exits[2]='ruins';
  return s.locations[id]={id,name:rng.pick(CAMPAIGN_TEXT.locationPrefixes)+' '+CAMPAIGN_TYPES[kind].name+' '+Math.abs(hash(id)%1000),kind,exits,visited:false,danger:Math.min(5,1+Math.floor((Math.abs(x)+Math.abs(y))/3)),decor:Array.from({length:12},()=>[rng.int(90,870),rng.int(170,470),rng.int(0,2)])};
 }
@@ -61,6 +65,7 @@ export function enterRegion(r,s,id){
  if(adventureKind==='restore'){gate.condition='broken';gate.hp=0;}
  const objective=adventureKind==='rescue'?'Make the road safe and bandage the injured wayfarer.':adventureKind==='restore'?'Make the road safe and repair the broken gate.':'Make the road safe and return the keepsake from the coffer to the wayfarer.';
  s.regions[id]={quest:{id:'quest-'+id,kind:adventureKind,objective,gateId:gate.id,title:CAMPAIGN_TEXT.questTitles[adventureKind],patronId,threatId,relicId:relic.id,chestId:chest.id,status:'available',reward:4+danger,chapter:s.campaign.chapter},rumor:rng.pick(CAMPAIGN_TEXT.rumors)};
+ decorateExpeditionRegion(s,id);
  recordCampaign(r,s,'discovery',`Discovered ${l.name}.`,{location:id});
  return true;
 }
@@ -96,5 +101,5 @@ export function campaignView(r){
  const include=id=>{const i=s.items[id];if(!i)return;keep.add(id);for(const child of [...i.components||[],...i.contents||[]])if(!keep.has(child))include(child);};
  for(const id of [...keep])include(id);
  const {regionRefs,...local}=s;
- return {...local,routeMap:s.mapFound?Object.values(s.locations).filter(l=>l.visited||Object.values(s.locations).some(v=>v.visited&&v.exits.includes(l.id))).map(l=>({id:l.id,name:l.name,visited:!!l.visited,exits:l.exits})):[],locations,items:Object.fromEntries([...keep].map(id=>[id,s.items[id]])),creatures,regions:s.regions[s.current]?{[s.current]:s.regions[s.current]}:{},campaign:{...s.campaign,history:s.campaign.history.slice(-30),completed:s.campaign.completed.slice(-20)}};
+ return {...local,routeMap:s.mapFound?Object.values(s.locations).filter(l=>l.visited||Object.values(s.locations).some(v=>v.visited&&v.exits.includes(l.id))).map(l=>({id:l.id,name:l.name,visited:!!l.visited,exits:l.exits,at:l.at})):[],locations,items:Object.fromEntries([...keep].map(id=>[id,s.items[id]])),creatures,regions:s.regions[s.current]?{[s.current]:s.regions[s.current]}:{},campaign:{...s.campaign,history:s.campaign.history.slice(-30),completed:s.campaign.completed.slice(-20)}};
 }
