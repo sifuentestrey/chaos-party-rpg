@@ -1,0 +1,49 @@
+name: Fracture integration spike (non-release)
+on:
+  push:
+    branches: ['spike/fracture-phone-tv']
+    paths:
+      - 'experiments/fracture-phone-tv/**'
+      - '.github/workflows/fracture-spike.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bridge-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test experiments/fracture-phone-tv/bridge.test.mjs
+  pinned-fracture-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Clone pinned upstream only in isolated runner directory
+        run: |
+          git clone https://github.com/georgeglarson/Fracture.git "$RUNNER_TEMP/Fracture"
+          git -C "$RUNNER_TEMP/Fracture" checkout 642c00a8a2d3a95979e85bbfa3f62deee611a4a6
+          test "$(git -C "$RUNNER_TEMP/Fracture" rev-parse HEAD)" = 642c00a8a2d3a95979e85bbfa3f62deee611a4a6
+      - name: Install package manager and Fracture dependencies
+        run: |
+          npm install --global pnpm@10
+          cd "$RUNNER_TEMP/Fracture"
+          pnpm install --frozen-lockfile
+      - name: Apply narrow TV adapter only to disposable Fracture clone
+        run: node experiments/fracture-phone-tv/apply-overlay.mjs "$RUNNER_TEMP/Fracture"
+      - name: Compile Fracture client and server with adapter
+        run: |
+          cd "$RUNNER_TEMP/Fracture"
+          pnpm run build:server
+          pnpm run build:client
+      - name: Run pinned upstream automated tests
+        run: |
+          cd "$RUNNER_TEMP/Fracture"
+          pnpm test
