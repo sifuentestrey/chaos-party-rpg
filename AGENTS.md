@@ -1,3 +1,13 @@
+# TOP PRIORITY — OWNER SAYS FINISH GAME-NIGHT BUILD TODAY (October 29, 2026)
+
+**Read [issue #12](https://github.com/sifuentestrey/chaos-party-rpg/issues/12) FIRST.** Its new top section replaces the old small STOP/movement fix and the original one-character research spike: **build the strongest honest, playable Mac + phone + TV Chaos Party game-night beta achievable today**. Work continuously through independent phone actors, world exploration, reactive actions, combat, optional DM and a tested Mac package. Do not stop at another plan, generic dashboard, automated test count, or single actor controlled by 20 phones.
+
+**Nonnegotiable:** Only modify isolated `spike/fracture-phone-tv` / disposable pinned upstream worktree, never merge or overwrite original `luna/visual-game-night-release`, saves, credentials or main. No spending, live deployment, unsafe auth or fake state. If full 12–20 player/creative AI scope cannot pass genuine tests today, ship and label a smaller verified beta; don't fabricate acceptance. Track milestone outcomes and evidence in `docs/FRACTURE_GAME_NIGHT_RELEASE.md`.
+
+**Codex is not automatically started by changing these files; user must invoke it or another connected coding runner.**
+
+---
+
 # ACTIVE CODEX TASK — PHYSICAL PLAYTEST FOLLOW-UP (October 29, 2026)
 
 **FIRST read issue [#12](https://github.com/sifuentestrey/chaos-party-rpg/issues/12).** The owner has now ACTUALLY run this Fracture bridge on their Intel Mac and iPhone: `attack the rat` worked at least enough to trigger an action, but the rat barely lost HP; `stop`, `move left`, and `move the tent` did not work. This is now the latest authorized implementation milestone, superseding the original "try one attack" proof-of-concept. Codex: investigate real combat/HIT and HP, implement movement + immediate STOP + truthful action outcomes + grounded object feedback, then provide real evidence. Issue #12 contains explicit work order, tests, boundaries and acceptance criteria. Follow it rather than generating more RPG locations, UI polish or content.
