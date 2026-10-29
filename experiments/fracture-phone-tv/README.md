@@ -47,3 +47,31 @@ bash Start_Fracture_Chaos_Test.command
 ```
 
 This keeps the sibling scripts from the ZIP and may reinstall dependency artifacts if pnpm 10 cannot reuse the modules initially created by pnpm 12. That reinstall affects only `~/Fracture-Chaos-Spike/node_modules`, never original Chaos saves. If pnpm reports an incompatible modules store, stop and share the exact error; do not delete any unrelated folder.
+
+## October 29: directional/STOP test refresh (still one TV actor)
+
+The owner confirmed the original phone **`attack the rat`** triggered an action but reported that `stop`, `move left` and `move the tent` did not work. The experiment now provides:
+
+- `stop`, `halt`, `cancel`, `stop attacking` to interrupt local navigation/combat; a stop request bypasses the placeholder global eight-second action lock
+- `move left/right/up/down`, `walk left`, `go north/east/south/west` for one collision-checked tile using Fracture's native movement controller
+- Grounded rejection for unavailable movable scenery rather than pretending a tent moved
+- Phone distinguishes `Received/Waiting` from the TV interpreter's `STARTED/BLOCKED/COMPLETED` acknowledgment; `STARTED` is **not proof that a target lost HP or died**
+
+**Important:** This is not independent character-per-phone yet. It uses one shared phone token and TV actor, so the special STOP lock bypass must be replaced with actor-scoped authorization before multi-player release.
+
+### Updating an already installed Mac test
+
+Stop the old launcher with Control-C. From Terminal, execute these commands to replace only the named files in your unzipped test folder with the latest GitHub experimental copies:
+
+```sh
+cd ~/Downloads/chaos-fracture-spike
+BASE=https://raw.githubusercontent.com/sifuentestrey/chaos-party-rpg/spike/fracture-phone-tv/experiments/fracture-phone-tv
+for f in bridge.mjs bridge.test.mjs chaos-remote.ts apply-overlay.mjs apply-overlay.test.mjs Start_Fracture_Chaos_Test.command; do
+  curl -fSL "$BASE/$f" -o "$f" || exit 1
+done
+bash Start_Fracture_Chaos_Test.command
+```
+
+The launcher now refreshes **only the already identified Chaos-owned `client/ts/chaos-remote.ts`** in the pinned sibling Fracture checkout, refuses to overwrite other source files, keeps `server/config.json` unchanged, and uses pnpm 10. Existing character saves in Fracture and original Chaos are untouched. The rebuilt TV tab receives a **new private host/phone pairing link**; use the new link rather than a link from a previous run.
+
+Full game-night ambition and the remaining acceptance gates are tracked in [issue #12](https://github.com/sifuentestrey/chaos-party-rpg/issues/12) and [release tracker](../../docs/FRACTURE_GAME_NIGHT_RELEASE.md). No one-character bridge build should be presented as a finished 12–20 player game.
