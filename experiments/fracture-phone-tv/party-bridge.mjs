@@ -30,15 +30,15 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
  const scheduleEventFlush=()=>{if(pendingEventFlush)return;pendingEventFlush=setTimeout(()=>{pendingEventFlush=null;persist();},500);pendingEventFlush.unref?.();};
  const flushEvents=()=>{if(pendingEventFlush){clearTimeout(pendingEventFlush);pendingEventFlush=null;}persist();};
  const sessions=new Map(),events=room.events||[];room.turn=null;persist();
- const meaningful=new Set(['attack','talk','quest','open','loot','manipulate','unknown']);
+ const meaningful=new Set(['attack','talk','quest','open','loot']);
  const liveCount=()=>room.players.filter(p=>!p.parked).length;
  function record(event){events.push({...event,at:Date.now()});if(events.length>80)events.shift();room.events=events;scheduleEventFlush();}
  function connect(player){
   const socket=io(`http://127.0.0.1:${fracturePort}`,{transports:['websocket'],reconnection:true,autoConnect:false,auth:{chaosActorKey:actorKey}});
-  const session={player,socket,actor:null,results:new Map(),lastAction:0,epoch:0,lastSeen:0,suspending:false};sessions.set(player.token,session);
+  const session={player,socket,actor:null,results:new Map(),declarations:new Map(),lastAction:0,epoch:0,lastSeen:0,suspending:false};sessions.set(player.token,session);
   socket.on('connect_error',()=>{session.error='Fracture is unavailable. The host should check its launcher.';});
   socket.on('connect',()=>{session.error=null;session.actor=null;socket.emit('message',[0,player.account,21,60,0,player.password]);});
-  socket.on('disconnect',()=>{session.actor=null;for(const [id,result] of session.results)if(['received','started'].includes(result.status))session.results.set(id,{...result,status:'failed',message:'Game connection lost. Reconnect and try again.'});});
+  socket.on('disconnect',()=>{session.actor=null;session.epoch++;session.declarations.clear();for(const [id,result] of session.results)if(['received','started'].includes(result.status))session.results.set(id,{...result,status:'failed',message:'Game connection lost. Reconnect and try again.'});});
   socket.on('message',data=>{const messages=Array.isArray(data?.[0])?data:[data];for(const msg of messages){
    if(!Array.isArray(msg))continue;
    if(msg[0]===1){session.actor={id:msg[1],name:player.name,x:msg[3],y:msg[4],hp:msg[5],ready:true};refresh(session);}
@@ -48,7 +48,23 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
    if(msg[0]===32){session.quest={...session.quest,completed:true,description:msg[3]};record({player:player.name,status:'succeeded',message:'Quest completed! '+String(msg[3])});}
    if(msg[0]===86)session.error='Character authentication failed.';
   }});
-  socket.on('chaos:receipt',r=>{if(!session.results.has(r.id))return;const {actor,...outcome}=r;session.results.set(r.id,outcome);if(actor)session.actor=actor;record({player:player.name,...r,actor:undefined});});
+  socket.on('chaos:receipt',r=>{
+   if(!session.results.has(r.id))return;
+   const {actor,...outcome}=r;session.results.set(r.id,outcome);if(actor)session.actor=actor;
+   // The native engine, not merely receipt of phone text, authorizes the
+   // first-valid-action declaration. Rejections never waste a reaction turn.
+   const declaration=session.declarations.get(r.id);
+   if(declaration){
+    if(['started','succeeded'].includes(r.status)&&!session.player.parked&&session.socket.connected){
+     const now=Date.now();
+     if(!room.turn||room.turn.deadline<=now)room.turn={id:r.id,actor:player.name,text:declaration.text,deadline:now+10000,participants:[player.token]};
+     else if(!room.turn.participants.includes(player.token))room.turn.participants.push(player.token);
+     persist();
+     session.declarations.delete(r.id);
+    }else if(['blocked','failed','cancelled'].includes(r.status))session.declarations.delete(r.id);
+   }
+   record({player:player.name,...r,actor:undefined});
+  });
   socket.on('chaos:position',s=>session.actor=s);
   return session;
  }
@@ -152,11 +168,20 @@ setInterval(poll,750);poll();
     const turn=room.turn&&room.turn.deadline>now?room.turn:null;
     if(meaningful.has(intent.verb)&&turn&&turn.participants.includes(s.player.token))return json(res,409,{error:'Your declaration is locked for this reaction window. You can still move or stop.'});
     if(intent.verb!=='cancel'&&now-s.lastAction<200)return json(res,429,{error:'Give your character a moment.'});s.lastAction=now;
-    const id=randomUUID();s.results.set(id,{status:'received',message:b.text.trim()});if(s.results.size>80)s.results.delete(s.results.keys().next().value);
-    s.socket.timeout(2000).emit('chaos:action',{key:actorKey,id,intent,actorId:s.actor.id,issuedAt:Date.now()},(error,r)=>{if(error||r?.error){const result={status:'blocked',message:r?.error||'No engine acknowledgment. Please stop before retrying.'};s.results.set(id,result);record({player:s.player.name,id,...result});}else if(meaningful.has(intent.verb)&&!['blocked','failed'].includes(s.results.get(id)?.status)){
-      if(!room.turn||room.turn.deadline<=Date.now())room.turn={id,actor:s.player.name,text:b.text.trim(),deadline:Date.now()+10000,participants:[s.player.token]};
-      else if(!room.turn.participants.includes(s.player.token))room.turn.participants.push(s.player.token);persist();
-    }});
+    const id=randomUUID();s.results.set(id,{status:'received',message:b.text.trim()});
+    if(s.results.size>80)s.results.delete(s.results.keys().next().value);
+    if(meaningful.has(intent.verb))s.declarations.set(id,{text:b.text.trim()});
+    s.socket.timeout(2000).emit('chaos:action',{key:actorKey,id,intent,actorId:s.actor.id,issuedAt:Date.now()},(error,r)=>{
+      if(error||r?.error){
+        s.declarations.delete(id);
+        // A completed/cancelled result is authoritative; never downgrade a late receipt.
+        const previous=s.results.get(id);
+        if(previous&&!['succeeded','cancelled','failed','blocked'].includes(previous.status)){
+          const result={status:'blocked',message:r?.error||'No engine acknowledgment. Please stop before retrying.'};
+          s.results.set(id,result);record({player:s.player.name,id,...result});
+        }
+      }
+    });
     return json(res,202,{id});
    }
    json(res,404,{error:'Not found'});
