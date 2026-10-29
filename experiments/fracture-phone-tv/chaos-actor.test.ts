@@ -49,4 +49,25 @@ describe('authenticated actor lifecycle',()=>{
   socket.emit('disconnect');
  });
 
+ it('directional controls stop at the first wall instead of walking around it',async()=>{
+  const {socket,player,world}=fixture();player.isDead=false;
+  const receipts:any[]=[];socket.on('chaos:receipt',r=>receipts.push(r));
+  world.isValidPosition=(x:number,y:number)=>!(x===11&&y===10);
+  shared.route.mockImplementation(async(_player:any,msg:any[])=>{
+    if(msg.length===3&&typeof msg[1]==='number'&&typeof msg[2]==='number'){
+      _player.x=msg[1];_player.y=msg[2];
+    }
+    return true;
+  });
+  const ack=vi.fn();
+  socket.emit('chaos:action',{key:'test-actor-key',actorId:123,id:'walk-wall',issuedAt:Date.now(),intent:{verb:'move',dx:1,dy:0,steps:3}},ack);
+  expect(ack).toHaveBeenCalledWith({ok:true});
+  await new Promise(r=>setTimeout(r,400));
+  expect(player.x).toBe(10);
+  expect(player.y).toBe(10);
+  expect(receipts.some(r=>r.id==='walk-wall'&&r.status==='blocked')).toBe(true);
+  expect(shared.route.mock.calls.some(([,msg])=>msg.length===3&&typeof msg[1]==='number')).toBe(false);
+  socket.emit('disconnect');
+ });
+
 });
