@@ -1,3 +1,11 @@
+# ACTIVE CODEX TASK — PHYSICAL PLAYTEST FOLLOW-UP (October 29, 2026)
+
+**FIRST read issue [#12](https://github.com/sifuentestrey/chaos-party-rpg/issues/12).** The owner has now ACTUALLY run this Fracture bridge on their Intel Mac and iPhone: `attack the rat` worked at least enough to trigger an action, but the rat barely lost HP; `stop`, `move left`, and `move the tent` did not work. This is now the latest authorized implementation milestone, superseding the original "try one attack" proof-of-concept. Codex: investigate real combat/HIT and HP, implement movement + immediate STOP + truthful action outcomes + grounded object feedback, then provide real evidence. Issue #12 contains explicit work order, tests, boundaries and acceptance criteria. Follow it rather than generating more RPG locations, UI polish or content.
+
+Only code on `spike/fracture-phone-tv`, keep `luna/visual-game-night-release` and its saves untouched, retain the separate upstream Fracture checkout and account separation. No merge/deploy, no unauthorized AI provider, no paid API calls, no raw movement/HP exploits. Do not conflate accepted messages with succeeded actions. **Codex is NOT running automatically simply because this issue exists.**
+
+---
+
 # CURRENT OWNER OVERRIDE — FRACTURE MIGRATION SPIKE, 2026-10-29
 
 **THIS BRANCH HAS A DIFFERENT TASK FROM THE OLD CHAOS PARTY BUILD.** The owner stopped expanding the custom prototype after a failed hands-on playtest and directed an investigation into adapting an **already playable RPG** instead. The chosen FIRST CANDIDATE is Fracture, **not yet an approved completed migration**.
