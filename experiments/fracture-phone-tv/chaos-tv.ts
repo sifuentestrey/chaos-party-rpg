@@ -47,7 +47,7 @@ export function startChaosTV(game:any):void {
     const context=game.renderer.context;context.save();context.strokeStyle=colors[appearance.color];context.lineWidth=2;context.beginPath();context.ellipse((entity.x+8)*game.renderer.scale,(entity.y+14)*game.renderer.scale,8*game.renderer.scale,3*game.renderer.scale,0,0,Math.PI*2);context.stroke();context.filter=hues[appearance.color]||'none';originalDraw(entity);context.restore();
   };
   const originalName=game.renderer.drawEntityName.bind(game.renderer);
-  game.renderer.drawEntityName=(entity:any)=>{const appearance=appearances.get(String(entity.id));if(!appearance)return originalName(entity);const context=game.renderer.context;context.save();context.filter='none';game.renderer.drawText(appearance.name,(entity.x+8)*game.renderer.scale,(entity.y+entity.nameOffsetY)*game.renderer.scale,true,colors[appearance.color]);context.restore();};
+  game.renderer.drawEntityName=(entity:any)=>{if(entity.id===game.playerId||observerIds.has(String(entity.id)))return;const appearance=appearances.get(String(entity.id));if(!appearance)return originalName(entity);const context=game.renderer.context;context.save();context.filter='none';game.renderer.drawText(appearance.name,(entity.x+8)*game.renderer.scale,(entity.y+entity.nameOffsetY)*game.renderer.scale,true,colors[appearance.color]);context.restore();};
   document.addEventListener('click',e=>{if(!controls.contains(e.target as Node)){e.stopImmediatePropagation();e.preventDefault();}},true);
   document.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d'].includes(e.key)){e.stopImmediatePropagation();e.preventDefault();}},true);
   const shownCombat=new Set();
@@ -57,6 +57,10 @@ export function startChaosTV(game:any):void {
     const r=await fetch(u.toString());if(!r.ok){log.textContent='TV pairing expired. Reopen the TV from the current host page.';return;}const data=await r.json();
     const connected=data.players.filter((p:any)=>p.actor?.ready);
     const players=connected.filter((p:any)=>!p.actor.dead);
+    // Roster changes may leave stale IDs in the browser's renderer state.
+    // Never recolor a new native entity using a departed player's appearance.
+    const present=new Set(players.map((p:any)=>String(p.actor.id)));
+    for(const id of appearances.keys())if(!present.has(id))appearances.delete(id);
     for(const p of players){
       appearances.set(String(p.actor.id),{name:p.name,color:p.color});
       for(const e of p.actor.nearby||[]){const entity=game.getEntityById(e.id);if(entity&&e.hp!==undefined){entity.hitPoints=e.hp;entity.maxHitPoints=e.maxHp;}}
