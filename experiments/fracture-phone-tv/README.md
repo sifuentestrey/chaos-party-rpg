@@ -21,6 +21,14 @@ This is an optional route through existing content, not a forced campaign or a n
 
 Typing an unsupported action gives a grounded rejection. Scenery is not movable just because it appears on the map. Door travel only uses map-authored destinations. You can freely explore; there is no Crown Job requirement.
 
+## Running a large party: host bench and restore
+
+The host page now lists each registered character with a **Bench player** or **Restore player** button. Up to **20 unbenched characters** can occupy live slots; former guests do not permanently fill the room. Benching saves the character, disconnects its game socket and frees the slot. The player retains their private recovery link, Fracture identity, equipment, position and progression; they cannot send actions until the host restores the slot.
+
+If the room has 20 active slots, the host must bench someone before restoring another character or adding a new one. **Benching is not deletion.** The private host link controls this feature; do not share it with guests. Rapid host bench/restore also waits safely for outstanding save acknowledgments rather than disconnecting a newly restored player.
+
+The room's transient event log now writes at most twice per second during busy combat, with a final flush on clean shutdown. Character saves, new-player credentials and host slot changes remain immediate and separate from that optimization. These fixes are validated with isolated tests; physical Intel Mac performance has not yet been measured.
+
 ## Recovery and optional AI
 
 Saved actors connect only when their phone returns. Closing a phone saves/logs out its actor after a 45-second grace period, so inactive characters are not left fighting unattended. Reopening the same phone/room restores its personal controller from browser storage. The private host page also lists personal recovery links for lost browser storage or another phone. Give each link only to that player. Fracture passwords remain on the Mac in the isolated room file, never on a phone. Native progression, equipment, inventory and position persist; **native quest progress is currently session-scoped and can reset on server/bridge restart**.
