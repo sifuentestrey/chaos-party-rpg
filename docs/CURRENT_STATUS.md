@@ -1,3 +1,5 @@
+> **Superseded as the current entrypoint on October 29, 2026:** read [START_HERE.md](../START_HERE.md). The dated report below remains evidence, not an active queue.
+
 # Current game-night readiness
 
 **Updated: October 27, 2026 (UTC).** Working branch: `fix/grounded-action-contract`. Read this before interpreting older checkpoint reports as current status. See Git history and each evidence report for the exact code tested.

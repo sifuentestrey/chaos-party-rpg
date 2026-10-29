@@ -1,3 +1,5 @@
+> **Current project entrypoint: [START_HERE.md](START_HERE.md).** This checkout now contains the latest consolidated source. Older status text below is historical; use START_HERE for current scope, limitations, branch and next-chat instructions.
+
 # Chaos Party RPG
 
 Private project for a family TV-and-phones, AI-assisted, chaotic fantasy party game.

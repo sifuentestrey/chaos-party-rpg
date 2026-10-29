@@ -1,3 +1,7 @@
+## Current owner instruction — consolidation, October 29, 2026
+
+Start with [START_HERE.md](START_HERE.md). It is the single current handoff and work queue. Work in this checkout on `luna/visual-game-night-release`; the name is historical. Older branch-specific assignments and the instructions below are historical context, not competing active tasks. The owner asked to consolidate first and move to a new chat. Do not automatically resume old milestones, create additional work branches, delegate old assignments, merge into main, or deploy from a stale document. Preserve product and safety requirements below. Future implementation follows the owner's new-chat direction.
+
 # Instructions for Codex / development agents
 
 **Current readiness:** Read [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) alongside the dated handoff and issue #9. Historical test counts, environment observations and push status are snapshots, not current qualification.
