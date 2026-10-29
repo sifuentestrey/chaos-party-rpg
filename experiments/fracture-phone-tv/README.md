@@ -1,77 +1,42 @@
-# Fracture phone-to-TV integration experiment
+# Chaos Party on Fracture — local game-night beta
 
-This is an **isolated one-character experimental bridge**, not a migrated multiplayer Chaos Party game. It does not modify the old Chaos Party world, inventory, saves, or server. It does not activate AI, require any provider keys, or create Fracture user accounts.
+Run **Start_Fracture_Chaos_Test.command** on the Mac (Node **22.18+ LTS or 24+**, Git). It reuses the separate `~/Fracture-Chaos-Spike` checkout, pins Fracture `642c00a8a2d3a95979e85bbfa3f62deee611a4a6` and pnpm `10.34.9`, and leaves original Chaos source and saves alone. First installation/build needs internet; subsequent unchanged launches reuse the build and work offline. Keep its Terminal open. Control-C saves phone characters, stops the bridge, then stops only the Fracture process this launcher started.
 
-Fracture upstream pinned for review: `georgeglarson/Fracture` at `642c00a8a2d3a95979e85bbfa3f62deee611a4a6`. Original license: MPL 2.0 code and CC BY-SA 3.0 content. Preserve upstream notices, credits, and asset provenance. Fracture's character system stores account passwords; create a throwaway test character, never use or copy real Chaos recovery credentials. The adapter copies `server/config.example.json` to ignored `server/config.json` only if the latter is absent; upstream will not boot without a local config.
+1. Open the private host link printed by the launcher; click **Open shared TV**. No Fracture sign-in is needed for the TV spectator.
+2. Scan the host QR or open its join link on each phone on the same Wi-Fi. Choose a name and color. Each phone gets a separate real actor; color tints that actor on TV without changing equipment stats.
+3. Choose the followed character on TV and click **Full screen**. The game uses the real Fracture renderer, map, sprites and enemies.
+4. Try `look around`, `walk north three tiles`, `walk to guard`, `attack rat`, `stop running`, `talk to guard`, `ask guard for a quest`, `pick up sword2`, `equip sword2`, `enter building`, `leave building`, and `respawn` when knocked out.
 
-## What is working now
+Phone receipts distinguish received, started, succeeded, blocked, failed and cancelled. Walking/attacks are bounded and validated by Fracture. STOP interrupts only your actor, including during the ten-second declaration/reaction window. Other players act in parallel; no twenty-person turn queue. Ordinary movement and observations remain available during the window. Enemies can still attack a player who stops.
 
-The local bridge provides paired host/TV/phone URLs, a plain phone text field, a shared eight-second lock, and a tiny recent-action stream. Six Node.js offline tests verify host/phone/TV separation, missing TV behavior, event forwarding and action lock, and cross-origin rejection. This is not proof that the whole Fracture game has booted or executed a live attack.
+## A 20-minute game-night route
 
-## One-click Mac trial
+This is an optional route through existing content, not a forced campaign or a newly invented map:
 
-On a Mac with Node 22+ installed: double-click `Start_Fracture_Chaos_Test.command` (or run it in Terminal). The launcher intentionally invokes `npx --yes pnpm@10`, which respects the upstream Fracture `pnpm.onlyBuiltDependencies` allowlist for `better-sqlite3` and `esbuild`; pnpm 12 ignores this legacy field and produces `ERR_PNPM_IGNORED_BUILDS`. No global pnpm installation or blanket build-script approval is required. It will create its own checkout in `~/Fracture-Chaos-Spike`, install/build there, run six offline tests, start ports 8000/4748 and open the host page. It does not alter original Chaos Party. On first use, network download/install may take time. If macOS blocks the downloaded script, inspect it and run from Terminal instead; do not bypass security prompts blindly. Press Control-C in the launcher Terminal to stop.
+- **Meet and learn (0–4 minutes):** meet in The Refuge, choose colors, try movement and personal STOP; use `look around` to find an NPC. Names printed in the look result are valid targets.
+- **Choose a job (4–8):** talk to the guard near `(41,195)` or `(47,195)`. Ask for a quest if desired. Explore or help another player instead of taking a job.
+- **Fight and equip (8–13):** hunt rats together, collect real loot, equip earned gear. A sword2 can be found near `(34,210)` when another player has not already taken it. Use the actual look result rather than assuming an item is still there. Native quests grant real rewards on completion.
+- **Visit and travel (13–18):** `walk to 27,209` enters the Western Dwelling through its real door. `leave building` returns outside. Travel north toward `(34,188)` to enter Glitch Woods. The woods are more dangerous; retreat or respawn if needed.
+- **Finish your way (18–20):** complete the offered job or return to town with earned equipment and gold. The optional goal is the quest's own engine-confirmed completion/reward, not DM narration.
 
-## Run a one-character trial on a Mac with Node 22+ and pnpm
+Typing an unsupported action gives a grounded rejection. Scenery is not movable just because it appears on the map. Door travel only uses map-authored destinations. You can freely explore; there is no Crown Job requirement.
 
-1. Open Terminal in this `experiments/fracture-phone-tv` folder. Run `node --test bridge.test.mjs`.
-2. Clone Fracture **outside** your Chaos Party checkout: `git clone https://github.com/georgeglarson/Fracture.git ~/Fracture-Chaos-Spike` and `cd ~/Fracture-Chaos-Spike` then `git checkout 642c00a8a2d3a95979e85bbfa3f62deee611a4a6`.
-3. Install with `pnpm install --frozen-lockfile` (use `corepack enable` or an existing pnpm installation, if necessary).
-4. Back in this folder: `node apply-overlay.mjs ~/Fracture-Chaos-Spike`.
-5. In Fracture checkout: `pnpm run build:server && pnpm run build:client && pnpm start` (Fracture listens on port 8000).
-6. In a second Terminal: `node bridge.mjs`. It prints a **private host link**; open it on the Mac. Launch Fracture via the link, sign into a throwaway character, and use the phone join link while connected to the same Wi-Fi. Don't share the host link, TV link, or expose port 4748 to the Internet.
-7. Try `attack the rat`, `talk to the guard`, and `look around`. Check whether the character genuinely moves/attacks. Current adapter uses Fracture's real interaction controller and client pathfinder; actual gameplay has **not** been validated until this manual run.
+## Recovery and optional AI
 
-## Known limits / stop conditions
+Saved actors connect only when their phone returns. Closing a phone saves/logs out its actor after a 45-second grace period, so inactive characters are not left fighting unattended. Reopening the same phone/room restores its personal controller from browser storage. The private host page also lists personal recovery links for lost browser storage or another phone. Give each link only to that player. Fracture passwords remain on the Mac in the isolated room file, never on a phone. Native progression, equipment, inventory and position persist; **native quest progress is currently session-scoped and can reset on server/bridge restart**.
 
-- **Only the TV account character is controlled.** Multiple phones do not yet have individual Fracture characters; the eight-second action lock serializes their actions. This is the first technical slice only, not a viable 12–20-player release.
-- Only a small, explicit action grammar is supported. Natural language AI has not been connected. No claim of universal free-form control.
-- The current Fracture renderer/HUD may not be a clean full-screen TV experience; evaluate before committing to this base.
-- The original game may use native SQLite modules that require building on your Intel Mac. This has not been verified.
-- **Do not** integrate entire Fracture trees into the original Chaos Party code, mix Colyseus with Socket.IO, or disable movement/range validation to make a demo pass.
-- This script intentionally refuses repeated patches or targeting a non-Fracture checkout.
+Optional Groq semantic interpretation is **off by default**, requires an already configured `GROQ_API_KEY`, and is explicitly enabled from the private host page. It proposes only grounded supported actions. The engine owns outcomes. A separate local quota ledger, short timeout and deterministic fallback keep play available on errors or quota exhaustion. No paid upstream Venice or Fish Audio connection is enabled. Live Groq quality/free-plan qualification is not claimed by mocked tests.
 
-After an actual attack-and-response demo passes and visual quality satisfies the owner, evaluate an authenticated headless character-per-phone architecture and spectator camera. Otherwise stop and change foundation instead of spending more effort on poor fit.
+## Verification and limits
 
+Read [the release tracker](../../docs/FRACTURE_GAME_NIGHT_RELEASE.md) and the sanitized evidence alongside this file. Cloud/Linux browser and concurrency tests do **not** establish performance on the 2015 Intel MacBook or physical iPhones/TV. That hardware check remains the owner's final acceptance.
 
-## macOS error: `ERR_PNPM_IGNORED_BUILDS` from pnpm 12
+Offline focused checks: `node --test experiments/fracture-phone-tv/*.test.mjs`. Optional real-server load verification: run `verify-runtime.mjs` only against a disposable Fracture database, with `CHAOS_BETA_TEST=1`, `FRACTURE_ROOT`, and matching private runtime keys. It creates test characters; never run it against family saves. Browser verification requires Playwright Core and Chromium separately and is not a runtime dependency.
 
-The original launcher selected Corepack's latest pnpm (12.16.1 on the first physical Mac test), which ignores Fracture's version-10 `pnpm.onlyBuiltDependencies` field. The pinned-major launcher above fixes that and reuses the existing `~/Fracture-Chaos-Spike` clone. Do **not** approve all arbitrary install scripts or alter the original Chaos Party checkout.
+The old `bridge.mjs`, `chaos-remote.ts`, and `apply-overlay.mjs` remain intact as the historical single-character experiment. The launcher now uses `party-bridge.mjs` and `apply-party-overlay.mjs` instead. The overlay refuses unexpected versions or local edits and records hashes of its own applied changes.
 
-If you previously downloaded a ZIP, replace **only** the launcher script in the unpacked folder using the current branch copy:
+## Credits and licenses
 
-```sh
-cd ~/Downloads/chaos-fracture-spike
-curl -fsSL https://raw.githubusercontent.com/sifuentestrey/chaos-party-rpg/spike/fracture-phone-tv/experiments/fracture-phone-tv/Start_Fracture_Chaos_Test.command -o Start_Fracture_Chaos_Test.command
-bash Start_Fracture_Chaos_Test.command
-```
+Fracture by George Larson, pinned above: https://github.com/georgeglarson/Fracture. Code: MPL 2.0; content: CC BY-SA 3.0. Originally based on Mozilla BrowserQuest, with sprites/map by Little Workshop (Franck and Guillaume Lecollinet): https://github.com/mozilla/BrowserQuest. Native source headers, LICENSE and credits remain in the separate checkout. This source kit does not bundle upstream game art or databases.
 
-This keeps the sibling scripts from the ZIP and may reinstall dependency artifacts if pnpm 10 cannot reuse the modules initially created by pnpm 12. That reinstall affects only `~/Fracture-Chaos-Spike/node_modules`, never original Chaos saves. If pnpm reports an incompatible modules store, stop and share the exact error; do not delete any unrelated folder.
-
-## October 29: directional/STOP test refresh (still one TV actor)
-
-The owner confirmed the original phone **`attack the rat`** triggered an action but reported that `stop`, `move left` and `move the tent` did not work. The experiment now provides:
-
-- `stop`, `halt`, `cancel`, `stop attacking` to interrupt local navigation/combat; a stop request bypasses the placeholder global eight-second action lock
-- `move left/right/up/down`, `walk left`, `go north/east/south/west` for one collision-checked tile using Fracture's native movement controller
-- Grounded rejection for unavailable movable scenery rather than pretending a tent moved
-- Phone distinguishes `Received/Waiting` from the TV interpreter's `STARTED/BLOCKED/COMPLETED` acknowledgment; `STARTED` is **not proof that a target lost HP or died**
-
-**Important:** This is not independent character-per-phone yet. It uses one shared phone token and TV actor, so the special STOP lock bypass must be replaced with actor-scoped authorization before multi-player release.
-
-### Updating an already installed Mac test
-
-Stop the old launcher with Control-C. From Terminal, execute these commands to replace only the named files in your unzipped test folder with the latest GitHub experimental copies:
-
-```sh
-cd ~/Downloads/chaos-fracture-spike
-BASE=https://raw.githubusercontent.com/sifuentestrey/chaos-party-rpg/spike/fracture-phone-tv/experiments/fracture-phone-tv
-for f in bridge.mjs bridge.test.mjs chaos-remote.ts apply-overlay.mjs apply-overlay.test.mjs Start_Fracture_Chaos_Test.command; do
-  curl -fSL "$BASE/$f" -o "$f" || exit 1
-done
-bash Start_Fracture_Chaos_Test.command
-```
-
-The launcher now refreshes **only the already identified Chaos-owned `client/ts/chaos-remote.ts`** in the pinned sibling Fracture checkout, refuses to overwrite other source files, keeps `server/config.json` unchanged, and uses pnpm 10. Existing character saves in Fracture and original Chaos are untouched. The rebuilt TV tab receives a **new private host/phone pairing link**; use the new link rather than a link from a previous run.
-
-Full game-night ambition and the remaining acceptance gates are tracked in [issue #12](https://github.com/sifuentestrey/chaos-party-rpg/issues/12) and [release tracker](../../docs/FRACTURE_GAME_NIGHT_RELEASE.md). No one-character bridge build should be presented as a finished 12–20 player game.
+QR Code Generator 2.0.4 by Kazuhiko Arase is reused under MIT; source and notice are in `vendor/`. The optional AI quota ledger is reused from original Chaos code with a separate data directory; original networking and databases are never imported.

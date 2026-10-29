@@ -1,0 +1,20 @@
+Fracture — George Larson
+https://github.com/georgeglarson/Fracture
+Pinned source: 642c00a8a2d3a95979e85bbfa3f62deee611a4a6
+Code: Mozilla Public License 2.0 — https://mozilla.org/MPL/2.0/
+Content: Creative Commons Attribution-ShareAlike 3.0 — https://creativecommons.org/licenses/by-sa/3.0/
+
+Originally based on BrowserQuest by Mozilla and Little Workshop
+(Franck and Guillaume Lecollinet).
+https://github.com/mozilla/BrowserQuest
+http://www.littleworkshop.fr
+
+This kit supplies reconstructible adapter source and patch instructions, not
+upstream game art or databases. The launcher obtains the exact upstream source;
+its LICENSE, authorship credits and source headers remain in that checkout.
+Modified upstream files and adapter source remain available in the local clone
+and experimental Chaos Party source. No proprietary replacement game is bundled.
+
+QR Code Generator 2.0.4 — Kazuhiko Arase — MIT
+https://github.com/kazuhikoarase/qrcode-generator
+Full notice and source: ../vendor/QRCODE_LICENSE.txt and ../vendor/qrcode.mjs

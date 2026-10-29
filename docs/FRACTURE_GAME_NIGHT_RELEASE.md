@@ -1,42 +1,46 @@
-# Chaos Party — October 29 game-night release tracker
+# Chaos Party — Fracture game-night beta release tracker
 
-> **Owner directive:** finish the strongest honestly playable Fracture-powered family game-night beta today. This tracker is not a claim that the game is finished. Codex's active implementation acceptance and work order is [issue #12](https://github.com/sifuentestrey/chaos-party-rpg/issues/12); coordination draft [PR #11](https://github.com/sifuentestrey/chaos-party-rpg/pull/11).
+October 29, 2026. Active branch: `spike/fracture-phone-tv`; issue [#12](https://github.com/sifuentestrey/chaos-party-rpg/issues/12). No merge, public deployment, paid service, or original-game database change.
 
-## Current verified baseline (as of owner Mac/iPhone test, October 29)
+## Current acceptance
 
-| Feature | Evidence / status |
+| Capability | Current evidence |
 | --- | --- |
-| Old Chaos source and data preserved | YES — work confined to `spike/fracture-phone-tv`; original `luna/visual-game-night-release` unchanged |
-| Fracture upstream fetched and built on Intel Mac | YES — Node 22, pnpm 10; dependencies installed, server/client ran |
-| Private host / LAN phone joins | YES — owner displayed host and connected an iPhone on Wi-Fi |
-| Phone command can trigger game action | PARTIAL — owner confirmed `attack the rat` had an effect |
-| Real, repeatable hit and death | UNVERIFIED — owner reports rat barely lost health |
-| Directional movement and STOP | FAIL — `move left` and `stop` not handled in existing adapter |
-| Real scene/environment action | FAIL — `move the tent` did not work; identify whether tent exists/movable |
-| 2+ independent phone characters | NOT IMPLEMENTED — current version has one TV character receiving actions from shared phone link |
-| 12–20 independent family players | NOT IMPLEMENTED OR LOAD VERIFIED |
-| Full-screen shared TV/world/camera | NOT ACCEPTED |
-| Quest/interaction/scene transitions | Fracture provides these in native game; not end-to-end validated through phone actions |
-| Creative AI DM | NOT WIRED for Fracture; optional and no unapproved costs |
-| Game-night release | NOT READY |
+| Original Chaos preservation | `npm run verify` passes: offline tests, generated-output drift checks and static build. Original networking/data remain separate. |
+| Separate phone actors | Real local Socket.IO server authenticated 20 distinct actors. Two browser phone contexts moved different actors. |
+| Movement and personal cancellation | Shortest cardinal paths on the real map; cancellation families, per-actor ownership, no arbitrary phone MOVE/TELEPORT/HIT payloads. Runtime test confirms stable position after STOP and no cross-player cancellation. |
+| Combat, damage and death | Real rat HP 29 → 0; player took damage; gold increased. Native combat handlers and formulas remain authoritative. No rat-stat nerf. |
+| Interaction and equipment | Browser adventure passed NPC conversation, native quest offer, sword2 pickup and native equip. Scenery request truthfully blocked. |
+| Travel | Real door `(27,209)` → Western Dwelling `(155,286)` → exit back outside. Travel to `(34,188)` entered Glitch Woods. No invented map. |
+| Shared TV | Native Fracture renderer, automatic read-only spectator, follow selector, colored player sprites/names, full-screen control and corner receipts. QR only in the initial empty lobby; host QR always available. Final screenshot review pending. |
+| Party pacing | Ten-second first declaration/reaction window; parallel actors, one committed declaration/reaction per player; movement/observation and personal STOP remain available. Native server combat randomness is retained; no new D20 system overrides Fracture damage. Timing regression checks pending. |
+| Reconnect and recovery | Real reconnect retained account and saved position. Personal recovery links on private host page; passwords never reach phones. Native quest progress is session-scoped and can reset after restart. |
+| Group capacity | Earlier 20-actor run exposed crowd blocking. After allowing native-valid player pass-through, 17/20 moved concurrently; remaining commands were blocked by terrain. The first endurance run failed at fifteen minutes because custom activity did not refresh Fracture's native idle deadline. The lifecycle fix now refreshes it for authenticated actor/TV activity; a regression test reproduces expiry and refresh with fake time. The final rerun is pending. No physical 12–20-player capacity claim. |
+| Optional DM | Opt-in, existing-key-only Groq semantic fallback, strict grounding, short timeout, separate reused quota ledger; mocked off/429/timeout/invalid-target tests pass. Live provider quality/free-plan qualification not performed. |
+| Mac delivery | Pinned, executable launcher reuses separate clone/config/database, caches unchanged builds for offline restart, and orders save → bridge stop → server stop. Actual launcher boot passed in Linux headless mode. Physical macOS launch/TV/iPhones not yet accepted. |
 
-## Release gates — must be evidenced, not assumed
+## Test evidence
 
-- [ ] **1. Core action loop:** phone commands move, stop, talk, pick up, fight, exit/enter. Grounded success/failure acknowledgment. Real enemy HP damage/kill, no fabricated outcomes. Server validations intact.
-- [ ] **2. Individual players:** two separately paired phones control two different authenticated actors, simultaneous visibility on a shared TV, no credentials in phone URL, no cross-control, reconnect works. Then scale test.
-- [ ] **3. Party interaction:** action/reaction race timing with immediate personal STOP, dice resolution and persistent consequences without 20-person serialized waiting.
-- [ ] **4. World flow:** one enjoyable 20-minute path through existing areas and NPCs, ending with a real consequence/reward; *free exploration*, no forced Crown Job, no fake props.
-- [ ] **5. TV/phone UX:** 16:9 full screen with minimal overlay; QR in lobby; action log and clear phone input/response.
-- [ ] **6. DM fallback:** optional approved free AI interpretation (if configured), safety/grounding; works with AI off and under slow/429 conditions.
-- [ ] **7. Quality:** reproducible pinned build, offline/unit/integration/browser checks, two independent controllers, restart/load, synthetic 12–20 concurrency and measured resource usage on 2015 Intel Mac. Do not infer physical performance from CI.
-- [ ] **8. Mac install:** one-click downloadable rehearsal artifact, SHA/source ID, no destructive overwrite or foreign credential leakage, owner confirmation from physical TV/phones.
+- **Fracture:** pinned upstream `642c00a8a2d3a95979e85bbfa3f62deee611a4a6`; latest full run: **70 files / 3,321 tests passed**. Server TypeScript and production client builds pass.
+- **Focused adapter:** **19 tests passed**, including actual pinned-overlay refresh, refusal of local source edits, untouched config/database, parser families, path obstacles, identity isolation, AI fallback and ordered process shutdown. Node **22.23.4** focused tests passed (integration clone test separately run with `FRACTURE_TEST_ROOT`).
+- **Original Chaos:** complete `npm run verify` passed without tracked generated-output drift; no original source changes.
+- **Browser:** two phone contexts at 390×844 and TV at 1280×720. Real movement, rat death, loot/equip, conversation and door/forest flow; latest adventure reported no browser errors. Final release-build screenshots/recovery check pending.
+- **Runtime:** twenty authenticated actors, concurrent movement, scoped interruption and real Socket.IO reconnect passed. Final soak/resource report pending; Linux measurements will not be presented as Intel Mac measurements.
 
-## Rules
+## Remaining release gates
 
-- No merging PR #11 or changing `main` / `luna/visual-game-night-release` until owner explicitly accepts real gameplay.
-- Preserve MPL 2.0 source and CC BY-SA 3.0 assets and credits; audit third-party art provenance.
-- Keep Fracture Node/Socket.IO/SQLite separate from legacy Chaos Colyseus/data. Do not paste entire frameworks together or disable combat/range validations.
-- Never claim a test passed without logs. No paid APIs, surprise hosting, user credential exposure, new accounts without need, or deployment.
-- Keep this table updated as evidence appears and report first failed acceptance quickly.
+- [ ] Finish final 20-minute real-actor soak and record resource/latency measurements.
+- [ ] Final browser screenshots, native quest completion/reward and recovered-phone check.
+- [ ] Verify ordered launcher stop/restart saves and unchanged-build offline launch.
+- [ ] Build source ZIP with SHA256/source ID and inspect it for accidental credentials or databases.
+- [ ] Owner hardware acceptance: launch on 2015 Intel Mac, join two physical phones, move independently, attack/kill, STOP, visit a building and woods, reconnect, then try the family group while measuring responsiveness.
 
-**If today runs out:** report the smallest fully verified playable beta plus exact unimplemented requirements; don't label the original one-character bridge a finished multiplayer game.
+The target is a genuinely playable experimental beta. Hardware acceptance, a live creative storyteller, universal unsupported mechanics and a production-grade durable quest/campaign system are not claimed complete.
+
+## Session continuation notes
+
+The launcher now uses `party-bridge.mjs` and `apply-party-overlay.mjs`; historical one-actor files remain intact. New runtime modules live entirely under `experiments/fracture-phone-tv`. The separate disposable upstream checkout is `/workspace/fracture-chaos-beta` in this cloud session; it is not an original Chaos save location. Overlay edits are reconstructible and checked against the pinned base plus a hash manifest. The local QR library is MIT qrcode-generator 2.0.4; native upstream MPL/CC BY-SA notices stay in the clone.
+
+A later lifecycle improvement also saves/logs out phones after 45 seconds of absence and defers saved-character login until the phone returns; the real-server presence/recovery check passed. Enemy minimum cooldowns are now extracted from the pinned native client rather than assigned one generic value.
+
+Current final verification logs are in `/workspace/scratch`: `chaos-launcher-final.log` (private host link: do not publish), `chaos-runtime-load-release.log`, `chaos-runtime-report.json` (written on completion), `chaos-adventure-report.json`, `fracture-tests-final.log`, and `chaos-original-verify.log`. Publish only sanitized reports/screenshots, never room.json, launcher host URLs, database files or credentials.
