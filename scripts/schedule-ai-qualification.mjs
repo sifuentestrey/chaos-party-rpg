@@ -1,10 +1,12 @@
 // One bounded free-provider qualification after the existing allowance permits it.
 // Never creates/resets a quota ledger, retries inference, or enables game narration.
+import {createConnection} from 'node:net';
 import fs from 'node:fs';import path from 'node:path';import {execFileSync} from 'node:child_process';import {pathToFileURL} from 'node:url';
 import {qualificationPreflight,runQualification} from './ai-qualification.mjs';
 export function nextUTCWindow(now){const d=new Date(now);return Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()+1,0,0,10);}
 export function scheduleGate(preflight){return !!preflight.allowance&&preflight.allowance.state==='ready'&&typeof preflight.count==='number';}
-export async function ensureServerStopped(fetcher=fetch){try{const response=await fetcher('http://127.0.0.1:'+(Number(process.env.PORT)||4747)+'/health',{signal:AbortSignal.timeout(800)});await response.body?.cancel();throw Error('PORT_IN_USE');}catch(error){if(error.cause?.code!=='ECONNREFUSED')throw Error('Cannot confirm the local game server is stopped; no inference started.');}}
+export function probeLocalServer(port){return new Promise((resolve,reject)=>{let done=false;const socket=createConnection({host:'127.0.0.1',port});const finish=(error,present)=>{if(done)return;done=true;socket.destroy();error?reject(error):resolve(present);};socket.once('connect',()=>finish(null,true));socket.once('error',error=>error.code==='ECONNREFUSED'?finish(null,false):finish(error));socket.setTimeout(800,()=>finish(Error('Local port check timed out.')));});}
+export async function ensureServerStopped(probe=()=>probeLocalServer(Number(process.env.PORT)||4747)){try{if(await probe())throw Error('PORT_IN_USE');}catch{throw Error('Cannot confirm the local game server is stopped; no inference started.');}}
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,Math.min(60000,ms)));
 export async function scheduleQualification(){
  const dataDir=process.env.CHAOS_AI_BENCHMARK_DATA_DIR||process.env.CHAOS_DATA_DIR;
