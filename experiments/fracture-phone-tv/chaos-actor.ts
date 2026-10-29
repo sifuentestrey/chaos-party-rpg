@@ -33,7 +33,12 @@ export function installChaosActor(player:any, connection:any): void {
   const nearby=()=>Object.values(world.entities).filter((e:any)=>e.id!==player.id&&!e.chaosSpectator&&!e.isDead&&distance(player,e)<=18) as any[];
   const state=()=>({id:player.id,name:player.name,zone:world.zoneManager.getZoneAt(player.x,player.y)?.name||'Unknown area',x:player.x,y:player.y,hp:player.hitPoints,maxHp:player.maxHitPoints,level:player.level,gold:player.gold,inventory:player.getInventory().getSlots().map((s:any,i:number)=>s?{slot:i,name:Types.getKindAsString(s.kind),count:s.count}:null).filter(Boolean),weapon:Types.getKindAsString(player.weapon),armor:Types.getKindAsString(player.armor),dead:player.isDead,ready:player.hasEnteredGame,nearby:nearby().map(e=>({id:e.id,name:label(e),type:e.type,x:e.x,y:e.y,hp:e.hitPoints,maxHp:e.maxHitPoints}))});
   const receipt=(id:string,status:string,message:string,detail:any={})=>socket.emit('chaos:receipt',{id,status,message,...detail,actor:state()});
-  const finish=(status:string,message:string,detail:any={})=>{if(active){const id=active.id;active=null;receipt(id,status,message,detail);}};
+  // Only the action that produced an asynchronous result may finish itself.
+  // STOP, disconnect, and replacement actions invalidate all older continuations.
+  const finish=(status:string,message:string,detail:any={},expected=active)=>{
+    if(!active||active!==expected)return;
+    const id=active.id;active=null;receipt(id,status,message,detail);
+  };
   const authorized=(body:any)=>{const ok=local&&typeof body?.key==='string'&&body.key===key&&player.hasEnteredGame;if(ok){player.resetTimeout();if(!spectator)player.chaosControlled=true;}return ok;};
   socket.on('chaos:watch',(body:any,ack:any)=>{
     if(typeof ack!=='function')return;
@@ -97,6 +102,7 @@ export function installChaosActor(player:any, connection:any): void {
   const timer=setInterval(async()=>{
     if(ticking||!player.hasEnteredGame||!socket.connected)return;
     ticking=true;
+    let action:any=null;
     try {
       if(spectator)player.spawnProtectionUntil=Number.MAX_SAFE_INTEGER;
       if(spectator&&!watchId)return;
@@ -115,7 +121,7 @@ export function installChaosActor(player:any, connection:any): void {
         if(String(mob.target)===String(player.id)&&!mob.isDead&&distance(player,mob)<=1&&Date.now()-(enemyHits.get(mob.id)||0)>=(nativeRates[Types.getKindAsString(mob.kind)]||nativeRates.default)){enemyHits.set(mob.id,Date.now());await router.route(player,[Types.Messages.HURT,mob.id]);}
       }
       if(player.isDead){cancel();finish('failed','Your character was knocked out.');return;}
-      const action=active;if(!action)return;
+      action=active;if(!action)return;
       if(Date.now()>action.deadline){cancel();finish('failed','Action timed out. Try a closer destination.');return;}
       const {intent,target}=action;
       if(target && (world.getEntityById(target.id)!==target || target.isDead)) {cancel();finish('blocked','The target is no longer available.');return;}
@@ -130,11 +136,15 @@ export function installChaosActor(player:any, connection:any): void {
         const path=action.path;
         if(!path?.length){finish('blocked','No walkable path to that destination.');return;}
         const [x,y]=path.shift();
-        if(!await move(x,y)){finish('blocked','The engine rejected that movement.');return;}
+        const moved=await move(x,y);
+        if(active!==action)return; // STOP may arrive while native MOVE/checkpoint is in flight.
+        if(!moved){finish('blocked','The engine rejected that movement.',{},action);return;}
         const doorway=geometry.doors.find((d:any)=>d.x===player.x&&d.y===player.y);
         if(doorway&&world.isValidPosition(doorway.tx,doorway.ty)){
-          await router.route(player,[Types.Messages.TELEPORT,doorway.tx,doorway.ty]);player.zoneCallback?.();player.checkZoneChange(player.x,player.y);
-          socket.emit('chaos:position',state());finish('succeeded','Travelled through the door into another area.');return;
+          await router.route(player,[Types.Messages.TELEPORT,doorway.tx,doorway.ty]);
+          if(active!==action)return;
+          player.zoneCallback?.();player.checkZoneChange(player.x,player.y);
+          socket.emit('chaos:position',state());finish('succeeded','Travelled through the door into another area.',{},action);return;
         }
         socket.emit('chaos:position',state()); return;
       }
@@ -142,8 +152,10 @@ export function installChaosActor(player:any, connection:any): void {
       if(door){
         if(!world.isValidPosition(door.tx,door.ty)){finish('blocked','The door exit is blocked.');return;}
         // Only actual map-authored door destinations reach the native transition.
-        await router.route(player,[Types.Messages.TELEPORT,door.tx,door.ty]);player.zoneCallback?.();player.checkZoneChange(player.x,player.y);
-        socket.emit('chaos:position',state());finish('succeeded','Travelled through the door into another area.');return;
+        await router.route(player,[Types.Messages.TELEPORT,door.tx,door.ty]);
+        if(active!==action)return;
+        player.zoneCallback?.();player.checkZoneChange(player.x,player.y);
+        socket.emit('chaos:position',state());finish('succeeded','Travelled through the door into another area.',{},action);return;
       }
       if(!target||intent.verb==='go'){finish('succeeded','Reached your destination.');return;}
       if(intent.verb==='attack'){
@@ -152,6 +164,7 @@ export function installChaosActor(player:any, connection:any): void {
         if(active!==action)return;
         const before=target.hitPoints;
         await router.route(player,[Types.Messages.HIT,target.id]);
+        if(active!==action)return; // Never report damage or finish a newly started action.
         // Mob.destroy resets HP/position immediately after death; audit before/after
         // plus isDead is authoritative, never infer a kill from just disappearance.
         const dead=target.isDead,after=dead?0:target.hitPoints;
@@ -160,21 +173,28 @@ export function installChaosActor(player:any, connection:any): void {
         return;
       }
       if(intent.verb==='quest'){
-        await router.route(player,[Types.Messages.REQUEST_QUEST,target.kind]);finish('succeeded',`Asked ${label(target)} for an adventure. Check your quest.`);return;
+        await router.route(player,[Types.Messages.REQUEST_QUEST,target.kind]);if(active!==action)return;finish('succeeded',`Asked ${label(target)} for an adventure. Check your quest.`);return;
       }
       if(intent.verb==='talk'){
         await router.route(player,[Types.Messages.NPCTALK,target.kind]);
+        if(active!==action)return;
         finish('succeeded',`Spoke to ${label(target)}. See their response.`);return;
       }
       if(intent.verb==='open'){
         await router.route(player,[Types.Messages.OPEN,target.id]);
+        if(active!==action)return;
         finish(world.getEntityById(target.id)?'blocked':'succeeded',world.getEntityById(target.id)?'The chest could not be opened.':'Chest opened. Look for its contents.');return;
       }
       if(intent.verb==='loot'){
         await router.route(player,[Types.Messages.LOOT,target.id]);
+        if(active!==action)return;
         finish(world.getEntityById(target.id)?'blocked':'succeeded',world.getEntityById(target.id)?'Item was not collected. Your inventory may be full.':`${label(target)} collected.`);
       }
-    }catch(error){cancel();finish('failed','The engine could not complete that action.');console.error('[Chaos actor]',error);}
+    }catch(error){
+      // A rejected promise from a cancelled old action must not cancel its successor.
+      if(action&&active===action){cancel();finish('failed','The engine could not complete that action.',{},action);}
+      console.error('[Chaos actor]',error);
+    }
     finally{ticking=false;}
   },220);
   socket.on('disconnect',()=>{clearInterval(timer);cancel();active=null;});
