@@ -330,7 +330,7 @@ function campaignView(r) {
 }
 
 // src/framework-entry.ts
-import { Schema as Schema2, type as type2 } from "@colyseus/schema";
+import { Schema as Schema2, type as type2, Encoder } from "@colyseus/schema";
 import { ServerError as ServerError2 } from "@colyseus/core";
 import { randomBytes, randomInt as randomInt2, timingSafeEqual } from "node:crypto";
 import { z as z2 } from "zod";
@@ -4204,6 +4204,7 @@ var ClockSync = class {
 };
 
 // src/framework-entry.ts
+Encoder.BUFFER_SIZE = 128 * 1024;
 var GAME_ID = "chaos-tavern";
 var UPSTREAM_COMMIT = "e73cc35bfa561048cd9728991bafeeca5548e953";
 var services;

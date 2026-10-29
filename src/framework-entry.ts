@@ -2,7 +2,10 @@ import {bindRegionStorage} from '../public/campaign.js';
 // A game plugin and narrow persistence/security extension of the real PartyFrame runtime.
 // The vendored framework remains the owner of Colyseus sessions, roster, clocks,
 // reconnection, lobby lifecycle, projections, rate limits, and bot scheduling.
-import {Schema,type} from '@colyseus/schema';
+import {Schema,type,Encoder} from '@colyseus/schema';
+// The shared party projection includes 24 characters, inventory and discovered routes.
+// Preallocate once rather than repeatedly resizing Colyseus' small default buffer.
+Encoder.BUFFER_SIZE=128*1024;
 import {ServerError,matchMaker} from '@colyseus/core';
 import {randomBytes,randomInt,timingSafeEqual} from 'node:crypto';
 import {z} from 'zod';

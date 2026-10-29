@@ -62,7 +62,7 @@ function tile(g,id,x,y,size=32,img=sprites) {
 }
 export class TavernScene {
   constructor(){this.canvas=null;this.state=null;this.lastFrame=0;this.resultId=null;this.fxAt=0;this.declarationId=null;this.declareAt=0;this.reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;this.on=true;this.loop=this.loop.bind(this);requestAnimationFrame(this.loop);}
-  attach(canvas){if(this.canvas===canvas)return;this.canvas=canvas;if(canvas){canvas.width=960;canvas.height=540;}}
+  attach(canvas){if(this.canvas===canvas)return;this.canvas=canvas;if(canvas){canvas.width=960;canvas.height=540;this.lastFrame=performance.now();this.draw(this.lastFrame);}}
   setState(state){
     const nextTarget=state?.turn?state.turn.id+':'+state.turn.target?.kind+':'+state.turn.target?.id:null;
     if((this.state?.turn?.id===state?.turn?.id&&this.state?.turn?.ai?.status==='thinking'&&state?.turn?.ai?.status!=='thinking')||(this.targetKey&&nextTarget!==this.targetKey&&state?.turn?.ai?.status==='applied')){this.pathTurn=null;this.declareAt=performance.now();}

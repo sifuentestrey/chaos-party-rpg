@@ -132,7 +132,7 @@ function render(){
   const focus=document.activeElement,focusId=focus?.id,start=focus?.selectionStart,end=focus?.selectionEnd;
   document.body.classList.toggle('tavern-tv',M.screen==='host');
   root.innerHTML=M.screen==='home'?home():M.screen==='creator'?creator():M.screen==='join'?joinScreen():M.screen==='hostSetup'?hostSetup():M.screen==='host'?hostScreen(false):M.screen==='solo'?hostScreen(true):`${header()}${!M.connected?'<div class="connection-banner">Reconnecting — your character is saved. Keep this page open.</div>':''}${controllerContent(false)}`;
-  scene.attach(root.querySelector('[data-scene]'));scene.setState(M.room);
+  scene.setState(M.room);scene.attach(root.querySelector('[data-scene]'));
   root.querySelectorAll('[data-profile]').forEach(c=>drawPortrait(c,M.profile.avatar));
   root.querySelectorAll('[data-avatar-pid]').forEach(c=>drawPortrait(c,M.room?.players.find(p=>p.id===c.dataset.avatarPid)?.avatar,false,M.room&&visibleItems(M.room).find(i=>i.ownerId===c.dataset.avatarPid&&i.equipped)));
   if(M.screen==='host')drawQR();
