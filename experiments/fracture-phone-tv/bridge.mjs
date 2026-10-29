@@ -59,7 +59,7 @@ export function createBridge({port=4748, bind='0.0.0.0', fracturePort=8000, cloc
       let body;try{body=await readBody(req);}catch{return json(res,400,{error:'Invalid action'});}
       if(body?.key!==secrets.phone)return json(res,403,{error:'Invalid controller pairing'});
       const text=typeof body.text==='string'?body.text.trim():'';
-      if(text.length<2||text.length>180||/[\x00-\x08\x0e-\x1f]/.test(text))return json(res,400,{error:'Action must be 2–180 characters'});
+      if(text.length<2||text.length>180||/[<>\x00-\x08\x0e-\x1f]/.test(text))return json(res,400,{error:'Action must be 2–180 characters'});
       if(!clients.size)return json(res,503,{error:'Open the Fracture game on the TV first'});
       if(clock()<busyUntil)return json(res,409,{error:'Another action is resolving. Try again shortly.'});
       busyUntil=clock()+8000;
