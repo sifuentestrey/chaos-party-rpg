@@ -67,7 +67,7 @@ test('free interpretation and narration share persisted request allowance, usage
     await ai.check();const {room,actor}=scene();await ai.interpret(room,actor.id,1000);const result=await ai.narrate(room,1000);
     assert.equal(result.usage.promptTokens,700);assert.equal(result.story.dialogue[0].name,'Marnie');assert.equal(calls.length,2);
     assert.ok(calls.every(c=>c.url==='https://api.groq.com/openai/v1/chat/completions'));
-    assert.equal(calls[1].payload.response_format.json_schema.name,'resolved_story');assert.equal(ai.status().allowance.remaining,98);
+    assert.equal(calls[1].payload.response_format.json_schema.name,'resolved_story');assert.equal(ai.status().allowance.remaining,998);
     assert.equal(JSON.stringify(calls).includes(actor.token),false);assert.equal(JSON.stringify(calls).includes(actor.pin),false);
   }finally{ai.close();fs.rmSync(dir,{recursive:true,force:true});}
 });
