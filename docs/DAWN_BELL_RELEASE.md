@@ -1,15 +1,17 @@
 # Chaos Party — Dawn Bell game-night candidate
 
-Latest candidate: `release/Chaos_Party_Mac_0bd3c25.zip` (about 72 MB, local workspace).
-Source: `0bd3c2537c23ccfde69248707960b0d20cf3f52a`, built with `sourceDirty:false`.
-SHA-256: `d0980ffc7d4e98c2a5e17848b7759541a03a9cde1ef775b7a007e1a7197b63cd`.
+Latest candidate: `release/Chaos_Party_Mac_aa5bf51.zip` (about 72 MB, local workspace).
+Source: `aa5bf5168bb4bda2577eb4f474b90b51aaeaba2d`, built with `sourceDirty:false`.
+SHA-256: `b84f699cc22e1df497078babea6ff8f72a8356606075a85f6adee4bcc4207017`.
 Old ZIPs and packaged folders remain intact. Source backup stays on `luna/visual-game-night-release`; no main merge or public game deployment.
 
 ## Start
 
-Unzip into a new folder. Right-click **Start Chaos Party.command → Open** and keep the terminal open. Show the host on TV and connect phones on the same Wi-Fi using the QR code. Use a new test room first. Read bundled **DAWN_BELL.md** for commands and objectives. The launcher uses the existing Application Support save location; no installation or save data was replaced by cloud testing.
+Unzip into a new folder. Right-click **Start Chaos Party.command → Open** and keep the terminal open. Show the host on TV and connect phones on the same Wi-Fi using the QR code. Requires macOS 11 (Big Sur) or newer, confirmed from both bundled runtime binaries. Use a new test room first. Read bundled **DAWN_BELL.md** for commands and objectives. The launcher uses the existing Application Support save location; no installation or save data was replaced by cloud testing.
 
 Play the Crown Job, then select **Begin The Dawn Bell**. Alternatively the host can begin the expedition from host controls between turns. Copy the tavern wall map from phone controls. **Travel / Explore requires majority approval** using Help them during the reaction window; ordinary actions do not.
+
+For private AI connection setup, open host controls on the Mac and choose **Dungeon Master setup**. No terminal commands are needed. The private key stays outside the package and is never sent to phones; narration remains unqualified/off.
 
 ## Implemented and retained
 
@@ -21,17 +23,17 @@ Play the Crown Job, then select **Begin The Dawn Bell**. Alternatively the host 
 
 ## Fresh verification
 
-- `npm run verify`: **201 tests in 33 files**, seven generated outputs and static build. Original campaign golden hashes unchanged. Offline suite disables AI and uses disposable data.
+- `npm run verify`: **210 tests in 35 files**, seven generated outputs and static build. Original campaign golden hashes unchanged. Offline suite disables AI and uses disposable data.
 - Twenty actual Colyseus controllers: first-declaration/reaction/recovery/restart coverage retained; new expedition test verifies failed abstention quorum, successful strict majority, duplicate votes and host authorization without splitting the party.
 - Actual phone-browser journeys: complete crown heist and PARTY VICTORY; complete Dawn Bell crossing/town/castle/finale, graphical map, saved ending and restart/rejoin. TV 1280×720 and phone 390×844 for Dawn Bell; earlier retained layout checks cover 320×568, landscape and 1920×1080.
 - Packaged Node 22.16.0 server copied outside repository: passed host/two-controller declaration/reaction/dice, assets, authorization and saving without node_modules. Intel/ARM Mac Node runtime archives matched official checksums. ZIP integrity verified.
 - Final packaged-server Dawn Bell run under Linux Node 22.16.0: PASS. Two customized controllers completed crossing/town/castle/vault, map discovery, distinct victory and restart/rejoin. Every state-change canvas-paint and result-panel clearance assertion passed; no page errors or serialization-buffer warnings. The same packaged journey also exercised an actual tool strike and NPC possession/theft/witness memory.
 
-Latest evidence: `docs/evidence/directive-release/` and local `artifacts/directive-release/`. Full directive checklist: `docs/FINAL_DIRECTIVE_CHECKLIST.md`. Earlier retained evidence: `docs/evidence/dawn-bell-release/`.
+Latest package evidence: `docs/evidence/ai-complete/` (private host setup is explicitly synthetic; no live model). Native action evidence: `docs/evidence/directive-release/`. Full directive checklist: `docs/FINAL_DIRECTIVE_CHECKLIST.md`. Earlier retained evidence: `docs/evidence/dawn-bell-release/`.
 
 ## External acceptance still blocked
 
-**Genuine AI DM is not qualified.** The previous request counter was unavailable. On October 29 it was recovered conservatively: the entire current-day allowance is reserved, zero extra attempts granted, no prior file overwritten, and no provider contact or actual inference performed. This reservation does not represent 100 actual provider calls. The normal UTC-day rollover is unchanged; after October 30 begins, use this same persistent counter for the prepared six-case interpretation and three-case narration qualification. Fresh preflight correctly refused inference while today's remaining allowance was zero. No limits were raised, reset to gain attempts, or paid fallback used. Narration remains off. Actual semantic accuracy, truthful/funny dialogue, latency and selective full-session capacity still require real model evidence. Continuous interpretation plus narration for hundreds of turns cannot fit 100 requests/day and four/minute. Unsupported creative stunts remain limited by native rules without AI.
+**Genuine AI DM is not qualified.** The previous request counter was unavailable. On October 29 it was recovered conservatively: the entire current-day allowance is reserved, zero extra attempts granted, no prior file overwritten, and no provider contact or actual inference performed. This reservation does not represent 100 actual provider calls. The normal UTC-day rollover is unchanged; a bounded scheduler can use this same persistent counter after its normal renewal for six interpretation and three narration attempts. It requires an available workspace, clean unchanged source and a stopped local game server; no automatic retries or narration enablement. Scheduling/status/raw reports are under artifacts/scheduled-ai/. Real responses still require semantic/latency review, so a queued job is not acceptance. Fresh preflight correctly refused inference while today's remaining allowance was zero. No limits were raised, reset to gain attempts, or paid fallback used. Narration remains off. Actual semantic accuracy, truthful/funny dialogue, latency and selective full-session capacity still require real model evidence. Continuous interpretation plus narration for hundreds of turns cannot fit 100 requests/day and four/minute. Unsupported creative stunts remain limited by native rules without AI.
 
 **Physical acceptance requires the actual hardware:** early-2015 Intel Mac/macOS, TV readability/audio, home Wi-Fi/firewall/QR, two real phones for at least 90 seconds, save/rejoin and measured performance; then the larger family group. Linux Node 22 and browser tests do not certify bundled Mac executables or physical enjoyment/performance.
 

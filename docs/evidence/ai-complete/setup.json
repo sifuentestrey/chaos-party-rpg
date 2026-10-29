@@ -1,0 +1,12 @@
+{
+  "packagedServer": true,
+  "syntheticOnly": true,
+  "liveInference": false,
+  "keyEchoed": false,
+  "keyInBrowserStorage": false,
+  "clearedAfterSave": true,
+  "persisted": true,
+  "disconnectWorks": true,
+  "errors": [],
+  "checks": 3
+}
