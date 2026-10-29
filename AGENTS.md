@@ -1,3 +1,20 @@
+# CURRENT OWNER OVERRIDE — FRACTURE MIGRATION SPIKE, 2026-10-29
+
+**THIS BRANCH HAS A DIFFERENT TASK FROM THE OLD CHAOS PARTY BUILD.** The owner stopped expanding the custom prototype after a failed hands-on playtest and directed an investigation into adapting an **already playable RPG** instead. The chosen FIRST CANDIDATE is Fracture, **not yet an approved completed migration**.
+
+**READ FIRST:** [docs/FRACTURE_MIGRATION_SPIKE.md](docs/FRACTURE_MIGRATION_SPIKE.md). This is the sole active scope for branch `spike/fracture-phone-tv`. The old instructions below and `START_HERE.md` remain for provenance only; their old build/AI qualification/packaging queues do NOT apply here.
+
+**ABSOLUTE SEPARATION:**
+- Original Chaos source, `luna/visual-game-night-release`: preserve unchanged, including its Colyseus/PartyFrame network, saves, packages and historical Codex work. Not a target for experimental edits.
+- New migration spike, `spike/fracture-phone-tv`: only isolated docs/research/prototypes. No merge into `main` or canonical release without owner-approved verified proof.
+- Candidate external engine, `georgeglarson/Fracture` at upstream commit `642c00a8a2d3a95979e85bbfa3f62deee611a4a6`: separate checkout, separate database, code MPL 2.0, content CC BY-SA 3.0; inspect art provenance. Do not treat this as Chaos code or import it wholesale.
+
+**NEVER MIX** Socket.IO with Colyseus by guessing, overwrite authentic player saves, conflate account passwords and recovery PINs, let AI bypass server-authoritative movement/hits, or pretend a README claim equals successful local runtime testing. No paid services, external/public deployments, credential exposure or destructive operations.
+
+**FIRST MILESTONE ONLY:** independently boot and inspect unmodified Fracture. Then connect ONE phone-driven free-form action to actual Fracture movement/combat with a visible on-TV consequence, and test with two controllers. Stop if that is not demonstrably workable. Full details and objective acceptance in the migration spike document.
+
+---
+
 ## Current owner instruction — consolidation, October 29, 2026
 
 Start with [START_HERE.md](START_HERE.md). It is the single current handoff and work queue. Work in this checkout on `luna/visual-game-night-release`; the name is historical. Older branch-specific assignments and the instructions below are historical context, not competing active tasks. The owner asked to consolidate first and move to a new chat. Do not automatically resume old milestones, create additional work branches, delegate old assignments, merge into main, or deploy from a stale document. Preserve product and safety requirements below. Future implementation follows the owner's new-chat direction.
