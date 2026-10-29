@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-// Additional request protection. Provider account must itself remain on its Free Plan.
+// Provider-aligned request guard, not an extra 100/day or 4/minute throttle.
+// Free-plan organization limits can be lower, and token limits are enforced by Groq.
+const REQUESTS_PER_DAY=1000,REQUESTS_PER_MINUTE=30;
 // One game process owns the data directory, as it does for campaign saves.
 export function createFreeAIBudget(dataDir,{now=Date.now}={}){
  if(!dataDir)throw Error('Hosted free-tier AI requires a persistent data directory.');
@@ -18,12 +20,12 @@ export function createFreeAIBudget(dataDir,{now=Date.now}={}){
   return {state,time};
  };
  return {status(){
-  try{const {state}=read();return {dailyLimit:100,remaining:Math.max(0,100-state.count),perMinute:4,minuteRemaining:Math.max(0,4-state.recent.length),state:'ready'};}
-  catch{return {dailyLimit:100,remaining:0,perMinute:4,minuteRemaining:0,state:'blocked'};}
+  try{const {state}=read();return {dailyLimit:REQUESTS_PER_DAY,remaining:Math.max(0,REQUESTS_PER_DAY-state.count),perMinute:REQUESTS_PER_MINUTE,minuteRemaining:Math.max(0,REQUESTS_PER_MINUTE-state.recent.length),state:'ready'};}
+  catch{return {dailyLimit:REQUESTS_PER_DAY,remaining:0,perMinute:REQUESTS_PER_MINUTE,minuteRemaining:0,state:'blocked'};}
  },reserve(){
   const {state,time}=read();
-  if(state.count>=100)throw Error('Free AI local daily allowance reached. Rules remain available.');
-  if(state.recent.length>=4)throw Error('Free AI is cooling down. Rules remain available.');
+  if(state.count>=REQUESTS_PER_DAY)throw Error('Free AI local daily allowance reached. Rules remain available.');
+  if(state.recent.length>=REQUESTS_PER_MINUTE)throw Error('Free AI is cooling down. Rules remain available.');
   state.count++;state.recent.push(time);
   fs.mkdirSync(dataDir,{recursive:true,mode:0o700});
   const temp=file+'.tmp';fs.writeFileSync(temp,JSON.stringify(state),{mode:0o600});fs.renameSync(temp,file);
