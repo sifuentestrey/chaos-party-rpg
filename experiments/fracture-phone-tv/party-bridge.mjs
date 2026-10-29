@@ -9,6 +9,7 @@ import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
 import {createOptionalDM} from './optional-dm.mjs';
 import {parseIntent} from './action-contract.ts';
+import {proposeRally,voteRally,settleRally,rallyView} from './party-rally.mjs';
 const token=()=>randomBytes(24).toString('hex');
 const lanIp=()=>Object.values(os.networkInterfaces()).flat().find(x=>x.family==='IPv4'&&!x.internal)?.address||'localhost';
 const phoneHost=req=>{const host=(req.headers.host||'localhost').split(':')[0];return ['localhost','127.0.0.1'].includes(host)?lanIp():host;};
@@ -29,7 +30,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
  let pendingEventFlush=null;
  const scheduleEventFlush=()=>{if(pendingEventFlush)return;pendingEventFlush=setTimeout(()=>{pendingEventFlush=null;persist();},500);pendingEventFlush.unref?.();};
  const flushEvents=()=>{if(pendingEventFlush){clearTimeout(pendingEventFlush);pendingEventFlush=null;}persist();};
- const sessions=new Map(),events=room.events||[];room.turn=null;persist();
+ const sessions=new Map(),events=room.events||[];room.turn=null;room.rally=null;persist();
  const meaningful=new Set(['attack','talk','quest','open','loot']);
  const liveCount=()=>room.players.filter(p=>!p.parked).length;
  function record(event){events.push({...event,at:Date.now()});if(events.length>80)events.shift();room.events=events;scheduleEventFlush();}
@@ -68,9 +69,55 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
   socket.on('chaos:position',s=>session.actor=s);
   return session;
  }
+ // One dispatch path for personal and majority-approved movement. All outcomes
+ // are sourced from the native engine, not the vote or the HTTP acceptance.
+ function dispatch(s,intent,text){
+  const id=randomUUID();s.results.set(id,{status:'received',message:text});
+  if(s.results.size>80)s.results.delete(s.results.keys().next().value);
+  if(meaningful.has(intent.verb)){
+   s.declarations.set(id,{text});
+   if(s.declarations.size>80)s.declarations.delete(s.declarations.keys().next().value);
+  }
+  s.socket.timeout(2000).emit('chaos:action',{key:actorKey,id,intent,actorId:s.actor.id,issuedAt:Date.now()},(error,r)=>{
+   if(error||r?.error){
+    s.declarations.delete(id);
+    if(s.results.get(id)?.status==='received'){
+     const result={status:'blocked',message:r?.error||'No engine acknowledgment. Please stop before retrying.'};
+     s.results.set(id,result);record({player:s.player.name,id,...result});
+    }
+   }
+  });
+  return id;
+ }
+ const publicRally=(token=null)=>{const view=rallyView(room.rally,token,Date.now());if(view)view.proposer=sessions.get(view.proposer)?.player.name||'Party member';return view;};
+ function finishRally(){
+  const rally=room.rally;if(!rally)return;
+  const status=settleRally(rally,Date.now());
+  if(status==='pending'||rally.dispatched)return;
+  rally.dispatched=true;
+  const lead=sessions.get(rally.proposer)?.player.name||'Party member';
+  if(status==='declined'){
+   record({player:lead,status:'declined',message:`Party rally did not reach ${rally.required} yes votes; nobody was moved.`});
+   return;
+  }
+  record({player:lead,status:'approved',message:`Party approved rally (${Object.values(rally.votes).filter(Boolean).length}/${rally.required}). Native movement requested; each actor can still STOP.`});
+  for(const token of rally.electorate){
+   const s=sessions.get(token);
+   if(!s||s.player.parked||!s.socket.connected||!s.actor?.ready||s.actor.dead||s.actor.zone!==rally.zone){
+    record({player:s?.player.name||'Absent player',status:'blocked',message:'Rally skipped: character disconnected, unavailable or in another area.'});continue;
+   }
+   if(Math.abs(s.actor.x-rally.x)+Math.abs(s.actor.y-rally.y)>12){
+    record({player:s.player.name,status:'blocked',message:'Rally skipped: character moved beyond the safe twelve-tile range.'});continue;
+   }
+   if(s.actor.x===rally.x&&s.actor.y===rally.y){
+    record({player:s.player.name,status:'succeeded',message:'Already at the rally point.'});continue;
+   }
+   dispatch(s,{verb:'go',x:rally.x,y:rally.y},'Party rally: walk to '+rally.x+', '+rally.y);
+  }
+ }
  function refresh(s){if(s.socket.connected&&s.actor)s.socket.timeout(1500).emit('chaos:state',{key:actorKey},(err,r)=>{if(!err&&r?.ok)s.actor=r.actor;});}
  room.players.forEach(connect);
- const polling=setInterval(()=>{for(const s of sessions.values()){
+ const polling=setInterval(()=>{finishRally();for(const s of sessions.values()){
    if(s.player.parked)continue;
    if(s.socket.connected&&s.actor&&Date.now()-s.lastSeen>idleMs&&!s.suspending){s.suspending=true;s.socket.timeout(2000).emit('chaos:save',{key:actorKey},()=>{if(Date.now()-s.lastSeen>idleMs)s.socket.disconnect();s.suspending=false;});}
    else refresh(s);
@@ -142,17 +189,39 @@ setInterval(poll,750);poll();
     const player={name,color:['Amber','Blue','Green','Rose'].includes(b.color)?b.color:'Amber',token:token(),account:name.replace(/[^a-zA-Z0-9]/g,'').slice(0,8)+'_'+randomBytes(3).toString('hex'),password:token()};
     room.players.push(player);persist();const session=connect(player);session.lastSeen=Date.now();session.socket.connect();return json(res,201,{token:player.token});
    }
+   if(p==='/rally/propose'&&req.method==='POST'){
+    const b=await body(req),s=sessions.get(b.token);
+    if(!s||s.player.parked)return json(res,403,{error:'Invalid personal controller'});
+    if(room.rally?.status==='pending'){finishRally();if(room.rally.status==='pending')return json(res,409,{error:'A party vote is already open.'});}
+    const now=Date.now();
+    const actors=[...sessions.values()].filter(x=>!x.player.parked&&x.socket.connected&&x.actor?.ready&&!x.actor.dead&&now-x.lastSeen<=idleMs)
+      .map(x=>({token:x.player.token,ready:true,dead:false,zone:x.actor.zone,x:x.actor.x,y:x.actor.y}));
+    try{room.rally=proposeRally(actors,s.player.token,now,randomUUID());}
+    catch(e){return json(res,409,{error:e.message});}
+    s.lastSeen=now;
+    record({player:s.player.name,status:'vote',message:`Proposed a party rally here (${room.rally.x}, ${room.rally.y}). Needs ${room.rally.required} yes votes in 10 seconds.`});
+    return json(res,201,{rally:publicRally(s.player.token)});
+   }
+   if(p==='/rally/vote'&&req.method==='POST'){
+    const b=await body(req),s=sessions.get(b.token);
+    if(!s||s.player.parked)return json(res,403,{error:'Invalid personal controller'});
+    if(!room.rally||b.id!==room.rally.id)return json(res,409,{error:'This rally is no longer open.'});
+    try{voteRally(room.rally,s.player.token,b.yes,Date.now());}
+    catch(e){finishRally();return json(res,409,{error:e.message});}
+    s.lastSeen=Date.now();finishRally();
+    return json(res,200,{rally:publicRally(s.player.token)});
+   }
    if(p==='/state'&&req.method==='GET'){
     const s=sessions.get(url.searchParams.get('token'));if(!s)return json(res,403,{error:'Reconnect using your original phone and room link.'});
     if(s.player.parked)return json(res,409,{error:'Your character is benched. Ask the host to restore your slot; your progress is saved.'});
     s.lastSeen=Date.now();if(!s.socket.connected&&!s.socket.active)s.socket.connect();
-    return json(res,200,{...publicPlayer(s),dialogue:s.dialogue,quest:s.quest,turn:room.turn&&room.turn.deadline>Date.now()?{actor:room.turn.actor,text:room.turn.text,deadline:room.turn.deadline}:null,results:[...s.results.entries()].slice(-12).map(([id,r])=>({id,...r}))});
+    return json(res,200,{...publicPlayer(s),dialogue:s.dialogue,quest:s.quest,rally:publicRally(s.player.token),turn:room.turn&&room.turn.deadline>Date.now()?{actor:room.turn.actor,text:room.turn.text,deadline:room.turn.deadline}:null,results:[...s.results.entries()].slice(-12).map(([id,r])=>({id,...r}))});
    }
    if(p==='/tv-state'&&req.method==='GET'){
     if(url.searchParams.get('key')!==tvKey)return json(res,403,{error:'Private TV link required'});
     const origin=req.headers.origin;
     if(origin){const u=new URL(origin);if(u.protocol!=='http:'||Number(u.port)!==fracturePort||u.hostname!==(req.headers.host||'').split(':')[0])return json(res,403,{error:'Invalid TV origin'});res.setHeader('access-control-allow-origin',origin);}
-    return json(res,200,{players:roster(),events:events.slice(-8),lobby:{join:`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`,qr:qrSvg(`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`)},turn:room.turn&&room.turn.deadline>Date.now()?{actor:room.turn.actor,text:room.turn.text,deadline:room.turn.deadline}:null});
+    return json(res,200,{players:roster(),rally:publicRally(),events:events.slice(-8),lobby:{join:`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`,qr:qrSvg(`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`)},turn:room.turn&&room.turn.deadline>Date.now()?{actor:room.turn.actor,text:room.turn.text,deadline:room.turn.deadline}:null});
    }
    if(p==='/action'&&req.method==='POST'){
     const b=await body(req),s=sessions.get(b.token);if(!s)return json(res,403,{error:'Invalid personal controller'});
@@ -168,25 +237,7 @@ setInterval(poll,750);poll();
     const turn=room.turn&&room.turn.deadline>now?room.turn:null;
     if(meaningful.has(intent.verb)&&turn&&turn.participants.includes(s.player.token))return json(res,409,{error:'Your declaration is locked for this reaction window. You can still move or stop.'});
     if(intent.verb!=='cancel'&&now-s.lastAction<200)return json(res,429,{error:'Give your character a moment.'});s.lastAction=now;
-    const id=randomUUID();s.results.set(id,{status:'received',message:b.text.trim()});
-    if(s.results.size>80)s.results.delete(s.results.keys().next().value);
-    if(meaningful.has(intent.verb)){
-      s.declarations.set(id,{text:b.text.trim()});
-      if(s.declarations.size>80)s.declarations.delete(s.declarations.keys().next().value);
-    }
-    s.socket.timeout(2000).emit('chaos:action',{key:actorKey,id,intent,actorId:s.actor.id,issuedAt:Date.now()},(error,r)=>{
-      if(error||r?.error){
-        s.declarations.delete(id);
-        // A completed/cancelled result is authoritative; never downgrade a late receipt.
-        const previous=s.results.get(id);
-        // A started result came from the authenticated native actor; a late
-        // transport ACK error cannot retroactively declare that action blocked.
-        if(previous?.status==='received'){
-          const result={status:'blocked',message:r?.error||'No engine acknowledgment. Please stop before retrying.'};
-          s.results.set(id,result);record({player:s.player.name,id,...result});
-        }
-      }
-    });
+    const id=dispatch(s,intent,b.text.trim());
     return json(res,202,{id});
    }
    json(res,404,{error:'Not found'});
