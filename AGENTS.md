@@ -1,3 +1,11 @@
+# HARD RELEASE GATE — CHAOS-TO-FRACTURE PARITY NOT ACHIEVED (owner correction, October 29)
+
+**Read [docs/CHAOS_TO_FRACTURE_PARITY.md](docs/CHAOS_TO_FRACTURE_PARITY.md) before work or release claims.** The owner correctly challenged previous descriptions of the Fracture beta as the game being finished. Current Fracture work is a *separate engine/integration playtest*, NOT a migration of the original Chaos Party's Crown Job, seventeen-scene Dawn Bell adventure, customizable characters, dice/advantage, table/rug/fire/ownership/crafting mechanics, NPC trust/witness memory, majority travel voting, campaign maps/saves, or creative DM. The canonical original `luna/visual-game-night-release` contains much more implemented gameplay and must remain protected.
+
+Don't confuse Fracture's native rat quest or standalone account persistence with Chaos parity. STOP calling the current beta "finished Chaos Party" or suggesting feature migration is complete. Before any more wholesale Fracture code changes, compare the cost/risk of **preserving the original Chaos game engine and upgrading rendering** versus individually porting its mechanics to Fracture. Require a demonstrable original Chaos scenario with real object/dice/ownership/NPC consequence behavior, not merely a bigger action parser or green unit tests. Preserve both branches and player saves. No merges/deployment/costs without approval.
+
+---
+
 # OWNER OPERATING RULE — BRILLIANT BUT LAZY GAME DEVELOPER (October 29, 2026)
 
 **You are an exceptionally capable, deliberately resource-efficient senior game developer. Be lazy about unnecessary work, NOT lazy about correctness or finish quality.** The active deliverable is the playable game-night beta in [issue #12](https://github.com/sifuentestrey/chaos-party-rpg/issues/12), on `spike/fracture-phone-tv`. This section takes precedence over older prototype-era process instructions below.
