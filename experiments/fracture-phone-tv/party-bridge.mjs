@@ -85,7 +85,10 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
         s.suspending=true;
         s.socket.timeout(2500).emit('chaos:save',{key:actorKey},(error,result)=>{
           if(error||result?.error)console.error('[Chaos Party] Bench save acknowledgment failed; native disconnect save will run.');
-          s.socket.disconnect();s.actor=null;s.suspending=false;
+          // A quick host Restore may happen while the save is pending.
+          // Never disconnect a character that has already been restored.
+          if(s.player.parked){s.socket.disconnect();s.actor=null;}
+          s.suspending=false;
         });
       }else{s.socket.disconnect();s.actor=null;}
       record({player:s.player.name,status:'benched',message:'Character benched by host; progress preserved.'});
