@@ -14,6 +14,12 @@ const importLine="import {startChaosRemote} from './chaos-remote';\n";
 if(!current.includes(anchor))throw new Error('Upstream game entry point changed; review integration before editing');
 if(current.includes('startChaosRemote'))throw new Error('Already applied; use a clean upstream checkout');
 if(fs.existsSync(remoteFile))throw new Error('Existing adapter file; refusing overwrite');
+const sampleConfig=path.join(root,'server/config.example.json');
+const localConfig=path.join(root,'server/config.json');
+if(!fs.existsSync(localConfig)){
+  if(!fs.existsSync(sampleConfig))throw new Error('Upstream example server config missing; cannot boot safely');
+  fs.copyFileSync(sampleConfig,localConfig); // No credential or paid-AI setup, ignored by upstream Git.
+}
 fs.copyFileSync(path.join(dir,'chaos-remote.ts'),remoteFile);
 fs.writeFileSync(mainFile,importLine+current.replace(anchor,anchor+'\n    startChaosRemote(game);'));
 console.log('Isolated Fracture TV adapter patched; original Chaos code untouched.');
