@@ -10,6 +10,8 @@ test('adapter patch is confined to a Fracture clone and cannot overwrite twice',
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'fracture-spike-'));
  try{
   fs.mkdirSync(path.join(dir,'client/ts'),{recursive:true});
+  fs.mkdirSync(path.join(dir,'server'),{recursive:true});
+  fs.writeFileSync(path.join(dir,'server/config.example.json'),'\"config\"');
   fs.writeFileSync(path.join(dir,'package.json'),JSON.stringify({name:'fracture'}));
   fs.writeFileSync(path.join(dir,'client/ts/main.ts'),'const game = {};\n  game.onGameStart(function () {\n    // start\n  });\n');
   execFileSync(process.execPath,[patch,dir]);
@@ -17,6 +19,7 @@ test('adapter patch is confined to a Fracture clone and cannot overwrite twice',
   assert.match(contents,/startChaosRemote\(game\)/);
   assert.match(contents,/import \{startChaosRemote\}/);
   assert.ok(fs.existsSync(path.join(dir,'client/ts/chaos-remote.ts')));
+  assert.equal(fs.readFileSync(path.join(dir,'server/config.json'),'utf8'),'\"config\"');
   assert.throws(()=>execFileSync(process.execPath,[patch,dir],{stdio:'pipe'}));
  }finally{fs.rmSync(dir,{force:true,recursive:true});}
 });
