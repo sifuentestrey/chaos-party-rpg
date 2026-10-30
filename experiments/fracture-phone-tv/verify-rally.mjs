@@ -60,7 +60,7 @@ try{
  assert.equal(approved.status,200);
  assert.equal(approved.rally.status,'approved');
  const s=app.sessions.get(tokens[1]);
- const [id,r]=[...s.results.entries()].find(([id])=>!existingIds.has(id))||[];
+ const [id,r]=[...s.results.entries()].find(([id])=>!existingIds.has(id)&&s.attempts.get(id)?.verb==='go')||[];
  assert.ok(id&&r,'An approved vote must issue a distinct native actor request. Native positions '+JSON.stringify(states.map(x=>({x:x.actor.x,y:x.actor.y,zone:x.actor.zone})))+'; recent event statuses '+JSON.stringify((app.room.events||[]).slice(-4).map(e=>e.status)));
  const outcome=await finalResult(tokens[1],id);
  assert.ok(['succeeded','blocked'].includes(outcome.status),'Native Fracture, not vote, owns final outcome');
@@ -90,7 +90,7 @@ try{
  assert.equal(accepted.status,200);
  assert.equal(accepted.rally.status,'approved');
  for(let i=0;i<tokens.length;i++){
-  const newId=[...app.sessions.get(tokens[i]).results.keys()].find(id=>!ids[i].has(id));
+  const newId=[...app.sessions.get(tokens[i]).results.keys()].find(id=>!ids[i].has(id)&&app.sessions.get(tokens[i]).attempts.get(id)?.verb==='go');
   assert.ok(newId,'Each native actor must receive an independent travel command');
   const result=await finalResult(tokens[i],newId,60000);
   assert.equal(result.status,'succeeded','Native route to Glitch Woods blocked: '+result.message);
@@ -120,7 +120,7 @@ try{
  assert.equal(returnApproval.status,200);
  assert.equal(returnApproval.rally.status,'approved');
  for(let i=0;i<tokens.length;i++){
-  const newId=[...app.sessions.get(tokens[i]).results.keys()].find(id=>!returnIds[i].has(id));
+  const newId=[...app.sessions.get(tokens[i]).results.keys()].find(id=>!returnIds[i].has(id)&&app.sessions.get(tokens[i]).attempts.get(id)?.verb==='go');
   assert.ok(newId,'Return travel must dispatch one real native command per actor');
   const result=await finalResult(tokens[i],newId,60000);
   assert.equal(result.status,'succeeded','Native route back to The Refuge blocked: '+result.message);
