@@ -10,7 +10,11 @@ export function recordEnvironmentalIncident(npcs, {kind, item, actorId=null, rou
   if (npc.location!==location || !npc.tile || !canWitness(npc,item.tile)) continue;
   // A repeated snapshot or competing ignition source must not double-charge an NPC.
   if ((npc.history||[]).some(h=>h.verb===kind&&h.itemId===item.id&&h.round===round)) continue;
-  const id=actorId && String(actorId) || null;
+  // A bystander can observe a fire without knowing who originally lit it.
+  // Attribution requires this NPC's own successful eyewitness record of the
+  // exact ignition source, not omniscient access to the item's private origin.
+  const alleged=actorId&&String(actorId)||null,origin=item.ignitionOriginId;
+  const id=alleged&&origin&&(npc.history||[]).some(h=>h.verb==='ignite'&&h.success===true&&h.actorId===alleged&&h.itemId===origin)?alleged:null;
   const observation={verb:kind,actorId:id,itemId:item.id,round,success:true};
   const prior=(npc.history||[]).filter(h=>h.actorId===id);
   npc.history=[...(npc.history||[]),observation].slice(-12);
