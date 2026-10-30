@@ -32,6 +32,10 @@ test('native movement rejects a blocked far corner, occupied footprint, door and
  p.chaosControlled=false;assert.equal(engine.execute(p,command).blocked,true);p.chaosControlled=true;
  assert.equal(fs.readFileSync(file,'utf8'),before);p.x=70;assert.equal(engine.execute(p,command).blocked,true);
 });
+test('a player login record without a native world body cannot invisibly block a prop',t=>{
+ const {engine,p,world}=fixture(t);world.players.login={id:9,type:'player',x:12,y:202,hasEnteredGame:false};world.players.departed={id:10,type:'player',x:12,y:201,hasEnteredGame:true};
+ succeed(engine,p,'push tent east');assert.equal(engine.snapshot(p).scenery.find(o=>o.kind==='tent').tile.x,11);
+});
 test('native stone material, fire containment and wetness have genuine different consequences',t=>{
  const {engine,p,world,tick,file}=fixture(t);p.x=31;p.y=203;assert.equal(engine.execute(p,'ignite boulder').blocked,true);assert.equal(engine.execute(p,'pick up boulder').blocked,true);succeed(engine,p,'roll boulder east');assert.equal(world.isValidPosition(32,203),true);assert.equal(world.isValidPosition(35,203),false);
  p.x=15;p.y=204;const fire=engine.snapshot(p).scenery.find(o=>o.kind==='fire');assert.equal(fire.condition,'burning');tick();assert.equal(engine.snapshot(p).scenery.find(o=>o.id===fire.id).condition,'burning');

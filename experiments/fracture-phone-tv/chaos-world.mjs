@@ -351,12 +351,15 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   if(verb==='extinguish'&&!caps.extinguishable)return fail('That object is not burning.');
   if(verb==='repair'&&!caps.repairable)return fail(object.kind==='tree'?'A felled tree cannot be repaired.':`The ${object.name} has no supported repair to make.`);
   const world=p.getWorld(),current=sceneScenery(scene(p));
-  const occupied=t=>Object.values(world.entities||{}).concat(Object.values(world.players||{})).some(e=>e.type!=='item'&&!e.chaosSpectator&&!e.isDead&&e.x===t.x&&e.y===t.y);
+  // world.players also contains login/disconnected records without a body in
+  // world.entities. Those invisible records must never block map interactions.
+  const occupied=t=>Object.values(world.entities||{}).concat(p).some(e=>e.type!=='item'&&!e.chaosSpectator&&!e.isDead&&e.hasEnteredGame!==false&&e.x===t.x&&e.y===t.y);
   let destination=null;
   if(verb==='move'){
    if(object.condition==='burning')return fail('Put the fire out before moving it.');
-   destination=nativeDestination(p,object,attempt,{valid:t=>world.isValidPosition(t.x,t.y),sameZone:t=>sameZone(p,t),occupied,objects:current,doors:nativeDoors});
-   if(!destination)return fail('Its complete footprint cannot fit there: a wall, doorway, object or character blocks it.');
+   let obstruction='';
+   destination=nativeDestination(p,object,attempt,{valid:t=>world.isValidPosition(t.x,t.y),sameZone:t=>sameZone(p,t),occupied,objects:current,doors:nativeDoors,onBlocked:(reason,t)=>obstruction=`${reason} at ${t.x},${t.y}`});
+   if(!destination)return fail('Its complete footprint cannot fit there: '+obstruction+' blocks it.');
   }
   if(verb==='repair')for(const cell of object.clearFootprint||object.footprint||[]){
    const t={x:cell.x+object.tile.x-object.nativeTile.x,y:cell.y+object.tile.y-object.nativeTile.y};
