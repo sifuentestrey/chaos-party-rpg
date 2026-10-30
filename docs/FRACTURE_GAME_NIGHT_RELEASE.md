@@ -1,5 +1,9 @@
 # Chaos Party — local Fracture beta acceptance
 
+## AI DM native scenery execution — October 30 (partial, CI pending)
+
+Added `adjudicateEnvironment(actor, judgment)` in `experiments/fracture-phone-tv/chaos-world.mjs`, using `validateEnvironmentJudgment` to verify a true, adjacent, existing Fracture oak before entering the original Chaos D20 native-felling or fire-ignition state/persistence path. Rejects nonexistent objects, non-controlling/dead actors, absent physics adapters, and AI-suggested shortcuts to the engine-owned tree D20 DC 14. Added regression tests in `native-scenery.test.mjs` and `dm-environment-adjudication.test.mjs`. This is **not yet connected to the live LLM or live player phone/TV route**; the new entrypoint is callable by a trusted bridge. No native rocks, bushes, furnishings, or water physics are fabricated. No art created. Exact-current-head pinned native CI and real-device acceptance are pending.
+
 ## Native-art-only environmental gate — October 30, 2026 (code committed; pinned native acceptance pending)
 
 The owner forbids creating or seeding any new visual assets, props, trees, rugs, furniture, maps, or placeholder scenery. Live `createChaosWorld` now defaults to `allowSyntheticFixtures=false`: a fresh Fracture session no longer generates starter supplies, camp items/table, per-spawn trees, NPC rugs or wood-offcut loot. Synthetic object setup is explicitly enabled **only by isolated legacy unit-test fixtures**; existing separate save data is preserved rather than silently deleted. Manual registration of unverified scenery and crafting/attachment that would create unverified props are blocked, with a mutation-boundary check rejecting new item IDs. These restrictions intentionally reduce legacy crafting/object play until real native assets are verified and mapped.
