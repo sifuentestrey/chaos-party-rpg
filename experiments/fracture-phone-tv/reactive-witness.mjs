@@ -29,7 +29,7 @@ export function recordEnvironmentalIncident(npcs, {kind, item, actorId=null, rou
 export function propertyConcern(items,npc,canWitness){
  if (!npc || typeof canWitness!=='function') return null;
  const property=Object.values(items||{}).find(i=>i.ownerId===npc.id && i.tile &&
-  ['burning','broken'].includes(i.condition) && canWitness(npc,i.tile));
+  (i.condition==='burning'||(i.condition==='broken'&&i.heat>=3)) && canWitness(npc,i.tile));
  if (!property) return null;
  const itemName=String(property.name||'property').replace(/[\u0000-\u001f]/g,' ').slice(0,60);
  return property.condition==='burning'
