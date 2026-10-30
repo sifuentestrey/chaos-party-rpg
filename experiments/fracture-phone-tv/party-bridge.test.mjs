@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import fs f
 import {createOptionalDM} from './optional-dm.mjs';
 import {createPartyBridge} from './party-bridge.mjs';
 const post=(base,p,b,headers={})=>fetch(base+p,{method:'POST',headers:{'content-type':'application/json',...headers},body:JSON.stringify(b)});
-async function setup(t,options={}){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-room-test-'));const sockets=[];const app=createPartyBridge({root:dir,dataDir:dir,actorKey:'actor-key',tvKey:'tv-key',dmFactory:options.dmFactory,port:0,bind:'127.0.0.1',ioFactory:()=>{const s=new EventEmitter();s.connected=true;s.connect=()=>{s.connected=true;return s;};s.disconnect=()=>{s.connected=false;s.emit('disconnect');};s.timeout=()=>s;const emit=s.emit.bind(s);s.emit=(event,...args)=>{if(event==='chaos:state'){args[1](null,{ok:true,actor:{id:sockets.indexOf(s)+1,ready:true,x:12+sockets.indexOf(s)*2,y:12,zone:'Town',hp:100,maxHp:100,dead:false}});return true;}if(event==='chaos:save'){args[1](null,{ok:true});return true;}if(event==='chaos:action'){s.lastAction=args[0];const status=s.nextOutcome||'started';s.nextOutcome=null;emit('chaos:receipt',{id:args[0].id,status,message:status});const ackError=s.nextAckError;s.nextAckError=null;args[1](ackError?new Error('Delayed transport acknowledgment'):null,ackError?null:{ok:true});return true;}return emit(event,...args);};sockets.push(s);queueMicrotask(()=>s.emit('message',[1,sockets.length,'Test',12,12,100,100]));return s;}});await app.start();t.after(async()=>{await app.close();fs.rmSync(dir,{force:true,recursive:true});});return {app,dir,sockets,base:`http://127.0.0.1:${app.server.address().port}`};}
+async function setup(t,options={}){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-room-test-'));const sockets=[];const app=createPartyBridge({root:dir,dataDir:dir,actorKey:'actor-key',tvKey:'tv-key',dmFactory:options.dmFactory,port:0,bind:'127.0.0.1',ioFactory:()=>{const s=new EventEmitter();s.connected=true;s.connect=()=>{s.connected=true;return s;};s.disconnect=()=>{s.connected=false;s.emit('disconnect');};s.timeout=()=>s;const emit=s.emit.bind(s);s.emit=(event,...args)=>{if(event==='chaos:state'){args[1](null,{ok:true,actor:{id:sockets.indexOf(s)+1,ready:true,x:12+sockets.indexOf(s)*2,y:12,zone:options.zone||'Town',hp:100,maxHp:100,dead:false}});return true;}if(event==='chaos:save'){args[1](null,{ok:true});return true;}if(event==='chaos:action'){s.lastAction=args[0];const status=s.nextOutcome||'started';s.nextOutcome=null;emit('chaos:receipt',{id:args[0].id,status,message:status});const ackError=s.nextAckError;s.nextAckError=null;args[1](ackError?new Error('Delayed transport acknowledgment'):null,ackError?null:{ok:true});return true;}return emit(event,...args);};sockets.push(s);queueMicrotask(()=>s.emit('message',[1,sockets.length,'Test',12,12,100,100]));return s;}});await app.start();t.after(async()=>{await app.close();fs.rmSync(dir,{force:true,recursive:true});});return {app,dir,sockets,base:`http://127.0.0.1:${app.server.address().port}`};}
 test('controller script parses and credentials stay off phone',async t=>{const {app,base}=await setup(t);const html=await(await fetch(base+'/join?key='+app.room.join)).text();assert.doesNotThrow(()=>new Function(html.match(/<script>([\s\S]*)<\/script>/)[1]));assert.ok(!html.includes('actor-key'));assert.ok(!html.includes('tv-key'));assert.ok(!html.includes('password'));});
 test('two identities route to distinct actors, results stay private, and reconnect keeps credentials',async t=>{const {app,base,sockets,dir}=await setup(t);const pair=async name=>(await(await post(base,'/pair',{key:app.room.join,name})).json()).token;const a=await pair('Ada'),b=await pair('Bryn');assert.notEqual(a,b);await new Promise(r=>setTimeout(r,20));const r=await post(base,'/action',{token:a,text:'walk north 3'});assert.equal(r.status,202);const {id}=await r.json();assert.equal(sockets[0].lastAction.id,id);assert.equal(sockets[1].lastAction,undefined);const unknown=await post(base,'/action',{token:app.room.join,text:'stop'});assert.equal(unknown.status,403);const state=await(await fetch(base+'/state?token='+b)).json();assert.ok(!state.results.some(r=>r.id===id));assert.ok(!JSON.stringify(state).includes(app.room.players[0].password));const saved=JSON.parse(fs.readFileSync(path.join(dir,'room.json')));assert.equal(saved.players[0].token,a);assert.ok((fs.statSync(path.join(dir,'room.json')).mode&0o077)===0);});
 test('room pairing, origin, and TV state access are separated',async t=>{const {app,base}=await setup(t);assert.equal((await post(base,'/pair',{key:'wrong',name:'Ada'})).status,403);assert.equal((await post(base,'/pair',{key:app.room.join,name:'Ada'},{Origin:'https://evil.example'})).status,403);assert.equal((await fetch(base+'/tv-state?key='+app.room.join)).status,403);assert.equal((await fetch(base+'/host?key='+app.room.join)).status,403);assert.equal((await fetch(base+'/tv-state?key=tv-key',{headers:{Origin:'http://evil.example:8000'}})).status,403);});
@@ -210,4 +210,47 @@ test('host can configure, test and enable isolated AI without revealing credenti
  const status=await(await fetch(base+'/dm/status?key='+app.room.host)).json();assert.equal(status.state,'connected');assert.ok(!JSON.stringify(status).includes(secret));
  const html=await(await fetch(base+'/host?key='+app.room.host)).text();assert.ok(!html.includes(secret));
  const phone=await(await fetch(base+'/join?key='+app.room.join)).text();assert.ok(!phone.includes(secret));
+});
+
+test('host-only Refuge Trial persists real multi-phone evidence, not phone text or AI claims',async t=>{
+ const {app,base,sockets,dir}=await setup(t,{zone:'The Refuge'});
+ assert.equal((await post(base,'/host/adventure',{key:'wrong',action:'start'})).status,403);
+ assert.equal((await post(base,'/host/adventure',{key:app.room.host,action:'start'})).status,409);
+ const pair=async name=>(await(await post(base,'/pair',{key:app.room.join,name})).json()).token;
+ const ada=await pair('Ada'),bryn=await pair('Bryn');
+ await new Promise(r=>setTimeout(r,40));
+ // Mock actor refresh is authoritative and reports The Refuge, not a client field.
+ assert.equal((await post(base,'/host/adventure',{key:app.room.host,action:'start'})).status,201);
+ const started=await(await fetch(base+'/state?token='+ada)).json();
+ assert.equal(started.adventure.status,'active');
+ assert.equal(started.adventure.steps.filter(s=>s.done).length,0);
+ const talkRequest=await post(base,'/action',{token:ada,text:'talk to guard'});
+ assert.equal(talkRequest.status,202);
+ const {id:talkId}=await talkRequest.json();
+ assert.equal((await(await fetch(base+'/state?token='+ada)).json()).adventure.steps[0].done,false);
+ sockets[0].emit('chaos:receipt',{id:talkId,status:'succeeded',message:'Spoke to guard.'});
+ assert.equal(app.room.adventure.npc.player,'Ada');
+ app.room.turn.deadline=Date.now()-1;
+ const attackRequest=await post(base,'/action',{token:bryn,text:'attack rat'});
+ assert.equal(attackRequest.status,202);
+ const {id:attackId}=await attackRequest.json();
+ sockets[1].emit('chaos:receipt',{id:attackId,status:'started',message:'Hit',combat:{before:29,after:10,dead:false}});
+ assert.equal(app.room.adventure.proof,null);
+ sockets[1].emit('chaos:receipt',{id:attackId,status:'started',message:'Rat defeated',combat:{before:10,after:0,dead:true}});
+ assert.equal(app.room.adventure.proof.route,'combat');
+ sockets[1].emit('chaos:receipt',{id:attackId,status:'started',message:'duplicate',combat:{before:10,after:0,dead:true}});
+ assert.equal(app.room.adventure.proof.player,'Bryn');
+ sockets[0].emit('chaos:position',{ready:true,dead:false,zone:'Glitch Woods'});
+ assert.equal(app.room.adventure.woods.player,'Ada');
+ sockets[1].emit('chaos:position',{ready:true,dead:false,zone:'The Refuge'});
+ assert.equal(app.room.adventure.status,'completed');
+ const phone=await(await fetch(base+'/state?token='+bryn)).json();
+ const tv=await(await fetch(base+'/tv-state?key=tv-key')).json();
+ assert.equal(phone.adventure.status,'completed');
+ assert.equal(tv.adventure.status,'completed');
+ assert.equal(phone.adventure.steps.filter(s=>s.done).length,4);
+ const saved=JSON.parse(fs.readFileSync(path.join(dir,'room.json'),'utf8'));
+ assert.equal(saved.adventure.status,'completed');
+ assert.equal(saved.adventure.proof.route,'combat');
+ assert.equal((await post(base,'/host/adventure',{key:app.room.host,action:'start'})).status,409);
 });
