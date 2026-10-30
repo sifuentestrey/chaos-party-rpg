@@ -12,7 +12,7 @@ import {parseIntent} from './action-contract.ts';
 import {proposeRally,proposeExpedition,expeditionEligible,voteRally,settleRally,rallyView} from './party-rally.mjs';
 import {preferredLanIp} from './lan-address.mjs';
 import {ROLES,validRole} from './party-roles.mjs';
-import {startAdventure,replayAdventure,receiptEvidence,zoneEvidence,advanceAdventure,adventureView} from './party-adventure.mjs';
+import {startAdventure,replayAdventure,receiptEvidence,zoneEvidence,advanceAdventure,adventureView,proposeTrialChoice,voteTrialChoice,settleTrialChoice,trialChoiceView} from './party-adventure.mjs';
 import {stagedAction,isReaction,publicDeclarations,REACTION_MS} from './party-declaration.mjs';
 const token=()=>randomBytes(24).toString('hex');
 const lanIp=()=>preferredLanIp();
@@ -27,14 +27,14 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
  const dm=dmFactory({dataDir});
  const save=path.join(dataDir,'room.json');
  let room=fs.existsSync(save)?JSON.parse(fs.readFileSync(save,'utf8')):{host:token(),join:token(),players:[]};
- const persist=()=>{const tmp=save+'.tmp';fs.writeFileSync(tmp,JSON.stringify(room),{mode:0o600});fs.renameSync(tmp,save);};persist();
+ const persist=()=>{const tmp=save+'.tmp';fs.writeFileSync(tmp,JSON.stringify({...room,turn:undefined,rally:undefined,choiceVote:undefined}),{mode:0o600});fs.renameSync(tmp,save);};persist();
  // Combat/notification events are not credentials or character saves. Write their
  // room log at most twice per second; identity and host slot changes stay durable
  // immediately. STOP/close flush the latest events before shutting down.
  let pendingEventFlush=null;
  const scheduleEventFlush=()=>{if(pendingEventFlush)return;pendingEventFlush=setTimeout(()=>{pendingEventFlush=null;persist();},500);pendingEventFlush.unref?.();};
  const flushEvents=()=>{if(pendingEventFlush){clearTimeout(pendingEventFlush);pendingEventFlush=null;}persist();};
- const sessions=new Map(),pending=new Map(),events=room.events||[];room.turn=null;room.rally=null;persist();
+ const sessions=new Map(),pending=new Map(),events=room.events||[];room.turn=null;room.rally=null;room.choiceVote=null;persist();
  const meaningful=new Set(['creative','attack','talk','quest','open','loot']);
  const liveCount=()=>room.players.filter(p=>!p.parked).length;
  function record(event){events.push({...event,at:Date.now()});if(events.length>80)events.shift();room.events=events;scheduleEventFlush();}
@@ -139,6 +139,15 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
   });
   return id;
  }
+ const publicChoice=(token=null)=>{const view=trialChoiceView(room.choiceVote,token,Date.now());if(view)view.proposer=sessions.get(view.proposer)?.player.name||'Party member';return view;};
+ function finishChoice(){
+  const vote=room.choiceVote;if(!vote)return;
+  const lead=sessions.get(vote.proposer)?.player.name||'Party member';
+  const result=settleTrialChoice(vote,room.adventure,Date.now(),lead);
+  if(!result)return;
+  if(result.approved){persist();record({player:'Adventure',status:'approved',message:`The party chose ${result.route==='combat'?'a real monster fight':'original Chaos crafting'} for this Refuge Trial. Only confirmed engine outcomes count.`});}
+  else record({player:'Adventure',status:'declined',message:'The story-choice vote did not approve a valid route; the existing trial remains unchanged.'});
+ }
  const publicRally=(token=null)=>{const view=rallyView(room.rally,token,Date.now());if(view)view.proposer=sessions.get(view.proposer)?.player.name||'Party member';return view;};
  function finishRally(){
   const rally=room.rally;if(!rally)return;
@@ -180,7 +189,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
   }
  }});}
  room.players.forEach(connect);
- const polling=setInterval(()=>{finishRally();for(const s of sessions.values()){
+ const polling=setInterval(()=>{finishRally();finishChoice();for(const s of sessions.values()){
    if(s.player.parked)continue;
    if(s.socket.connected&&s.actor&&Date.now()-s.lastSeen>idleMs&&!s.suspending){s.suspending=true;s.socket.timeout(2000).emit('chaos:save',{key:actorKey},()=>{if(Date.now()-s.lastSeen>idleMs)s.socket.disconnect();s.suspending=false;});}
    else refresh(s);
@@ -222,7 +231,7 @@ refreshDM();setInterval(refreshDM,3000);
       const next=replayAdventure(room.adventure,room.adventureHistory||[],Date.now(),randomUUID());
       room.adventure=next.adventure;room.adventureHistory=next.history;
      }else room.adventure=startAdventure(Date.now(),1,randomUUID());
-     persist();
+     room.choiceVote=null;persist();
     }catch(error){room.adventure=previous;room.adventureHistory=previousHistory;return json(res,409,{error:'Could not safely start the trial: '+error.message});}
     record({player:'Adventure',status:'started',message:'The Refuge Trial run '+room.adventure.run+' began. Talk to a local, defeat a monster OR craft, visit Glitch Woods, then return.'});
     return json(res,201,{adventure:adventureView(room.adventure)});
@@ -257,8 +266,8 @@ refreshDM();setInterval(refreshDM,3000);
    }
    if(p==='/join'&&req.method==='GET'){
     if(url.searchParams.get('key')!==room.join)return json(res,403,{error:'Valid room link required'});
-    res.writeHead(200,{'content-type':'text/html','cache-control':'no-store'});return res.end(page('Chaos Party controller',`<h1>Chaos Party</h1><section id="pair"><p>Your own character in our shared adventure.</p><input id="name" maxlength="18" placeholder="Character name"><select id="color"><option>Amber</option><option>Blue</option><option>Green</option><option>Rose</option></select><label for="role">Character class</label><select id="role">${Object.entries(ROLES).map(([id,r])=>`<option value="${id}">${r.name}</option>`).join('')}</select><small>Original Chaos classes are saved with your character. Rogue gets +3 to theft, Knight +3 to breaking, and Bard/Healer +3 to social amends checks. Lucky-ish rerolls a 1–3 on Chaos object D20 checks. Other class skills and native Fracture combat stats are not yet migrated. Color tints your TV sprite.</small><button id="join">Join adventure</button></section><section id="play" hidden><h2 id="who"></h2><p id="stats"></p><form id="form"><input id="text" maxlength="180" placeholder="What do you do?" required autocomplete="off"><button>Act</button></form><small>For a real 10-second D20 reaction window, type <b>declare make green hat from cloth strip and wood splinter</b> or <b>declare steal guard's rug</b>. Other nearby players can type <b>help Ada</b> or <b>hinder Ada</b> before the roll. Ordinary actions are immediate.</small><p id="declarations"></p><button id="stop">Stop my character</button><button id="revive" hidden>Respawn at checkpoint</button><p id="turn"></p><p id="dm-story"></p><p id="adventure"></p><details><summary>Gather the party (optional vote)</summary><p id="rally">No group rally proposed.</p><button id="propose-rally" type="button">Propose gathering at my position</button><button id="travel-woods" type="button">Vote to travel to Glitch Woods</button><button id="travel-refuge" type="button">Vote to return to The Refuge</button><div class="row"><button id="rally-yes" type="button" hidden>Vote yes</button><button id="rally-no" type="button" hidden>Vote no</button></div><small>Strict-majority votes approve a local rally or bounded travel along pinned Fracture map waypoints. Native collision, pathing, zone transitions and STOP remain authoritative. No teleport, guaranteed arrival or original Dawn Bell campaign travel.</small></details><details><summary>Gear and quest</summary><p id="inventory"></p><p id="quest"></p></details><details><summary>World and people</summary><p id="world"></p><p id="memory"></p></details><div class="row"><button data-action="walk north 3">↑</button></div><div class="row"><button data-action="walk west 3">←</button><button data-action="look around">Look</button><button data-action="walk east 3">→</button></div><div class="row"><button data-action="walk south 3">↓</button></div><small>Try push camp table east, light camp table, put out camp table, or repair camp table. Look for owned rugs. NPCs remember what they witness. If an NPC refuses a job after theft, try apologize to guard (D20 social check, 30s between attempts) or give a gift. You can also help a nearby friend with their next Chaos D20 check (crafting, theft, objects or NPC amends). Help lasts 15 seconds and never changes native Fracture combat.</small></section><div class="card" id="log" role="status" aria-live="polite">Connecting…</div><script>
-const room=${JSON.stringify(room.join)},storage='chaos-party:'+location.host+':'+room;let auth=localStorage.getItem(storage),pending=null,activeRally=null;const recovery=new URLSearchParams(location.hash.slice(1)).get('recover');if(recovery){auth=recovery;localStorage.setItem(storage,auth);history.replaceState(null,'',location.pathname+location.search);}
+    res.writeHead(200,{'content-type':'text/html','cache-control':'no-store'});return res.end(page('Chaos Party controller',`<h1>Chaos Party</h1><section id="pair"><p>Your own character in our shared adventure.</p><input id="name" maxlength="18" placeholder="Character name"><select id="color"><option>Amber</option><option>Blue</option><option>Green</option><option>Rose</option></select><label for="role">Character class</label><select id="role">${Object.entries(ROLES).map(([id,r])=>`<option value="${id}">${r.name}</option>`).join('')}</select><small>Original Chaos classes are saved with your character. Rogue gets +3 to theft, Knight +3 to breaking, and Bard/Healer +3 to social amends checks. Lucky-ish rerolls a 1–3 on Chaos object D20 checks. Other class skills and native Fracture combat stats are not yet migrated. Color tints your TV sprite.</small><button id="join">Join adventure</button></section><section id="play" hidden><h2 id="who"></h2><p id="stats"></p><form id="form"><input id="text" maxlength="180" placeholder="What do you do?" required autocomplete="off"><button>Act</button></form><small>For a real 10-second D20 reaction window, type <b>declare make green hat from cloth strip and wood splinter</b> or <b>declare steal guard's rug</b>. Other nearby players can type <b>help Ada</b> or <b>hinder Ada</b> before the roll. Ordinary actions are immediate.</small><p id="declarations"></p><button id="stop">Stop my character</button><button id="revive" hidden>Respawn at checkpoint</button><p id="turn"></p><p id="dm-story"></p><p id="adventure"></p><details><summary>Choose the trial objective (optional majority vote)</summary><p id="trial-choice">Meet a local NPC to unlock the choice.</p><div class="row"><button id="trial-fight" type="button">Choose fight</button><button id="trial-craft" type="button">Choose craft</button></div><div class="row"><button id="trial-yes" type="button" hidden>Vote yes</button><button id="trial-no" type="button" hidden>Vote no</button></div><small>After speaking to an NPC, the group can commit to a fight or crafting objective. A strict majority locks the choice for this trial only. No vote means either route remains valid; this never changes Fracture's native combat, items or rewards.</small></details><details><summary>Gather the party (optional vote)</summary><p id="rally">No group rally proposed.</p><button id="propose-rally" type="button">Propose gathering at my position</button><button id="travel-woods" type="button">Vote to travel to Glitch Woods</button><button id="travel-refuge" type="button">Vote to return to The Refuge</button><div class="row"><button id="rally-yes" type="button" hidden>Vote yes</button><button id="rally-no" type="button" hidden>Vote no</button></div><small>Strict-majority votes approve a local rally or bounded travel along pinned Fracture map waypoints. Native collision, pathing, zone transitions and STOP remain authoritative. No teleport, guaranteed arrival or original Dawn Bell campaign travel.</small></details><details><summary>Gear and quest</summary><p id="inventory"></p><p id="quest"></p></details><details><summary>World and people</summary><p id="world"></p><p id="memory"></p></details><div class="row"><button data-action="walk north 3">↑</button></div><div class="row"><button data-action="walk west 3">←</button><button data-action="look around">Look</button><button data-action="walk east 3">→</button></div><div class="row"><button data-action="walk south 3">↓</button></div><small>Try push camp table east, light camp table, put out camp table, or repair camp table. Look for owned rugs. NPCs remember what they witness. If an NPC refuses a job after theft, try apologize to guard (D20 social check, 30s between attempts) or give a gift. You can also help a nearby friend with their next Chaos D20 check (crafting, theft, objects or NPC amends). Help lasts 15 seconds and never changes native Fracture combat.</small></section><div class="card" id="log" role="status" aria-live="polite">Connecting…</div><script>
+const room=${JSON.stringify(room.join)},storage='chaos-party:'+location.host+':'+room;let auth=localStorage.getItem(storage),pending=null,activeRally=null,activeChoice=null;const recovery=new URLSearchParams(location.hash.slice(1)).get('recover');if(recovery){auth=recovery;localStorage.setItem(storage,auth);history.replaceState(null,'',location.pathname+location.search);}
 const el=id=>document.getElementById(id),log=s=>el('log').textContent=s;el('stop').after(el('log'));
 async function api(path,data){const r=await fetch(path,{method:data?'POST':'GET',headers:data?{'content-type':'application/json'}:{},body:data?JSON.stringify(data):undefined});const v=await r.json();if(!r.ok)throw Error(v.error);return v;}
 el('join').onclick=async()=>{try{const v=await api('/pair',{key:room,name:el('name').value,color:el('color').value,role:el('role').value});auth=v.token;localStorage.setItem(storage,auth);await poll();}catch(e){log(e.message);}};
@@ -268,8 +277,15 @@ el('propose-rally').onclick=async()=>{try{const r=await api('/rally/propose',{to
 for(const [id,destination] of [['travel-woods','woods'],['travel-refuge','refuge']])el(id).onclick=async()=>{try{const r=await api('/expedition/propose',{token:auth,destination});activeRally=r.rally;log('Travel vote opened.');await poll();}catch(e){log(e.message);}};
 async function castRally(yes){if(!activeRally)return;try{const r=await api('/rally/vote',{token:auth,id:activeRally.id,yes});activeRally=r.rally;log('Vote locked.');await poll();}catch(e){log(e.message);}}
 el('rally-yes').onclick=()=>castRally(true);el('rally-no').onclick=()=>castRally(false);
+for(const [id,route] of [['trial-fight','combat'],['trial-craft','craft']])el(id).onclick=async()=>{try{const r=await api('/adventure/choice/propose',{token:auth,route});activeChoice=r.choiceVote;log('Story vote opened.');await poll();}catch(e){log(e.message);}};
+async function castChoice(yes){if(!activeChoice)return;try{const r=await api('/adventure/choice/vote',{token:auth,id:activeChoice.id,yes});activeChoice=r.choiceVote;log('Story vote locked.');await poll();}catch(e){log(e.message);}}
+el('trial-yes').onclick=()=>castChoice(true);el('trial-no').onclick=()=>castChoice(false);
 document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>act(b.dataset.action));
 async function poll(){if(!auth){log('Choose your name to join.');return;}try{const v=await api('/state?token='+encodeURIComponent(auth));el('pair').hidden=true;el('play').hidden=false;el('who').textContent=v.name+' · '+(v.role?({rogue:'Rogue',bard:'Bard',wizard:'Wizard',knight:'Knight',healer:'Healer',wildcard:'Wildcard'}[v.role]||'Unassigned'):'Unassigned');el('stats').textContent=v.actor?(v.actor.dead?'Knocked out — respawn to continue.':'HP '+v.actor.hp+'/'+v.actor.maxHp+' · '+(v.actor.zone||'')+' · position '+v.actor.x+', '+v.actor.y):(v.error||'Connecting to Fracture…');el('revive').hidden=!v.actor?.dead;el('inventory').textContent=v.actor?'Gear: '+v.actor.weapon+' / '+v.actor.armor+' · Bag: '+[...(v.actor.inventory||[]),...(v.actor.chaos?.bag||[])].map(i=>i.name+(i.id?' ['+i.id+']':'')+(i.equipped?' (worn)':'')).join(', ')+(v.actor.chaos?.assistedBy?' · D20 help: '+v.actor.chaos.assistedBy:'')+(v.actor.chaos?.hinderedBy?' · D20 interference: '+v.actor.chaos.hinderedBy:'')+(v.actor.chaos?.error?' · '+v.actor.chaos.error:''):'';el('dm-story').textContent=v.story?'DM ('+v.story.mode+'): '+v.story.text:v.actor?.chaos?.story?.length?'DM memory: '+v.actor.chaos.story.at(-1).fact:'';const adventure=v.adventure;el('adventure').textContent=adventure?'THE REFUGE TRIAL ('+adventure.status+'): '+adventure.steps.map(s=>(s.done?'✓ ':'○ ')+s.label).join(' · '):'Optional party adventure: ask the host to start The Refuge Trial.';el('world').textContent=(v.actor?.chaos?.ground||[]).map(i=>i.name+' ['+i.id+'] · '+i.condition+(i.owner?' · belongs to '+i.owner:'')).join(' | ');el('memory').textContent=(v.actor?.chaos?.npcs||[]).map(n=>n.name+' ['+n.id+'] · trust '+n.trust).join(' | ');el('quest').textContent=v.quest?'Quest: '+(v.quest.description||'Adventure complete')+' '+(v.quest.progress!==undefined?v.quest.progress+'/'+v.quest.count:''):'Ask a nearby NPC for a quest, or explore freely.';el('turn').textContent=v.turn?'Action window: '+Math.max(0,Math.ceil((v.turn.deadline-Date.now())/1000))+'s · '+v.turn.actor+' acted: '+v.turn.text:'';el('declarations').textContent=(v.declarations||[]).map(d=>d.player+' announces '+d.text+' · '+Math.max(0,Math.ceil((d.dueAt-Date.now())/1000))+'s to help/hinder').join(' | ');
+activeChoice=v.choiceVote;
+el('trial-choice').textContent=adventure?.choice?'The party committed to '+(adventure.choice==='combat'?'defeating a real monster':'crafting a real item')+'.':v.choiceVote? v.choiceVote.proposer+' proposes '+(v.choiceVote.route==='combat'?'a monster fight':'crafting')+' ('+v.choiceVote.yes+'/'+v.choiceVote.required+' yes, '+v.choiceVote.status+')':'No story choice is locked; either route counts.';
+el('trial-fight').hidden=el('trial-craft').hidden=!adventure||adventure.status!=='active'||!adventure.steps[0]?.done||adventure.steps[1]?.done||!!adventure.choice||v.choiceVote?.status==='pending';
+el('trial-yes').hidden=el('trial-no').hidden=!v.choiceVote||v.choiceVote.status!=='pending'||!v.choiceVote.eligible||v.choiceVote.voted;
 activeRally=v.rally;
 el('rally').textContent=v.rally? v.rally.proposer+' proposes '+(v.rally.kind==='expedition'?'travel to '+v.rally.destination:'gathering at '+v.rally.x+', '+v.rally.y)+' ('+v.rally.yes+'/'+v.rally.required+' yes needed, '+v.rally.status+(v.rally.status==='pending'?' · '+Math.max(0,Math.ceil((v.rally.deadline-Date.now())/1000))+'s left':'')+')':'No group vote proposed.';
 el('propose-rally').hidden=v.rally?.status==='pending';
@@ -292,6 +308,28 @@ setInterval(poll,750);poll();
     if(b.role!==undefined&&!validRole(b.role))return json(res,400,{error:'Choose a valid Chaos character class.'});
     const player={name,role:validRole(b.role)?b.role:null,perk:validRole(b.role)?'lucky':null,color:['Amber','Blue','Green','Rose'].includes(b.color)?b.color:'Amber',token:token(),account:name.replace(/[^a-zA-Z0-9]/g,'').slice(0,8)+'_'+randomBytes(3).toString('hex'),password:token()};
     room.players.push(player);persist();const session=connect(player);session.lastSeen=Date.now();session.socket.connect();return json(res,201,{token:player.token});
+   }
+   if(p==='/adventure/choice/propose'&&req.method==='POST'){
+    const b=await body(req),s=sessions.get(b.token);
+    if(!s||s.player.parked)return json(res,403,{error:'Invalid personal controller'});
+    finishChoice();
+    if(room.choiceVote?.status==='pending')return json(res,409,{error:'A story-choice vote is already open.'});
+    const now=Date.now();
+    const actors=[...sessions.values()].filter(x=>!x.player.parked&&x.socket.connected&&x.actor?.ready&&!x.actor.dead&&now-x.lastSeen<=idleMs)
+     .map(x=>({token:x.player.token,ready:true,dead:false,zone:x.actor.zone,x:x.actor.x,y:x.actor.y}));
+    try{room.choiceVote=proposeTrialChoice(room.adventure,actors,s.player.token,b.route,now,randomUUID());}
+    catch(e){return json(res,409,{error:e.message});}
+    s.lastSeen=now;record({player:s.player.name,status:'vote',message:`Proposed a ${b.route==='combat'?'fight':'craft'} objective for the current trial. ${room.choiceVote.required} yes votes needed.`});
+    return json(res,201,{choiceVote:publicChoice(s.player.token)});
+   }
+   if(p==='/adventure/choice/vote'&&req.method==='POST'){
+    const b=await body(req),s=sessions.get(b.token);
+    if(!s||s.player.parked)return json(res,403,{error:'Invalid personal controller'});
+    if(!room.choiceVote||room.choiceVote.id!==b.id)return json(res,409,{error:'This story-choice vote is no longer open.'});
+    try{voteTrialChoice(room.choiceVote,s.player.token,b.yes,Date.now());}
+    catch(e){finishChoice();return json(res,409,{error:e.message});}
+    s.lastSeen=Date.now();finishChoice();
+    return json(res,200,{choiceVote:publicChoice(s.player.token),adventure:adventureView(room.adventure)});
    }
    if((p==='/rally/propose'||p==='/expedition/propose')&&req.method==='POST'){
     const b=await body(req),s=sessions.get(b.token);
@@ -321,13 +359,13 @@ setInterval(poll,750);poll();
     const s=sessions.get(url.searchParams.get('token'));if(!s)return json(res,403,{error:'Reconnect using your original phone and room link.'});
     if(s.player.parked)return json(res,409,{error:'Your character is benched. Ask the host to restore your slot; your progress is saved.'});
     s.lastSeen=Date.now();if(!s.socket.connected&&!s.socket.active)s.socket.connect();
-    return json(res,200,{...publicPlayer(s),dialogue:s.dialogue,quest:s.quest,adventure:adventureView(room.adventure),rally:publicRally(s.player.token),declarations:publicDeclarations(pending),turn:room.turn&&room.turn.deadline>Date.now()?{actor:room.turn.actor,text:room.turn.text,deadline:room.turn.deadline}:null,results:[...s.results.entries()].slice(-12).map(([id,r])=>({id,...r}))});
+    return json(res,200,{...publicPlayer(s),dialogue:s.dialogue,quest:s.quest,adventure:adventureView(room.adventure),choiceVote:publicChoice(s.player.token),rally:publicRally(s.player.token),declarations:publicDeclarations(pending),turn:room.turn&&room.turn.deadline>Date.now()?{actor:room.turn.actor,text:room.turn.text,deadline:room.turn.deadline}:null,results:[...s.results.entries()].slice(-12).map(([id,r])=>({id,...r}))});
    }
    if(p==='/tv-state'&&req.method==='GET'){
     if(url.searchParams.get('key')!==tvKey)return json(res,403,{error:'Private TV link required'});
     const origin=req.headers.origin;
     if(origin){const u=new URL(origin);if(u.protocol!=='http:'||Number(u.port)!==fracturePort||u.hostname!==(req.headers.host||'').split(':')[0])return json(res,403,{error:'Invalid TV origin'});res.setHeader('access-control-allow-origin',origin);}
-    return json(res,200,{players:roster(),adventure:adventureView(room.adventure),rally:publicRally(),declarations:publicDeclarations(pending),events:events.slice(-8),lobby:{join:`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`,qr:qrSvg(`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`)},turn:room.turn&&room.turn.deadline>Date.now()?{actor:room.turn.actor,text:room.turn.text,deadline:room.turn.deadline}:null});
+    return json(res,200,{players:roster(),adventure:adventureView(room.adventure),choiceVote:publicChoice(),rally:publicRally(),declarations:publicDeclarations(pending),events:events.slice(-8),lobby:{join:`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`,qr:qrSvg(`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`)},turn:room.turn&&room.turn.deadline>Date.now()?{actor:room.turn.actor,text:room.turn.text,deadline:room.turn.deadline}:null});
    }
    if(p==='/action'&&req.method==='POST'){
     const b=await body(req),s=sessions.get(b.token);if(!s)return json(res,403,{error:'Invalid personal controller'});

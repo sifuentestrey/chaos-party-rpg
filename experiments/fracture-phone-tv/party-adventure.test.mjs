@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {startAdventure,replayAdventure,receiptEvidence,zoneEvidence,advanceAdventure,adventureView} from './party-adventure.mjs';
+import {startAdventure,replayAdventure,receiptEvidence,zoneEvidence,advanceAdventure,adventureView,proposeTrialChoice,voteTrialChoice,settleTrialChoice,trialChoiceView} from './party-adventure.mjs';
 const actor=(zone='The Refuge')=>({ready:true,dead:false,zone});
 const receipt=(id,status,extra={})=>({id,status,...extra});
 const talk=id=>receiptEvidence(receipt(id,'succeeded'),{verb:'talk'},actor(),'Ada');
@@ -118,4 +118,59 @@ test('native action receipts from an earlier run never complete a newly started 
  assert.equal(receiptEvidence(r,current,actor(),'Ada',next.instanceId).kind,'npc');
  assert.ok(advanceAdventure(next,receiptEvidence(r,current,actor(),'Ada',next.instanceId),220));
  assert.equal(next.npc.player,'Ada');
+});
+
+const voters=()=>[
+ {token:'ada',ready:true,dead:false,zone:'The Refuge',x:41,y:195},
+ {token:'bryn',ready:true,dead:false,zone:'The Refuge',x:42,y:195},
+ {token:'cal',ready:true,dead:false,zone:'The Refuge',x:43,y:195}
+];
+test('original majority vote semantics choose a persistent, real-outcome-only trial branch',()=>{
+ const a=startAdventure(100,1,'11111111-1111-4111-8111-111111111111');
+ assert.throws(()=>proposeTrialChoice(a,voters(),'ada','craft',110,'vote1'),/Meet a local/);
+ advanceAdventure(a,talk('t1'),120);
+ assert.throws(()=>proposeTrialChoice(a,voters(),'ada','fake',130,'vote1'),/fight or craft/);
+ const vote=proposeTrialChoice(a,voters(),'ada','craft',140,'vote1');
+ assert.equal(vote.required,2);assert.equal(vote.status,'pending');
+ assert.equal(trialChoiceView(vote,'bryn',141).voted,false);
+ assert.throws(()=>voteTrialChoice(vote,'intruder',true,142),/electorate/);
+ assert.throws(()=>voteTrialChoice(vote,'ada',true,142),/already locked/);
+ voteTrialChoice(vote,'bryn',true,143);
+ assert.equal(settleTrialChoice(vote,a,144,'Ada').approved,true);
+ assert.equal(settleTrialChoice(vote,a,145,'Ada'),null);
+ assert.equal(a.choice.route,'craft');
+ assert.equal(advanceAdventure(a,kill('k1'),150),null,'a real kill cannot silently bypass a voted craft route');
+ assert.equal(a.proof,null);
+ assert.ok(advanceAdventure(a,craft('c1'),160));
+ assert.equal(adventureView(a).choice,'craft');
+ assert.ok(advanceAdventure(a,zoneEvidence(actor('Glitch Woods'),'Ada','ada'),170));
+ assert.ok(advanceAdventure(a,zoneEvidence(actor('The Refuge'),'Ada','ada'),180));
+ const saved=JSON.parse(JSON.stringify(a));assert.equal(saved.choice.route,'craft');
+ const next=replayAdventure(saved,[],200,'22222222-2222-4222-8222-222222222222');
+ assert.equal(next.history[0].choice,'craft');assert.equal(next.adventure.choice,null);
+});
+test('story vote cannot change a completed proof, expired vote, stale run, or another party position',()=>{
+ const a=startAdventure(100,1,'11111111-1111-4111-8111-111111111111');
+ advanceAdventure(a,talk('t1'),110);
+ assert.throws(()=>proposeTrialChoice(a,[voters()[0]],'ada','combat',120,'v1'),/two nearby/);
+ assert.throws(()=>proposeTrialChoice(a,voters().map(v=>({...v,zone:'Glitch Woods'})),'ada','combat',120,'v1'),/The Refuge/);
+ assert.throws(()=>proposeTrialChoice(a,[voters()[0],{...voters()[1],x:100}],'ada','combat',120,'v1'),/twelve tiles/);
+ const rejected=proposeTrialChoice(a,voters(),'ada','combat',130,'v1');
+ voteTrialChoice(rejected,'bryn',false,131);voteTrialChoice(rejected,'cal',false,132);
+ assert.equal(settleTrialChoice(rejected,a,133,'Ada').approved,false);assert.equal(a.choice,null);
+ const expired=proposeTrialChoice(a,voters(),'ada','craft',200,'v2');
+ assert.equal(settleTrialChoice(expired,a,10201,'Ada').approved,false);assert.equal(a.choice,null);
+ const stale=proposeTrialChoice(a,voters(),'ada','combat',11000,'v3');
+ voteTrialChoice(stale,'bryn',true,11001);
+ advanceAdventure(a,craft('c1'),11002);
+ assert.equal(settleTrialChoice(stale,a,11003,'Ada').approved,false);
+ assert.equal(a.choice,null);assert.equal(a.proof.route,'craft');
+ assert.throws(()=>proposeTrialChoice(a,voters(),'ada','combat',11004,'v4'),/completed or chosen proof/);
+ const next=startAdventure(12000,2,'22222222-2222-4222-8222-222222222222');
+ advanceAdventure(next,talk('t2'),12001);
+ const cross=proposeTrialChoice(next,voters(),'ada','craft',12002,'v5');
+ voteTrialChoice(cross,'bryn',true,12003);
+ const replay=startAdventure(12004,3,'33333333-3333-4333-8333-333333333333');
+ advanceAdventure(replay,talk('t3'),12005);
+ assert.equal(settleTrialChoice(cross,replay,12006,'Ada').approved,false);assert.equal(replay.choice,null);
 });

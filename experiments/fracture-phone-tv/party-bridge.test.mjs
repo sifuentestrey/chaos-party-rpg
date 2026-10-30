@@ -472,3 +472,32 @@ test('an unfinished approved expedition cannot be silently replaced by another v
  app.room.rally.resolvedAt=Date.now()-45001;
  assert.equal((await post(base,'/rally/propose',{token:tokens[0]})).status,201,'stale travel does not lock future votes');
 });
+
+test('two real phone identities can commit a durable trial objective vote, without authorizing native outcomes',async t=>{
+ const {app,base,dir}=await setup(t,{zone:'The Refuge'});
+ const tokens=[];for(const name of ['Ada','Bryn','Cal'])tokens.push((await(await post(base,'/pair',{key:app.room.join,name})).json()).token);
+ await new Promise(r=>setTimeout(r,30));
+ assert.equal((await post(base,'/adventure/choice/propose',{token:tokens[0],route:'craft'})).status,409,'trial must be started');
+ assert.equal((await post(base,'/host/adventure',{key:app.room.host,action:'start'})).status,201);
+ assert.equal((await post(base,'/adventure/choice/propose',{token:tokens[0],route:'craft'})).status,409,'must speak to NPC first');
+ // A server-confirmed native NPC receipt, not player text, unlocks the decision.
+ const s=app.sessions.get(tokens[0]);s.results.set('talk1',{status:'received'});s.attempts.set('talk1',{verb:'talk',text:'talk to guard',adventureInstance:app.room.adventure.instanceId});
+ s.socket.emit('chaos:receipt',{id:'talk1',status:'succeeded',message:'Talked to native guard',actor:s.actor});
+ assert.equal(app.room.adventure.npc.player,'Ada');
+ assert.equal((await post(base,'/adventure/choice/propose',{token:tokens[0],route:'fake'})).status,409);
+ const proposed=await post(base,'/adventure/choice/propose',{token:tokens[0],route:'craft'});assert.equal(proposed.status,201);
+ const {choiceVote}=await proposed.json();assert.equal(choiceVote.required,2);
+ assert.equal((await post(base,'/adventure/choice/propose',{token:tokens[1],route:'combat'})).status,409);
+ assert.equal((await post(base,'/adventure/choice/vote',{token:app.room.join,id:choiceVote.id,yes:true})).status,403);
+ assert.equal((await post(base,'/adventure/choice/vote',{token:tokens[0],id:choiceVote.id,yes:true})).status,409);
+ const tv=await(await fetch(base+'/tv-state?key=tv-key')).json();
+ assert.equal(tv.choiceVote.route,'craft');assert.equal(JSON.stringify(tv.choiceVote).includes(tokens[0]),false);
+ const second=await post(base,'/adventure/choice/vote',{token:tokens[1],id:choiceVote.id,yes:true});
+ assert.equal(second.status,200);assert.equal((await second.json()).adventure.choice,'craft');
+ assert.equal((await post(base,'/adventure/choice/vote',{token:tokens[2],id:choiceVote.id,yes:true})).status,409);
+ assert.equal((await post(base,'/adventure/choice/propose',{token:tokens[2],route:'combat'})).status,409);
+ assert.equal(app.room.adventure.proof,null,'voting must not create items, kills or fake objective progress');
+ const saved=JSON.parse(fs.readFileSync(path.join(dir,'room.json'),'utf8'));
+ assert.equal(saved.adventure.choice.route,'craft');assert.equal(saved.choiceVote,undefined,'vote credentials and ephemeral ballots are not persisted');
+ const state=await(await fetch(base+'/state?token='+tokens[2])).json();assert.equal(state.adventure.choice,'craft');
+});

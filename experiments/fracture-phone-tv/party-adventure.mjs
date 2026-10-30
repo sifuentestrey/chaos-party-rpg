@@ -3,12 +3,13 @@
  * invented campaign maps or legacy Chaos save migration.
  */
 import {creativeAttempt} from './chaos-world.mjs';
+import {proposeRally,voteRally,settleRally,rallyView} from './party-rally.mjs';
 export const ADVENTURE_ID='refuge-trial-v1';
 const REFUGE='The Refuge',WOODS='Glitch Woods';
 const clean=s=>String(s||'').slice(0,32);
 export function startAdventure(now=Date.now(),run=1,instanceId=null){
  return {version:1,id:ADVENTURE_ID,status:'active',startedAt:now,completedAt:null,
-  run,instanceId,npc:null,proof:null,woods:null,returned:null,visitors:[],seen:[]};
+  run,instanceId,npc:null,proof:null,choice:null,woods:null,returned:null,visitors:[],seen:[]};
 }
 /** An explicit host replay preserves a compact, private history of completed
  * runs. Never erase an active/unknown-version save or carry old objectives into
@@ -22,7 +23,7 @@ export function replayAdventure(current,history=[],now=Date.now(),instanceId){
   throw Error('A new private adventure instance ID is required.');
  const run=Number.isSafeInteger(current.run)&&current.run>0?current.run:1;
  if(run>=1000000)throw Error('Adventure run limit reached; refusing to overwrite history.');
- const previous={run,completedAt:current.completedAt,route:current.proof?.route||null,
+ const previous={run,completedAt:current.completedAt,route:current.proof?.route||null,choice:current.choice?.route||null,
   steps:adventureView(current).steps.map(s=>({label:s.label,done:s.done,by:s.by}))};
  return {adventure:startAdventure(now,run+1,instanceId),
   history:[...history,previous].slice(-10)};
@@ -57,7 +58,7 @@ export function advanceAdventure(adventure,evidence,now=Date.now()){
  const credit={player:clean(evidence.player),at:now};
  if(evidence.kind==='npc'&&!adventure.npc){
   adventure.npc=credit;change='Spoke to a real local NPC.';
- }else if(['combat','craft'].includes(evidence.kind)&&!adventure.proof){
+ }else if(['combat','craft'].includes(evidence.kind)&&!adventure.proof&&(!adventure.choice||adventure.choice.route===evidence.kind)){
   adventure.proof={...credit,route:evidence.kind};
   change=evidence.kind==='combat'?'Defeated a real Fracture monster.':'Successfully crafted an original Chaos item.';
  }else if(evidence.kind==='zone'&&evidence.zone===WOODS&&adventure.npc&&adventure.proof&&
@@ -81,11 +82,43 @@ export function adventureView(a){
  if(a.id!==ADVENTURE_ID||a.version!==1)return {title:'Unknown adventure save',status:'unsupported',steps:[],summary:'Existing adventure data was preserved; this version cannot interpret it.'};
  const steps=[
   {label:'Talk to a real NPC',done:!!a.npc,by:a.npc?.player||null},
-  {label:'Defeat a monster OR craft an item',done:!!a.proof,by:a.proof?.player||null},
+  {label:a.choice?.route==='combat'?'Defeat a real monster (party choice)':a.choice?.route==='craft'?'Craft an item (party choice)':'Defeat a monster OR craft an item',done:!!a.proof,by:a.proof?.player||null},
   {label:'Enter Glitch Woods',done:!!a.woods,by:a.woods?.player||null},
   {label:'Return to The Refuge',done:!!a.returned,by:a.returned?.player||null}
  ];
- return {title:'The Refuge Trial',status:a.status,run:a.run||1,route:a.proof?.route||null,steps,
+ return {title:'The Refuge Trial',status:a.status,run:a.run||1,route:a.proof?.route||null,choice:a.choice?.route||null,steps,
   summary:a.status==='completed'?'The party completed the trial. No extra loot or XP was granted.':
-  'Work together: meet a local, fight OR craft, visit the woods, and return. Real engine actions only.'};
+  'Work together: meet a local, '+(a.choice?.route==='combat'?'defeat a monster':a.choice?.route==='craft'?'craft an item':'fight OR craft')+', visit the woods, and return. Real engine actions only.'};
+}
+
+/** Optional, durable majority story decision. Reuses the same frozen-electorate
+ * 10-second vote and strict-majority math as native travel. This only gates
+ * the independent Refuge Trial proof, never native combat, items or quests.
+ */
+export function proposeTrialChoice(adventure,actors,proposer,route,now,id){
+ if(!adventure||adventure.id!==ADVENTURE_ID||adventure.version!==1||adventure.status!=='active'||!adventure.npc||adventure.proof||adventure.choice)
+  throw Error('Meet a local before voting; a completed or chosen proof cannot be changed.');
+ if(!['combat','craft'].includes(route))throw Error('Choose fight or craft.');
+ const vote=proposeRally(actors,proposer,now,id);
+ if(vote.zone!==REFUGE)throw Error('The party must choose together in The Refuge.');
+ return {...vote,kind:'trial-choice',route,instanceId:adventure.instanceId};
+}
+export function voteTrialChoice(vote,token,yes,now){return voteRally(vote,token,yes,now);}
+export function settleTrialChoice(vote,adventure,now,by){
+ if(!vote||vote.kind!=='trial-choice'||vote.dispatched)return null;
+ const status=settleRally(vote,now);
+ if(status==='pending')return null;
+ vote.dispatched=true;
+ // Never let a delayed vote change a run that has moved on or been replayed.
+ if(status!=='approved'||!adventure||adventure.id!==ADVENTURE_ID||adventure.version!==1||adventure.status!=='active'||
+    adventure.instanceId!==vote.instanceId||!adventure.npc||adventure.proof||adventure.choice){
+  if(status==='approved')vote.status='declined';
+  return {approved:false};
+ }
+ adventure.choice={route:vote.route,by:String(by||'Party member').slice(0,32),at:now};
+ return {approved:true,route:vote.route};
+}
+export function trialChoiceView(vote,token,now){
+ const v=rallyView(vote,token,now);
+ return v?{...v,route:vote.route}:null;
 }
