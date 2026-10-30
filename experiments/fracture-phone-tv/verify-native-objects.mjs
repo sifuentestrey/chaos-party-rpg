@@ -95,12 +95,12 @@ try{
  }
  state=await get(token);
  const tree=state.actor.chaos?.scenery?.find(o=>o.nativeOrigin&&o.tile.x===30&&o.tile.y===197);
- assert.ok(tree?.nativeOrigin,'the target must be an existing native map tree');
- if(!tree?.tile){
+ if(!tree?.nativeOrigin){
   const debug=JSON.parse(fs.readFileSync(path.join(process.env.FRACTURE_ROOT,'server/data/chaos-party/objects.json'),'utf8'));
   assert.fail('Native map tree not visible to native actor: '+JSON.stringify({
    actor:{x:state.actor.x,y:state.actor.y,zone:state.actor.zone},
-   camp:debug.camp,authoredScenery:Object.values(debug.scenery||{}).map(o=>({kind:o.kind,tile:o.tile,scene:o.scene})),
+   camp:debug.camp,authoredScenery:Object.values(debug.scenery||{}).filter(o=>o.nativeOrigin).slice(0,65).map(o=>({kind:o.kind,tile:o.tile,scene:o.scene,nativeOrigin:o.nativeOrigin})),
+   visibleScenery:state.actor.chaos?.scenery?.map(o=>({kind:o.kind,tile:o.tile,nativeOrigin:o.nativeOrigin}))||[],
    visibleGround:state.actor.chaos?.ground?.length||0
   }));
  }
