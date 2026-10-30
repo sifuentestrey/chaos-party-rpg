@@ -1,5 +1,13 @@
 # Chaos Party — local Fracture beta acceptance
 
+## NPC reconciliation / social class check — October 30
+
+- [x] A character who has actually lost trust with a real native Fracture NPC can attempt `apologize to guard`, `make amends with guard`, `make peace with guard` or `persuade guard`. The original Chaos D20 rules and Bard/Healer **+3 social skill** apply; a success restores up to two trust points (never positive), and the existing real native quest gate reads that durable trust. Failure does not fabricate forgiveness, XP or a quest.
+- [x] Server-side identity, native NPC visibility, same-zone collision-aware two-tile reach, unique NPC target, dead-character rejection, personal trust, and a durable 30-second per-NPC/per-character attempt cooldown are enforced. Successful and failed checks enter the original canonical memory and persist in the separate version-1 object store.
+- [x] Local Node 22.16 tests using `--experimental-strip-types`: **86 passed, one existing upstream-check skip, zero failed** across 87 focused tests. New regression cases cover role bonus, natural critical semantics, no false quest unlock, non-owner identity, ambiguity, zone/distance, cooldown after restart, durable NPC memory, and eventually restoring real quest eligibility.
+- [x] Added a real-browser/native-server regression to the existing core journey: a Bard who stole from a guard must receive an actual NPC D20 apology receipt and canonical memory, then complete the real gift/quest-recovery path. **This specific browser assertion is not accepted until its pinned CI completes**.
+- [ ] The new mechanic has **not** been tested on the owner's 2015 Mac, 12–20 physical phones, or as part of the original Crown Job/Dawn Bell. It does not port full Bard/Healer class abilities or native Fracture stats. No merge, public deployment or paid provider call.
+
 ## Partial original Chaos character class and D20 checks — October 30
 
 - [x] New phone characters choose one of the six original Chaos class identifiers. Their choice is saved in the separate private room identity and supplied only to their authenticated native actor. Existing room saves without a class are still accepted as unassigned and receive no silent class bonuses. Phones cannot override class through action text or payload.
