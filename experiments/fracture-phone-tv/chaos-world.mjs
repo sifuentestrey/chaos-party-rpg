@@ -10,7 +10,26 @@ export function creativeAttempt(text){const command=String(text).trim().replace(
 export function shouldUseCreative(text,actor){const a=creativeAttempt(text);if(!a)return false;if(['craft','attach','give','separate','assist'].includes(a.verb))return true;const items=[...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[])];return items.some(i=>i.id===a.item||norm(i.name)===norm(a.item));}
 const distance=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
 const scene=p=>`fracture:${p.getWorld?.().id||'world'}`;
-const reachable=(p,q)=>{const d=distance(p,q);if(d<=1)return true;if(d>2)return false;return [[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>p.getWorld().isValidPosition(p.x+dx,p.y+dy)&&distance({x:p.x+dx,y:p.y+dy},q)===1);};
+// A tile's native zone and collision geometry are part of object authority.
+ // Nearby coordinates alone do not authorize handing an item through a wall,
+ // stealing from another interior, or picking up a prop across a zone boundary.
+const zoneAt=(world,x,y)=>{const zone=world.zoneManager?.getZoneAt(x,y);return zone?String(zone.id??zone.name??''):null;};
+const sameZone=(p,q)=>{
+ const world=p.getWorld();
+ if(q.getWorld&&q.getWorld()!==world)return false;
+ const a=zoneAt(world,p.x,p.y),b=zoneAt(world,q.x,q.y);
+ return !!a&&a===b;
+};
+const reachable=(p,q)=>{
+ const world=p.getWorld(),d=distance(p,q);
+ if(!sameZone(p,q)||d>2||!world.isValidPosition(p.x,p.y)||!world.isValidPosition(q.x,q.y))return false;
+ if(d<=1)return true;
+ const zone=zoneAt(world,p.x,p.y);
+ return [[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>{
+  const x=p.x+dx,y=p.y+dy;
+  return world.isValidPosition(x,y)&&zoneAt(world,x,y)===zone&&distance({x,y},q)===1;
+ });
+};
 const identity=p=>String(p.characterId||'');
 const name=p=>p.chaosName||p.name;
 export function createChaosWorld({file,seed=randomInt(1,0xffffffff),now=()=>Date.now()}={}){
@@ -31,7 +50,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),now=()=>Date
    for(const [label,material,type] of [['cloth strip','cloth','fragment'],['wood splinter','wood','tool']])add(null,{name:label,material,type,ownerId:id,appearance:{shape:ITEM_TYPES[type].shape,color:MATERIALS[material].color}});
    if(!state.camp){
     state.camp={x:p.x,y:p.y,scene:scene(p)};const world=p.getWorld();
-    const spots=[];for(let r=1;r<=3;r++)for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++)if(Math.max(Math.abs(dx),Math.abs(dy))===r&&world.isValidPosition(p.x+dx,p.y+dy))spots.push({x:p.x+dx,y:p.y+dy});
+    const spots=[];for(let r=1;r<=3;r++)for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++)if(Math.max(Math.abs(dx),Math.abs(dy))===r&&world.isValidPosition(p.x+dx,p.y+dy)&&sameZone(p,{x:p.x+dx,y:p.y+dy}))spots.push({x:p.x+dx,y:p.y+dy});
     for(const [i,[label,material,type]] of [['smooth stone','stone','fragment'],['blue bottle','glass','container'],['cloth scrap','cloth','fragment'],['wood offcut','wood','tool']].entries())if(spots[i])add(scene(p),{name:label,material,type,tile:spots[i],appearance:{shape:ITEM_TYPES[type].shape,color:MATERIALS[material].color}});
    }
    persist();
@@ -43,14 +62,14 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),now=()=>Date
   const peers=Object.values(world.players||{}).filter(q=>q.chaosControlled&&!q.chaosSpectator&&q.hasEnteredGame&&!q.isDead&&scene(q)===current&&reachable(p,q));
   if(!peers.includes(p))peers.push(p);
   const players=peers.map(q=>({id:identity(q),name:name(q),hp:q.hitPoints,maxHp:q.maxHitPoints}));
-  const s={current,items:Object.fromEntries(Object.entries(state.items).filter(([,i])=>!i.location||(i.location===current&&i.tile&&distance(p,i.tile)<=8))),nextId:state.nextId,creatures:{},regions:{},campaign:{day:1,history:[],completed:[]},locations:{[current]:{id:current,name:world.zoneManager?.getZoneAt(p.x,p.y)?.name||'Fracture',exits:[],danger:0}}};
+  const s={current,items:Object.fromEntries(Object.entries(state.items).filter(([,i])=>!i.location||(i.location===current&&i.tile&&distance(p,i.tile)<=8&&sameZone(p,i.tile)))),nextId:state.nextId,creatures:{},regions:{},campaign:{day:1,history:[],completed:[]},locations:{[current]:{id:current,name:world.zoneManager?.getZoneAt(p.x,p.y)?.name||'Fracture',exits:[],danger:0}}};
   return {room:{seed:state.seed,round:state.round,world:{expedition:s},players},actor:players.find(q=>q.id===id),s};
  }
  const plain=i=>({id:i.id,name:i.name,type:i.type,material:i.material,condition:i.condition,equipped:i.equipped,slot:i.slot,color:i.appearance?.color,tile:i.tile?{...i.tile}:null,components:[...i.components]});
  function snapshot(p){
   if(!identity(p))return {bag:[],ground:[],wearables:[]};seedPlayer(p);const id=identity(p);
   const bag=Object.values(state.items).filter(i=>i.ownerId===id&&!i.parentId&&i.condition!=='disassembled');
-  const ground=Object.values(state.items).filter(i=>!i.ownerId&&!i.parentId&&i.location===scene(p)&&i.tile&&distance(p,i.tile)<=8&&i.condition!=='disassembled');
+  const ground=Object.values(state.items).filter(i=>!i.ownerId&&!i.parentId&&i.location===scene(p)&&i.tile&&distance(p,i.tile)<=8&&sameZone(p,i.tile)&&i.condition!=='disassembled');
   const aid=state.assists[id];const helper=aid?.until>now()?Object.values(p.getWorld().players||{}).find(q=>identity(q)===aid.helperId&&q.chaosControlled&&q.hasEnteredGame&&!q.isDead&&reachable(p,q)):null;const assistedBy=helper?name(helper):null;
   return {bag:bag.map(plain),ground:ground.map(plain),wearables:bag.filter(i=>i.equipped).map(plain),camp:state.camp,...(assistedBy?{assistedBy}:{})};
  }
