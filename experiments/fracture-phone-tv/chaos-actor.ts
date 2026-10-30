@@ -97,6 +97,16 @@ export function installChaosActor(player:any, connection:any): void {
       // active actor, zone, reach, collision and D20 at the mutation boundary.
       try{
         if(!chaosObjects?.adjudicateEnvironment)return ack({error:'Native scenery execution is not installed.'});
+        // A structured DM proposal has the same grounded auto-approach as a
+        // direct object command. Never roll while still out of reach.
+        const j=intent.judgment;
+        const actionText=j.action.startsWith('move_')?'push '+j.targetId+' '+j.action.slice(5):j.action+' '+j.targetId;
+        const destination=chaosObjects.approach(player,actionText);
+        if(destination){
+          cancel();active={id,intent,target:null,destination:[destination.x,destination.y],nearDestination:true,deadline:Date.now()+60000};
+          receipt(id,'started','Walking toward the verified native object.');
+          return ack({ok:true});
+        }
         const result=chaosObjects.adjudicateEnvironment(player,intent.judgment);
         receipt(id,result.blocked?'blocked':result.success?'succeeded':'failed',result.text,{
           roll:result.roll,dc:result.dc,bonus:result.bonus,rerolled:result.rerolled,
@@ -207,7 +217,7 @@ export function installChaosActor(player:any, connection:any): void {
         socket.emit('chaos:position',state()); return;
       }
       const door=action.door||geometry.doors.find((d:any)=>d.x===player.x&&d.y===player.y);
-      if(door){
+      if(door&&!['environment','creative'].includes(intent.verb)){
         if(chaosObjects?.isBlocked(player,door.x,door.y)||chaosObjects?.isBlocked(player,door.tx,door.ty)){finish('blocked','A held doorway prevents passage.');return;}
         if(!world.isValidPosition(door.tx,door.ty)){finish('blocked','The door exit is blocked.');return;}
         // Only actual map-authored door destinations reach the native transition.
@@ -216,6 +226,14 @@ export function installChaosActor(player:any, connection:any): void {
         player.zoneCallback?.();player.checkZoneChange(player.x,player.y);
         socket.emit('chaos:position',state());finish('succeeded','Travelled through the door into another area.',{},action);return;
       }
+     if(intent.verb==='environment'){
+       try{
+         const result=chaosObjects.adjudicateEnvironment(player,intent.judgment);
+         finish(result.blocked?'blocked':result.success?'succeeded':'failed',result.text,
+           {roll:result.roll,dc:result.dc,bonus:result.bonus,rerolled:result.rerolled,event:result.event,object:result.object},action);
+       }catch{finish('failed','The native object action could not be saved. No world change is claimed.',{},action);}
+       return;
+     }
      if(intent.verb==='creative'){const result=chaosObjects.execute(player,intent.target);finish(result.blocked?'blocked':result.success?'succeeded':'failed',result.text,{roll:result.roll,rolls:result.rolls,assistedBy:result.assistedBy,hinderedBy:result.hinderedBy,bonus:result.bonus,rerolled:result.rerolled,dc:result.dc,event:result.event,object:result.object},action);return;}
       if(!target||intent.verb==='go'){finish('succeeded',intent.verb==='move'?`Walked ${action.stepsMoved||intent.steps} tile${(action.stepsMoved||intent.steps)===1?'':'s'}.`:'Reached your destination.',{},action);return;}
       if(intent.verb==='attack'){
