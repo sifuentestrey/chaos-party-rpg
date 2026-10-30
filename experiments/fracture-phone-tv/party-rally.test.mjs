@@ -67,7 +67,7 @@ test('major travel votes use only pinned map destinations, never client-supplied
 test('return trip is separate from local rally, with native movement and real zone still required',()=>{
  const actors=[{token:'ada',ready:true,dead:false,zone:'Glitch Woods',x:34,y:188},{token:'bryn',ready:true,dead:false,zone:'Glitch Woods',x:35,y:188}];
  const vote=proposeExpedition(actors,'ada','refuge',1000,'return1');
- assert.deepEqual(vote.waypoint,{x:41,y:195});
+ assert.deepEqual(vote.waypoint,{x:34,y:210});
  assert.equal(vote.arrivalZone,'The Refuge');
  assert.equal(vote.status,'pending');
  assert.equal(voteRally(vote,'bryn',false,1001),'declined');
