@@ -23,7 +23,7 @@ export function proposeRally(actors,proposer,now,id){
  */
 export const EXPEDITION_WAYPOINTS=Object.freeze({
  woods:Object.freeze({from:'The Refuge',to:'Glitch Woods',start:Object.freeze({x:41,y:195}),end:Object.freeze({x:34,y:188})}),
- refuge:Object.freeze({from:'Glitch Woods',to:'The Refuge',start:Object.freeze({x:34,y:188}),end:Object.freeze({x:41,y:195})})
+ refuge:Object.freeze({from:'Glitch Woods',to:'The Refuge',start:Object.freeze({x:34,y:188}),end:Object.freeze({x:34,y:210})})
 });
 const distance=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
 export function proposeExpedition(actors,proposer,destination,now,id){
