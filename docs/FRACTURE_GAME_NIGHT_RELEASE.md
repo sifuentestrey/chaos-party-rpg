@@ -1,5 +1,11 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Live-event authorization lifecycle — October 30 (CI pending)
+
+- [x] Event stream subscriptions now retain their authenticated player token and revalidate that the session remains active on every notification. Parked or removed sessions have their streams ended rather than continuing to receive room notifications. Host shutdown closes all active streams. This hardens the existing SSE feature; it does **not** implement native environmental-event push.
+- [ ] Automated regression execution, pinned Fracture CI, real multi-phone browser stream acceptance and physical Mac testing remain outstanding for this commit.
+
+
 ## Authenticated room-event push to phones — October 30 (CI pending)
 
 - [x] Added authenticated same-origin Server-Sent Events `/changes` for active phone sessions. Room `record()` notifies all subscribed phones immediately; the phone refreshes authoritative `/state` on notification. Existing 750-ms polling remains the fallback. Subscription initializes on recovered sessions and after pairing, and closes with the host. This does not expose credentials or trust client-authored game state.
