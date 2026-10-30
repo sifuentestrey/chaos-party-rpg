@@ -15,6 +15,7 @@ October 29, 2026. Experimental branch only: `spike/fracture-phone-tv`. Work orde
 | Adventure | Native NPC response, optional rat quest completed 3/3 and awarded its real reward; sword pickup/equip; Western Dwelling entry/exit; Glitch Woods travel. A suggested twenty-minute route is in the adapter README. No forced Crown Job or invented map. |
 | Shared TV | Native renderer/world, automatic read-only spectator, real player colors/names, follow/full-screen controls, corner log. Website HUD hidden; spectators hidden even with two TVs. QR in empty lobby and private host setup. |
 | Party pacing | Ten-second declaration/reaction window with parallel actors and immutable declarations. Movement/observation and personal STOP remain available. Native combat randomness retained; a new D20 system does not override Fracture. |
+| Bounded local rally (experimental) | New opt-in phone vote: strict majority of a frozen electorate (2–20 nearby, living, same-zone actors) approves **native per-character movement** toward the proposer's real location, within twelve tiles. Rejected/expired votes do not move actors. Every character can STOP. Engine receipts, not the vote, establish actual arrival. This is **not** original Dawn Bell major travel or campaign voting parity. |
 | Identity/recovery/presence | Server-held Fracture credentials; personal recovery links; same account and position after reconnect. Cold start does not spawn saved actors before phones return; absent phones save/log out after a 45-second grace period. |
 | Host player rotation | New host-only bench/restore saves and disconnects an inactive actor, frees a live room slot, preserves player account, credentials, inventory/position and private recovery link; refused when restoring into a full room. Up to 20 *active* slots, with retained historical registrations. Automated full-room regression passed, physical Mac acceptance pending. |
 | Busy-fight write load | Combat/event notifications now coalesce into a room-log write every 500 ms and flush on orderly shutdown; character saves and roster changes still persist immediately. Tested rapid 15-event batch and durable room identity. |
@@ -40,7 +41,14 @@ Evidence: [sanitized reports and screenshots](../experiments/fracture-phone-tv/e
 - [ ] **Live creative DM qualification:** Groq semantic fallback is wired, explicitly opt-in and off by default. Existing key only, grounded proposals, separate quota ledger, timeout/429/invalid-plan fallback tested with mocks. No live provider calls or free-plan quality claim. A fully qualified creative storyteller is not shipped.
 - Native quests are session-scoped and may reset on server/bridge restart. Equipment, inventory, level, gold and saved position persist. No legacy Chaos save migration or full Chaos D20/campaign port is claimed.
 - Deterministic text handling covers supported intent categories; unsupported mechanics receive truthful rejection. It is not universal natural-language world simulation.
+- Local party rally votes are ephemeral, deliberately reset on restart and restricted to nearby same-zone characters. Approval may produce partial native movement if an actor disconnects, moves away or encounters blocked geometry. **No teleport or all-arrived claim.** This is a bounded group-coordination experiment, not migration of the original Chaos majority-travel/scene system.
 - Automated adventure completion and the supplied twenty-minute route do not replace a human pacing/fun playtest. A dedicated tavern/campaign expansion was not invented; the route reuses the actual town, dwelling and woods.
+
+## Latest bounded feature-parity experiment
+
+The controller now includes **Gather the party (optional vote)**. A nearby player proposes a ten-second rally at their actual server position. Other active members vote once. Strict majority dispatches separate native `go` requests; a declined/expired vote dispatches none. STOP remains immediate for each actor. TV displays the vote tally in the corner. Vote identity, origin and replay are checked server-side, and host benching prevents an unavailable character from being commanded.
+
+The pure vote tests and multiplayer bridge regression suite cover frozen quorums, 2–20 players, timeouts, failed votes, token isolation, native per-actor dispatch and bench/STOP behavior. CI results are tracked on the corresponding commit; **no new physical Mac acceptance or original campaign parity is implied**. See [architecture/parity decision](CHAOS_TO_FRACTURE_PARITY.md).
 
 ## Delivery and continuation
 
