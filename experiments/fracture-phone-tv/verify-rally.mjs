@@ -96,6 +96,7 @@ try{
  await sleep(1200);
  assert.equal((await post('/rally/vote',{token:tokens[1],id:travel.rally.id,yes:true})).status,409,'vote replay is rejected');
  const arrival=(await get(tokens[0])).rally;
+ assert.ok(arrival,'Approved expedition must remain visible until actual native arrival or bounded timeout');
  assert.equal(arrival.arrived,2,'Native-zone callback must confirm two independent arrivals');
 
  console.log(JSON.stringify({status:'passed',checks:['two distinct native actors','actual native one-tile movement','majority vote cannot move early','invalid voter rejected','per-actor native go receipt','two native actors approved and actually entered Glitch Woods'],rallyOutcome:outcome.status}));
