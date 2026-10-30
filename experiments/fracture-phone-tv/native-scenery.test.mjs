@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import os from 'node:os';import path from 'node:path';
-import {discoverNativeTrees} from './native-scenery.mjs';import {createChaosWorld,shouldUseCreative} from './chaos-world.mjs';
+import {discoverNativeTrees} from './native-scenery.mjs';import {createChaosWorld,shouldUseCreative,unsupportedNativeEnvironment} from './chaos-world.mjs';
 function mapFixture(){const map={width:172,height:314,tilesize:16,data:Array(172*314).fill(155),blocking:[],collisions:[],doors:[]};for(let dy=0;dy<5;dy++)for(let dx=0;dx<4;dx++){const n=(200+dy)*172+30+dx;map.data[n]=[155,213+dy*20+dx];if(dy>=3&&dx>=1&&dx<=2)map.collisions.push(n);}return map;}
 test('complete native trees register; incomplete art and independent solid layers never gain destructive permission',()=>{
  const map=mapFixture();assert.equal(discoverNativeTrees(map,[274,275,294,295,999]).length,1);
@@ -62,4 +62,18 @@ test('felling an existing native tree is a single D20 action with persistent wor
  assert.equal(world.isValidPosition(tree.tile.x,tree.tile.y),true,'only the original tree trunk collision is cleared');
  assert.equal(Object.values(JSON.parse(fs.readFileSync(file)).items).filter(i=>i.originId===tree.id).length,1,'loot appears once');
  assert.equal(engine.execute(p,'fell the tree').blocked,true,'cannot fell already cleared native tree again');
+});
+
+test('unmapped native rocks and shrubs cannot produce fictional movement or destructibility',t=>{
+ const {p,engine,world}=nativeFixture(t);
+ const before=engine.snapshot(p);
+ for(const action of ['push boulder north','pick up rock','hide in bush','smash rock','burn grass']){
+  const outcome=engine.execute(p,action);
+  assert.equal(outcome.success,false,action);
+  assert.equal(outcome.blocked,true,action);
+  assert.match(outcome.text,/no verified movable or reactive/i,action);
+ }
+ assert.deepEqual(engine.snapshot(p).nativeChanges,before.nativeChanges);
+ assert.equal(world.isValidPosition(35,210),false,'existing native solid tile is not changed');
+ assert.equal(unsupportedNativeEnvironment('walk left'),null,'ordinary native controls are untouched');
 });
