@@ -37,13 +37,17 @@ try{
   const outcome=await finalResult(tokens[1],action.id);
   assert.ok(['succeeded','blocked'].includes(outcome.status),'Only native movement outcomes count');
   const after=await get(tokens[1]);
-  if(after.actor.x!==before.actor.x||after.actor.y!==before.actor.y){moved=true;break;}
+  const lead=await get(tokens[0]);
+  if((after.actor.x!==before.actor.x||after.actor.y!==before.actor.y)&&
+     (after.actor.x!==lead.actor.x||after.actor.y!==lead.actor.y)){moved=true;break;}
   await sleep(250);
  }
  assert.ok(moved,'No accessible adjacent native tile for rally rehearsal');
  states=await Promise.all(tokens.map(get));
  assert.equal(states[0].actor.zone,states[1].actor.zone);
  assert.ok(Math.abs(states[0].actor.x-states[1].actor.x)+Math.abs(states[0].actor.y-states[1].actor.y)<=12);
+ assert.notDeepEqual([states[0].actor.x,states[0].actor.y],[states[1].actor.x,states[1].actor.y],
+  'Rally rehearsal must start from two different native positions; otherwise no movement request is needed');
  const proposal=await post('/rally/propose',{token:tokens[0]});
  assert.equal(proposal.status,201);
  assert.equal(proposal.rally.required,2);
@@ -57,7 +61,7 @@ try{
  assert.equal(approved.rally.status,'approved');
  const s=app.sessions.get(tokens[1]);
  const [id,r]=[...s.results.entries()].find(([id])=>!existingIds.has(id))||[];
- assert.ok(id&&r,'An approved vote must issue a distinct native actor request');
+ assert.ok(id&&r,'An approved vote must issue a distinct native actor request. Native positions '+JSON.stringify(states.map(x=>({x:x.actor.x,y:x.actor.y,zone:x.actor.zone})))+'; recent event statuses '+JSON.stringify((app.room.events||[]).slice(-4).map(e=>e.status)));
  const outcome=await finalResult(tokens[1],id);
  assert.ok(['succeeded','blocked'].includes(outcome.status),'Native Fracture, not vote, owns final outcome');
  if(outcome.status==='succeeded'){
