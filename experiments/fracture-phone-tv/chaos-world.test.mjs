@@ -536,7 +536,8 @@ test('authored tree: phone action routes to persistent damage, TV snapshot, shar
   assert.equal(engine.snapshot(a).scenery.find(o=>o.id===tree.id).hp,Math.max(0,12-(n+1)*3));
  }
  assert.equal(engine.isBlocked(a,tree.tile.x,tree.tile.y),false,'fallen tree releases sidecar movement');
- assert.equal(engine.snapshot(b).scenery.find(o=>o.id===tree.id).condition,'broken','another player sees the same tree');
+ b.x=tree.tile.x+1;b.y=tree.tile.y; // second actor enters the same visibility radius
+ assert.equal(engine.snapshot(b).scenery.find(o=>o.id===tree.id)?.condition,'broken','a nearby second player sees the same tree');
  const restored=createChaosWorld({file});
  assert.equal(restored.snapshot(a).scenery.filter(o=>o.id===tree.id).length,1,'restart never duplicates the tree');
  assert.equal(restored.isBlocked(a,tree.tile.x,tree.tile.y),false);
