@@ -30,3 +30,16 @@ test('no false bonus or reroll for invalid legacy identity; malformed checks rej
  assert.equal(x.bonus,0);assert.equal(x.success,false);
  assert.throws(()=>resolveObjectRoll({role:'rogue',verb:'steal',dc:12,roll:21}),/Invalid/);
 });
+
+test('Charming is an original +2 social-only perk, not a native combat or theft bonus',async()=>{
+ const {validPerk,PERKS}=await import('./party-roles.mjs');
+ assert.equal(validPerk('charming'),true);
+ assert.equal(validPerk('__proto__'),false);
+ assert.equal(PERKS.charming,'Suspiciously charming');
+ const bard=resolveObjectRoll({role:'bard',perk:'charming',verb:'social',dc:16,roll:11});
+ assert.equal(bard.bonus,3);assert.equal(bard.perkBonus,2);assert.equal(bard.success,true);
+ const rogue=resolveObjectRoll({role:'rogue',perk:'charming',verb:'steal',dc:16,roll:13});
+ assert.equal(rogue.bonus,3);assert.equal(rogue.perkBonus,0);assert.equal(rogue.success,true);
+ assert.equal(resolveObjectRoll({role:'bard',perk:'charming',verb:'social',dc:2,roll:1}).success,false);
+ assert.equal(resolveObjectRoll({role:'bard',perk:'charming',verb:'social',dc:30,roll:20}).success,true);
+});
