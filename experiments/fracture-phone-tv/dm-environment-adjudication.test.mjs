@@ -36,3 +36,32 @@ test('AI cannot set an easier native tree check or swap its strength ability',()
  assert.equal(validateEnvironmentJudgment({...breakAction,dc:1},ctx).accepted,false);
  assert.equal(validateEnvironmentJudgment({...breakAction,ability:'wisdom'},ctx).accepted,false);
 });
+
+test('typed AI can propose movement of a real native object but cannot lower its D20 DC or invent an adapter',()=>{
+ const tent={id:'fracture:world:native-tent',verifiedNative:true,nativeAdapter:true,scene:'fracture:world',
+  tile:{x:10,y:10},condition:'intact',dc:10,capabilities:{movable:true,breakable:true,flammable:true,repairable:false}};
+ const context={...ctx,authoritativeNativeExecutor:true,objects:[tent]};
+ const move={action:'move_east',targetId:tent.id,ability:'strength',dc:10,description:'Shift the existing canvas tent east.'};
+ const approved=validateEnvironmentJudgment(move,context);
+ assert.equal(approved.accepted,true);assert.equal(approved.action,'move');assert.equal(approved.direction,'east');
+ assert.equal(approved.requiresAuthoritativeExecution,true);
+ assert.equal(approved.success,undefined);
+ assert.equal(validateEnvironmentJudgment({...move,dc:1},context).accepted,false);
+ assert.equal(validateEnvironmentJudgment({...move,ability:'wisdom'},context).accepted,false);
+ assert.equal(validateEnvironmentJudgment({...move,action:'move'},context).accepted,false,'direction is required');
+ assert.equal(validateEnvironmentJudgment(move,{...context,objects:[{...tent,nativeAdapter:false}]}).accepted,false);
+ assert.equal(validateEnvironmentJudgment(move,{...context,objects:[{...tent,verifiedNative:false}]}).accepted,false);
+ assert.equal(validateEnvironmentJudgment(move,{...context,actor:{active:true,tile:{x:50,y:50}}}).accepted,false);
+});
+test('typed AI respects real native material, condition and capability before any roll',()=>{
+ const roof={id:'fracture:world:roof',verifiedNative:true,nativeAdapter:true,scene:'fracture:world',
+  tile:{x:10,y:10},condition:'broken',dc:16,capabilities:{repairable:true,breakable:false,movable:false,flammable:false}};
+ const context={...ctx,authoritativeNativeExecutor:true,objects:[roof]};
+ const repair={action:'repair',targetId:roof.id,ability:'dexterity',dc:12,description:'Repair the original roof.'};
+ assert.equal(validateEnvironmentJudgment(repair,context).accepted,true);
+ assert.equal(validateEnvironmentJudgment({...repair,dc:0},context).accepted,false);
+ assert.equal(validateEnvironmentJudgment({...repair,action:'ignite',ability:'wisdom',dc:10},context).accepted,false);
+ assert.equal(validateEnvironmentJudgment({...repair,action:'move_north',ability:'strength',dc:16},context).accepted,false);
+ const burning={...roof,condition:'burning',capabilities:{...roof.capabilities,extinguishable:true}};
+ assert.equal(validateEnvironmentJudgment({action:'extinguish',targetId:roof.id,ability:'none',dc:0,description:'Douse the existing roof.'},{...context,objects:[burning]}).accepted,true);
+});
