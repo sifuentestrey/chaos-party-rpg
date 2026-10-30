@@ -222,8 +222,15 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    state.round++;persist();
    return {blocked:false,success:true,text:`${actor.name} ${hostile?'hinders':'helps'} ${recipient.name}. Their next valid Chaos world D20 check gets ${hostile?'disadvantage':'advantage'} for 15 seconds while you stay nearby.`};
   }
-  if(attempt.entityAction&&!targetItem(s,room,attempt.target))return {blocked:true,success:false,text:'Choose a visible Chaos object for that interaction; native scenery and characters are not movable objects.'};
-  const plan=attempt.entityAction?planEntity(room,s,actor,attempt,(_s,r,ref)=>targetItem(s,r,ref)):planItemAttempt(room,actor,attempt);
+  const projectedTarget=attempt.entityAction?targetItem(s,room,attempt.target):null;
+  if(attempt.entityAction&&!projectedTarget)return {blocked:true,success:false,text:'Choose a visible Chaos object for that interaction; native scenery and characters are not movable objects.'};
+  // The original planner correctly forbids taking or moving someone else's
+  // possessions. A broken or burning NPC-owned floor object is an exception
+  // ONLY for public-safety repair/extinguish. Plan against a temporary view;
+  // resolve and persist against the original owner-bound item.
+  const publicAid=projectedTarget&&state.npcs[projectedTarget.ownerId]&&['repair','extinguish'].includes(attempt.verb);
+  const planning=publicAid?{...s,items:{...s.items,[projectedTarget.id]:{...projectedTarget,ownerId:null,location:s.current}}}:s;
+  const plan=attempt.entityAction?planEntity(room,planning,actor,attempt,(_s,r,ref)=>targetItem(planning,r,ref)):planItemAttempt(room,actor,attempt);
   if(!plan)return {blocked:true,success:false,text:'No unique object matches that request.'};
   const item=state.items[plan.itemId||plan.targetId];
   if(item?.ownerId&&item.ownerId!==actor.id&&!state.npcs[item.ownerId])return {blocked:true,success:false,text:'Another player owns that object. Ask them to give or drop it.'};
