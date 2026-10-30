@@ -8,6 +8,8 @@ export function recordEnvironmentalIncident(npcs, {kind, item, actorId=null, rou
  const witnessed=[];
  for (const npc of Object.values(npcs||{})) {
   if (npc.location!==location || !npc.tile || !canWitness(npc,item.tile)) continue;
+  // A repeated snapshot or competing ignition source must not double-charge an NPC.
+  if ((npc.history||[]).some(h=>h.verb===kind&&h.itemId===item.id&&h.round===round)) continue;
   const id=actorId && String(actorId) || null;
   const observation={verb:kind,actorId:id,itemId:item.id,round,success:true};
   const prior=(npc.history||[]).filter(h=>h.actorId===id);
