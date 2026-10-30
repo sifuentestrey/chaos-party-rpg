@@ -106,31 +106,45 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   }catch(error){state=previous;throw error;}
  }
  function surroundings(p){seedPlayer(p);seedNPCs(p);
-  // A single Chaos-authored test tree on a real, passable native tile.
-  // Never convert or destroy Fracture's painted scenery or collision geometry.
-  if(state.camp?.scene===scene(p)&&!state.camp.treeId){
-   const c=state.camp,world=p.getWorld();
-   const radii=[4,5,3,6,2,7,8];
-   const candidates=[];
-   for(const radius of radii)for(let dx=-radius;dx<=radius;dx++)for(let dy=-radius;dy<=radius;dy++)
-    if(Math.max(Math.abs(dx),Math.abs(dy))===radius)candidates.push({x:c.x+dx,y:c.y+dy});
-   const occupied=Object.values(world.entities||{}).concat(Object.values(world.players||{}),Object.values(world.npcs||{}));
-   const suitable=t=>world.isValidPosition(t.x,t.y)&&sameZone(p,t)&&visible(p,t)&&
-    !occupied.some(e=>e.x===t.x&&e.y===t.y)&&
-    !Object.values(state.items).some(i=>i.tile?.x===t.x&&i.tile?.y===t.y)&&
-    !Object.values(state.scenery).some(i=>i.scene===scene(p)&&i.tile?.x===t.x&&i.tile?.y===t.y);
-   const openNeighbors=t=>[[1,0],[-1,0],[0,1],[0,-1]].filter(([dx,dy])=>
-    world.isValidPosition(t.x+dx,t.y+dy)&&sameZone(p,{x:t.x+dx,y:t.y+dy})).length;
-   // Prefer open native terrain, not a one-tile chokepoint or an existing map prop.
-   const tile=candidates.find(t=>suitable(t)&&openNeighbors(t)>=3)||
-    candidates.find(t=>suitable(t)&&openNeighbors(t)>=2);
-   if(tile){
-    const previous=state;state=structuredClone(state);
-    try{
-     const tree=registerAuthoredScenery(state,{scene:scene(p),id:'camp-tree',kind:'tree',tile});
-     state.camp.treeId=tree.id;persist();
-    }catch(error){state=previous;throw error;}
-   }
+  // Seed a bounded authored tree near each *distinct spawn area*, not only
+  // the first camp: native Fracture may spawn new actors far from that camp.
+  // Persist the per-actor decision to avoid creating trees on every poll.
+  const actorId=identity(p),actor=state.actors[actorId];
+  if(actor&&!actor.treeChecked){
+   const nearby=visibleScenery(state,scene(p)).find(o=>o.kind==='tree'&&
+    distance(p,o.tile)<=8&&sameZone(p,o.tile)&&visible(p,o.tile));
+   const count=Object.values(state.scenery).filter(o=>o.kind==='tree').length;
+   const previous=state;state=structuredClone(state);
+   try{
+    state.actors[actorId].treeChecked=true;
+    if(nearby)state.actors[actorId].treeId=nearby.id;
+    else if(count<4){
+     const c={x:p.x,y:p.y},world=p.getWorld(),radii=[4,5,3,6,2,7,8];
+     const candidates=[];
+     for(const radius of radii){
+      const ring=[];
+      for(let dx=-radius;dx<=radius;dx++)for(let dy=-radius;dy<=radius;dy++)
+       if(Math.max(Math.abs(dx),Math.abs(dy))===radius)ring.push({x:c.x+dx,y:c.y+dy});
+      ring.sort((a,b)=>distance(c,a)-distance(c,b));
+      candidates.push(...ring);
+     }
+     const occupied=Object.values(world.entities||{}).concat(Object.values(world.players||{}),Object.values(world.npcs||{}));
+     const suitable=t=>world.isValidPosition(t.x,t.y)&&sameZone(p,t)&&visible(p,t)&&
+      !occupied.some(e=>e.x===t.x&&e.y===t.y)&&
+      !Object.values(state.items).some(i=>i.tile?.x===t.x&&i.tile?.y===t.y)&&
+      !Object.values(state.scenery).some(i=>i.scene===scene(p)&&i.tile?.x===t.x&&i.tile?.y===t.y);
+     const openNeighbors=t=>[[1,0],[-1,0],[0,1],[0,-1]].filter(([dx,dy])=>
+      world.isValidPosition(t.x+dx,t.y+dy)&&sameZone(p,{x:t.x+dx,y:t.y+dy})).length;
+     const tile=candidates.find(t=>suitable(t)&&openNeighbors(t)>=3)||
+      candidates.find(t=>suitable(t)&&openNeighbors(t)>=2);
+     if(tile){
+      const tree=registerAuthoredScenery(state,{scene:scene(p),id:'authored-tree-'+(count+1),kind:'tree',tile});
+      state.actors[actorId].treeId=tree.id;
+      if(state.camp?.scene===scene(p)&&distance(c,state.camp)<=8&&!state.camp.treeId)state.camp.treeId=tree.id;
+     }
+    }
+    persist();
+   }catch(error){state=previous;throw error;}
   }
   if(state.camp?.scene===scene(p)&&!state.camp.tableId){const c=state.camp,world=p.getWorld();const tile=[[2,0],[-2,0],[0,2],[0,-2]].map(([dx,dy])=>({x:c.x+dx,y:c.y+dy})).find(t=>world.isValidPosition(t.x,t.y)&&sameZone(p,t)&&!Object.values(world.entities||{}).concat(Object.values(world.players||{})).some(e=>e.x===t.x&&e.y===t.y)&&!Object.values(state.items).some(i=>i.tile&&distance(i.tile,t)===0));
    if(tile){const previous=state;state=structuredClone(state);try{state.camp.tableId=add(scene(p),{name:'camp table',type:'fixture',material:'wood',portable:true,blocks:true,tile,visual:'table',hp:4,maxHp:4}).id;persist();}catch(error){state=previous;throw error;}}
