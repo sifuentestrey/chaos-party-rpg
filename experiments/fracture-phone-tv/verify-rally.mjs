@@ -99,5 +99,36 @@ try{
  assert.ok(arrival,'Approved expedition must remain visible until actual native arrival or bounded timeout');
  assert.equal(arrival.arrived,2,'Native-zone callback must confirm two independent arrivals');
 
- console.log(JSON.stringify({status:'passed',checks:['two distinct native actors','actual native one-tile movement','majority vote cannot move early','invalid voter rejected','per-actor native go receipt','two native actors approved and actually entered Glitch Woods'],rallyOutcome:outcome.status}));
+ // A group adventure is not playable if the party can enter the woods but
+ // cannot return. Reuse the same authenticated majority vote and real native
+ // per-character pathfinding, in the opposite direction; no simulated zones.
+ states=await Promise.all(tokens.map(get));
+ assert.ok(states.every(s=>s.actor.zone==='Glitch Woods'),'Both actors must be in the actual woods before returning');
+ assert.ok(states.every(s=>Math.abs(s.actor.x-34)+Math.abs(s.actor.y-188)<=24),
+  'Return trip must start near the pinned Glitch Woods departure area');
+ const returnVote=await post('/expedition/propose',{token:tokens[0],destination:'refuge'});
+ assert.equal(returnVote.status,201,'native return route must be available after actual arrival');
+ assert.equal(returnVote.rally.kind,'expedition');
+ assert.equal(returnVote.rally.destination,'The Refuge');
+ assert.equal(returnVote.rally.required,2);
+ const returnIds=tokens.map(token=>new Set(app.sessions.get(token).results.keys()));
+ const returnApproval=await post('/rally/vote',{token:tokens[1],id:returnVote.rally.id,yes:true});
+ assert.equal(returnApproval.status,200);
+ assert.equal(returnApproval.rally.status,'approved');
+ for(let i=0;i<tokens.length;i++){
+  const newId=[...app.sessions.get(tokens[i]).results.keys()].find(id=>!returnIds[i].has(id));
+  assert.ok(newId,'Return travel must dispatch one real native command per actor');
+  const result=await finalResult(tokens[i],newId,60000);
+  assert.equal(result.status,'succeeded','Native route back to The Refuge blocked: '+result.message);
+ }
+ states=await Promise.all(tokens.map(get));
+ assert.ok(states.every(s=>s.actor.zone==='The Refuge'),'Both native actors must actually return to The Refuge');
+ await sleep(1200);
+ const home=(await get(tokens[0])).rally;
+ assert.ok(home,'Approved return must remain visible through native arrival');
+ assert.equal(home.arrived,2,'Both native return arrivals must be counted independently');
+ assert.equal((await post('/rally/vote',{token:tokens[1],id:returnVote.rally.id,yes:true})).status,409,
+  'Return vote replay cannot trigger another native movement');
+
+ console.log(JSON.stringify({status:'passed',checks:['two distinct native actors','actual native one-tile movement','majority vote cannot move early','invalid voter rejected','per-actor native go receipt','two native actors approved and actually entered Glitch Woods','two native actors voted and actually returned to The Refuge'],rallyOutcome:outcome.status}));
 }finally{await app.close();fs.rmSync(dir,{recursive:true,force:true});}
