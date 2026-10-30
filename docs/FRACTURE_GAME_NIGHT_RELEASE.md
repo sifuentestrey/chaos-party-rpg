@@ -1,5 +1,13 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Repeatable cooperative trial — October 30
+
+- [x] **The Refuge Trial can now be replayed** only after a supported run is completed, using an explicit host-only **Start another trial** action with confirmation. A second request cannot erase an active run, and unknown-version saves are protected.
+- [x] Each new run has a distinct private instance ID. Native actions issued during an earlier run may finish later, but their receipts cannot advance the new trial. Ordinary real engine outcomes remain untouched.
+- [x] Previous completions are archived in a bounded ten-run summary containing outcome, contributors and completion time, not recovery tokens or full world state. Starting a new trial clears only its four objective checkpoints; native Fracture characters, gear, XP, quests, original Chaos objects and saves are not reset.
+- [x] Pure regression checks and mocked two-phone bridge checks cover completed-only replay, host authorization, history retention, stale receipt rejection, new-run progress, save persistence and repeated replay denial while active.
+- [ ] **Physical Mac/TV and actual two-phone replay:** not accepted. Full browser/native trial journey and original Crown Job/Dawn Bell migration remain outstanding. This feature is a small repeatable Fracture objective, not the original Chaos campaign system.
+
 > **MIGRATION WARNING (owner correction, Oct 29): This is NOT the original Chaos Party game migrated to Fracture.** It is an isolated *Fracture multiplayer/phone-to-TV technology demo*. Major existing Chaos features—Crown Job, Dawn Bell's seventeen scenes, custom characters/classes, full dice/advantage, full NPC goals/routines, original campaign persistence, expedition travel voting and qualified creative storytelling—are **not** present here. The limited object/crafting and local rally experiments below are partial rule reuse. Passing tests do not establish gameplay equivalence. See [full parity audit](CHAOS_TO_FRACTURE_PARITY.md). Keep original Chaos project as canonical until approved migration/renderer decision.
 
 Updated October 30, 2026. Experimental branch only: `spike/fracture-phone-tv`. Work order: [issue #12](https://github.com/sifuentestrey/chaos-party-rpg/issues/12). **Playable beta prepared for physical Mac rehearsal; not a claim of completed hardware acceptance.** No merge, public game deployment or paid service was performed.
