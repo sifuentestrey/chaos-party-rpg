@@ -89,7 +89,14 @@ try{
  // passable native tile, not a mocked map object or an inferred native tree.
  state=await get(token);
  const tree=state.actor.chaos?.scenery?.find(o=>o.kind==='tree');
- assert.ok(tree?.tile,'authored tree must appear in the real native actor world snapshot');
+ if(!tree?.tile){
+  const debug=JSON.parse(fs.readFileSync(path.join(process.env.FRACTURE_ROOT,'server/data/chaos-party/objects.json'),'utf8'));
+  assert.fail('Authored tree not visible to native actor: '+JSON.stringify({
+   actor:{x:state.actor.x,y:state.actor.y,zone:state.actor.zone},
+   camp:debug.camp,authoredScenery:Object.values(debug.scenery||{}).map(o=>({kind:o.kind,tile:o.tile,scene:o.scene})),
+   visibleGround:state.actor.chaos?.ground?.length||0
+  }));
+ }
  assert.equal(tree.hp,12);
  assert.equal(tree.condition,'intact');
  for(let n=0;n<4;n++){
