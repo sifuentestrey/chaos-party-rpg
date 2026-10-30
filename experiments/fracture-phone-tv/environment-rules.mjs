@@ -42,7 +42,7 @@ export function environmentStep(objects,{rain=0,wind={x:0,y:0},lightningTile=nul
    (wind.x===0&&wind.y===0||(item.tile.x-o.tile.x)*wind.x+(item.tile.y-o.tile.y)*wind.y>=0));
   if(item.condition==='burning'){
    if(rain>=0.5||nearWater){item.condition='intact';changes.push({id:item.id,type:'extinguished'});}
-   else {item.hp=Math.max(0,item.hp-1);if(item.hp===0){item.condition='broken';changes.push({id:item.id,type:'destroyed'});}}
+   else {item.hp=Math.max(0,item.hp-1);if(item.hp===0){item.condition='broken';item.blocking=false;changes.push({id:item.id,type:'destroyed'});}}
   }else if(item.flammable&&wet===0&&(lightning||source)){
    item.condition='burning';changes.push({id:item.id,type:'ignited',cause:lightning?'lightning':'spread'});
   }
