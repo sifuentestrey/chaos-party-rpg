@@ -1,7 +1,7 @@
 /** Chaos Party object rules projected onto real Fracture tiles; no legacy networking or saves. */
 import fs from 'node:fs';import path from 'node:path';import {randomInt} from 'node:crypto';
 import {parseItemAttempt,planItemAttempt,resolveItem,ITEM_TYPES,MATERIALS} from '../../public/world-items.js';
-import {parseEntityAttempt,planEntity,resolveEntity,advanceEntities} from '../../public/entity-rules.js';
+import {parseEntityAttempt,planEntity,resolveEntity,advanceEntities,MATERIAL_RULES} from '../../public/entity-rules.js';
 import {recordDMMemory} from '../../public/dm-memory.js';
 import {spawnItem} from '../../public/campaign.js';
 import {Rng} from '../../public/vendor/partyframe-rng.js';
@@ -114,9 +114,35 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const steps=Math.min(3,Math.floor((now-state.fireClock[current])/10000));if(steps<1)return;
   const previous=state;state=structuredClone(state);try{
    const owned=[...Object.values(state.npcs).filter(n=>n.location===current).map(n=>({id:n.id})),...Object.entries(state.actors).filter(([,a])=>a.scene===current).map(([id])=>({id}))];
-   const changes=[];for(let i=0;i<steps;i++)changes.push(...advanceEntities({round:state.round,players:owned},{current,items:state.items,creatures:{}}));
+   const changes=[];let eventTile=null;
+   // Only physical ground objects can conduct fire. Carried inventory, distant
+   // objects and objects in another native zone are never affected. Capture the
+   // sources BEFORE each tick so a newly lit object cannot ignite a whole room
+   // instantly; the original Chaos burn/repair rules still own object damage.
+   const onFloor=i=>i.tile&&(!i.ownerId?i.location===current:state.npcs[i.ownerId]?.location===current);
+   const zone=tile=>tile&&p.getWorld().isValidPosition(tile.x,tile.y)?zoneAt(p.getWorld(),tile.x,tile.y):null;
+   for(let i=0;i<steps;i++){
+    const sources=Object.values(state.items).filter(item=>onFloor(item)&&item.condition==='burning');
+    changes.push(...advanceEntities({round:state.round,players:owned},{current,items:state.items,creatures:{}}));
+    for(const item of Object.values(state.items)){
+     if(!onFloor(item)||item.condition!=='intact'||!MATERIAL_RULES[item.material]?.burns)continue;
+     const itemZone=zone(item.tile);if(!itemZone)continue;
+     const source=sources.find(src=>src.id!==item.id&&zone(src.tile)===itemZone&&distance(src.tile,item.tile)===1);
+     if(!source)continue;
+     item.condition='burning';item.heat=0;
+     if(source.ignitedBy)item.ignitedBy=source.ignitedBy;
+     changes.push(`Fire spreads to ${item.name}`);eventTile||={...item.tile};
+     const npc=state.npcs[item.ownerId];
+     if(npc&&item.ignitedBy&&npc.location===current&&distance(npc.tile,item.tile)<=6){
+      npc.trust[item.ignitedBy]=Math.max(-10,(npc.trust[item.ignitedBy]||0)-1);
+      const observation={verb:'fire-spread',actorId:item.ignitedBy,itemId:item.id,round:state.round+1,success:true};
+      npc.memories||={};npc.memories[item.ignitedBy]=[...(npc.memories[item.ignitedBy]||[]),observation].slice(-4);
+      npc.history.push(observation);npc.history=npc.history.slice(-12);
+     }
+    }
+   }
    state.fireClock[current]=now;
-   if(changes.length){const room={round:++state.round,world:{expedition:{current,creatures:state.npcs}},dmMemory:state.dmMemory,result:{id:'chaos-'+state.round,playerId:'fire',name:'Fire',action:'fire progresses',target:{entityId:burning[0].id},blocked:false,success:true,narration:changes.join('. ')+'.',changes,sceneEvents:[]}};recordDMMemory(room);state.dmMemory.entries.at(-1).tile=burning[0].tile||{x:p.x,y:p.y};}
+   if(changes.length){const room={round:++state.round,world:{expedition:{current,creatures:state.npcs}},dmMemory:state.dmMemory,result:{id:'chaos-'+state.round,playerId:'fire',name:'Fire',action:'fire progresses',target:{entityId:burning[0].id},blocked:false,success:true,narration:changes.join('. ')+'.',changes,sceneEvents:[]}};recordDMMemory(room);state.dmMemory.entries.at(-1).tile=eventTile||burning[0].tile||{x:p.x,y:p.y};}
    persist();
   }catch(error){state=previous;throw error;}
  }
@@ -219,6 +245,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const result=attempt.entityAction?resolveEntity(room,s,actor,plan,success):resolveItem(room,actor,plan,success);
   Object.assign(state.items,s.items);state.nextId=s.nextId;state.rng=rng.snapshot();state.round++;
   if(result.success&&destination)item.tile=destination;
+  if(result.success&&plan.verb==='ignite'&&item)item.ignitedBy=actor.id;
   if(result.success&&attempt.verb==='drop'&&item)item.tile={x:p.x,y:p.y};
   if(result.success&&['take','give','steal'].includes(attempt.verb)&&item)delete item.tile;
   const witnesses=npcViews(p).filter(n=>visible(p,n.tile,6)&&(!item?.tile||visible({...p,x:n.tile.x,y:n.tile.y,getWorld:()=>p.getWorld()},item.tile,6)));
