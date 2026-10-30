@@ -52,6 +52,9 @@ test('typed AI can propose movement of a real native object but cannot lower its
  assert.equal(validateEnvironmentJudgment(move,{...context,objects:[{...tent,nativeAdapter:false}]}).accepted,false);
  assert.equal(validateEnvironmentJudgment(move,{...context,objects:[{...tent,verifiedNative:false}]}).accepted,false);
  assert.equal(validateEnvironmentJudgment(move,{...context,actor:{active:true,tile:{x:50,y:50}}}).accepted,false);
+ const walking={...context,actor:{active:true,tile:{x:10,y:14}},maxReach:18,allowApproach:true};
+ assert.equal(validateEnvironmentJudgment(move,walking).accepted,true,'a grounded proposal can start native pathing');
+ assert.equal(validateEnvironmentJudgment(move,{...walking,allowApproach:false}).accepted,false,'execution remains adjacent only');
 });
 test('typed AI respects real native material, condition and capability before any roll',()=>{
  const roof={id:'fracture:world:roof',verifiedNative:true,nativeAdapter:true,scene:'fracture:world',
