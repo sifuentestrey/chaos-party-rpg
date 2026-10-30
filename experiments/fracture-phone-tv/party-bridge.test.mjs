@@ -378,3 +378,21 @@ test('unsupported staged commands never reserve a window or invoke AI',async t=>
  }
  assert.equal(app.pending.size,0);assert.equal(sockets[0].lastAction,undefined);
 });
+
+test('two players can declare in parallel; one STOP never cancels the other native action',async t=>{
+ const {app,base,sockets}=await setup(t,{reactionMs:90});
+ const tokens=[];
+ for(const name of ['Ada','Bryn'])tokens.push((await(await post(base,'/pair',{key:app.room.join,name})).json()).token);
+ await new Promise(r=>setTimeout(r,20));
+ const a=await(await post(base,'/action',{token:tokens[0],text:'declare repair camp table'})).json();
+ const b=await(await post(base,'/action',{token:tokens[1],text:'declare make green hat from cloth strip and wood splinter'})).json();
+ assert.equal(app.pending.size,2,'there is no global serial queue');
+ assert.equal((await post(base,'/action',{token:tokens[0],text:'stop'})).status,202);
+ assert.equal(app.sessions.get(tokens[0]).results.get(a.id).status,'cancelled');
+ assert.equal(app.pending.size,1);
+ await new Promise(r=>setTimeout(r,125));
+ assert.equal(sockets[0].lastAction.intent.verb,'cancel');
+ assert.equal(sockets[1].lastAction.id,b.id);
+ assert.equal(app.sessions.get(tokens[1]).results.get(b.id).status,'started');
+ assert.equal(app.pending.size,0);
+});
