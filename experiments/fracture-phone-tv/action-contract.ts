@@ -1,5 +1,5 @@
 /** Chaos-owned action contract. No engine state or outcomes are invented here. */
-export type Intent = {verb: string; target?: string; dx?: number; dy?: number; steps?: number; x?: number; y?: number};
+export type Intent = {verb: string; target?: string; dx?: number; dy?: number; steps?: number; x?: number; y?: number; judgment?: {action:string;targetId:string;ability:string;dc:number;description:string}};
 const directions: Record<string, number[]> = {left:[-1,0],west:[-1,0],right:[1,0],east:[1,0],up:[0,-1],north:[0,-1],down:[0,1],south:[0,1]};
 export function parseIntent(raw: string): Intent {
   let text = String(raw).toLowerCase().trim().replace(/[.!?]+$/, '').replace(/^(?:please\s+|i\s+(?:want to\s+|would like to\s+)?|try to\s+)+/, '').replace(/\s+/g,' ');
@@ -36,9 +36,19 @@ export function parseIntent(raw: string): Intent {
 }
 export function validIntent(value: any): value is Intent {
   if (!value || typeof value!=='object' || Array.isArray(value)) return false;
-  if (!['use_item','creative','cancel','respawn','equip','quest','look','exit','enter','move','go','attack','talk','open','loot','manipulate','unknown'].includes(value.verb)) return false;
-  if(Object.keys(value).some(k=>!['verb','target','dx','dy','steps','x','y'].includes(k)))return false;
-  if(value.target!==undefined && (typeof value.target!=='string'||!value.target.trim()||value.target.length>180))return false;
+  if (!['use_item','creative','cancel','respawn','equip','quest','look','exit','enter','move','go','attack','talk','open','loot','manipulate','environment','unknown'].includes(value.verb)) return false;
+  if(Object.keys(value).some(k=>!['verb','target','dx','dy','steps','x','y','judgment'].includes(k)))return false;
+  if(value.verb==='environment'){
+     if(Object.keys(value).some(k=>!['verb','judgment'].includes(k)))return false;
+     const j=value.judgment;
+     if(!j||typeof j!=='object'||Array.isArray(j)||Object.keys(j).some(k=>!['action','targetId','ability','dc','description'].includes(k)))return false;
+     return ['break','ignite'].includes(j.action)&&typeof j.targetId==='string'&&j.targetId.length>0&&j.targetId.length<=180&&
+       ['strength','dexterity','wisdom','none'].includes(j.ability)&&Number.isInteger(j.dc)&&j.dc>=0&&j.dc<=30&&
+       typeof j.description==='string'&&j.description.length<=240&&
+       (j.action!=='break'||(j.ability==='strength'&&j.dc===14));
+   }
+   if(value.judgment!==undefined)return false;
+   if(value.target!==undefined && (typeof value.target!=='string'||!value.target.trim()||value.target.length>180))return false;
   if(value.verb==='move')return Number.isInteger(value.dx)&&Number.isInteger(value.dy)&&Math.abs(value.dx)+Math.abs(value.dy)===1&&Number.isInteger(value.steps)&&value.steps>=1&&value.steps<=12;
   if(value.verb==='go' && value.x!==undefined)return Number.isInteger(value.x)&&Number.isInteger(value.y)&&value.x>0&&value.y>0&&value.x<1000&&value.y<1000;
   return !['use_item','creative','go','attack','talk','quest','equip','open','loot','manipulate'].includes(value.verb)||!!value.target;
