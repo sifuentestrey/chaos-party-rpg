@@ -55,11 +55,11 @@ Crafted possessions and their ingredients persist separately in the Fracture clo
 
 ## Reactive objects on the native map
 
-Chaos floor objects support real pushing, burning, extinguishing, repair, ownership and original D20 checks. The explicitly authored **camp tree** can be chopped or ignited; its saved HP and fallen state control phone-driver collision and appear on the shared TV. Use its displayed ID when names repeat. `put out camp tree` and `extinguish <object ID>` use the same existing Chaos action rules. A rooted tree cannot be pushed, and a felled tree cannot be repaired into a living tree.
+Chaos floor objects support real pushing, burning, extinguishing, repair, ownership and original D20 checks. **60 validated existing map trees** can be chopped or ignited; its saved HP and fallen state control phone-driver collision and appear on the shared TV. Use its displayed ID when names repeat. `put out tree` and `extinguish <object ID>` use the same existing Chaos action rules. A rooted tree cannot be pushed, and a felled tree cannot be repaired into a living tree.
 
 Fire spreads only between adjacent eligible objects on valid tiles in the same native zone. Adjacent fires can relight each other: two players can extinguish both during the same interval. Nearby native NPCs warn about their burning Chaos property and can extinguish it after a warning tick; absent NPCs cannot rescue it. Native painted scenery and character HP remain under Fracture's own rules. Weather definitions are not a playable weather system.
 
-Developer browser check (disposable saves only): `verify-reactive.mjs` uses two existing isolated characters, a carried wood item, an intact camp tree and the pinned guard's intact rug. Supply `CHAOS_BETA_TEST=1`, `CHAOS_TEST_ROOM_FILE`, `CHAOS_BROWSER_TOOLS`, `CHAOS_TV_KEY`, and optionally `CHAOS_BROWSER_REPORT_DIR`. It submits actual phone forms and captures TV/phone evidence; it consumes real materials and tree HP, so use a new disposable world rather than resetting player saves.
+Developer browser check (disposable saves only): `verify-reactive.mjs` uses two existing isolated characters, a carried wood item, an intact native tree and the pinned guard's intact rug. Supply `CHAOS_BETA_TEST=1`, `CHAOS_TEST_ROOM_FILE`, `CHAOS_BROWSER_TOOLS`, `CHAOS_TV_KEY`, and optionally `CHAOS_BROWSER_REPORT_DIR`. It submits actual phone forms and captures TV/phone evidence; it consumes real materials and tree HP, so use a new disposable world rather than resetting player saves.
 
 ## Replaying the optional Refuge Trial
 
@@ -124,3 +124,9 @@ Live verification is explicit and bounded: `verify-live-dm.mjs` requires `CHAOS_
 ## Optional majority story choice (experimental)
 
 After the host starts The Refuge Trial and the group actually talks to a native NPC, nearby living phone characters in The Refuge can open **Choose the trial objective**. Propose **fight** or **craft**, then a strict majority of the frozen electorate must approve within ten seconds. This uses the same original-style majority vote as group travel. The chosen objective persists for that trial run and only a genuine native monster death or confirmed original Chaos crafting success of the selected kind counts. If no vote succeeds, either route still works. A completed trial may be replayed by the host; the new run starts with no choice. No original Dawn Bell/Crown Job migration, invented loot or native damage changes are implied.
+
+## Family beta acceptance
+
+Start the optional Refuge Trial from the private host page. Phones show a current goal and nearby actions; typed instructions remain available. The native TV shows the objective and authoritative action feedback. Existing oak trees support persistent chopping/fire, clear their actual native trunk cells on destruction, and provide wood. Other painted scenery has its native Fracture behavior; no arbitrary building or terrain destruction is implied.
+
+`verify-family-night.mjs` replays the complete adventure through two real phone browsers and records timestamped TV footage when `CHAOS_RECORD_VIDEO=1`. It requires disposable accounts/world state and external browser tools; it consumes real ingredients and tree HP. Use a fresh separate world to rerun it. Do not reset family saves. Regular launches run the game directly; set `CHAOS_VERIFY_START=1` to run the developer test suite on launch.

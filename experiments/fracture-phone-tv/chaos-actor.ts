@@ -1,8 +1,9 @@
 /** Chaos-owned authoritative actor driver; enabled only by a private local host key. */
 import * as fs from 'node:fs';
+import {nativeTrees} from './chaos-native-scenery';
 import {pathToFileURL} from 'node:url';
 let chaosObjects:any=null;
-const chaosReady=process.env.CHAOS_WORLD_MODULE?import(pathToFileURL(process.env.CHAOS_WORLD_MODULE).href).then(m=>chaosObjects=m.createChaosWorld({file:'server/data/chaos-party/objects.json',kindName:Types.getKindAsString})):Promise.resolve(null);
+const chaosReady=process.env.CHAOS_WORLD_MODULE?import(pathToFileURL(process.env.CHAOS_WORLD_MODULE).href).then(m=>chaosObjects=m.createChaosWorld({file:'server/data/chaos-party/objects.json',kindName:Types.getKindAsString,nativeTrees})):Promise.resolve(null);
 import {Types} from '../../shared/ts/gametypes';
 import {Messages} from './message';
 import {Formulas} from './formulas';
@@ -26,6 +27,7 @@ export function installChaosActor(player:any, connection:any): void {
   const spectator=!!process.env.CHAOS_TV_KEY&&socket.handshake.auth?.chaosTVKey===process.env.CHAOS_TV_KEY;
   player.chaosSpectator=spectator;
   player.chaosControlled=local&&socket.handshake.auth?.chaosActorKey===key;
+  if(player.chaosControlled)player.chaosPrepareWorld=async()=>{await chaosReady;chaosObjects?.prepareWorld(world);};
   // The bridge authenticates each native actor and supplies a saved class.
   // Never accept a role or perk from a phone action or unauthenticated socket.
   player.chaosRole=player.chaosControlled&&['rogue','bard','wizard','knight','healer','wildcard'].includes(socket.handshake.auth?.chaosRole)?socket.handshake.auth.chaosRole:null;
@@ -91,7 +93,7 @@ export function installChaosActor(player:any, connection:any): void {
     }
     if(active)return ack({error:'Finish your action or stop it first.'});
     if(intent.verb==='creative'){
-      try{if(!chaosObjects)return ack({error:'Object rules are not installed on this host.'});const destination=chaosObjects.approach(player,intent.target);if(destination){cancel();active={id,intent,target:null,destination:[destination.x,destination.y],nearDestination:true,deadline:Date.now()+60000};receipt(id,'started','Walking to the object.');return ack({ok:true});}const result=chaosObjects.execute(player,intent.target);receipt(id,result.blocked?'blocked':result.success?'succeeded':'failed',result.text,{roll:result.roll,rolls:result.rolls,assistedBy:result.assistedBy,hinderedBy:result.hinderedBy,bonus:result.bonus,rerolled:result.rerolled,dc:result.dc,event:result.event});return ack({ok:true});}catch{receipt(id,'failed','Object action could not be saved; no success is claimed.');return ack({ok:true});}
+      try{if(!chaosObjects)return ack({error:'Object rules are not installed on this host.'});const destination=chaosObjects.approach(player,intent.target);if(destination){cancel();active={id,intent,target:null,destination:[destination.x,destination.y],nearDestination:true,deadline:Date.now()+60000};receipt(id,'started','Walking to the object.');return ack({ok:true});}const result=chaosObjects.execute(player,intent.target);receipt(id,result.blocked?'blocked':result.success?'succeeded':'failed',result.text,{roll:result.roll,rolls:result.rolls,assistedBy:result.assistedBy,hinderedBy:result.hinderedBy,bonus:result.bonus,rerolled:result.rerolled,dc:result.dc,event:result.event,object:result.object});return ack({ok:true});}catch{receipt(id,'failed','Object action could not be saved; no success is claimed.');return ack({ok:true});}
     }
     if(intent.verb==='equip'){
       const slots=player.getInventory().getSlots();const index=slots.findIndex((s:any)=>s&&Types.getKindAsString(s.kind)?.includes(intent.target));
@@ -196,7 +198,7 @@ export function installChaosActor(player:any, connection:any): void {
         player.zoneCallback?.();player.checkZoneChange(player.x,player.y);
         socket.emit('chaos:position',state());finish('succeeded','Travelled through the door into another area.',{},action);return;
       }
-      if(intent.verb==='creative'){const result=chaosObjects.execute(player,intent.target);finish(result.blocked?'blocked':result.success?'succeeded':'failed',result.text,{roll:result.roll,rolls:result.rolls,assistedBy:result.assistedBy,hinderedBy:result.hinderedBy,bonus:result.bonus,rerolled:result.rerolled,dc:result.dc,event:result.event},action);return;}
+      if(intent.verb==='creative'){const result=chaosObjects.execute(player,intent.target);finish(result.blocked?'blocked':result.success?'succeeded':'failed',result.text,{roll:result.roll,rolls:result.rolls,assistedBy:result.assistedBy,hinderedBy:result.hinderedBy,bonus:result.bonus,rerolled:result.rerolled,dc:result.dc,event:result.event,object:result.object},action);return;}
       if(!target||intent.verb==='go'){finish('succeeded',intent.verb==='move'?`Walked ${action.stepsMoved||intent.steps} tile${(action.stepsMoved||intent.steps)===1?'':'s'}.`:'Reached your destination.',{},action);return;}
       if(intent.verb==='attack'){
         if(Date.now()-lastHit<800)return;lastHit=Date.now();

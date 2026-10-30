@@ -1,10 +1,9 @@
 CHAOS PARTY — LOCAL FRACTURE TECHNOLOGY BETA
 
-IMPORTANT: This is NOT the original Chaos Party game migrated to Fracture.
-Crown Job, Dawn Bell, original character customization, the full NPC goal system and original
-campaign saves are not present. Reactive objects, D20 crafting, persistent NPC
-trust/memory, bounded DM support and local rally are partial transfers, not full parity. This is a separate native Fracture playtest.
-Read docs/CHAOS_TO_FRACTURE_PARITY.md before treating it as a release.
+Play The Refuge Trial together in Fracture's existing world: meet a local, choose
+fighting or crafting, explore Glitch Woods, and return home. Or explore freely.
+Each phone controls a separate saved character. Original Crown Job and Dawn Bell
+campaigns are not included; this is the separate Fracture family beta.
 
 Double-click Start_Chaos_Party.command on the Mac.
 Requires Node 22.18+ LTS (owner-tested baseline: 22.23.4), Git and first-install internet.
@@ -12,12 +11,13 @@ If macOS blocks opening a downloaded script, inspect it and run this in Terminal
   bash Start_Chaos_Party.command
 
 Open the private host link from Terminal, open the TV, and join each phone using its QR.
-Try moving or lighting the camp table, extinguishing/repairing it, and talking to a guard.
+Start with the nearby action buttons on your phone. You can also type what you want
+to try. Real map trees can be chopped or burned; NPCs react to witnessed trouble.
 NPCs remember witnessed theft; actual gifts can restore trust. You can still craft and trade.
 Optional party story: after a living character joins The Refuge, the host can choose
 Start The Refuge Trial. Talk to a native NPC, defeat a monster OR craft an item,
 enter Glitch Woods, and have a woods visitor return to The Refuge. Progress is saved.
-The trial is a new small adventure, NOT Crown Job or Dawn Bell. It grants no extra XP/loot.
+Native quests still provide their normal rewards. You can keep exploring after the trial.
 Use the same Wi-Fi. Each phone controls its own character. Keep Terminal open.
 The private host page can BENCH a player to free a 20-player slot without erasing their saved character.
 Restore that player from the host page when another slot becomes available.
@@ -35,3 +35,11 @@ Physical 2015 Mac + phone + TV acceptance remains unverified by cloud testing.
 AI DM: On the private host page, configure your existing free Groq key,
 Test AI connection, then enable Live AI DM. No key is included in this ZIP.
 Offline play remains available when AI is off or its free quota is exhausted.
+
+NEW IN THIS BUILD
+60 existing map trees have real durability, fire and persistent destruction.
+Felling one removes its native canopy, opens its trunk tiles and supplies wood.
+Action buttons use your actual surroundings. The TV shows swings, damage and the
+current adventure objective. Party travel safely changes an unfinished route.
+Regular launches reuse the build; developer tests can be requested explicitly with
+CHAOS_VERIFY_START=1. No paid service or account subscription is required.

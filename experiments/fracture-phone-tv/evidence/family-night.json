@@ -1,0 +1,471 @@
+{
+  "status": "passed",
+  "events": [
+    {
+      "player": "Ash",
+      "text": "walk to 41, 196",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 41,
+      "y": 196,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Bram",
+      "text": "walk to 42, 196",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 42,
+      "y": 196,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Ash",
+      "text": "talk to guard",
+      "status": "succeeded",
+      "message": "Spoke to guard. See their response.",
+      "x": 41,
+      "y": 196,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Ash",
+      "text": "ask guard for a quest",
+      "status": "succeeded",
+      "message": "Asked guard for an adventure. Check your quest.",
+      "x": 41,
+      "y": 196,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Ash",
+      "text": "help Bram",
+      "status": "succeeded",
+      "message": "Ash helps Bram. Their next valid Chaos world D20 check gets advantage for 15 seconds while you stay nearby.",
+      "x": 41,
+      "y": 196,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Bram",
+      "text": "make green hat from cloth strip and wood splinter",
+      "status": "succeeded",
+      "message": "D20 advantage 18 / 11 \u2192 18 / 10 (helped by Ash): Bram creates green hat (item-16) from cloth strip and wood splinter.",
+      "roll": 18,
+      "rolls": [
+        18,
+        11
+      ],
+      "x": 42,
+      "y": 196,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Bram",
+      "text": "equip green hat",
+      "status": "succeeded",
+      "message": "Bram: equip green hat.",
+      "x": 42,
+      "y": 196,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Ash",
+      "text": "walk to 41, 197",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 41,
+      "y": 197,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Ash",
+      "text": "drop cloth strip",
+      "status": "succeeded",
+      "message": "Ash: drop cloth strip.",
+      "object": {
+        "id": "item-1",
+        "name": "cloth strip",
+        "tile": {
+          "x": 41,
+          "y": 197
+        },
+        "before": null,
+        "after": 4,
+        "condition": "intact",
+        "actorId": 5510,
+        "verb": "drop"
+      },
+      "x": 41,
+      "y": 197,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Ash",
+      "text": "ignite item-1",
+      "status": "succeeded",
+      "message": "D20 20 / 9: Ash: ignite cloth strip.",
+      "roll": 20,
+      "object": {
+        "id": "item-1",
+        "name": "cloth strip",
+        "tile": {
+          "x": 41,
+          "y": 197
+        },
+        "before": null,
+        "after": 4,
+        "condition": "burning",
+        "actorId": 5510,
+        "verb": "ignite"
+      },
+      "x": 41,
+      "y": 197,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Bram",
+      "text": "talk to fracture:world1:npc:40:41:195",
+      "status": "succeeded",
+      "message": "guard: \u201cMy guard's rug is on fire! Please extinguish it.\u201d (trust 0)",
+      "x": 42,
+      "y": 195,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Ash",
+      "text": "walk to 29, 198",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 29,
+      "y": 198,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Bram",
+      "text": "walk to 28, 198",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 28,
+      "y": 198,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Ash",
+      "text": "chop fracture:world1:native-tree-29-193",
+      "status": "succeeded",
+      "message": "You strike the tree. 9 HP remains.",
+      "object": {
+        "id": "fracture:world1:native-tree-29-193",
+        "name": "tree",
+        "tile": {
+          "x": 30,
+          "y": 197
+        },
+        "before": 12,
+        "after": 9,
+        "condition": "intact",
+        "actorId": 5510,
+        "verb": "chop"
+      },
+      "x": 29,
+      "y": 197,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Ash",
+      "text": "chop fracture:world1:native-tree-29-193",
+      "status": "succeeded",
+      "message": "You strike the tree. 6 HP remains.",
+      "object": {
+        "id": "fracture:world1:native-tree-29-193",
+        "name": "tree",
+        "tile": {
+          "x": 30,
+          "y": 197
+        },
+        "before": 9,
+        "after": 6,
+        "condition": "intact",
+        "actorId": 5510,
+        "verb": "chop"
+      },
+      "x": 29,
+      "y": 197,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Ash",
+      "text": "chop fracture:world1:native-tree-29-193",
+      "status": "succeeded",
+      "message": "You strike the tree. 3 HP remains.",
+      "object": {
+        "id": "fracture:world1:native-tree-29-193",
+        "name": "tree",
+        "tile": {
+          "x": 30,
+          "y": 197
+        },
+        "before": 6,
+        "after": 3,
+        "condition": "intact",
+        "actorId": 5510,
+        "verb": "chop"
+      },
+      "x": 29,
+      "y": 197,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Ash",
+      "text": "chop fracture:world1:native-tree-29-193",
+      "status": "succeeded",
+      "message": "The tree falls. The route is clear.",
+      "object": {
+        "id": "fracture:world1:native-tree-29-193",
+        "name": "tree",
+        "tile": {
+          "x": 30,
+          "y": 197
+        },
+        "before": 3,
+        "after": 0,
+        "condition": "broken",
+        "actorId": 5510,
+        "verb": "chop"
+      },
+      "x": 29,
+      "y": 197,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Ash",
+      "text": "walk to 30, 197",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 30,
+      "y": 197,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Bram",
+      "text": "walk to 31, 197",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 31,
+      "y": 197,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Ash",
+      "text": "walk to 41, 196",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 41,
+      "y": 196,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Bram",
+      "text": "walk to 42, 196",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 42,
+      "y": 196,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Ash",
+      "text": "give wood splinter to fracture:world1:npc:40:41:195",
+      "status": "succeeded",
+      "message": "Ash: give wood splinter \u2192 guard.",
+      "x": 41,
+      "y": 196,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Ash",
+      "text": "talk to fracture:world1:npc:40:41:195",
+      "status": "succeeded",
+      "message": "guard: \u201cThank you for the gift. I remember your kindness.\u201d (trust 0)",
+      "x": 41,
+      "y": 196,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Ash",
+      "text": "walk to 34, 210",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 34,
+      "y": 210,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Bram",
+      "text": "walk to 35, 210",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 35,
+      "y": 210,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Ash",
+      "text": "attack 1120",
+      "status": "succeeded",
+      "message": "rat defeated. Check nearby loot.",
+      "x": 38,
+      "y": 210,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Ash",
+      "text": "walk to 34, 210",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 34,
+      "y": 210,
+      "zone": "The Refuge",
+      "adventure": "active"
+    },
+    {
+      "player": "Bram",
+      "text": "walk to 35, 210",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 35,
+      "y": 210,
+      "zone": "The Refuge",
+      "adventure": "active"
+    }
+  ],
+  "errors": [],
+  "checks": [
+    "two distinct phone characters, roles and native TV",
+    "real majority fight choice",
+    "successful original D20 crafting with another character granting advantage",
+    "crafted hat equipped; alternate craft cannot complete the voted fight branch",
+    "real ground fire, native NPC alarm and autonomous owned-rug rescue",
+    "four real strikes destroy an existing native map tree",
+    "other phone sees the same change and both actors walk through former trunk cells",
+    "tree yields a usable wood resource",
+    "real gift changes witnessed NPC relationship",
+    "real native rat defeated; chosen adventure proof satisfied",
+    "strict-majority outward and return travel; unfinished movement is safely redirected",
+    "both actors return to the actual village waypoint and the adventure completes",
+    "no browser errors"
+  ],
+  "adventure": {
+    "id": "refuge-trial-v1",
+    "status": "completed",
+    "run": 1,
+    "proof": {
+      "player": "Ash",
+      "at": 1793387134905,
+      "route": "combat"
+    },
+    "woods": {
+      "player": "Bram",
+      "at": 1793387147143
+    },
+    "returned": {
+      "player": "Bram",
+      "at": 1793387150513
+    }
+  },
+  "combat": [
+    {
+      "player": "Ash",
+      "status": "started",
+      "message": "rat HP 29 \u2192 24",
+      "combat": {
+        "target": 1120,
+        "before": 29,
+        "after": 24,
+        "dead": false
+      }
+    },
+    {
+      "player": "Ash",
+      "status": "started",
+      "message": "rat HP 24 \u2192 17",
+      "combat": {
+        "target": 1120,
+        "before": 24,
+        "after": 17,
+        "dead": false
+      }
+    },
+    {
+      "player": "Ash",
+      "status": "started",
+      "message": "rat HP 18 \u2192 10",
+      "combat": {
+        "target": 1120,
+        "before": 18,
+        "after": 10,
+        "dead": false
+      }
+    },
+    {
+      "player": "Ash",
+      "status": "started",
+      "message": "rat HP 10 \u2192 5",
+      "combat": {
+        "target": 1120,
+        "before": 10,
+        "after": 5,
+        "dead": false
+      }
+    },
+    {
+      "player": "Ash",
+      "status": "started",
+      "message": "rat HP 6 \u2192 1",
+      "combat": {
+        "target": 1120,
+        "before": 6,
+        "after": 1,
+        "dead": false
+      }
+    },
+    {
+      "player": "Ash",
+      "status": "started",
+      "message": "rat HP 1 \u2192 0 \u2014 defeated!",
+      "combat": {
+        "target": 1120,
+        "before": 1,
+        "after": 0,
+        "dead": true
+      }
+    }
+  ]
+}

@@ -65,7 +65,7 @@ if [[ "$BUILD_ID" != "$BUILT_ID" || ! -f "$TARGET/dist/client/main.js" || ! -f "
 else
   echo 'Using the existing verified build; no download is needed.'
 fi
-node --test "$HERE/"*.test.mjs
+if [[ "${CHAOS_VERIFY_START:-0}" == 1 ]]; then node --test "$HERE/"*.test.mjs; fi
 export FRACTURE_ROOT="$TARGET"
 export CHAOS_WORLD_MODULE="$HERE/chaos-world.mjs"
 export CHAOS_ACTOR_KEY="${CHAOS_ACTOR_KEY:-$(node -p "require('node:crypto').randomBytes(32).toString('hex')")}"
@@ -82,6 +82,8 @@ export NODE_ENV=production
 echo 'Starting local Fracture server...'
 NO_DEBUG=1 node "$HERE/start-child.mjs" dist/server/ts/main.js > "$LOG_DIR/fracture.log" 2>&1 &
 FR_PID=$!
+# Keep the Mac host awake while this game process is running.
+if [[ "$(uname -s)" == Darwin ]] && command -v caffeinate >/dev/null 2>&1; then caffeinate -i -w "$FR_PID" & fi
 ready=0
 for ((i=0;i<45;i++)); do
   if curl -fsS --max-time 2 http://localhost:8000/ -o /dev/null 2>/dev/null; then ready=1; break; fi

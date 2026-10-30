@@ -539,3 +539,16 @@ test('native environmental changes notify another authenticated phone without ro
   assert.equal((app.room.events||[]).some(e=>e.message?.includes('burning')),false,'world notification must not fabricate a room event');
  }finally{controller.abort();}
 });
+test('approved travel interrupts each eligible actor before starting the new route and fences stale work',async t=>{
+ const {app,base,sockets}=await setup(t,{zone:'The Refuge'});const tokens=[];
+ for(const name of ['Ada','Bryn','FarAway'])tokens.push((await(await post(base,'/pair',{key:app.room.join,name})).json()).token);
+ await new Promise(r=>setTimeout(r,25));const calls=sockets.map(()=>[]);
+ for(let i=0;i<3;i++){
+  const actor={id:i+1,ready:true,dead:false,zone:'The Refuge',x:i===2?90:34+i,y:210};app.sessions.get(tokens[i]).actor=actor;sockets[i].mockActor=actor;
+  const emit=sockets[i].emit;sockets[i].emit=(event,...args)=>{if(event==='chaos:action')calls[i].push(args[0].intent.verb);return emit(event,...args);};
+ }
+ app.sessions.get(tokens[2]).player.parked=true;
+ const vote=(await(await post(base,'/expedition/propose',{token:tokens[0],destination:'woods'})).json()).rally;
+ assert.equal((await(await post(base,'/rally/vote',{token:tokens[1],id:vote.id,yes:true})).json()).rally.status,'approved');
+ assert.deepEqual(calls,[['cancel','go'],['cancel','go'],[]]);assert.equal(app.sessions.get(tokens[0]).epoch,1);assert.equal(app.sessions.get(tokens[2]).epoch,0);
+});

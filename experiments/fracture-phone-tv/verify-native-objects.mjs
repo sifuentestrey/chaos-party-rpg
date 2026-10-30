@@ -85,13 +85,20 @@ try{
  deadline=Date.now()+3000;
  do{helperState=await get(helperToken);if(helperState.actor.chaos.hinderedBy===undefined)break;await sleep(100);}while(Date.now()<deadline);
  assert.equal(helperState.actor.chaos.hinderedBy,undefined,'interference is consumed after the real check');
- // A real native actor must interact with a visible Chaos-authored tree on a
- // passable native tile, not a mocked map object or an inferred native tree.
+ // Reach a known existing oak in the pinned map. Both native actors walk;
+ // neither test positions nor scenery HP are injected.
+ for(const [actorToken,x] of [[token,29],[helperToken,28]]){
+  const request=await post('/action',{token:actorToken,text:'walk to '+x+',198'});assert.equal(request.status,202);
+  let moved;deadline=Date.now()+65000;
+  do{const current=await get(actorToken);moved=current.results.find(r=>r.id===request.id);if(moved&&['succeeded','blocked','failed'].includes(moved.status))break;await sleep(150);}while(Date.now()<deadline);
+  assert.equal(moved?.status,'succeeded','actual native walk to the tree');
+ }
  state=await get(token);
- const tree=state.actor.chaos?.scenery?.find(o=>o.kind==='tree');
+ const tree=state.actor.chaos?.scenery?.find(o=>o.nativeOrigin&&o.tile.x===30&&o.tile.y===197);
+ assert.ok(tree?.nativeOrigin,'the target must be an existing native map tree');
  if(!tree?.tile){
   const debug=JSON.parse(fs.readFileSync(path.join(process.env.FRACTURE_ROOT,'server/data/chaos-party/objects.json'),'utf8'));
-  assert.fail('Authored tree not visible to native actor: '+JSON.stringify({
+  assert.fail('Native map tree not visible to native actor: '+JSON.stringify({
    actor:{x:state.actor.x,y:state.actor.y,zone:state.actor.zone},
    camp:debug.camp,authoredScenery:Object.values(debug.scenery||{}).map(o=>({kind:o.kind,tile:o.tile,scene:o.scene})),
    visibleGround:state.actor.chaos?.ground?.length||0
@@ -103,7 +110,7 @@ try{
   await sleep(250);
   let chop;const unlockedBy=Date.now()+16000;
   do{
-   chop=await post('/action',{token,text:'attack tree'});
+   chop=await post('/action',{token,text:'chop '+tree.id});
    if(chop.status===202)break;
    assert.equal(chop.status,409,'only the real party reaction lock may delay the next strike: '+JSON.stringify(chop));
    assert.match(chop.error||'',/locked|waiting for reactions/i);
@@ -117,7 +124,7 @@ try{
    if(outcome&&['succeeded','failed','blocked'].includes(outcome.status))break;
    await sleep(150);
   }while(Date.now()<deadline);
-  assert.equal(outcome?.status,'succeeded','real native actor must strike the authored tree: '+JSON.stringify(outcome));
+  assert.equal(outcome?.status,'succeeded','real native actor must strike the native map tree: '+JSON.stringify(outcome));
   const updated=state.actor.chaos?.scenery?.find(o=>o.id===tree.id);
   assert.equal(updated?.hp,12-3*(n+1),'the saved world must record real damage');
  }
@@ -140,7 +147,7 @@ try{
   if(walkOutcome&&['succeeded','failed','blocked'].includes(walkOutcome.status))break;
   await sleep(150);
  }while(Date.now()<deadline);
- assert.equal(walkOutcome?.status,'succeeded','native pathfinding must allow walking through the destroyed sidecar tree: '+JSON.stringify(walkOutcome));
+ assert.equal(walkOutcome?.status,'succeeded','native pathfinding must allow walking through the destroyed native tree: '+JSON.stringify(walkOutcome));
  assert.deepEqual([state.actor.x,state.actor.y],[tree.tile.x,tree.tile.y],
   'native movement must actually reach the formerly blocked tile');
 

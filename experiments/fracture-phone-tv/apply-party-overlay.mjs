@@ -1,5 +1,6 @@
 // Reviewed, repeatable overlay for the pinned separate Fracture checkout only.
 import fs from 'node:fs';
+import {discoverNativeTrees} from './native-scenery.mjs';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
@@ -22,6 +23,7 @@ patches.push(
   // Only bridge-authenticated experimental actors resume their real saved position.
   // Normal Fracture login and the native death/respawn path remain unchanged.
   if ((player as any).chaosControlled) {
+    await (player as any).chaosPrepareWorld?.();
     const saved = characterExists ? storage.loadPlayerState(player.name)?.character : null;
     if (saved && world.isValidPosition(saved.x, saved.y)) player.setPosition(saved.x, saved.y);
     if (!characterExists) {
@@ -61,6 +63,21 @@ for(const [source,dest] of [['chaos-actor.test.ts','server/ts/__tests__/chaos-ac
  const canonical=fs.readFileSync(path.join(dir,source),'utf8');
  if(fs.existsSync(p)){const current=fs.readFileSync(p,'utf8');if(!current.startsWith('/** Chaos-owned')||(current!==canonical&&previous[dest]!==digest(current)))throw Error(`Local or unrecognized edits in ${dest}; refusing overwrite`);}
  writes.push([dest,canonical]);
+}
+// Register exact native scenery against the upstream atlas collision metadata.
+const metadataFile=fs.openSync(path.join(root,'tools/maps/tmx/map.tmx'),'r'),metadataBuffer=Buffer.alloc(262144);
+let metadataLength;try{metadataLength=fs.readSync(metadataFile,metadataBuffer,0,metadataBuffer.length,0);}finally{fs.closeSync(metadataFile);}
+const tmx=metadataBuffer.toString('utf8',0,metadataLength).split('</tileset>')[0];
+if(digest(tmx)!=='9b92eb9fb7b63c5db803dbe456d35c518f8f650d69d4a47897b484e5ce8c7d29')throw Error('Native atlas metadata differs from the pinned version; local edits were preserved.');
+const nativeMap=fs.readFileSync(path.join(root,'client/maps/world_client.json'),'utf8');
+if(nativeMap!==execFileSync('git',['show','HEAD:client/maps/world_client.json'],{cwd:root,encoding:'utf8',maxBuffer:2097152}))throw Error('Native scenery requires the pinned map; local map edits were preserved.');
+const solid=[...tmx.matchAll(/<tile id="(\d+)"[^>]*>([\s\S]*?)<\/tile>/g)].filter(m=>/<property name="c"/.test(m[2])).map(m=>Number(m[1])+1);
+const nativeTrees=discoverNativeTrees(JSON.parse(nativeMap),solid);
+for(const dest of ['server/ts/chaos-native-scenery.ts','client/ts/chaos-native-scenery.ts']){
+ const content='// Generated from pinned Fracture map and atlas properties.\nexport const nativeTrees = '+JSON.stringify(nativeTrees)+';\n';
+ const file=path.join(root,dest);
+ if(fs.existsSync(file)){const current=fs.readFileSync(file,'utf8');if(current!==content&&previous[dest]!==digest(current))throw Error('Local native scenery edits; refusing overwrite: '+dest);}
+ writes.push([dest,content]);
 }
 for(const [file,content] of writes)fs.writeFileSync(path.join(root,file),content);
 fs.writeFileSync(manifestPath,JSON.stringify(Object.fromEntries(writes.map(([file,content])=>[file,digest(content)]))));

@@ -1,4 +1,6 @@
 /** Chaos-owned shared TV adapter. Ordinary Fracture is unchanged without chaosTV. */
+import {nativeTrees} from './chaos-native-scenery';
+import {Types} from '../../shared/ts/gametypes';
 import {getZoneAtPosition,INTERIOR_ZONES} from '../../shared/ts/zones';
 function pairing(): any {
   const p=new URLSearchParams(location.search),raw=p.get('chaosTV'),key=p.get('tvKey');
@@ -38,7 +40,8 @@ export function startChaosTV(game:any):void {
   });
   const colors:any={Amber:'#efbd68',Blue:'#78bcff',Green:'#83dc9b',Rose:'#ef99bc'};
   const hues:any={Amber:'none',Blue:'hue-rotate(150deg)',Green:'hue-rotate(70deg)',Rose:'hue-rotate(290deg)'};
-  const appearances=new Map();let groundProps:any[]=[];
+  const appearances=new Map();let groundProps:any[]=[],followed:any=null;
+  const clearedTrees=new Set<string>(),shownObjects=new Set<string>();
   const originalEntities=game.renderer.drawEntities.bind(game.renderer);
   game.renderer.drawEntities=(dirty:any)=>{
     const ctx=game.renderer.context,scale=game.renderer.scale;
@@ -54,8 +57,8 @@ export function startChaosTV(game:any):void {
         const sheet=game.renderer.tileset,ratio=sheet?.width/320;
         if(sheet?.complete&&ratio){
           ctx.globalAlpha=1;
-          if(prop.condition==='broken')ctx.drawImage(sheet,208*ratio,224*ratio,32*ratio,16*ratio,x-8*scale,y,32*scale,16*scale);
-          else ctx.drawImage(sheet,192*ratio,160*ratio,64*ratio,80*ratio,x-24*scale,y-64*scale,64*scale,80*scale);
+          if(prop.condition==='broken')ctx.drawImage(sheet,208*ratio,224*ratio,32*ratio,16*ratio,x-(prop.nativeOrigin?0:8*scale),y,32*scale,16*scale);
+          else if(!prop.nativeOrigin)ctx.drawImage(sheet,192*ratio,160*ratio,64*ratio,80*ratio,x-24*scale,y-64*scale,64*scale,80*scale);
         }
       }else if(prop.visual==='rug'){
         ctx.fillStyle=prop.color||'#bd88cf';ctx.fillRect(x,y+3*scale,16*scale,11*scale);ctx.strokeStyle='#dfc16e';ctx.lineWidth=scale;ctx.strokeRect(x+2*scale,y+5*scale,12*scale,7*scale);
@@ -64,7 +67,7 @@ export function startChaosTV(game:any):void {
         const sheet=game.renderer.tileset,ratio=sheet?.width/320;
         if(sheet?.complete&&ratio){const frame=Math.floor(Date.now()/140)%3;ctx.drawImage(sheet,frame*16*ratio,192*ratio,16*ratio,16*ratio,x,y-12*scale,16*scale,16*scale);}
       }ctx.restore();
-      game.renderer.drawText(prop.name,x+8*scale,y-3*scale,true,prop.color||'#efbd68',true);
+      if(followed&&Math.abs(followed.x-prop.tile.x)+Math.abs(followed.y-prop.tile.y)<=4){const label=(prop.name||prop.kind)+(prop.hp!==undefined&&prop.hp<12?' · '+prop.hp+' HP':'');game.renderer.drawText(label,x+8*scale,y-3*scale,true,prop.color||'#efbd68',true);}
     }originalEntities(dirty);
   };
   const originalDraw=game.renderer.drawEntity.bind(game.renderer);
@@ -92,6 +95,28 @@ export function startChaosTV(game:any):void {
     const present=new Set(players.map((p:any)=>String(p.actor.id)));
     // Native Fracture compiles this client to ES5; Map.forEach avoids TS2802.
     appearances.forEach((_appearance:any,id:string)=>{if(!present.has(id))appearances.delete(id);});
+    let changedMap=false;
+    for(const p of players)for(const id of p.actor.chaos?.nativeChanges||[]){
+      if(clearedTrees.has(id))continue;
+      const tree=nativeTrees.find(t=>t.id===id);if(!tree)continue;
+      for(let dy=0;dy<5;dy++)for(let dx=0;dx<4;dx++){
+        const index=(tree.nativeOrigin.y+dy)*game.map.width+tree.nativeOrigin.x+dx,gid=213+dy*20+dx;
+        const original=game.map.data[index],layers=Array.isArray(original)?original:[original];
+        const remaining=layers.filter((v:number)=>v!==gid);game.map.data[index]=remaining.length?remaining:0;
+      }
+      for(const tile of tree.footprint)if(game.map.grid[tile.y])game.map.grid[tile.y][tile.x]=0;
+      clearedTrees.add(id);changedMap=true;
+    }
+    if(changedMap)game.renderer.renderStaticCanvases();
+    for(const event of data.events){
+      const object=event.object,key=event.id+':'+event.at;
+      if(!object||shownObjects.has(key))continue;shownObjects.add(key);
+      if(Date.now()-event.at>3000)continue;
+      const actor=game.getEntityById(object.actorId);
+      if(actor?.hit){const dx=object.tile.x-Math.round(actor.x/16),dy=object.tile.y-Math.round(actor.y/16);const direction=Math.abs(dx)>Math.abs(dy)?(dx<0?Types.Orientations.LEFT:Types.Orientations.RIGHT):(dy<0?Types.Orientations.UP:Types.Orientations.DOWN);actor.hit(direction);setTimeout(()=>{if(actor.currentAnimation?.name?.startsWith('atk'))actor.idle();},450);}
+      if(Number.isFinite(object.before)&&object.before>object.after)game.infoManager.addDamageInfo(object.before-object.after,object.tile.x*16,object.tile.y*16-20,'inflicted');
+    }
+    if(shownObjects.size>200)shownObjects.clear();
     const props=new Map();for(const p of players)for(const item of [...(p.actor.chaos?.ground||[]),...(p.actor.chaos?.scenery||[])])props.set(item.id,item);groundProps=Array.from(props.values());
     for(const p of players){
       appearances.set(String(p.actor.id),{name:p.name,color:p.color,wearables:p.actor.chaos?.wearables||[]});
@@ -101,11 +126,13 @@ export function startChaosTV(game:any):void {
     if(shownCombat.size>200)shownCombat.clear();
     if(!players.some((p:any)=>String(p.actor.id)===select.value))selected=String(players[0]?.actor.id||'');else selected=select.value;
     select.textContent='';for(const p of players){const option=document.createElement('option');option.value=String(p.actor.id);option.textContent=`${p.name}${p.role?' · '+p.role:''} · HP ${p.actor.hp}/${p.actor.maxHp}`;select.append(option);}select.value=selected;
+    followed=players.find((p:any)=>String(p.actor.id)===selected)?.actor;
     game.client.connection.emit('chaos:watch',{key:config.key,actorId:selected||null},()=>{});
     log.textContent='';
     if(data.rally?.status==='pending'){const row=document.createElement('div');row.textContent=`Party ${data.rally.kind==='expedition'?'travel to '+data.rally.destination:'rally'} vote: ${data.rally.yes}/${data.rally.required} yes · ${Math.max(0,Math.ceil((data.rally.deadline-Date.now())/1000))}s`;log.append(row);}
     for(const d of (data.declarations||[]).slice(0,2)){const row=document.createElement('div');row.textContent=`${d.player} declares: ${d.text} · ${Math.max(0,Math.ceil((d.dueAt-Date.now())/1000))}s to help/hinder`;log.append(row);}
-    for(const e of data.events.slice(-3)){const row=document.createElement('div');row.textContent=`${e.player}: ${e.message}`;log.append(row);}
+    if(data.adventure){const row=document.createElement('div');row.style.color='#efbd68';const next=data.adventure.steps.find((step:any)=>!step.done);row.textContent=data.adventure.status==='completed'?'The Refuge Trial — adventure complete!':'The Refuge Trial · '+(next?.label||'Explore together');log.append(row);}
+    for(const e of data.events.slice(-2)){const row=document.createElement('div');row.textContent=`${e.player}: ${e.message}`;log.append(row);}
     if(!players.length&&connected.length)log.textContent='Party knocked out — respawn on your phones.';
     lobby.hidden=connected.length>0;lobby.style.display=connected.length?'none':'grid';if(!connected.length){lobby.textContent='';const title=document.createElement('h1');title.textContent='Chaos Party';lobby.append(title);const qr=document.createElement('div');qr.style.cssText='width:260px;margin:auto;background:white';qr.innerHTML=data.lobby.qr;lobby.append(qr);const message=document.createElement('p');message.textContent='Scan to join. Your phone is your character.';lobby.append(message);log.textContent='Waiting for phones to join the adventure…';}
   }catch{log.textContent='Room connection lost; reconnecting…';}};

@@ -71,7 +71,7 @@ export function advanceAdventure(adventure,evidence,now=Date.now()){
   // A person who actually reached the woods must return. A teammate who
   // never left town cannot finish the adventure by polling their position.
   adventure.returned=credit;adventure.status='completed';adventure.completedAt=now;
-  change='Returned to The Refuge. The Refuge Trial is complete — no native rewards were invented.';
+  change='Home again! The party has completed The Refuge Trial. Keep exploring or start another trial.';
  }
  if(!change)return null;
  if(evidence.id)adventure.seen=[...seen,evidence.id].slice(-32);
@@ -87,8 +87,8 @@ export function adventureView(a){
   {label:'Return to The Refuge',done:!!a.returned,by:a.returned?.player||null}
  ];
  return {title:'The Refuge Trial',status:a.status,run:a.run||1,route:a.proof?.route||null,choice:a.choice?.route||null,steps,
-  summary:a.status==='completed'?'The party completed the trial. No extra loot or XP was granted.':
-  'Work together: meet a local, '+(a.choice?.route==='combat'?'defeat a monster':a.choice?.route==='craft'?'craft an item':'fight OR craft')+', visit the woods, and return. Real engine actions only.'};
+  summary:a.status==='completed'?'Home again! The party has completed the trial. Keep exploring, or start another adventure.':
+  'Work together: meet a local, '+(a.choice?.route==='combat'?'defeat a monster':a.choice?.route==='craft'?'craft an item':'fight OR craft')+', visit the woods, and return. Everyone can help, explore, or cause a little trouble along the way.'};
 }
 
 /** Optional, durable majority story decision. Reuses the same frozen-electorate
