@@ -17,9 +17,16 @@ The owner's latest direction is to merge the games creatively, with engineering 
 - [x] Focused Node checks, pinned native tests/builds and original `npm run verify`. See fusion evidence for current counts and scope.
 - [x] Native-zone and walkability enforcement for Chaos items: no gifts through blocked tiles or across native zones; out-of-zone floor items cannot be inspected, approached or picked up. Existing version-1 saves remain readable.
 - [x] Source-backed NPC possession/theft rule slice: real native Fracture NPC entities may receive crafted Chaos items; the original D20 theft resolver changes ownership and persists the NPC's trust/history even on failed rolls. Node regression covers ownership, range, restart and memory. Native dialogue/AI remains unchanged; physical two-phone NPC interaction remains unaccepted.
-- [ ] New pinned-server end-to-end object integration check must pass with `CHAOS_WORLD_MODULE` explicitly installed before this run claims that the native actor exercised the sidecar; build-only success is insufficient.
+- [x] Pinned Fracture CI now **boots with `CHAOS_WORLD_MODULE` enabled** and drives a real native actor through original Chaos crafting. Run [40983980128](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/40983980128) passed: 71 pinned test files / 3,329 tests, independent rally, real actor starter objects, D20 receipt, material preservation on a legitimate **failed** roll, separate durable object save, and source-only Mac kit packaging. This is real native-server proof of the object adapter, **not** a browser NPC-theft playtest or Mac acceptance.
 
 Crafted Chaos wearables currently add colored bands to the native sprites; they do **not** grant invented Fracture armor/weapon/spell stats. Native equipment/loot and crafted objects remain distinct inventory systems behind one phone view. Native gear gifting, arbitrary terrain manipulation, the old campaign/full native NPC behavior and full creative narration are not ported. This is a playable integration slice, not completion of every mechanic in both games.
+
+## October 30 object/NPC verification checkpoint
+
+- **Core authority:** original Chaos crafting/ownership/advantage/theft rules execute in a separate Fracture object store. Native Fracture retains movement/combat authority. Objects cannot cross native zone boundaries or blocked two-step transfer paths. No original saves or Colyseus traffic were modified.
+- **NPC consequence:** a real Fracture NPC can receive a crafted Chaos item, then a D20 theft attempt updates original Chaos trust/history even when the roll fails. Source-level regression verifies a native NPC entity fixture, range, ownership and restart persistence. **Native NPC dialogue, quests and combat do not react to this memory yet**; no actual Mac/browser NPC theft acceptance is claimed.
+- **Real native CI:** the disposable server's object module is explicitly enabled. A native actor actually received starter materials and submitted a craft; the D20 failure receipt matched its retained inventory and persisted save. [Passing integration and source-kit artifact](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/40983980128), source `84d217895b`. This tests honest failure handling, not a guaranteed successful craft.
+- **Remaining gates:** original Crown Job/Dawn Bell/character classes, full fixture/fire/repair/NPC reactions, creative DM, and owner Mac/TV/12–20-physical-phone acceptance remain open.
 
 ## Verified behavior
 
