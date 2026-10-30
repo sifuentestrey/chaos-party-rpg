@@ -5,9 +5,9 @@ const normal=s=>String(s||'').trim().toLowerCase().replace(/^(?:the|a|an)\s+/,''
 const directions={north:[0,-1],up:[0,-1],south:[0,1],down:[0,1],east:[1,0],right:[1,0],west:[-1,0],left:[-1,0]};
 export function nativeObjectAttempt(text){
  const clean=String(text||'').trim().replace(/^(?:please |I (?:want to |try to |attempt to )?)+/i,'').replace(/[.!?]+$/,'');
- const match=/^(push|pull|move|drag|shift|roll|lift|take|pick up|grab|attack|hit|strike|chop(?: down)?|cut down|fell|break|kick|smash|hack|uproot|inspect|examine|look at|repair|mend|drink from|drink|splash)\s+(.+)$/i.exec(clean);
- let attempt=match?{verb:/^(push|pull|move|drag|shift|roll|lift)$/.test(match[1].toLowerCase())?'move':/^(take|pick up|grab)$/.test(match[1].toLowerCase())?'take':/^(inspect|examine|look at)$/.test(match[1].toLowerCase())?'inspect':/^(repair|mend)$/.test(match[1].toLowerCase())?'repair':/^drink/.test(match[1].toLowerCase())?'drink':match[1]==='splash'?'splash':'break',target:match[2]}:parseEntityAttempt(clean);
- if(!attempt||!['move','take','break','inspect','repair','ignite','extinguish','drink','splash'].includes(attempt.verb))return null;
+ const match=/^(push|pull|move|drag|shift|roll|lift|take|pick up|grab|drop|put down|attack|hit|strike|chop(?: down)?|cut down|fell|break|kick|smash|hack|uproot|inspect|examine|look at|repair|mend|drink from|drink|splash)\s+(.+)$/i.exec(clean);
+ let attempt=match?{verb:/^(push|pull|move|drag|shift|roll|lift)$/.test(match[1].toLowerCase())?'move':/^(take|pick up|grab)$/.test(match[1].toLowerCase())?'take':/^(drop|put down)$/.test(match[1].toLowerCase())?'drop':/^(inspect|examine|look at)$/.test(match[1].toLowerCase())?'inspect':/^(repair|mend)$/.test(match[1].toLowerCase())?'repair':/^drink/.test(match[1].toLowerCase())?'drink':match[1]==='splash'?'splash':'break',target:match[2]}:parseEntityAttempt(clean);
+ if(!attempt||!['move','take','drop','break','inspect','repair','ignite','extinguish','drink','splash'].includes(attempt.verb))return null;
  const direction=attempt.target.match(/\s+(north|south|east|west|up|down|left|right)$/i);
  return {...attempt,target:normal(direction?attempt.target.slice(0,-direction[0].length):attempt.target),...(direction?{direction:direction[1].toLowerCase()}:{}),pull:/^(pull|drag)\b/i.test(clean)};
 }
@@ -20,9 +20,10 @@ export function findNativeObject(attempt,objects,actor){
 }
 export const distance=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
 export function nativeCapabilities(o){return {
- movable:!!o.movable&&o.condition!=='broken',portable:false,
- breakable:!o.protected&&!o.fireSource&&o.condition!=='broken',
- flammable:!!o.flammable&&o.condition==='intact',
+ movable:!!o.movable&&!o.carriedBy&&o.condition!=='broken',
+ portable:!!o.portable&&!o.carriedBy&&o.condition==='intact',droppable:!!o.portable&&!!o.carriedBy&&o.condition==='intact',
+ breakable:!o.carriedBy&&!o.protected&&!o.fireSource&&o.condition!=='broken',
+ flammable:!o.carriedBy&&!!o.flammable&&o.condition==='intact',
  extinguishable:o.condition==='burning',repairable:!!o.repairable&&o.condition==='broken',
  waterSource:!!o.waterSource,drinkable:!!o.waterSource,
 };}
