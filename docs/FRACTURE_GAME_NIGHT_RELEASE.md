@@ -4,6 +4,15 @@
 
 Updated October 30, 2026. Experimental branch only: `spike/fracture-phone-tv`. Work order: [issue #12](https://github.com/sifuentestrey/chaos-party-rpg/issues/12). **Playable beta prepared for physical Mac rehearsal; not a claim of completed hardware acceptance.** No merge, public game deployment or paid service was performed.
 
+## Native combat → canonical story memory — October 30
+
+- [x] A **real Fracture HIT** that reduces a mob to zero HP now supplies a bounded, source-backed Chaos DM-memory event. The native actor captures the pre-hit tile before Fracture destroys/repositions the mob. The sidecar records only after the native server confirms death; phone text, a proposed attack or an unchanged HP value cannot fabricate a victory.
+- [x] Nearby NPCs who can actually see the encounter remember that character fighting when the creature fell; dialogue refers to that observation on later visits. The same combat event and NPC memory survive restart in the separate Fracture-only object save. Other players receive no personal credit, and combat does not arbitrarily grant NPC trust, native XP or damage.
+- [x] Regression tests cover real-death gating, unchanged HP, duplicate mob instance, authenticated/ready/living character, zone and distance checks, obstructed witnesses, independent players, reload and durable DM facts. [Pinned Fracture CI 40989546900](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/40989546900) passed with the new native actor hook and focused Node tests.
+- [ ] The disposable two-phone browser adventure now asserts that an **actual rat defeat** appears in the canonical story ledger. That updated end-to-end assertion has not yet been executed on the physical Mac; the native build/unit checks alone do not prove this complete browser journey. No live creative-model call was made.
+
+This closes one important *memory integration* gap between Fracture combat and original Chaos narration, **not** the original Crown Job/Dawn Bell campaign, original character classes or full NPC goals. Fracture still owns all hits, mob death, loot, XP and native quests.
+
 ## Core mechanics milestone — October 30
 
 - [x] Preserved the concurrent nearby-player assistance change: another live character can grant one D20 advantage craft/attachment roll for fifteen seconds. No self-help, stacking or absent/dead helper advantage; original MIT selection helper and its license are bundled.
