@@ -17,7 +17,7 @@ const verbs=new Set(['take','drop','craft','attach','give','equip','unequip','se
 const environmental=new Set(['move','ignite','extinguish','repair']);
 // A capability is never inferred from a painted Fracture tile. These
 // attempts may only act on a grounded item already present in the world.
-const nativeEnvironmentRequests=/^(?:push|pull|move|lift|pick up|grab|take|hide in|hide behind|climb|burn|ignite|break|smash|throw)\\s+(?:the\\s+)?(?:rock|boulder|bush|shrubs?|grass|tree|furniture|wall|building)(?:\s|$)/i;
+const nativeEnvironmentRequests=/^(?:push|pull|move|lift|pick up|grab|take|hide in|hide behind|climb|burn|ignite|break|smash|throw)\s+(?:the\s+)?(?:rock|boulder|bush|shrubs?|grass|tree|furniture|wall|building)(?:\s|$)/i;
 export function unsupportedNativeEnvironment(text,view={}){
  if(!nativeEnvironmentRequests.test(String(text||'').trim()))return null;
  const raw=String(text).trim().toLowerCase();
