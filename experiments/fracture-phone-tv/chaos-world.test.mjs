@@ -12,6 +12,59 @@ test('auto-approach uses the resolved action item, not a duplicate floor name',t
 function npcFixture(t){const f=fixture(t);const guard={id:91,type:'npc',kind:55,name:'guard',x:41,y:210};f.world.entities={guard};return {...f,guard};}
 function succeed(engine,p,text){let r;for(let n=0;n<30;n++){r=engine.execute(p,text);if(r.success||r.blocked)break;}assert.ok(r.success,JSON.stringify(r));return r;}
 test('original fire, repair and movable blocking objects have durable native tiles',t=>{const {a,engine,file,world,tick}=fixture(t);let table=engine.snapshot(a).ground.find(i=>i.visual==='table');assert.ok(table);assert.equal(engine.isBlocked(a,table.tile.x,table.tile.y),true);const old={...table.tile};a.x=table.tile.x-1;a.y=table.tile.y;succeed(engine,a,'push camp table east');table=engine.snapshot(a).ground.find(i=>i.id===table.id);assert.equal(table.tile.x,old.x+1);assert.equal(engine.isBlocked(a,old.x,old.y),false);assert.equal(engine.isBlocked(a,table.tile.x,table.tile.y),true);a.x++;succeed(engine,a,'ignite camp table');tick();tick();tick();assert.equal(engine.isBlocked(a,table.tile.x,table.tile.y),false);assert.equal(engine.snapshot(a).ground.find(i=>i.id===table.id).condition,'broken');succeed(engine,a,'repair camp table');assert.equal(engine.isBlocked(a,table.tile.x,table.tile.y),true);succeed(engine,a,'ignite camp table');assert.equal(engine.execute(a,'extinguish camp table').success,true);const restored=createChaosWorld({file});assert.equal(restored.snapshot(a).ground.find(i=>i.id===table.id).condition,'intact');world.isValidPosition=(x,y)=>x!==table.tile.x+1;assert.equal(engine.execute(a,'push camp table east').blocked,true);});
+test('tile fire spreads one hop per tick, persists, and never ignites carried items',t=>{
+ const {a,b,engine,file,tick}=fixture(t);
+ const table=engine.snapshot(a).ground.find(i=>i.visual==='table');assert.ok(table);
+ a.x=table.tile.x+1;a.y=table.tile.y;
+ assert.equal(engine.execute(a,'drop cloth strip').success,true);
+ const cloth=engine.snapshot(a).ground.find(i=>i.name==='cloth strip');assert.ok(cloth);
+ a.x=table.tile.x+2;
+ assert.equal(engine.execute(a,'drop wood splinter').success,true);
+ const wood=engine.snapshot(a).ground.find(i=>i.name==='wood splinter');assert.ok(wood);
+ a.x=table.tile.x+1;
+ succeed(engine,a,'ignite '+table.id);
+ tick();
+ assert.equal(engine.snapshot(a).ground.find(i=>i.id===cloth.id).condition,'burning');
+ assert.equal(engine.snapshot(a).ground.find(i=>i.id===wood.id).condition,'intact','new fire cannot chain through two tiles in one tick');
+ assert.equal(engine.snapshot(b).bag.find(i=>i.name==='cloth strip').condition,'intact','carried items are not floor fuel');
+ tick();
+ assert.equal(engine.snapshot(a).ground.find(i=>i.id===wood.id).condition,'burning');
+ const restored=createChaosWorld({file,clock:()=>21000});
+ assert.equal(restored.snapshot(a).ground.find(i=>i.id===wood.id).condition,'burning','fire state survives restart');
+ assert.ok(restored.snapshot(a).story.some(e=>/Fire spreads/.test(e.fact||'')),'fire propagation is remembered as a real world event');
+});
+test('extinguishing prevents spread and native zone boundaries stop fire',t=>{
+ const {a,engine,tick,world}=fixture(t);
+ const table=engine.snapshot(a).ground.find(i=>i.visual==='table');
+ a.x=table.tile.x+1;a.y=table.tile.y;
+ assert.equal(engine.execute(a,'drop cloth strip').success,true);
+ const cloth=engine.snapshot(a).ground.find(i=>i.name==='cloth strip');
+ succeed(engine,a,'ignite '+table.id);
+ world.zoneManager.getZoneAt=(x)=>({name:x<=table.tile.x?'west':'east'});
+ tick();
+ assert.equal(engine.snapshot(a).ground.find(i=>i.id===cloth.id).condition,'intact','adjacent but separate native zones cannot conduct fire');
+ world.zoneManager.getZoneAt=()=>({name:'The Refuge'});
+ assert.equal(engine.execute(a,'extinguish '+table.id).success,true);
+ tick();
+ assert.equal(engine.snapshot(a).ground.find(i=>i.id===cloth.id).condition,'intact','extinguished objects cannot spread fire');
+});
+test('a witnessed fire spreading to an NPC-owned rug changes durable personal trust',t=>{
+ const {a,guard,engine,file,tick}=npcFixture(t);
+ const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');assert.ok(rug);
+ a.x=rug.tile.x+1;a.y=rug.tile.y;
+ assert.equal(engine.execute(a,'drop cloth strip').success,true);
+ const cloth=engine.snapshot(a).ground.find(i=>i.name==='cloth strip');
+ succeed(engine,a,'ignite '+cloth.id);
+ const before=engine.snapshot(a).npcs.find(n=>n.name==='guard').trust;
+ tick();
+ assert.equal(engine.snapshot(a).ground.find(i=>i.id===rug.id).condition,'burning');
+ const npc=engine.snapshot(a).npcs.find(n=>n.name==='guard');
+ assert.equal(npc.trust,before-1);
+ assert.ok(npc.memory.some(m=>m.verb==='fire-spread'));
+ const restored=createChaosWorld({file});
+ assert.equal(restored.snapshot(a).npcs.find(n=>n.name==='guard').trust,npc.trust);
+ assert.equal(restored.canQuest(a,guard),false);
+});
 test('theft, witnesses, personal trust, amends and DM memory survive reload',t=>{const {a,b,guard,engine,file}=npcFixture(t);const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');assert.ok(rug);a.x=rug.tile.x;a.y=rug.tile.y;const theft=engine.execute(a,'steal '+rug.id+' from guard');assert.equal(theft.blocked,false);assert.ok(engine.snapshot(a).npcs[0].trust<0);assert.equal(engine.canQuest(a,guard),false);assert.equal(engine.canQuest(b,guard),true);assert.match(engine.talk(a,guard),/remember/);const restored=createChaosWorld({file});assert.equal(restored.canQuest({...a,id:999},guard),false);assert.ok(restored.snapshot(a).story.some(e=>e.attempt.startsWith('steal')));assert.equal(restored.execute(a,'give cloth strip to guard').success,true);assert.equal(restored.canQuest(a,guard),true);assert.match(restored.talk(a,guard),/gift/);const data=JSON.parse(fs.readFileSync(file));assert.ok(data.dmMemory.people[restored.snapshot(a).npcs[0].id].encounters.length);});
 test('unseen NPCs do not learn private actions; native bodies and other players stay protected',t=>{const {a,b,guard,engine,world}=npcFixture(t);engine.snapshot(a);world.isValidPosition=(x,y)=>x!==41;a.x=39;engine.execute(a,'drop cloth strip');assert.equal(engine.talk(a,guard),null);assert.equal(engine.execute(a,'ignite guard').blocked,true);world.isValidPosition=()=>true;engine.snapshot(b);assert.equal(engine.execute(a,'ignite '+engine.snapshot(b).bag[0].id).blocked,true);});
 
