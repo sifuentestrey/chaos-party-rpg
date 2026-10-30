@@ -13,14 +13,16 @@ export function createNativeDoorControl(doors,{clock=Date.now,ttlMs=15000}={}){
  for(const door of doors){
   if(!valid(door))continue; // Fail closed on malformed or invented geometry.
   const key=keyFor(door),ends=[{x:door.x,y:door.y},{x:door.tx,y:door.ty}];
-  if(!entries.has(key))entries.set(key,{key,ends});
-  for(const end of ends){const c=cell(end);if(!tiles.has(c))tiles.set(c,new Set());tiles.get(c).add(key);}
+  if(!entries.has(key))entries.set(key,{key,ends,sources:[]});
+  const entry=entries.get(key),source={x:door.x,y:door.y};
+  if(!entry.sources.some(p=>cell(p)===cell(source)))entry.sources.push(source);
+  const c=cell(source);if(!tiles.has(c))tiles.set(c,new Set());tiles.get(c).add(key);
  }
  const live=(key,world)=>{
   const hold=holds.get(key);if(!hold)return null;
   const entry=entries.get(key);
   const owner=Object.values(world?.players||{}).find(p=>actorId(p)===hold.actorId);
-  if(!owner||!owner.chaosControlled||owner.chaosSpectator||!owner.hasEnteredGame||owner.isDead||owner.getWorld?.()!==world||clock()>=hold.until||!entry.ends.some(end=>distance(owner,end)<=1)){
+  if(!owner||!owner.chaosControlled||owner.chaosSpectator||!owner.hasEnteredGame||owner.isDead||owner.getWorld?.()!==world||clock()>=hold.until||!entry.sources.some(end=>distance(owner,end)<=1)){
    holds.delete(key);return null;
   }
   return {...hold,name:owner.chaosName||owner.name||'A player'};
@@ -28,7 +30,7 @@ export function createNativeDoorControl(doors,{clock=Date.now,ttlMs=15000}={}){
  const find=(p,limit=8,inZone=()=>true)=>{
   const matches=[];
   for(const entry of entries.values()){
-   const options=entry.ends.filter(inZone).map(point=>({point,distance:distance(p,point)})).filter(x=>x.distance<=limit).sort((a,b)=>a.distance-b.distance);
+   const options=entry.sources.filter(inZone).map(point=>({point,distance:distance(p,point)})).filter(x=>x.distance<=limit).sort((a,b)=>a.distance-b.distance);
    if(options.length)matches.push({...entry,...options[0]});
   }
   matches.sort((a,b)=>a.distance-b.distance);
@@ -37,7 +39,7 @@ export function createNativeDoorControl(doors,{clock=Date.now,ttlMs=15000}={}){
  };
  const use=(p,entry,verb,{success=false}={})=>{
   if(!entry||entry.ambiguous||!entries.has(entry.key))return {blocked:true,success:false,text:'Choose one existing map doorway.'};
-  if(!actorId(p)||!p.chaosControlled||p.isDead||!p.hasEnteredGame||!entry.ends.some(end=>distance(p,end)<=1))return {blocked:true,success:false,text:'Stand beside that doorway with your active character.'};
+  if(!actorId(p)||!p.chaosControlled||p.isDead||!p.hasEnteredGame||!entry.sources.some(end=>distance(p,end)<=1))return {blocked:true,success:false,text:'Stand beside that doorway with your active character.'};
   const current=live(entry.key,p.getWorld());
   if(verb==='hold'){
    if(current&&current.actorId!==actorId(p))return {blocked:true,success:false,text:`${current.name} is already holding that doorway.`};
@@ -62,7 +64,7 @@ export function createNativeDoorControl(doors,{clock=Date.now,ttlMs=15000}={}){
  };
  const view=p=>[...entries.values()].flatMap(entry=>{
   const hold=live(entry.key,p.getWorld());if(!hold)return [];
-  const point=entry.ends.slice().sort((a,b)=>distance(p,a)-distance(p,b))[0];
+  const point=entry.sources.slice().sort((a,b)=>distance(p,a)-distance(p,b))[0];
   return distance(p,point)<=8?[{x:point.x,y:point.y,heldBy:hold.name}]:[];
  });
  return {find,use,isBlocked,view};
