@@ -8,7 +8,7 @@ const REFUGE='The Refuge',WOODS='Glitch Woods';
 const clean=s=>String(s||'').slice(0,32);
 export function startAdventure(now=Date.now()){
  return {version:1,id:ADVENTURE_ID,status:'active',startedAt:now,completedAt:null,
-  npc:null,proof:null,woods:null,returned:null,seen:[]};
+  npc:null,proof:null,woods:null,returned:null,visitors:[],seen:[]};
 }
 export function receiptEvidence(receipt,attempt,actor,player){
  if(!receipt||!attempt||!actor?.ready||typeof receipt.id!=='string'||!receipt.id||!player)return null;
@@ -25,9 +25,9 @@ export function receiptEvidence(receipt,attempt,actor,player){
   return {...base,kind:'craft'};
  return null;
 }
-export function zoneEvidence(actor,player){
- if(!actor?.ready||actor.dead||!player||![REFUGE,WOODS].includes(actor.zone))return null;
- return {kind:'zone',zone:actor.zone,player:clean(player)};
+export function zoneEvidence(actor,player,participant){
+ if(!actor?.ready||actor.dead||!player||typeof participant!=='string'||!participant||![REFUGE,WOODS].includes(actor.zone))return null;
+ return {kind:'zone',zone:actor.zone,player:clean(player),participant};
 }
 export function advanceAdventure(adventure,evidence,now=Date.now()){
  if(!adventure||adventure.id!==ADVENTURE_ID||adventure.version!==1||adventure.status!=='active'||!evidence)return null;
@@ -40,9 +40,15 @@ export function advanceAdventure(adventure,evidence,now=Date.now()){
  }else if(['combat','craft'].includes(evidence.kind)&&!adventure.proof){
   adventure.proof={...credit,route:evidence.kind};
   change=evidence.kind==='combat'?'Defeated a real Fracture monster.':'Successfully crafted an original Chaos item.';
- }else if(evidence.kind==='zone'&&evidence.zone===WOODS&&adventure.npc&&adventure.proof&&!adventure.woods){
-  adventure.woods=credit;change='Reached Glitch Woods after meeting the trial requirements.';
- }else if(evidence.kind==='zone'&&evidence.zone===REFUGE&&adventure.woods&&!adventure.returned){
+ }else if(evidence.kind==='zone'&&evidence.zone===WOODS&&adventure.npc&&adventure.proof&&
+   evidence.participant&&!(adventure.visitors||[]).some(v=>v.participant===evidence.participant)){
+  adventure.visitors=[...(adventure.visitors||[]),{...credit,participant:evidence.participant}].slice(-20);
+  if(!adventure.woods)adventure.woods=credit;
+  change='A party member reached Glitch Woods after meeting the trial requirements.';
+ }else if(evidence.kind==='zone'&&evidence.zone===REFUGE&&adventure.woods&&!adventure.returned&&
+   (adventure.visitors||[]).some(v=>v.participant===evidence.participant)){
+  // A person who actually reached the woods must return. A teammate who
+  // never left town cannot finish the adventure by polling their position.
   adventure.returned=credit;adventure.status='completed';adventure.completedAt=now;
   change='Returned to The Refuge. The Refuge Trial is complete — no native rewards were invented.';
  }
