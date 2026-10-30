@@ -64,5 +64,39 @@ try{
   const [a,b]=await Promise.all(tokens.map(get));
   assert.deepEqual([b.actor.x,b.actor.y],[a.actor.x,a.actor.y],'Native movement reached proposer');
  }
- console.log(JSON.stringify({status:'passed',checks:['two distinct native actors','actual native one-tile movement','majority vote cannot move early','invalid voter rejected','per-actor native go receipt'],rallyOutcome:outcome.status}));
+ // Real two-actor expedition acceptance against disposable native Fracture.
+ // These are map-authored waypoints used in the earlier verified adventure,
+ // never a teleport, fake zone report, or a phone-provided coordinate.
+ for(const token of tokens){
+  await sleep(250);
+  const walk=await post('/action',{token,text:'walk to 34,210'});
+  assert.equal(walk.status,202,'native departure approach must be accepted');
+  const result=await finalResult(token,walk.id,60000);
+  assert.equal(result.status,'succeeded','native departure waypoint must be reachable: '+result.message);
+ }
+ states=await Promise.all(tokens.map(get));
+ assert.ok(states.every(s=>s.actor.zone==='The Refuge'),'Both actors must still be in The Refuge before voting');
+ assert.ok(states.every(s=>Math.abs(s.actor.x-41)+Math.abs(s.actor.y-195)<=24),'Actors must be near the pinned departure area');
+ const travel=await post('/expedition/propose',{token:tokens[0],destination:'woods'});
+ assert.equal(travel.status,201,'server must recognize the pinned Glitch Woods route');
+ assert.equal(travel.rally.kind,'expedition');
+ assert.equal(travel.rally.required,2);
+ const ids=tokens.map(token=>new Set(app.sessions.get(token).results.keys()));
+ const accepted=await post('/rally/vote',{token:tokens[1],id:travel.rally.id,yes:true});
+ assert.equal(accepted.status,200);
+ assert.equal(accepted.rally.status,'approved');
+ for(let i=0;i<tokens.length;i++){
+  const newId=[...app.sessions.get(tokens[i]).results.keys()].find(id=>!ids[i].has(id));
+  assert.ok(newId,'Each native actor must receive an independent travel command');
+  const result=await finalResult(tokens[i],newId,60000);
+  assert.equal(result.status,'succeeded','Native route to Glitch Woods blocked: '+result.message);
+ }
+ states=await Promise.all(tokens.map(get));
+ assert.ok(states.every(s=>s.actor.zone==='Glitch Woods'),'Both native actors must actually enter Glitch Woods');
+ await sleep(1200);
+ assert.equal((await post('/rally/vote',{token:tokens[1],id:travel.rally.id,yes:true})).status,409,'vote replay is rejected');
+ const arrival=(await get(tokens[0])).rally;
+ assert.equal(arrival.arrived,2,'Native-zone callback must confirm two independent arrivals');
+
+ console.log(JSON.stringify({status:'passed',checks:['two distinct native actors','actual native one-tile movement','majority vote cannot move early','invalid voter rejected','per-actor native go receipt','two native actors approved and actually entered Glitch Woods'],rallyOutcome:outcome.status}));
 }finally{await app.close();fs.rmSync(dir,{recursive:true,force:true});}
