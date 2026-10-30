@@ -83,3 +83,15 @@ test('20-person expedition requires eleven approvals and cannot bypass an expire
  assert.equal(vote.arrivals,undefined);
  assert.throws(()=>voteRally(vote,'member10',true,11001),/no open/);
 });
+
+test('expedition vote stays visible while native actors travel and briefly after confirmed arrival',()=>{
+ const actors=[{token:'a',ready:true,dead:false,zone:'The Refuge',x:41,y:195},{token:'b',ready:true,dead:false,zone:'The Refuge',x:42,y:195}];
+ const vote=proposeExpedition(actors,'a','woods',1000,'slow-travel');
+ voteRally(vote,'b',true,1001);
+ vote.arrivals=['a'];
+ assert.equal(rallyView(vote,null,1001+20000).arrived,1,'a slow walk must not disappear after eight seconds');
+ assert.equal(rallyView(vote,null,1001+45001),null,'expired travel window is bounded');
+ vote.arrivals=['a','b'];vote.lastArrivalAt=46000;
+ assert.equal(rallyView(vote,null,46001).arrived,2);
+ assert.equal(rallyView(vote,null,54001),null);
+});
