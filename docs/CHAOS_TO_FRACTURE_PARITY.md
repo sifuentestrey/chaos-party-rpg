@@ -1,5 +1,10 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Authenticated live event subscription lifecycle — October 30
+
+The existing same-origin room SSE stream now checks active session membership on each broadcast and closes parked/removed player subscriptions. This prevents stale connections from continuing to receive room change signals. It does not yet prove full fire/damage/movement event delivery or native Fracture world synchronization; tests and pinned CI remain pending.
+
+
 ## Authenticated live room-event notifications — October 30
 
 The experimental room bridge now provides authenticated same-origin SSE change notifications to active phones, triggered by authoritative room event recording. Phones refresh their state immediately on receipt while retaining their existing polling fallback. This is room-event push, **not** a complete environmental object event bus or native TV synchronization; native fire/object changes without a bridge record may still be observed only through polling. No live browser/native CI or physical Mac verification for this change yet.
