@@ -23,7 +23,7 @@ const adjacent=(a,b)=>a&&b&&Math.abs(a.x-b.x)+Math.abs(a.y-b.y)===1;
 export function environmentObject(id,kind,tile,overrides={}){
  const base=ENVIRONMENT_KINDS[kind];
  if(!base||!id||!Number.isInteger(tile?.x)||!Number.isInteger(tile?.y))throw Error('Invalid environmental object');
- return {id,kind,tile:{x:tile.x,y:tile.y},...base,...overrides,condition:'intact',wet:0};
+ return {id,kind,tile:{x:tile.x,y:tile.y},...base,condition:'intact',wet:0,...overrides};
 }
 export function environmentStep(objects,{rain=0,wind={x:0,y:0},lightningTile=null}={}){
  if(!Number.isFinite(rain)||rain<0||rain>1||![wind.x,wind.y].every(Number.isFinite))throw Error('Invalid weather');
