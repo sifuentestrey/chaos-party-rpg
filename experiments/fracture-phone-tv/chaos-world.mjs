@@ -4,6 +4,7 @@ import {parseItemAttempt,planItemAttempt,resolveItem,ITEM_TYPES,MATERIALS} from 
 import {parseEntityAttempt,planEntity,resolveEntity,advanceEntities,MATERIAL_RULES} from '../../public/entity-rules.js';
 import {recordDMMemory} from '../../public/dm-memory.js';
 import {recordEnvironmentalIncident,propertyConcern} from './reactive-witness.mjs';
+import {objectCapabilities,objectBlocksTile} from './object-capabilities.mjs';
 import {selectNpcFireResponses} from './reactive-npc-actions.mjs';
 import {spawnItem} from '../../public/campaign.js';
 import {Rng} from '../../public/vendor/partyframe-rng.js';
@@ -99,7 +100,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   }
  }
  function npcViews(p){const present=new Set(nativeNPCs(p).map(n=>npcKey(p,n)));return Object.values(state.npcs).filter(n=>present.has(n.id)&&n.location===scene(p)&&visible(p,n));}
- function blocked(p,x,y){return Object.values(state.items).some(i=>i.blocks&&!i.ownerId&&i.location===scene(p)&&i.tile?.x===x&&i.tile?.y===y&&i.condition!=='broken');}
+ function blocked(p,x,y){return objectBlocksTile(state.items,scene(p),x,y);}
  function targetItem(s,room,reference){const matches=Object.values(s.items).filter(i=>!i.parentId&&i.condition!=='disassembled'&&(i.id===reference||norm(i.name)===norm(reference))&&(i.location===s.current||room.players.some(p=>p.id===i.ownerId)||Object.hasOwn(s.creatures,i.ownerId)));return matches.length===1?matches[0]:null;}
  function projection(p){
   surroundings(p);const current=scene(p),id=identity(p),world=p.getWorld();
@@ -109,7 +110,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const s={current,items:Object.fromEntries(Object.entries(state.items).filter(([,i])=>!i.location||(i.location===current&&i.tile&&distance(p,i.tile)<=8&&sameZone(p,i.tile)))),nextId:state.nextId,creatures:Object.fromEntries(npcViews(p).map(n=>[n.id,n])),regions:{},campaign:{day:1,history:[],completed:[]},locations:{[current]:{id:current,name:world.zoneManager?.getZoneAt(p.x,p.y)?.name||'Fracture',exits:[],danger:0}}};
   return {room:{seed:state.seed,round:state.round,world:{expedition:s},players},actor:players.find(q=>q.id===id),s};
  }
- const plain=i=>({id:i.id,name:i.name,type:i.type,material:i.material,condition:i.condition,equipped:i.equipped,slot:i.slot,color:i.appearance?.color,visual:i.visual,blocks:!!i.blocks,owner:i.ownerId?state.npcs[i.ownerId]?.name:null,hp:i.hp,maxHp:i.maxHp,tile:i.tile?{...i.tile}:null,components:[...i.components]});
+ const plain=i=>({id:i.id,name:i.name,type:i.type,material:i.material,condition:i.condition,equipped:i.equipped,slot:i.slot,color:i.appearance?.color,visual:i.visual,blocks:objectCapabilities(i).blocking,capabilities:objectCapabilities(i),owner:i.ownerId?state.npcs[i.ownerId]?.name:null,hp:i.hp,maxHp:i.maxHp,tile:i.tile?{...i.tile}:null,components:[...i.components]});
  function pulse(p){
   const current=scene(p),now=clock();if(!state.fireClock[current])state.fireClock[current]=now;
   const burning=Object.values(state.items).filter(i=>i.condition==='burning'&&(i.location===current||state.npcs[i.ownerId]?.location===current||state.actors[i.ownerId]?.scene===current));
@@ -137,7 +138,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
      eventTile||={...source.tile};
     }
     for(const item of Object.values(state.items)){
-     if(!onFloor(item)||item.condition!=='intact'||!MATERIAL_RULES[item.material]?.burns)continue;
+     if(!onFloor(item)||item.condition!=='intact'||!objectCapabilities(item).flammable)continue;
      const itemZone=zone(item.tile);if(!itemZone)continue;
      const source=sources.find(src=>src.id!==item.id&&src.condition==='burning'&&zone(src.tile)===itemZone&&distance(src.tile,item.tile)===1);
      if(!source)continue;
