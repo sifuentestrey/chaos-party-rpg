@@ -1,5 +1,11 @@
 # Chaos Party — local Fracture beta acceptance
 
+## NPC-owned fixture collision — October 30 (regression authored, CI pending)
+
+- [x] Corrected a real core capability integration gap: intact blocking objects owned by a present NPC now obstruct movement in that NPC's native scene, while stale player inventory tiles and absent/other-zone NPC objects do not. Destroying the fixture clears collision through the same derived capability rule. No native Fracture terrain collision bypass.
+- [x] Added ownership/zone/destruction regression case; [ ] full pinned CI and real browser movement scenario still unverified for this commit. This is not universal native-scenery destructibility.
+
+
 ## Shared object capability foundation — October 30 (CI pending)
 
 - [x] Introduced a pure, sidecar-only capability descriptor derived from real item material, condition, location and physical properties; reused for snapshot presentation, physical collision and flammability selection. Four regression scenarios added. Existing original Chaos action resolution remains authoritative.
