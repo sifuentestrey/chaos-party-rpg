@@ -85,10 +85,51 @@ try{
  deadline=Date.now()+3000;
  do{helperState=await get(helperToken);if(helperState.actor.chaos.hinderedBy===undefined)break;await sleep(100);}while(Date.now()<deadline);
  assert.equal(helperState.actor.chaos.hinderedBy,undefined,'interference is consumed after the real check');
+ // A real native actor must interact with a visible Chaos-authored tree on a
+ // passable native tile, not a mocked map object or an inferred native tree.
+ state=await get(token);
+ const tree=state.actor.chaos?.scenery?.find(o=>o.kind==='tree');
+ assert.ok(tree?.tile,'authored tree must appear in the real native actor world snapshot');
+ assert.equal(tree.hp,12);
+ assert.equal(tree.condition,'intact');
+ for(let n=0;n<4;n++){
+  await sleep(250);
+  const chop=await post('/action',{token,text:'attack tree'});
+  assert.equal(chop.status,202);
+  let outcome;deadline=Date.now()+25000;
+  do{
+   state=await get(token);
+   outcome=state.results.find(r=>r.id===chop.id);
+   if(outcome&&['succeeded','failed','blocked'].includes(outcome.status))break;
+   await sleep(150);
+  }while(Date.now()<deadline);
+  assert.equal(outcome?.status,'succeeded','real native actor must strike the authored tree: '+JSON.stringify(outcome));
+  const updated=state.actor.chaos?.scenery?.find(o=>o.id===tree.id);
+  assert.equal(updated?.hp,12-3*(n+1),'the saved world must record real damage');
+ }
+ assert.equal(state.actor.chaos.scenery.find(o=>o.id===tree.id).condition,'broken');
+ helperState=await get(helperToken);
+ assert.equal(helperState.actor.chaos?.scenery?.find(o=>o.id===tree.id)?.condition,'broken',
+  'second native actor must observe the same fallen tree');
+ await sleep(250);
+ const walkThrough=await post('/action',{token,text:'walk to '+tree.tile.x+','+tree.tile.y});
+ assert.equal(walkThrough.status,202);
+ let walkOutcome;deadline=Date.now()+25000;
+ do{
+  state=await get(token);
+  walkOutcome=state.results.find(r=>r.id===walkThrough.id);
+  if(walkOutcome&&['succeeded','failed','blocked'].includes(walkOutcome.status))break;
+  await sleep(150);
+ }while(Date.now()<deadline);
+ assert.equal(walkOutcome?.status,'succeeded','native pathfinding must allow walking through the destroyed sidecar tree: '+JSON.stringify(walkOutcome));
+ assert.deepEqual([state.actor.x,state.actor.y],[tree.tile.x,tree.tile.y],
+  'native movement must actually reach the formerly blocked tile');
+
  const file=path.join(process.env.FRACTURE_ROOT,'server/data/chaos-party/objects.json');
  const saved=JSON.parse(fs.readFileSync(file,'utf8'));
  assert.equal(saved.version,1);
  assert.ok(Object.keys(saved.actors).length>=1);
  assert.ok(Object.keys(saved.items).length>=2);
- console.log(JSON.stringify({status:'passed',checks:['real native actor has Chaos starter materials','server D20 crafting receipt','native actor inventory agrees with result','separate persistent object save','two distinct native actors with one consumed D20 advantage','10-second real declaration followed by native D20 disadvantage from opponent'],craftStatus:result.status}));
+ assert.equal(saved.scenery?.[tree.id]?.condition,'broken','tree destruction must persist in the separate native-sidecar save');
+ console.log(JSON.stringify({status:'passed',checks:['real native actor has Chaos starter materials','server D20 crafting receipt','native actor inventory agrees with result','separate persistent object save','two distinct native actors with one consumed D20 advantage','10-second real declaration followed by native D20 disadvantage from opponent','real native tree attack, shared fall, persistent save and post-destruction movement'],craftStatus:result.status}));
 }finally{await app.close();fs.rmSync(dir,{recursive:true,force:true});}
