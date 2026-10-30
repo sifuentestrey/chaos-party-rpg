@@ -525,5 +525,5 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    return {id,fact,witnesses:witnessed.map(n=>n.name)};
   }catch(error){state=previous;throw error;}
  }
- return {prepareWorld:world=>seedNative({getWorld:()=>world}),snapshot,execute,approach,isBlocked:blocked,talk,canQuest,recordNativeDefeat,registerScenery,strikeScenery};
+ return {prepareWorld:world=>seedNative({getWorld:()=>world}),snapshot,execute,approach,isBlocked:blocked,releaseDoorHolds:doorControl.releaseActor,talk,canQuest,recordNativeDefeat,registerScenery,strikeScenery};
 }
