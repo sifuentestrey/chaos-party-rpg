@@ -29,3 +29,10 @@ test('AI DM suggestions cannot authorize pickup or other unimplemented native ef
  const portable={...obj,id:'native-rock',capabilities:{portable:true}};
  assert.equal(validateEnvironmentJudgment(judgment('take','native-rock'),{...ctx,objects:[portable]}).accepted,false);
 });
+
+test('AI cannot set an easier native tree check or swap its strength ability',()=>{
+ const breakAction={...judgment('break'),ability:'strength',dc:14};
+ assert.equal(validateEnvironmentJudgment(breakAction,ctx).accepted,true);
+ assert.equal(validateEnvironmentJudgment({...breakAction,dc:1},ctx).accepted,false);
+ assert.equal(validateEnvironmentJudgment({...breakAction,ability:'wisdom'},ctx).accepted,false);
+});
