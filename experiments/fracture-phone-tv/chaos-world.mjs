@@ -24,7 +24,17 @@ export function creativeAttempt(text){
  if(entity&&environmental.has(entity.verb))return {...entity,...(direction?{direction:direction[1].toLowerCase()}:{}),entityAction:true};
  const attempt=parseItemAttempt(clean);return attempt&&verbs.has(attempt.verb)?attempt:null;
 }
-export function shouldUseCreative(text,actor){const a=creativeAttempt(text);if(!a)return false;if(['craft','attach','give','separate','steal','assist','hinder','appeal'].includes(a.verb))return true;const items=[...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[]),...(actor?.chaos?.npcs||[]).flatMap(n=>n.items||[])];const reference=a.item||a.target;return items.some(i=>i.id===reference||norm(i.name)===norm(reference));}
+/** Only a named, visible Chaos-authored fixture can receive scenery commands.
+ * Native mobs and unregistered map art always retain their own engine rules. */
+export function sceneryAttempt(text,scenery=[]){
+ const m=/^(?:attack|hit|strike|chop|break)\\s+(?:the\\s+)?(.+)$/i.exec(String(text||'').trim());
+ if(!m)return null;
+ const target=norm(m[1]);
+ const matches=scenery.filter(o=>o&&o.scene&&o.tile&&
+  [o.kind,o.name,o.id?.slice(o.scene.length+1)].some(ref=>norm(ref)===target));
+ return matches.length===1?matches[0]:null;
+}
+export function shouldUseCreative(text,actor){if(sceneryAttempt(text,actor?.chaos?.scenery||[]))return true;const a=creativeAttempt(text);if(!a)return false;if(['craft','attach','give','separate','steal','assist','hinder','appeal'].includes(a.verb))return true;const items=[...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[]),...(actor?.chaos?.npcs||[]).flatMap(n=>n.items||[])];const reference=a.item||a.target;return items.some(i=>i.id===reference||norm(i.name)===norm(reference));}
 
 export const fireCatchup=(last,now)=>({steps:Math.min(3,Math.floor(Math.max(0,now-last)/10000)),next:last+Math.min(3,Math.floor(Math.max(0,now-last)/10000))*10000});
 const distance=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
@@ -96,6 +106,24 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   }catch(error){state=previous;throw error;}
  }
  function surroundings(p){seedPlayer(p);seedNPCs(p);
+  // A single Chaos-authored test tree on a real, passable native tile.
+  // Never convert or destroy Fracture's painted scenery or collision geometry.
+  if(state.camp?.scene===scene(p)&&!state.camp.treeId){
+   const c=state.camp,world=p.getWorld();
+   const offsets=[[4,0],[-4,0],[0,4],[0,-4],[4,1],[-4,1],[1,4],[-1,-4]];
+   const tile=offsets.map(([dx,dy])=>({x:c.x+dx,y:c.y+dy})).find(t=>
+    world.isValidPosition(t.x,t.y)&&sameZone(p,t)&&visible(p,t)&&
+    !Object.values(world.entities||{}).concat(Object.values(world.players||{}),Object.values(world.npcs||{})).some(e=>e.x===t.x&&e.y===t.y)&&
+    !Object.values(state.items).some(i=>i.tile?.x===t.x&&i.tile?.y===t.y)&&
+    !Object.values(state.scenery).some(i=>i.scene===scene(p)&&i.tile?.x===t.x&&i.tile?.y===t.y));
+   if(tile){
+    const previous=state;state=structuredClone(state);
+    try{
+     const tree=registerAuthoredScenery(state,{scene:scene(p),id:'camp-tree',kind:'tree',tile});
+     state.camp.treeId=tree.id;persist();
+    }catch(error){state=previous;throw error;}
+   }
+  }
   if(state.camp?.scene===scene(p)&&!state.camp.tableId){const c=state.camp,world=p.getWorld();const tile=[[2,0],[-2,0],[0,2],[0,-2]].map(([dx,dy])=>({x:c.x+dx,y:c.y+dy})).find(t=>world.isValidPosition(t.x,t.y)&&sameZone(p,t)&&!Object.values(world.entities||{}).concat(Object.values(world.players||{})).some(e=>e.x===t.x&&e.y===t.y)&&!Object.values(state.items).some(i=>i.tile&&distance(i.tile,t)===0));
    if(tile){const previous=state;state=structuredClone(state);try{state.camp.tableId=add(scene(p),{name:'camp table',type:'fixture',material:'wood',portable:true,blocks:true,tile,visual:'table',hp:4,maxHp:4}).id;persist();}catch(error){state=previous;throw error;}}
   }
@@ -317,24 +345,27 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
  function strikeScenery(p,id,damage=1){
   if(!identity(p)||p.isDead)return {changed:false,error:'Active living actor required'};
   const obj=state.scenery[scene(p)+':'+id];
-  if(!obj||distance(p,obj.tile)>1)return {changed:false,error:'Scenery out of reach'};
+  if(!obj||!sameZone(p,obj.tile)||distance(p,obj.tile)>1)return {changed:false,error:'Scenery out of reach'};
   const result=damageAuthoredScenery(state,{scene:scene(p),id,damage});
   if(result.changed)persist();
   return result;
  }
  function execute(p,text){
-  // Authored sidecar scenery only; never damage native map objects by guessing.
-  const strike=/^(?:attack|hit|chop|break) (?:the )?(.+)$/i.exec(String(text).trim());
-  if(strike){
-   const matches=visibleScenery(state,scene(p)).filter(o=>o.id.split(':').slice(1).join(':')===strike[1]||o.kind===strike[1]);
-   if(matches.length===1){
-    const id=matches[0].id.slice(scene(p).length+1);
-    const result=strikeScenery(p,id,1);
-    return {blocked:!result.changed,success:result.changed,text:result.changed?(result.object.condition==='broken'?'The '+result.object.kind+' falls and no longer blocks the way.':'You damage the '+result.object.kind+'.'):result.error};
-   }
+  surroundings(p);pulse(p);
+  const scenery=sceneryAttempt(text,visibleScenery(state,scene(p)).filter(o=>visible(p,o.tile)));
+  if(scenery){
+   const result=strikeScenery(p,scenery.id.slice(scene(p).length+1),3);
+   const description=scenery.name||scenery.kind;
+   return {blocked:!result.changed,success:result.changed,text:result.changed?
+    (result.object.condition==='broken'?'The '+description+' falls. The route is clear.':
+     'You strike the '+description+'. '+result.object.hp+' HP remains.'):
+    (result.error||'That object is already destroyed.')};
   }
-  surroundings(p);pulse(p);const previous=state;state=structuredClone(state);try{const result=apply(p,text);if(result.blocked)state=previous;return result;}catch(error){state=previous;throw error;}}
+  const previous=state;state=structuredClone(state);try{const result=apply(p,text);if(result.blocked)state=previous;return result;}catch(error){state=previous;throw error;}}
  function approach(p,text){
+  surroundings(p);
+  const scenery=sceneryAttempt(text,visibleScenery(state,scene(p)).filter(o=>visible(p,o.tile)));
+  if(scenery)return sameZone(p,scenery.tile)&&distance(p,scenery.tile)>1?{...scenery.tile}:null;
   const attempt=creativeAttempt(text);if(!attempt)return null;
   const {room,actor,s}=projection(p);if(!actor||attempt.entityAction&&!targetItem(s,room,attempt.target))return null;
   const plan=attempt.entityAction?planEntity(room,room.world.expedition,actor,attempt,(_s,r,ref)=>targetItem(room.world.expedition,r,ref)):planItemAttempt(room,actor,attempt);if(!plan||plan.error)return null;
