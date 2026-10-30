@@ -51,7 +51,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),now=()=>Date
   if(!identity(p))return {bag:[],ground:[],wearables:[]};seedPlayer(p);const id=identity(p);
   const bag=Object.values(state.items).filter(i=>i.ownerId===id&&!i.parentId&&i.condition!=='disassembled');
   const ground=Object.values(state.items).filter(i=>!i.ownerId&&!i.parentId&&i.location===scene(p)&&i.tile&&distance(p,i.tile)<=8&&i.condition!=='disassembled');
-  const aid=state.assists[id];const assistedBy=aid?.until>now()?state.actors[aid.helperId]?.name:null;
+  const aid=state.assists[id];const helper=aid?.until>now()?Object.values(p.getWorld().players||{}).find(q=>identity(q)===aid.helperId&&q.chaosControlled&&q.hasEnteredGame&&!q.isDead&&reachable(p,q)):null;const assistedBy=helper?name(helper):null;
   return {bag:bag.map(plain),ground:ground.map(plain),wearables:bag.filter(i=>i.equipped).map(plain),camp:state.camp,...(assistedBy?{assistedBy}:{})};
  }
  function apply(p,text){
