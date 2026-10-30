@@ -1,5 +1,13 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Grounded environmental fire propagation — October 30 (local tests, native CI pending)
+
+- [x] Reused the original Chaos `advanceEntities` burn/damage logic and `MATERIAL_RULES` instead of inventing a second fire engine. In the isolated Fracture adapter, burning **floor** objects now ignite adjacent intact combustible floor objects one hop per ten-second world tick, on validated tiles in the **same native zone**. Newly ignited objects cannot chain again in that same tick. Carried objects, nonflammable materials, other zones and distant scenery are excluded.
+- [x] The original authoritative object save persists heat, burning condition, ignition actor and resulting NPC memories. Fire that reaches an NPC-owned rug now records a specific witnessed consequence and reduces that NPC's trust toward the responsible character; quest access reads the same trust. The existing `extinguish`, `repair` and blocking rules remain authoritative. Fire progression is bounded to at most three ticks per snapshot, not continuous background simulation.
+- [x] Three new regression scenarios cover a two-hop chain, carried-item isolation, restart, zone boundary, extinguish prevention, NPC-owned property and persistent trust. Locally extracted Node 22.16 source-kit tests: **112 passed, 1 skipped, 0 failed** across 113 `.mjs` tests, including the 31 Chaos-world tests. The optional `chaos-actor.test.ts` requires upstream `vitest` unavailable in the source-only kit and is **not** included in that count.
+- [ ] **Pinned Fracture CI/native integration and physical Mac/browser environmental chain are not yet verified for this commit.** No original Crown Job/Dawn Bell environment, all NPC routines, autonomous real-time fire, or full migration is claimed.
+
+
 ## Verified two-way majority expedition — October 30 (native server, not physical Mac)
 
 - [x] The previously untested **Glitch Woods → The Refuge** group return failed its first real pinned-native regression: two real actors voted to return, but Fracture rejected the destination `41,195` with **“No walkable path to that destination.”** [Failing CI 41044650184](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41044650184). This was a genuine core-route defect, not a parser or presentation problem.
