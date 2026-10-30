@@ -36,6 +36,11 @@ try{
   if(s.quest?.completed){completed=true;break;}
  }
  assert.ok(completed,'Native quest must complete and award a real reward');
+ // This is the first full browser/native acceptance for the shared story-memory
+ // bridge: only actual defeated mobs, never attempted or narrated hits, count.
+ const combatStory=(await get(player)).actor.chaos?.story||[];
+ assert.ok(combatStory.some(e=>String(e.targetId).startsWith('native-mob:')&&/native combat confirmed/i.test(e.fact)),
+   'An engine-confirmed rat defeat must enter persistent canonical DM memory');
  await tv.screenshot({path:path.join(out,'tv-quest-complete.png')});
  await action(phones[0],player,'walk to 34, 210');s=await action(phones[0],player,'pick up sword2',{meaningful:true,allowBlocked:true});
  if(s.actor.inventory?.some(i=>i.name==='sword2'))await action(phones[0],player,'equip sword2');
