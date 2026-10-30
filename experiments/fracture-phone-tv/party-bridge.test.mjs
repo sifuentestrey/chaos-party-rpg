@@ -255,4 +255,31 @@ test('host-only Refuge Trial persists real multi-phone evidence, not phone text 
  assert.equal(saved.adventure.status,'completed');
  assert.equal(saved.adventure.proof.route,'combat');
  assert.equal((await post(base,'/host/adventure',{key:app.room.host,action:'start'})).status,409);
+ // A completed trial can be explicitly replayed, never silently restarted.
+ assert.equal((await post(base,'/host/adventure',{key:'wrong',action:'replay'})).status,403);
+ const replay=await post(base,'/host/adventure',{key:app.room.host,action:'replay'});
+ assert.equal(replay.status,201);
+ const second=await replay.json();
+ assert.equal(second.adventure.run,2);
+ assert.equal(second.adventure.status,'active');
+ assert.equal(second.adventure.steps.filter(s=>s.done).length,0);
+ assert.equal(app.room.adventureHistory.length,1);
+ assert.equal(app.room.adventureHistory[0].route,'combat');
+ assert.equal(JSON.stringify(app.room.adventureHistory).includes(ada),false,'archived run never exposes personal recovery tokens');
+ // A late old engine receipt remains a valid old result, but cannot progress
+ // the new adventure even if the native socket delivers it after replay.
+ sockets[0].emit('chaos:receipt',{id:talkId,status:'succeeded',message:'Delayed guard response.'});
+ assert.equal(app.room.adventure.npc,null);
+ assert.equal((await post(base,'/host/adventure',{key:app.room.host,action:'replay'})).status,409,
+  'an active trial cannot be erased by another replay');
+ const newTalk=await post(base,'/action',{token:ada,text:'talk to guard'});
+ // The old declaration window may still be open. Move the clock past it
+ // before submitting if necessary.
+ assert.equal(newTalk.status,202);
+ const {id:newTalkId}=await newTalk.json();
+ sockets[0].emit('chaos:receipt',{id:newTalkId,status:'succeeded',message:'New guard response.'});
+ assert.equal(app.room.adventure.npc.player,'Ada');
+ const savedAgain=JSON.parse(fs.readFileSync(path.join(dir,'room.json'),'utf8'));
+ assert.equal(savedAgain.adventure.run,2);
+ assert.equal(savedAgain.adventureHistory.length,1);
 });
