@@ -26,7 +26,7 @@ test('zone/visibility callback prevents impossible witnesses; memory remains bou
 test('NPC concern follows live property condition, not invented scene narration',()=>{
  const npcs=sample();const items={rug:{...item}};
  assert.match(propertyConcern(items,npcs.owner,()=>true),/on fire/);
- items.rug.condition='broken';assert.match(propertyConcern(items,npcs.owner,()=>true),/repair/);
+ items.rug.condition='broken';items.rug.heat=3;assert.match(propertyConcern(items,npcs.owner,()=>true),/repair/);
  items.rug.condition='intact';assert.equal(propertyConcern(items,npcs.owner,()=>true),null);
  items.rug.condition='burning';assert.equal(propertyConcern(items,npcs.owner,()=>false),null);
  assert.equal(propertyConcern(items,npcs.observer,()=>true),null);
