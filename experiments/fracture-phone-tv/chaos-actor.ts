@@ -2,8 +2,9 @@
 import * as fs from 'node:fs';
 import {nativeTrees} from './chaos-native-scenery';
 import {pathToFileURL} from 'node:url';
+const geometry=JSON.parse(fs.readFileSync('client/maps/world_client.json','utf8'));
 let chaosObjects:any=null;
-const chaosReady=process.env.CHAOS_WORLD_MODULE?import(pathToFileURL(process.env.CHAOS_WORLD_MODULE).href).then(m=>chaosObjects=m.createChaosWorld({file:'server/data/chaos-party/objects.json',kindName:Types.getKindAsString,nativeTrees})):Promise.resolve(null);
+const chaosReady=process.env.CHAOS_WORLD_MODULE?import(pathToFileURL(process.env.CHAOS_WORLD_MODULE).href).then(m=>chaosObjects=m.createChaosWorld({file:'server/data/chaos-party/objects.json',kindName:Types.getKindAsString,nativeTrees,nativeDoors:geometry.doors})):Promise.resolve(null);
 import {Types} from '../../shared/ts/gametypes';
 import {Messages} from './message';
 import {Formulas} from './formulas';
@@ -12,7 +13,6 @@ import {Chest} from './chest';
 import {MessageRouter} from './player/message-router';
 import {validIntent, shortestPath, extractNativeAttackRates} from './chaos-action-contract';
 const router = new MessageRouter(Messages,Formulas,Utils,Chest);
-const geometry=JSON.parse(fs.readFileSync('client/maps/world_client.json','utf8'));
 const nativeRates=extractNativeAttackRates(fs.readFileSync('client/ts/entity/character/character.ts','utf8'),fs.readFileSync('client/ts/entity/character/mob/mobs.ts','utf8'));
 const plateaus=new Set(geometry.plateau);
 const plateau=(x:number,y:number)=>plateaus.has(y*geometry.width+x);
@@ -101,7 +101,7 @@ export function installChaosActor(player:any, connection:any): void {
       const kind=slots[index].kind;await router.route(player,[Types.Messages.INVENTORY_EQUIP,index]);
       const equipped=player.weapon===kind||player.armor===kind;receipt(id,equipped?'succeeded':'blocked',equipped?'Equipment changed.':'That item cannot be equipped.');return ack({ok:true});
     }
-    if(intent.verb==='look') {const props=objectSnapshot();const memories=(props?.npcs||[]).filter(n=>n.items?.length||n.trust<0||n.concern).map(n=>`${n.name} [${n.id}]: ${n.items.map(i=>i.name+' ['+i.id+']').join(', ')||'no Chaos items'}${n.trust<0?' · distrusts you':''}${n.concern?' · '+n.concern:''}`).join('; ');const extras=(props?.ground||[]).map(i=>`${i.name} [${i.id}] (${i.tile.x},${i.tile.y})${i.owner?' belongs to '+i.owner:''}${i.condition!=='intact'?' — '+i.condition:''}`).join('; ');receipt(id,'succeeded',(extras?`Objects: ${extras}. `:'')+(nearby().length?nearby().slice(0,12).map(e=>`${label(e)} (${e.x},${e.y})`).join('; '):'No characters or items nearby. Explore with movement commands.')+(memories?` NPC possessions/memory: ${memories}.`:''));return ack({ok:true});}
+    if(intent.verb==='look') {const props=objectSnapshot();const doorHolds=(props?.doors||[]).map(d=>'Door at '+d.x+','+d.y+' held by '+d.heldBy).join('; ');const memories=(props?.npcs||[]).filter(n=>n.items?.length||n.trust<0||n.concern).map(n=>`${n.name} [${n.id}]: ${n.items.map(i=>i.name+' ['+i.id+']').join(', ')||'no Chaos items'}${n.trust<0?' · distrusts you':''}${n.concern?' · '+n.concern:''}`).join('; ');const extras=(props?.ground||[]).map(i=>`${i.name} [${i.id}] (${i.tile.x},${i.tile.y})${i.owner?' belongs to '+i.owner:''}${i.condition!=='intact'?' — '+i.condition:''}`).join('; ');receipt(id,'succeeded',(extras?`Objects: ${extras}. `:'')+(nearby().length?nearby().slice(0,12).map(e=>`${label(e)} (${e.x},${e.y})`).join('; '):'No characters or items nearby. Explore with movement commands.')+(memories?` NPC possessions/memory: ${memories}.`:'')+(doorHolds?` Held doors: ${doorHolds}.`:''));return ack({ok:true});}
     if(intent.verb==='unknown'){receipt(id,'blocked','I cannot do that with the available mechanics. Try walking, talking, fighting, opening or collecting something nearby.');return ack({ok:true});}
     let target:any=null;
     if(intent.target){
@@ -181,6 +181,7 @@ export function installChaosActor(player:any, connection:any): void {
         if(!moved){finish('blocked','The engine rejected that movement.',{},action);return;}
         if(intent.verb==='move')action.stepsMoved=(action.stepsMoved||0)+1;
         const doorway=geometry.doors.find((d:any)=>d.x===player.x&&d.y===player.y);
+        if(doorway&&(chaosObjects?.isBlocked(player,doorway.x,doorway.y)||chaosObjects?.isBlocked(player,doorway.tx,doorway.ty))){finish('blocked','A held doorway prevents passage.',{},action);return;}
         if(doorway&&world.isValidPosition(doorway.tx,doorway.ty)){
           await router.route(player,[Types.Messages.TELEPORT,doorway.tx,doorway.ty]);
           if(active!==action)return;
@@ -191,6 +192,7 @@ export function installChaosActor(player:any, connection:any): void {
       }
       const door=action.door||geometry.doors.find((d:any)=>d.x===player.x&&d.y===player.y);
       if(door){
+        if(chaosObjects?.isBlocked(player,door.x,door.y)||chaosObjects?.isBlocked(player,door.tx,door.ty)){finish('blocked','A held doorway prevents passage.');return;}
         if(!world.isValidPosition(door.tx,door.ty)){finish('blocked','The door exit is blocked.');return;}
         // Only actual map-authored door destinations reach the native transition.
         await router.route(player,[Types.Messages.TELEPORT,door.tx,door.ty]);
