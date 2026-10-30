@@ -1,5 +1,12 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Grounded NPC property firefighting (partial reactive-world parity) — October 30
+
+The isolated Fracture sidecar now adds one **state-changing NPC response**: a nearby, living native NPC can extinguish its own burning physical floor object after one full warning tick. This reuses original Chaos object extinguishing semantics and the existing native-zone, identity, proximity and persistent NPC history projections. Other players see the saved object condition through existing state polling; the NPC does not teleport, receive fabricated native animation, gain items or rewrite native quests. An absent owner cannot retroactively witness a burn-through. Focused local source-kit tests: **130 passed, 1 skipped, 0 failed** under Node 22.16 with TypeScript stripping; pinned native CI remains pending for the new commit.
+
+**Still absent:** native NPC autonomous navigation/goals, hazards affecting native character HP, full continuous background simulation, original Chaos campaign NPC routines and character relationships, complete multiplayer environmental event delivery semantics, Crown Job/Dawn Bell scene and save migration, and full original class/dice/AI/party-vote parity. This is **partial reactive-environment rule transfer**, not the original Chaos game.
+
+
 ## Environmental NPC awareness / repair acceptance — October 30 (partial parity)
 
 The isolated Fracture adapter now records actual fire spread and heat-confirmed destruction in persistent nearby **native NPC witness** history, reusing the original Chaos environmental and D20 object rules. Native-zone and line-of-sight checks constrain witnesses; a fire's original igniter is attributed only to an NPC that previously witnessed the successful ignition of that exact source. Seeing fire alone never grants omniscient culprit knowledge. Native NPCs can warn about their burning property and ask for a repair after real burn-through. Players may extinguish/repair an NPC-owned **floor** object without taking ownership; NPC-carried items remain protected. This closes a bounded reactive-property/ownership gap, **not** the original NPC autonomy/goal system.
