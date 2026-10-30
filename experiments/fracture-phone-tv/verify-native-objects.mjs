@@ -58,7 +58,7 @@ try{
  // Discover the authoritative generated native-art inventory, never assume a
  // painted tree is eligible: other solid artwork can overlap its canopy.
  const nativeSource=fs.readFileSync(path.join(process.env.FRACTURE_ROOT,'server/ts/chaos-native-scenery.ts'),'utf8');
- const match=/export const nativeTrees = ([^\\n]+);/.exec(nativeSource);
+ const match=/export const nativeTrees = (.+);/.exec(nativeSource);
  assert.ok(match,'Pinned overlay must expose its verified native tree inventory');
  const nativeTrees=JSON.parse(match[1]);
  assert.ok(nativeTrees.length>0,'No map-verified native trees are available; do not fabricate one');
