@@ -1,5 +1,13 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Native environmental world-change push — October 30 (focused local verified; offline CI verified; pinned native pending)
+
+- [x] Added a reusable authoritative **visible-world fingerprint** for each Fracture-controlled actor (zone, ground objects, NPCs, story, camp). Changes to fire condition/HP, moved objects, NPC relationships or scene now schedule a coalesced, authenticated SSE `change` notification to active phones; each phone fetches its own `/state`. Private inventory, credentials and HP are not included in event payload or fingerprint. Existing 750-ms polling remains the fallback.
+- [x] Added pure world-state regression tests and an HTTP two-player integration test: one mocked native actor's table ignites and the other player's SSE stream receives the change without fabricated room-log events; invalid tokens are rejected. Tested on an isolated previously verified Mac source-kit copy with the relevant bridge/SSE changes applied: **133 passed, 1 skipped, 0 failed** across `node --test --experimental-strip-types experiments/fracture-phone-tv/*.test.mjs` (Node 22.16).
+- [x] Branch commit `ae564529` passed GitHub [Offline checks run 41076488495](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41076488495) (`npm run verify`; 210 passed). **That workflow does not run Fracture experimental tests**; the isolated local test run above is separate evidence.
+- [ ] The branch's **pinned Fracture integration workflow** (`.github/workflows/fracture-spike.yml`), real native fire-tick delivery, real browser/TV state agreement, 12–20 controller load, Mac source packaging from this exact head and physical Mac/phone acceptance remain unverified here. This is bounded snapshot-change notification, **not** a complete native world event bus or full original Chaos parity. No merge or public deployment.
+
+
 ## Live-event authorization lifecycle — October 30 (CI pending)
 
 - [x] Event stream subscriptions now retain their authenticated player token and revalidate that the session remains active on every notification. Parked or removed sessions have their streams ended rather than continuing to receive room notifications. Host shutdown closes all active streams. This hardens the existing SSE feature; it does **not** implement native environmental-event push.
