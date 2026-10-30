@@ -39,3 +39,13 @@ test('lightning ignites combustible roof but not stone or water',()=>{
  assert.equal(result.objects.wall.condition,'intact');
  assert.equal(result.objects.water.condition,'intact');
 });
+
+
+test('fire-destroyed blocking tree releases collision just like physical destruction',()=>{
+ const tree=environmentObject('tree','tree',{x:1,y:1},{hp:1,condition:'burning'});
+ const next=environmentStep({tree}).objects.tree;
+ assert.equal(next.condition,'broken');
+ assert.equal(next.blocking,false);
+ assert.equal(next.hp,0);
+ assert.equal(tree.condition,'burning','input is not mutated');
+});
