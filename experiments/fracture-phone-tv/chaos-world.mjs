@@ -5,6 +5,7 @@ import {parseEntityAttempt,planEntity,resolveEntity,advanceEntities,MATERIAL_RUL
 import {recordDMMemory} from '../../public/dm-memory.js';
 import {recordEnvironmentalIncident,propertyConcern} from './reactive-witness.mjs';
 import {objectCapabilities,objectBlocksTile} from './object-capabilities.mjs';
+import {registerScenery as registerAuthoredScenery,strikeScenery as damageAuthoredScenery,sceneryBlocks,visibleScenery} from './scenery-bridge.mjs';
 import {selectNpcFireResponses} from './reactive-npc-actions.mjs';
 import {spawnItem} from '../../public/campaign.js';
 import {Rng} from '../../public/vendor/partyframe-rng.js';
@@ -52,7 +53,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
  fs.mkdirSync(path.dirname(file),{recursive:true,mode:0o700});
  let state=fs.existsSync(file)?JSON.parse(fs.readFileSync(file,'utf8')):{version:1,seed,rng:seed,nextId:1,round:0,items:{},actors:{},camp:null};
  if(state.version!==1||!state.items||!state.actors)throw Error('Unsupported Chaos object save; refusing to overwrite');
- state.assists||={};state.appeals||={};state.npcs||={};state.fireClock||={};state.dmMemory||={version:1,entries:[],people:{}};
+ state.scenery||={};state.assists||={};state.appeals||={};state.npcs||={};state.fireClock||={};state.dmMemory||={version:1,entries:[],people:{}};
  // A native mob instance can produce only one durable defeat memory. This set
  // is ephemeral; actual canonical story facts live in the separate object save.
  const observedNativeDefeats=new WeakSet();
@@ -105,7 +106,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   // Only currently observed native owners can project their fixtures here.
   const present=new Set(nativeNPCs(p).map(n=>npcKey(p,n)));
   const owners=Object.fromEntries(Object.entries(state.npcs).filter(([id])=>present.has(id)));
-  return objectBlocksTile(state.items,scene(p),x,y,owners);
+  return objectBlocksTile(state.items,scene(p),x,y,owners)||sceneryBlocks(state,scene(p),x,y);
  }
  function targetItem(s,room,reference){const matches=Object.values(s.items).filter(i=>!i.parentId&&i.condition!=='disassembled'&&(i.id===reference||norm(i.name)===norm(reference))&&(i.location===s.current||room.players.some(p=>p.id===i.ownerId)||Object.hasOwn(s.creatures,i.ownerId)));return matches.length===1?matches[0]:null;}
  function projection(p){
@@ -184,7 +185,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const story=state.dmMemory.entries.filter(e=>e.location===scene(p)&&(e.actorId===id||e.tile&&visible(p,e.tile))).slice(-3);
   const aid=state.assists[id],helper=aid?.until>now()?Object.values(p.getWorld().players||{}).find(q=>identity(q)===aid.helperId&&q.hasEnteredGame&&!q.isDead&&q.chaosControlled&&!q.chaosSpectator&&scene(q)===scene(p)&&reachable(p,q)):null;
   const assistedBy=helper&&aid.mode!==-1?name(helper):null,hinderedBy=helper&&aid.mode===-1?name(helper):null;
-  return {bag:bag.map(plain),ground:ground.map(plain),npcs,story,wearables:bag.filter(i=>i.equipped).map(plain),camp:state.camp,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})};
+  return {bag:bag.map(plain),ground:ground.map(plain),scenery:visibleScenery(state,scene(p)).filter(o=>visible(p,o.tile)),npcs,story,wearables:bag.filter(i=>i.equipped).map(plain),camp:state.camp,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})};
  }
  function apply(p,text){
   if(!identity(p))return {blocked:true,success:false,text:'Your character is still connecting.'};
@@ -308,6 +309,19 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   persist();
   return {...result,...(roll!==null?{roll,dc:plan.dc,bonus:check.bonus,...(check.rerolled!==null?{rerolled:check.rerolled}:{}),...(rolls?{rolls,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})}:{}),text:canonical}:{text:canonical}),witnesses:witnesses.map(n=>n.name),event:entry};
  }
+ function registerScenery(sceneId,id,kind,tile){
+  const existing=state.scenery?.[sceneId+':'+id];
+  if(existing)return existing;
+  const obj=registerAuthoredScenery(state,{scene:sceneId,id,kind,tile});persist();return obj;
+ }
+ function strikeScenery(p,id,damage=1){
+  if(!identity(p)||p.isDead)return {changed:false,error:'Active living actor required'};
+  const obj=state.scenery[scene(p)+':'+id];
+  if(!obj||distance(p,obj.tile)>1)return {changed:false,error:'Scenery out of reach'};
+  const result=damageAuthoredScenery(state,{scene:scene(p),id,damage});
+  if(result.changed)persist();
+  return result;
+ }
  function execute(p,text){surroundings(p);pulse(p);const previous=state;state=structuredClone(state);try{const result=apply(p,text);if(result.blocked)state=previous;return result;}catch(error){state=previous;throw error;}}
  function approach(p,text){
   const attempt=creativeAttempt(text);if(!attempt)return null;
@@ -350,5 +364,5 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    return {id,fact,witnesses:witnessed.map(n=>n.name)};
   }catch(error){state=previous;throw error;}
  }
- return {snapshot,execute,approach,isBlocked:blocked,talk,canQuest,recordNativeDefeat};
+ return {snapshot,execute,approach,isBlocked:blocked,talk,canQuest,recordNativeDefeat,registerScenery,strikeScenery};
 }
