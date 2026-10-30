@@ -19,6 +19,26 @@ try{
  assert.equal(state.actor?.chaos?.bag?.length,2,'real Fracture actor must receive two durable Chaos starter materials');
  assert.equal(state.role,'rogue','private room remembers the class');
  assert.equal(state.actor.role,'rogue','native Fracture actor receives the authenticated class');
+ // A second authenticated native Fracture actor must grant real, bounded
+ // Chaos D20 assistance. One actor controlling two phones is not sufficient.
+ const helperName='HelperCI_'+Math.random().toString(36).slice(2,6);
+ const joinedHelper=await post('/pair',{key:app.room.join,name:helperName,role:'healer'});
+ assert.equal(joinedHelper.status,201);
+ const helperToken=joinedHelper.token;
+ let helperState;deadline=Date.now()+20000;
+ do{helperState=await get(helperToken);if(helperState.actor?.ready&&helperState.actor.chaos?.bag?.length===2)break;await sleep(250);}while(Date.now()<deadline);
+ assert.ok(helperState.actor?.ready,'second real native actor must join');
+ assert.notEqual(helperState.actor.id,state.actor.id,'each controller must own a different native actor');
+ assert.equal(helperState.actor.zone,state.actor.zone,'both actors must be in the same native zone');
+ assert.ok(Math.abs(helperState.actor.x-state.actor.x)+Math.abs(helperState.actor.y-state.actor.y)<=2,
+  'the native actors must be close enough for real D20 assistance');
+ const help=await post('/action',{token:helperToken,text:'help '+state.name});
+ assert.equal(help.status,202);
+ let helped;deadline=Date.now()+12000;
+ do{helperState=await get(helperToken);helped=helperState.results.find(r=>r.id===help.id);if(helped&&['succeeded','failed','blocked'].includes(helped.status))break;await sleep(150);}while(Date.now()<deadline);
+ assert.equal(helped?.status,'succeeded','the helper must actually grant the native character an advantage');
+ state=await get(token);
+ assert.equal(state.actor.chaos.assistedBy,helperName);
  const before=state.actor.chaos.bag.map(i=>i.id);
  const action=await post('/action',{token,text:'make blue hat from cloth strip and wood splinter'});
  assert.equal(action.status,202);
@@ -29,6 +49,10 @@ try{
  assert.ok(Number.isInteger(result.roll)&&result.roll>=1&&result.roll<=20);
  assert.equal(result.dc,10);
  assert.equal(result.bonus,0,'Rogue does not gain a fabricated bonus to crafting');
+ assert.equal(result.rolls?.length,2,'a real second actor must grant two original Chaos D20 rolls');
+ assert.equal(result.roll,Math.max(...result.rolls),'the native result must use the higher D20');
+ assert.equal(result.assistedBy,helperName);
+ assert.equal(state.actor.chaos.assistedBy,undefined,'assistance is consumed after one real roll');
  const after=state.actor.chaos.bag;
  if(result.status==='succeeded'){
   assert.ok(after.some(i=>i.name==='blue hat'));
@@ -41,5 +65,5 @@ try{
  assert.equal(saved.version,1);
  assert.ok(Object.keys(saved.actors).length>=1);
  assert.ok(Object.keys(saved.items).length>=2);
- console.log(JSON.stringify({status:'passed',checks:['real native actor has Chaos starter materials','server D20 crafting receipt','native actor inventory agrees with result','separate persistent object save'],craftStatus:result.status}));
+ console.log(JSON.stringify({status:'passed',checks:['real native actor has Chaos starter materials','server D20 crafting receipt','native actor inventory agrees with result','separate persistent object save','two distinct native actors with one consumed D20 advantage'],craftStatus:result.status}));
 }finally{await app.close();fs.rmSync(dir,{recursive:true,force:true});}
