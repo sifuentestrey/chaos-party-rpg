@@ -1,5 +1,10 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Shared physical-object capability foundation — October 30
+
+The Fracture sidecar now exposes derived movable, flammable, breakable, repairable, blocking and extinguishable flags for **Chaos-owned objects**. The same descriptor is used for sidecar collision and fire eligibility, avoiding per-object name special cases. Four focused regression scenarios were added; they have not been executed or validated by pinned CI in this pass. Native Fracture scenery is still authoritative and is not generally destructible or movable. NPC autonomy, hazards, weather, water, and instant multiplayer event broadcasting remain incomplete.
+
+
 ## Grounded NPC property firefighting (partial reactive-world parity) — October 30
 
 The isolated Fracture sidecar now adds one **state-changing NPC response**: a nearby, living native NPC can extinguish its own burning physical floor object after one full warning tick. This reuses original Chaos object extinguishing semantics and the existing native-zone, identity, proximity and persistent NPC history projections. Other players see the saved object condition through existing state polling; the NPC does not teleport, receive fabricated native animation, gain items or rewrite native quests. An absent owner cannot retroactively witness a burn-through. Focused local source-kit tests: **131 passed, 1 skipped, 0 failed** under Node 22.16 with TypeScript stripping; [GitHub offline verification 41069105566](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41069105566) passed (`npm run verify`); the separate pinned native Fracture integration remains pending.
