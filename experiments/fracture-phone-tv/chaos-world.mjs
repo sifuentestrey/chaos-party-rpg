@@ -22,6 +22,7 @@ export function creativeAttempt(text){
 }
 export function shouldUseCreative(text,actor){const a=creativeAttempt(text);if(!a)return false;if(['craft','attach','give','separate','steal','assist','hinder','appeal'].includes(a.verb))return true;const items=[...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[]),...(actor?.chaos?.npcs||[]).flatMap(n=>n.items||[])];const reference=a.item||a.target;return items.some(i=>i.id===reference||norm(i.name)===norm(reference));}
 
+export const fireCatchup=(last,now)=>({steps:Math.min(3,Math.floor(Math.max(0,now-last)/10000)),next:last+Math.min(3,Math.floor(Math.max(0,now-last)/10000))*10000});
 const distance=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
 const scene=p=>`fracture:${p.getWorld?.().id||'world'}`;
 const zoneAt=(world,x,y)=>{const zone=world.zoneManager?.getZoneAt(x,y);return zone?String(zone.id??zone.name??''):null;};
@@ -111,7 +112,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const current=scene(p),now=clock();if(!state.fireClock[current])state.fireClock[current]=now;
   const burning=Object.values(state.items).filter(i=>i.condition==='burning'&&(i.location===current||state.npcs[i.ownerId]?.location===current||state.actors[i.ownerId]?.scene===current));
   if(!burning.length){state.fireClock[current]=now;return;}
-  const steps=Math.min(3,Math.floor((now-state.fireClock[current])/10000));if(steps<1)return;
+  const {steps,next}=fireCatchup(state.fireClock[current],now);if(steps<1)return;
   const previous=state;state=structuredClone(state);try{
    const owned=[...Object.values(state.npcs).filter(n=>n.location===current).map(n=>({id:n.id})),...Object.entries(state.actors).filter(([,a])=>a.scene===current).map(([id])=>({id}))];
    const changes=[];let eventTile=null;
@@ -141,7 +142,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
      }
     }
    }
-   state.fireClock[current]=now;
+   state.fireClock[current]=next; // Preserve unprocessed elapsed ticks across bounded catch-up.
    if(changes.length){const room={round:++state.round,world:{expedition:{current,creatures:state.npcs}},dmMemory:state.dmMemory,result:{id:'chaos-'+state.round,playerId:'fire',name:'Fire',action:'fire progresses',target:{entityId:burning[0].id},blocked:false,success:true,narration:changes.join('. ')+'.',changes,sceneEvents:[]}};recordDMMemory(room);state.dmMemory.entries.at(-1).tile=eventTile||burning[0].tile||{x:p.x,y:p.y};}
    persist();
   }catch(error){state=previous;throw error;}
