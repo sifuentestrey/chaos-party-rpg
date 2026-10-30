@@ -3,7 +3,6 @@ import http from 'node:http';
 import qrcode from './vendor/qrcode.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
@@ -135,7 +134,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
    if(p==='/host'&&req.method==='GET'){
     if(url.searchParams.get('key')!==room.host)return json(res,403,{error:'Private host link required'});
     const host=(req.headers.host||'localhost').split(':')[0],actual=server.address().port;
-    const lan=Object.values(os.networkInterfaces()).flat().find(x=>x.family==='IPv4'&&!x.internal)?.address||host;
+    const preferred=lanIp(),lan=preferred==='localhost'?host:preferred;
     const join=`http://${['localhost','127.0.0.1'].includes(host)?lan:host}:${actual}/join?key=${room.join}`;
     const tv=`http://${host}:${fracturePort}/?chaosTV=${encodeURIComponent(`http://${host}:${actual}`)}&tvKey=${tvKey}`;
     res.writeHead(200,{'content-type':'text/html','cache-control':'no-store'});return res.end(page('Chaos Party host',`<h1>Chaos Party</h1><p>Local game-night beta · Fracture world</p><div class="card"><a href="${esc(tv)}" target="_blank" rel="noopener">Open shared TV</a><p>Each phone joins here:</p><a href="${esc(join)}">${esc(join)}</a><div style="width:220px;background:white;margin:16px auto">${qrSvg(join)}</div><button id="dm">Optional free Groq interpretation: ${dm.enabled?'ON':'OFF'}</button><script>document.getElementById('dm').onclick=async()=>{const r=await fetch('/dm',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key:${JSON.stringify(room.host)},enabled:${!dm.enabled}})});const v=await r.json();if(r.ok)location.reload();else alert(v.error);};</script><p>Keep this host link private. Each phone gets its own character.</p></div><p>Adventure: meet a villager, defeat a rat, collect loot, then explore north together. Use “look around” to discover real targets.</p><div class="card"><h2>Recover a character</h2>${room.players.map(p=>`<p>${esc(p.name)} (${p.parked?'benched':'playing'}): <a href="${esc(join)}#recover=${p.token}">personal reconnect link</a> <button type="button" data-roster="${p.token}" data-park="${!p.parked}">${p.parked?'Restore player':'Bench player'}</button></p>`).join('')}<small>Share each personal link only with its player. It never contains the Fracture password.</small><script>document.querySelectorAll('[data-roster]').forEach(button=>button.onclick=async()=>{if(button.dataset.park==='true'&&!confirm('Bench this player? Their character will be saved and can be restored.'))return;const r=await fetch('/host/player',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key:${JSON.stringify(room.host)},token:button.dataset.roster,parked:button.dataset.park==='true'})});const v=await r.json();if(r.ok)location.reload();else alert(v.error);});</script></div><p>12–20-player performance and physical Mac acceptance remain unverified.</p>`));
