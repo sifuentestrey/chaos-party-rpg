@@ -84,7 +84,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
    }
    record({player:player.name,...r,actor:undefined});
   });
-  socket.on('chaos:position',s=>{session.actor=s;if(!session.player.parked)progressAdventure(zoneEvidence(s,session.player.name));});
+  socket.on('chaos:position',s=>{session.actor=s;if(!session.player.parked)progressAdventure(zoneEvidence(s,session.player.name,session.player.token));});
   return session;
  }
  // One dispatch path for personal and majority-approved movement. All outcomes
@@ -133,7 +133,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
    dispatch(s,{verb:'go',x:rally.x,y:rally.y},'Party rally: walk to '+rally.x+', '+rally.y);
   }
  }
- function refresh(s){if(s.socket.connected&&s.actor)s.socket.timeout(1500).emit('chaos:state',{key:actorKey},(err,r)=>{if(!err&&r?.ok){s.actor=r.actor;if(!s.player.parked)progressAdventure(zoneEvidence(r.actor,s.player.name));}});}
+ function refresh(s){if(s.socket.connected&&s.actor)s.socket.timeout(1500).emit('chaos:state',{key:actorKey},(err,r)=>{if(!err&&r?.ok){s.actor=r.actor;if(!s.player.parked)progressAdventure(zoneEvidence(r.actor,s.player.name,s.player.token));}});}
  room.players.forEach(connect);
  const polling=setInterval(()=>{finishRally();for(const s of sessions.values()){
    if(s.player.parked)continue;
