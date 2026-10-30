@@ -14,6 +14,10 @@ If macOS blocks opening a downloaded script, inspect it and run this in Terminal
 Open the private host link from Terminal, open the TV, and join each phone using its QR.
 Try moving or lighting the camp table, extinguishing/repairing it, and talking to a guard.
 NPCs remember witnessed theft; actual gifts can restore trust. You can still craft and trade.
+Optional party story: after a living character joins The Refuge, the host can choose
+Start The Refuge Trial. Talk to a native NPC, defeat a monster OR craft an item,
+enter Glitch Woods, and have a woods visitor return to The Refuge. Progress is saved.
+The trial is a new small adventure, NOT Crown Job or Dawn Bell. It grants no extra XP/loot.
 Use the same Wi-Fi. Each phone controls its own character. Keep Terminal open.
 The private host page can BENCH a player to free a 20-player slot without erasing their saved character.
 Restore that player from the host page when another slot becomes available.
