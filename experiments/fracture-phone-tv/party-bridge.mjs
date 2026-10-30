@@ -8,6 +8,7 @@ import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
 import {createOptionalDM} from './optional-dm.mjs';
 import {shouldUseCreative} from './chaos-world.mjs';
+import {worldFingerprint} from './world-change.mjs';
 import {parseIntent} from './action-contract.ts';
 import {proposeRally,proposeExpedition,expeditionEligible,voteRally,settleRally,rallyView} from './party-rally.mjs';
 import {preferredLanIp} from './lan-address.mjs';
@@ -38,6 +39,12 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
  const meaningful=new Set(['creative','attack','talk','quest','open','loot']);
  const liveCount=()=>room.players.filter(p=>!p.parked).length;
  const eventClients=new Map();
+ let worldNotifyTimer=null;
+ const scheduleWorldNotification=()=>{
+  if(worldNotifyTimer)return;
+  worldNotifyTimer=setTimeout(()=>{worldNotifyTimer=null;notifyClients();},100);
+  worldNotifyTimer.unref?.();
+ };
  function notifyClients(){for(const [res,token] of eventClients){
   const session=sessions.get(token);
   if(res.destroyed||!session||session.player.parked){eventClients.delete(res);if(!res.destroyed)res.end();continue;}
@@ -81,10 +88,10 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
  }
  function connect(player){
   const socket=io(`http://127.0.0.1:${fracturePort}`,{transports:['websocket'],reconnection:true,autoConnect:false,auth:{chaosActorKey:actorKey,chaosName:player.name,chaosRole:validRole(player.role)?player.role:null,chaosPerk:player.perk==='lucky'?'lucky':null}});
-  const session={player,socket,actor:null,results:new Map(),declarations:new Map(),attempts:new Map(),lastAction:0,epoch:0,lastSeen:0,suspending:false};sessions.set(player.token,session);
+  const session={player,socket,actor:null,worldFingerprint:null,results:new Map(),declarations:new Map(),attempts:new Map(),lastAction:0,epoch:0,lastSeen:0,suspending:false};sessions.set(player.token,session);
   socket.on('connect_error',()=>{session.error='Fracture is unavailable. The host should check its launcher.';});
   socket.on('connect',()=>{session.error=null;session.actor=null;socket.emit('message',[0,player.account,21,60,0,player.password]);});
-  socket.on('disconnect',()=>{cancelPending(session,'Announced action cancelled: character disconnected.');session.actor=null;session.epoch++;session.storyController?.abort();session.declarations.clear();session.attempts.clear();for(const [id,result] of session.results)if(['received','started'].includes(result.status))session.results.set(id,{...result,status:'failed',message:'Game connection lost. Reconnect and try again.'});});
+  socket.on('disconnect',()=>{session.worldFingerprint=null;cancelPending(session,'Announced action cancelled: character disconnected.');session.actor=null;session.epoch++;session.storyController?.abort();session.declarations.clear();session.attempts.clear();for(const [id,result] of session.results)if(['received','started'].includes(result.status))session.results.set(id,{...result,status:'failed',message:'Game connection lost. Reconnect and try again.'});});
   socket.on('message',data=>{const messages=Array.isArray(data?.[0])?data:[data];for(const msg of messages){
    if(!Array.isArray(msg))continue;
    if(msg[0]===1){session.actor={id:msg[1],name:player.name,x:msg[3],y:msg[4],hp:msg[5],ready:true};refresh(session);}
@@ -186,6 +193,11 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
  function refresh(s){if(s.socket.connected&&s.actor)s.socket.timeout(1500).emit('chaos:state',{key:actorKey},(err,r)=>{if(!err&&r?.ok){
   s.actor=r.actor;
   if(!s.player.parked){
+   const nextWorld=worldFingerprint(r.actor);
+   if(nextWorld!==null){
+    if(s.worldFingerprint!==null&&s.worldFingerprint!==nextWorld)scheduleWorldNotification();
+    s.worldFingerprint=nextWorld;
+   }
    progressAdventure(zoneEvidence(r.actor,s.player.name,s.player.token));
    const vote=room.rally;
    if(vote?.kind==='expedition'&&vote.status==='approved'&&vote.dispatched&&vote.electorate.includes(s.player.token)&&r.actor.ready&&!r.actor.dead&&r.actor.zone===vote.arrivalZone&&!(vote.arrivals||[]).includes(s.player.token)){
@@ -414,6 +426,6 @@ let changes=null;function connectChanges(){if(changes){changes.close();changes=n
   }catch(e){json(res,400,{error:'Invalid request'});}
  });
  server.requestTimeout=5000;server.headersTimeout=5000;
- return {server,room,sessions,pending,async start(){await new Promise((resolve,reject)=>server.once('error',reject).listen(port,bind,resolve));return server.address();},async close(){dm.close?.();for(const s of sessions.values())cancelPending(s,'Announced action cancelled: host is shutting down.');clearInterval(polling);for(const client of eventClients.keys())client.end();eventClients.clear();await Promise.all([...sessions.values()].filter(s=>s.socket.connected&&s.actor).map(s=>new Promise(resolve=>s.socket.timeout(2000).emit('chaos:save',{key:actorKey},(error,result)=>{if(error||result?.error)console.error('[Chaos Party] Save acknowledgment failed; attempting native disconnect save.');resolve();}))));flushEvents();for(const s of sessions.values())s.socket.disconnect();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}};
+ return {server,room,sessions,pending,async start(){await new Promise((resolve,reject)=>server.once('error',reject).listen(port,bind,resolve));return server.address();},async close(){dm.close?.();for(const s of sessions.values())cancelPending(s,'Announced action cancelled: host is shutting down.');clearInterval(polling);if(worldNotifyTimer){clearTimeout(worldNotifyTimer);worldNotifyTimer=null;}for(const client of eventClients.keys())client.end();eventClients.clear();await Promise.all([...sessions.values()].filter(s=>s.socket.connected&&s.actor).map(s=>new Promise(resolve=>s.socket.timeout(2000).emit('chaos:save',{key:actorKey},(error,result)=>{if(error||result?.error)console.error('[Chaos Party] Save acknowledgment failed; attempting native disconnect save.');resolve();}))));flushEvents();for(const s of sessions.values())s.socket.disconnect();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){const app=createPartyBridge();app.start().then(()=>console.log(`Chaos Fracture local bridge: http://localhost:4748/host?key=${app.room.host}`)).catch(e=>{console.error(e.message);process.exit(1);});let stopping=false;for(const sig of ['SIGTERM','SIGINT'])process.on(sig,async()=>{if(stopping)return;stopping=true;await app.close();process.exit(0);});}
