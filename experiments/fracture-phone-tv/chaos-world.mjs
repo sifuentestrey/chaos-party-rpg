@@ -417,7 +417,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const aid=state.assists[id],helper=aid?.until>now()?Object.values(p.getWorld().players||{}).find(q=>identity(q)===aid.helperId&&q.hasEnteredGame&&!q.isDead&&q.chaosControlled&&!q.chaosSpectator&&scene(q)===scene(p)&&reachable(p,q)):null;
   const assistedBy=helper&&aid.mode!==-1?name(helper):null,hinderedBy=helper&&aid.mode===-1?name(helper):null;
   const updates=nativeTrees.filter(t=>t.cells).flatMap(t=>{const o=state.scenery[scene(p)+':'+t.id];return o&&(o.condition!==(t.fireSource?'burning':'intact')||distance(o.tile,t.tile)>0)?[{id:t.id,tile:o.tile,condition:o.condition}]:[];});
-  return {doors:doorControl.view(p),nativeChanges:nativeTrees.filter(t=>state.scenery[scene(p)+':'+t.id]?.condition==='broken').map(t=>t.id),nativeUpdates:updates,bag:allowSyntheticFixtures?bag.map(plain):[],ground:allowSyntheticFixtures?ground.map(plain):[],scenery:nearbyScenery(p).map(o=>{if(!o.nativeOrigin)return o;return {id:o.id,scene:o.scene,name:o.name,kind:o.kind,material:o.material,condition:o.condition,tile:o.tile,interactionTile:nativeContact(p,o),nativeOrigin:o.nativeOrigin,aliases:o.aliases,capabilities:nativeCapabilities(o)};}),npcs,story,wearables:allowSyntheticFixtures?bag.filter(i=>i.equipped).map(plain):[],camp:allowSyntheticFixtures?state.camp:null,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})};
+  return {doors:doorControl.view(p),nativeChanges:nativeTrees.filter(t=>state.scenery[scene(p)+':'+t.id]?.condition==='broken').map(t=>t.id),nativeUpdates:updates,bag:allowSyntheticFixtures?bag.map(plain):[],ground:allowSyntheticFixtures?ground.map(plain):[],scenery:nearbyScenery(p).map(o=>{if(!o.nativeOrigin)return o;return {id:o.id,scene:o.scene,name:o.name,kind:o.kind,material:o.material,condition:o.condition,tile:o.tile,interactionTile:nativeContact(p,o),nativeOrigin:o.nativeOrigin,aliases:o.aliases,capabilities:nativeCapabilities(o),nativeAdapter:!!o.cells?.length,dc:o.dc,wet:o.wet>0};}),npcs,story,wearables:allowSyntheticFixtures?bag.filter(i=>i.equipped).map(plain):[],camp:allowSyntheticFixtures?state.camp:null,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})};
  }
  function apply(p,text){
   if(!identity(p))return {blocked:true,success:false,text:'Your character is still connecting.'};
@@ -609,21 +609,25 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   surroundings(p);pulse(p);
   if(!p?.chaosControlled||!p.hasEnteredGame||p.isDead||!identity(p))
    return {blocked:true,success:false,text:'An active character must attempt the action.'};
-  const objects=sceneScenery(scene(p)).filter(o=>o.nativeOrigin&&o.kind==='tree').map(o=>({
-   id:o.id,verifiedNative:true,scene:o.scene,tile:o.tile,condition:o.condition,wet:o.wet>0,
-   capabilities:{breakable:o.condition!=='broken',flammable:o.condition!=='broken'&&o.condition!=='burning'}
+  const objects=sceneScenery(scene(p)).filter(o=>o.nativeOrigin).map(o=>({
+   id:o.id,verifiedNative:true,nativeAdapter:!!o.cells?.length,scene:o.scene,
+   tile:o.cells?.length?nativeContact(p,o):o.tile,condition:o.condition,
+   wet:o.wet>0,dc:o.dc,capabilities:o.cells?.length?nativeCapabilities(o):
+    {breakable:o.condition!=='broken',flammable:o.condition!=='broken'&&o.condition!=='burning'}
   }));
-  const decision=validateEnvironmentJudgment(judgment,{scene:scene(p),actor:{active:true,tile:{x:p.x,y:p.y}},objects,maxReach:1});
+  const decision=validateEnvironmentJudgment(judgment,{scene:scene(p),actor:{active:true,tile:{x:p.x,y:p.y}},objects,maxReach:1,authoritativeNativeExecutor:true});
   if(!decision.accepted)return {blocked:true,success:false,text:decision.reason};
   // A DM suggestion never grants line of sight through walls or across a zone.
-  const validatedTree=state.scenery[decision.targetId];
-  if(!validatedTree||!sameZone(p,validatedTree.tile)||!visible(p,validatedTree.tile,2,validatedTree.footprint||true))
+  const validatedObject=state.scenery[decision.targetId];
+  const contact=validatedObject?.cells?.length?nativeContact(p,validatedObject):validatedObject?.tile;
+  if(!validatedObject||!contact||!sameZone(p,contact)||
+   !visible(p,contact,2,validatedObject.cells?.length?nativeSightCells(validatedObject):validatedObject.footprint||true))
    return {blocked:true,success:false,text:'That existing scenery is not reachable or visible from here.'};
   const target=state.scenery[decision.targetId];
   if(!target||!target.nativeOrigin)return {blocked:true,success:false,text:'The native object is no longer available.'};
   // Both structured model proposals and ordinary phone commands enter the
   // same capability executor, including teammate dice and native map updates.
-  if(target.cells?.length)return executeNative(p,target,{verb:decision.action,target:target.id},decision.action+' '+target.id);
+  if(target.cells?.length)return executeNative(p,target,{verb:decision.action,target:target.id,...(decision.direction?{direction:decision.direction}:{})},decision.action+' '+target.id+(decision.direction?' '+decision.direction:''));
   // The DM can choose narrative framing, but never substitute invented damage,
   // a fabricated roll, or self-reported world state. Original native execution
   // remains the sole source of truth.
