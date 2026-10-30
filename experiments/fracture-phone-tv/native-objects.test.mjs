@@ -123,5 +123,6 @@ test('optional AI environment proposal can select an existing movable tent witho
  t.after(()=>dm.close());
  const actor={...p,ready:true,dead:false,chaos:engine.snapshot(p)};
  assert.deepEqual(await dm.interpretEnvironment('Could you shift the canvas shelter to the right?',actor),proposal);
+ assert.deepEqual(await dm.interpretEnvironment('Could you shift the canvas shelter to the right?',{...actor,x:7}),proposal,'the model may suggest a visible target before the engine walks into reach');
  assert.equal(await dm.interpretEnvironment('Could you shift it?',{...actor,chaos:{scenery:[]}}),null);
 });
