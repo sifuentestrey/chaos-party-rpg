@@ -4,10 +4,10 @@ import {parseItemAttempt,planItemAttempt,resolveItem,ITEM_TYPES,MATERIALS} from 
 import {spawnItem} from '../../public/campaign.js';
 import {Rng} from '../../public/vendor/partyframe-rng.js';
 import {selectD20} from '../../public/vendor/dnd5e-advantage.js';
-const verbs=new Set(['take','drop','craft','attach','give','equip','unequip','separate','inspect','break']);
+const verbs=new Set(['take','drop','craft','attach','give','equip','unequip','separate','inspect','break','steal']);
 const norm=s=>String(s||'').toLowerCase().replace(/^(?:the|a|an|my)\s+/,'').trim();
 export function creativeAttempt(text){const command=String(text).trim().replace(/^(?:please |I (?:want to |try to )?)+/i,'').replace(/^(?:pick up|pickup|collect|grab) /i,'take ');const help=command.match(/^(?:help|assist|aid)\s+(.+?)(?:\s+(?:craft|make|build|with crafting))?$/i);if(help)return {verb:'assist',recipient:help[1].trim()};const attempt=parseItemAttempt(command);return attempt&&verbs.has(attempt.verb)?attempt:null;}
-export function shouldUseCreative(text,actor){const a=creativeAttempt(text);if(!a)return false;if(['craft','attach','give','separate','assist'].includes(a.verb))return true;const items=[...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[])];return items.some(i=>i.id===a.item||norm(i.name)===norm(a.item));}
+export function shouldUseCreative(text,actor){const a=creativeAttempt(text);if(!a)return false;if(['craft','attach','give','separate','assist','steal'].includes(a.verb))return true;const items=[...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[])];return items.some(i=>i.id===a.item||norm(i.name)===norm(a.item));}
 const distance=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
 const scene=p=>`fracture:${p.getWorld?.().id||'world'}`;
 // A tile's native zone and collision geometry are part of object authority.
@@ -32,14 +32,14 @@ const reachable=(p,q)=>{
 };
 const identity=p=>String(p.characterId||'');
 const name=p=>p.chaosName||p.name;
-export function createChaosWorld({file,seed=randomInt(1,0xffffffff),now=()=>Date.now()}={}){
+export function createChaosWorld({file,seed=randomInt(1,0xffffffff),now=()=>Date.now(),npcName=n=>n.chaosName||n.name||String(n.kind||'NPC')}={}){
  if(!file)throw Error('Separate Fracture object save path required');
  fs.mkdirSync(path.dirname(file),{recursive:true,mode:0o700});
  let state=fs.existsSync(file)?JSON.parse(fs.readFileSync(file,'utf8')):{version:1,seed,rng:seed,nextId:1,round:0,items:{},actors:{},camp:null};
  if(state.version!==1||!state.items||!state.actors)throw Error('Unsupported Chaos object save; refusing to overwrite');
  // Optional version-1 extension. Existing saves load unchanged and acquire this
  // field only on the next successful object write.
- state.assists||={};
+ state.assists||={};state.npcs||={};
  const persist=()=>{const temp=file+'.tmp';fs.writeFileSync(temp,JSON.stringify(state),{mode:0o600});fs.renameSync(temp,file);};
  function add(location,properties){const s={items:state.items,nextId:state.nextId};const item=spawnItem(s,location,properties);state.nextId=s.nextId;return item;}
  function seedPlayer(p){
@@ -62,7 +62,15 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),now=()=>Date
   const peers=Object.values(world.players||{}).filter(q=>q.chaosControlled&&!q.chaosSpectator&&q.hasEnteredGame&&!q.isDead&&scene(q)===current&&reachable(p,q));
   if(!peers.includes(p))peers.push(p);
   const players=peers.map(q=>({id:identity(q),name:name(q),hp:q.hitPoints,maxHp:q.maxHitPoints}));
-  const s={current,items:Object.fromEntries(Object.entries(state.items).filter(([,i])=>!i.location||(i.location===current&&i.tile&&distance(p,i.tile)<=8&&sameZone(p,i.tile)))),nextId:state.nextId,creatures:{},regions:{},campaign:{day:1,history:[],completed:[]},locations:{[current]:{id:current,name:world.zoneManager?.getZoneAt(p.x,p.y)?.name||'Fracture',exits:[],danger:0}}};
+  // Reuse original NPC-owned item/theft/trust rules, but map them to actual
+  // nearby native Fracture NPCs. Stable native NPC IDs survive a host restart.
+  // No synthetic NPC or inventory item is spawned by this adapter.
+  const creatures=Object.fromEntries(Object.values(world.npcs||{}).filter(q=>q&&reachable(p,q)).map(q=>{
+   const id=String(q.id),saved=state.npcs[id]||{};
+   return [id,{id,name:npcName(q),location:current,hp:1,maxHp:1,
+     attitude:saved.attitude||'neutral',trust:{...(saved.trust||{})},history:[...(saved.history||[])]}];
+  }));
+  const s={current,items:Object.fromEntries(Object.entries(state.items).filter(([,i])=>!i.location||(i.location===current&&i.tile&&distance(p,i.tile)<=8&&sameZone(p,i.tile)))),nextId:state.nextId,creatures,regions:{},campaign:{day:1,history:[],completed:[]},locations:{[current]:{id:current,name:world.zoneManager?.getZoneAt(p.x,p.y)?.name||'Fracture',exits:[],danger:0}}};
   return {room:{seed:state.seed,round:state.round,world:{expedition:s},players},actor:players.find(q=>q.id===id),s};
  }
  const plain=i=>({id:i.id,name:i.name,type:i.type,material:i.material,condition:i.condition,equipped:i.equipped,slot:i.slot,color:i.appearance?.color,tile:i.tile?{...i.tile}:null,components:[...i.components]});
@@ -70,8 +78,13 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),now=()=>Date
   if(!identity(p))return {bag:[],ground:[],wearables:[]};seedPlayer(p);const id=identity(p);
   const bag=Object.values(state.items).filter(i=>i.ownerId===id&&!i.parentId&&i.condition!=='disassembled');
   const ground=Object.values(state.items).filter(i=>!i.ownerId&&!i.parentId&&i.location===scene(p)&&i.tile&&distance(p,i.tile)<=8&&sameZone(p,i.tile)&&i.condition!=='disassembled');
+  const npcs=Object.values(world.npcs||{}).filter(q=>q&&sameZone(p,q)&&distance(p,q)<=8).map(q=>{
+   const npcId=String(q.id),saved=state.npcs[npcId]||{};
+   return {id:npcId,name:npcName(q),attitude:saved.attitude||'neutral',
+     trust:(saved.trust||{})[id]||0,items:Object.values(state.items).filter(i=>i.ownerId===npcId&&!i.parentId).map(i=>({id:i.id,name:i.name}))};
+  });
   const aid=state.assists[id];const helper=aid?.until>now()?Object.values(p.getWorld().players||{}).find(q=>identity(q)===aid.helperId&&q.chaosControlled&&q.hasEnteredGame&&!q.isDead&&reachable(p,q)):null;const assistedBy=helper?name(helper):null;
-  return {bag:bag.map(plain),ground:ground.map(plain),wearables:bag.filter(i=>i.equipped).map(plain),camp:state.camp,...(assistedBy?{assistedBy}:{})};
+  return {bag:bag.map(plain),ground:ground.map(plain),wearables:bag.filter(i=>i.equipped).map(plain),npcs,camp:state.camp,...(assistedBy?{assistedBy}:{})};
  }
  function apply(p,text){
   if(!identity(p))return {blocked:true,success:false,text:'Your character is still connecting.'};
@@ -105,7 +118,12 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),now=()=>Date
    else roll=rng.int(1,20);
   }
   const result=resolveItem(room,actor,plan,plan.automatic||roll>=plan.dc);
-  Object.assign(state.items,s.items);state.nextId=s.nextId;state.rng=rng.snapshot();state.round++;
+  Object.assign(state.items,s.items);
+  // The original resolver changes NPC trust/history on *both* successful and
+  // failed theft. Persist that consequence separately from native dialogue/AI.
+  for(const npc of Object.values(s.creatures))if(npc.history?.length||npc.attitude!=='neutral')
+   state.npcs[npc.id]={attitude:npc.attitude,trust:npc.trust||{},history:npc.history||[]};
+  state.nextId=s.nextId;state.rng=rng.snapshot();state.round++;
   if(result.success&&attempt.verb==='drop'&&item)item.tile={x:p.x,y:p.y};
   if(result.success&&['take','give'].includes(attempt.verb)&&item)delete item.tile;
   persist();
