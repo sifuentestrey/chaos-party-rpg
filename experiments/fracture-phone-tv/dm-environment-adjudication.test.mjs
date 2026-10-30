@@ -20,7 +20,12 @@ test('AI DM must honor real reach, active actor, verified destination and wet fi
  assert.equal(validateEnvironmentJudgment(judgment(),{...ctx,objects:[{...obj,wet:true}]}).accepted,false);
  const rock={...obj,id:'native-rock',capabilities:{movable:true}};
  const move={...judgment('push','native-rock'),destination:{x:11,y:10}};
- assert.equal(validateEnvironmentJudgment(move,{...ctx,objects:[rock]}).accepted,true);
+ assert.equal(validateEnvironmentJudgment(move,{...ctx,objects:[rock]}).accepted,false,'no fake native boulder executor');
  assert.equal(validateEnvironmentJudgment({...move,destination:{x:12,y:10}},{...ctx,objects:[rock]}).accepted,false);
  assert.equal(validateEnvironmentJudgment(move,{...ctx,objects:[rock],freeTiles:[]}).accepted,false);
+});
+
+test('AI DM suggestions cannot authorize pickup or other unimplemented native effects',()=>{
+ const portable={...obj,id:'native-rock',capabilities:{portable:true}};
+ assert.equal(validateEnvironmentJudgment(judgment('take','native-rock'),{...ctx,objects:[portable]}).accepted,false);
 });
