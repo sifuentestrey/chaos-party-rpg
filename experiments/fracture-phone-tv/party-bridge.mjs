@@ -11,7 +11,7 @@ import {shouldUseCreative} from './chaos-world.mjs';
 import {parseIntent} from './action-contract.ts';
 import {proposeRally,voteRally,settleRally,rallyView} from './party-rally.mjs';
 import {preferredLanIp} from './lan-address.mjs';
-import {startAdventure,receiptEvidence,zoneEvidence,advanceAdventure,adventureView} from './party-adventure.mjs';
+import {startAdventure,replayAdventure,receiptEvidence,zoneEvidence,advanceAdventure,adventureView} from './party-adventure.mjs';
 const token=()=>randomBytes(24).toString('hex');
 const lanIp=()=>preferredLanIp();
 const phoneHost=req=>{const host=(req.headers.host||'localhost').split(':')[0];return ['localhost','127.0.0.1'].includes(host)?lanIp():host;};
@@ -72,7 +72,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
     }else if(['blocked','failed','cancelled'].includes(r.status))session.declarations.delete(r.id);
    }
    const attempt=session.attempts.get(r.id);
-   progressAdventure(receiptEvidence(r,attempt,actor||session.actor,player.name));
+   progressAdventure(receiptEvidence(r,attempt,actor||session.actor,player.name,room.adventure?.instanceId));
    const storyEvent=r.event||(attempt&&meaningful.has(attempt.verb)?{attempt:attempt.text}:null);
    if(storyEvent&&['succeeded','failed','blocked'].includes(r.status)){
     session.storyController?.abort();const storyController=new AbortController();session.storyController=storyController;session.story={id:r.id,text:r.message,mode:'offline'};const epoch=session.epoch;
@@ -90,7 +90,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
  // One dispatch path for personal and majority-approved movement. All outcomes
  // are sourced from the native engine, not the vote or the HTTP acceptance.
  function dispatch(s,intent,text){
-  const id=randomUUID();s.results.set(id,{status:'received',message:text});s.attempts.set(id,{text,verb:intent.verb});if(s.attempts.size>80)s.attempts.delete(s.attempts.keys().next().value);
+  const id=randomUUID();s.results.set(id,{status:'received',message:text});s.attempts.set(id,{text,verb:intent.verb,adventureInstance:room.adventure?.instanceId||null});if(s.attempts.size>80)s.attempts.delete(s.attempts.keys().next().value);
   if(s.results.size>80)s.results.delete(s.results.keys().next().value);
   if(meaningful.has(intent.verb)){
    s.declarations.set(id,{text});
@@ -161,15 +161,25 @@ async function refreshDM(){try{const r=await fetch('/dm/status?key='+encodeURICo
 document.getElementById('dm-test').onclick=async function(){this.disabled=true;dmStatus.textContent='Testing AI connection…';try{await fetch('/dm/test',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key:dmHostKey})});}catch{dmStatus.textContent='Connection check failed. Offline play remains available.';}finally{this.disabled=false;await refreshDM();}};
 document.getElementById('dm-save').onclick=async()=>{const field=document.getElementById('dm-key'),value=field.value;field.value='';const r=await fetch('/dm/configure',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key:dmHostKey,apiKey:value})});if(!r.ok)alert((await r.json()).error);await refreshDM();};
 refreshDM();setInterval(refreshDM,3000);
-</script><p>Keep this host link private. Each phone gets its own character.</p></div><p>Adventure: meet a villager, defeat a rat, collect loot, then explore north together. Use “look around” to discover real targets.</p><div class="card"><h2>Recover a character</h2>${room.players.map(p=>`<p>${esc(p.name)} (${p.parked?'benched':'playing'}): <a href="${esc(join)}#recover=${p.token}">personal reconnect link</a> <button type="button" data-roster="${p.token}" data-park="${!p.parked}">${p.parked?'Restore player':'Bench player'}</button></p>`).join('')}<small>Share each personal link only with its player. It never contains the Fracture password.</small><script>document.querySelectorAll('[data-roster]').forEach(button=>button.onclick=async()=>{if(button.dataset.park==='true'&&!confirm('Bench this player? Their character will be saved and can be restored.'))return;const r=await fetch('/host/player',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key:${JSON.stringify(room.host)},token:button.dataset.roster,parked:button.dataset.park==='true'})});const v=await r.json();if(r.ok)location.reload();else alert(v.error);});</script></div><div class="card"><h2>Optional party adventure</h2><p>Start The Refuge Trial after a player joins in The Refuge. Talk to an NPC, defeat a monster OR craft, visit Glitch Woods, and return. Group progress persists; no invented loot, XP, or original campaign migration.</p><button id="adventure-start" type="button">Start The Refuge Trial</button><p id="adventure-status">${esc(adventureView(room.adventure)?.summary||"Not started.")}</p><script>document.getElementById("adventure-start").onclick=async()=>{const r=await fetch("/host/adventure",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({key:${JSON.stringify(room.host)},action:"start"})});const v=await r.json();document.getElementById("adventure-status").textContent=r.ok?v.adventure.summary:v.error;};</script></div><p>12–20-player performance and physical Mac acceptance remain unverified.</p>`));
+</script><p>Keep this host link private. Each phone gets its own character.</p></div><p>Adventure: meet a villager, defeat a rat, collect loot, then explore north together. Use “look around” to discover real targets.</p><div class="card"><h2>Recover a character</h2>${room.players.map(p=>`<p>${esc(p.name)} (${p.parked?'benched':'playing'}): <a href="${esc(join)}#recover=${p.token}">personal reconnect link</a> <button type="button" data-roster="${p.token}" data-park="${!p.parked}">${p.parked?'Restore player':'Bench player'}</button></p>`).join('')}<small>Share each personal link only with its player. It never contains the Fracture password.</small><script>document.querySelectorAll('[data-roster]').forEach(button=>button.onclick=async()=>{if(button.dataset.park==='true'&&!confirm('Bench this player? Their character will be saved and can be restored.'))return;const r=await fetch('/host/player',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key:${JSON.stringify(room.host)},token:button.dataset.roster,parked:button.dataset.park==='true'})});const v=await r.json();if(r.ok)location.reload();else alert(v.error);});</script></div><div class="card"><h2>Optional party adventure</h2><p>Start The Refuge Trial after a player joins in The Refuge. Talk to an NPC, defeat a monster OR craft, visit Glitch Woods, and return. Group progress persists; no invented loot, XP, or original campaign migration.</p><button id="adventure-start" type="button">${room.adventure?.status==='completed'?'Start another trial':'Start The Refuge Trial'}</button><p id="adventure-status">${esc(adventureView(room.adventure)?.summary||"Not started.")}</p><script>document.getElementById("adventure-start").onclick=async()=>{const replay=${room.adventure?.status==='completed'};if(replay&&!confirm("Start a NEW Refuge Trial? Your completed run will be archived; native characters, gear, saves and world objects are not reset."))return;const r=await fetch("/host/adventure",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({key:${JSON.stringify(room.host)},action:replay?"replay":"start"})});const v=await r.json();document.getElementById("adventure-status").textContent=r.ok?v.adventure.summary:v.error;};</script></div><p>12–20-player performance and physical Mac acceptance remain unverified.</p>`));
    }
    if(p==='/host/adventure'&&req.method==='POST'){
     const b=await body(req);if(b.key!==room.host)return json(res,403,{error:'Private host link required'});
-    if(b.action!=='start')return json(res,400,{error:'Unsupported adventure action'});
-    if(room.adventure)return json(res,409,{error:'The trial has already started. Its saved progress will not be reset.'});
+    if(!['start','replay'].includes(b.action))return json(res,400,{error:'Unsupported adventure action'});
+    if(b.action==='start'&&room.adventure)return json(res,409,{error:'The trial already exists. Active or completed progress will not be silently reset.'});
+    if(b.action==='replay'&&(!room.adventure||room.adventure.id!=='refuge-trial-v1'||room.adventure.version!==1||room.adventure.status!=='completed'))
+     return json(res,409,{error:'Finish the supported trial before explicitly starting another run.'});
     const ready=[...sessions.values()].some(s=>!s.player.parked&&s.socket.connected&&s.actor?.ready&&!s.actor.dead&&s.actor.zone==='The Refuge');
     if(!ready)return json(res,409,{error:'Join with a living character in The Refuge before starting the trial.'});
-    room.adventure=startAdventure();persist();record({player:'Adventure',status:'started',message:'The Refuge Trial began. Talk to a local, defeat a monster OR craft, visit Glitch Woods, then return.'});
+    const previous=room.adventure,previousHistory=room.adventureHistory;
+    try{
+     if(b.action==='replay'){
+      const next=replayAdventure(room.adventure,room.adventureHistory||[],Date.now(),randomUUID());
+      room.adventure=next.adventure;room.adventureHistory=next.history;
+     }else room.adventure=startAdventure(Date.now(),1,randomUUID());
+     persist();
+    }catch(error){room.adventure=previous;room.adventureHistory=previousHistory;return json(res,409,{error:'Could not safely start the trial: '+error.message});}
+    record({player:'Adventure',status:'started',message:'The Refuge Trial run '+room.adventure.run+' began. Talk to a local, defeat a monster OR craft, visit Glitch Woods, then return.'});
     return json(res,201,{adventure:adventureView(room.adventure)});
    }
    if(p==='/host/player'&&req.method==='POST'){
