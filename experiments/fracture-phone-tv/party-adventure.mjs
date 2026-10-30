@@ -6,12 +6,32 @@ import {creativeAttempt} from './chaos-world.mjs';
 export const ADVENTURE_ID='refuge-trial-v1';
 const REFUGE='The Refuge',WOODS='Glitch Woods';
 const clean=s=>String(s||'').slice(0,32);
-export function startAdventure(now=Date.now()){
+export function startAdventure(now=Date.now(),run=1,instanceId=null){
  return {version:1,id:ADVENTURE_ID,status:'active',startedAt:now,completedAt:null,
-  npc:null,proof:null,woods:null,returned:null,visitors:[],seen:[]};
+  run,instanceId,npc:null,proof:null,woods:null,returned:null,visitors:[],seen:[]};
 }
-export function receiptEvidence(receipt,attempt,actor,player){
+/** An explicit host replay preserves a compact, private history of completed
+ * runs. Never erase an active/unknown-version save or carry old objectives into
+ * a new run. The instance ID binds delayed native receipts to their own run.
+ */
+export function replayAdventure(current,history=[],now=Date.now(),instanceId){
+ if(!current||current.id!==ADVENTURE_ID||current.version!==1||current.status!=='completed')
+  throw Error('Only a completed, supported trial can be replayed.');
+ if(!Array.isArray(history))throw Error('Adventure history is not readable; refusing to replace it.');
+ if(typeof instanceId!=='string'||!/^[a-f0-9-]{36}$/i.test(instanceId))
+  throw Error('A new private adventure instance ID is required.');
+ const run=Number.isSafeInteger(current.run)&&current.run>0?current.run:1;
+ if(run>=1000000)throw Error('Adventure run limit reached; refusing to overwrite history.');
+ const previous={run,completedAt:current.completedAt,route:current.proof?.route||null,
+  steps:adventureView(current).steps.map(s=>({label:s.label,done:s.done,by:s.by}))};
+ return {adventure:startAdventure(now,run+1,instanceId),
+  history:[...history,previous].slice(-10)};
+}
+export function receiptEvidence(receipt,attempt,actor,player,activeInstanceId=null){
  if(!receipt||!attempt||!actor?.ready||typeof receipt.id!=='string'||!receipt.id||!player)return null;
+ // An old native action can finish after the host starts another trial.
+ // Its outcome remains real, but must not advance the new run.
+ if(activeInstanceId&&attempt.adventureInstance!==activeInstanceId)return null;
  const base={id:receipt.id,player:clean(player)};
  if(attempt.verb==='talk'&&receipt.status==='succeeded')
   return {...base,kind:'npc'};
@@ -65,7 +85,7 @@ export function adventureView(a){
   {label:'Enter Glitch Woods',done:!!a.woods,by:a.woods?.player||null},
   {label:'Return to The Refuge',done:!!a.returned,by:a.returned?.player||null}
  ];
- return {title:'The Refuge Trial',status:a.status,route:a.proof?.route||null,steps,
+ return {title:'The Refuge Trial',status:a.status,run:a.run||1,route:a.proof?.route||null,steps,
   summary:a.status==='completed'?'The party completed the trial. No extra loot or XP was granted.':
   'Work together: meet a local, fight OR craft, visit the woods, and return. Real engine actions only.'};
 }
