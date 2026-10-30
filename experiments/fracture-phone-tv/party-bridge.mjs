@@ -279,7 +279,7 @@ refreshDM();setInterval(refreshDM,3000);
 const room=${JSON.stringify(room.join)},storage='chaos-party:'+location.host+':'+room;let auth=localStorage.getItem(storage),pending=null,activeRally=null,activeChoice=null;const recovery=new URLSearchParams(location.hash.slice(1)).get('recover');if(recovery){auth=recovery;localStorage.setItem(storage,auth);history.replaceState(null,'',location.pathname+location.search);}
 const el=id=>document.getElementById(id),log=s=>el('log').textContent=s;el('stop').after(el('log'));
 async function api(path,data){const r=await fetch(path,{method:data?'POST':'GET',headers:data?{'content-type':'application/json'}:{},body:data?JSON.stringify(data):undefined});const v=await r.json();if(!r.ok)throw Error(v.error);return v;}
-el('join').onclick=async()=>{try{const v=await api('/pair',{key:room,name:el('name').value,color:el('color').value,role:el('role').value});auth=v.token;localStorage.setItem(storage,auth);await poll();}catch(e){log(e.message);}};
+el('join').onclick=async()=>{try{const v=await api('/pair',{key:room,name:el('name').value,color:el('color').value,role:el('role').value});auth=v.token;localStorage.setItem(storage,auth);connectChanges();await poll();}catch(e){log(e.message);}};
 async function act(text){try{const r=await api('/action',{token:auth,text});pending=r.id;log('RECEIVED: '+text);}catch(e){log(e.message);}}
 el('form').onsubmit=e=>{e.preventDefault();act(el('text').value);el('text').value='';};el('stop').onclick=()=>act('stop');el('revive').onclick=()=>act('respawn');
 el('propose-rally').onclick=async()=>{try{const r=await api('/rally/propose',{token:auth});activeRally=r.rally;log('Party vote opened.');await poll();}catch(e){log(e.message);}};
@@ -301,7 +301,7 @@ el('propose-rally').hidden=v.rally?.status==='pending';
 el('travel-woods').hidden=v.actor?.zone!=='The Refuge'||v.rally?.status==='pending';el('travel-refuge').hidden=v.actor?.zone!=='Glitch Woods'||v.rally?.status==='pending';
 el('rally-yes').hidden=el('rally-no').hidden=!v.rally||v.rally.status!=='pending'||!v.rally.eligible||v.rally.voted;
 const r=v.results.find(r=>r.id===pending)||v.results.at(-1);if(r)log(r.status.toUpperCase()+': '+r.message+(v.dialogue?'\\nNPC: '+v.dialogue:''));}catch(e){log(e.message);}}
-if(typeof EventSource!=='undefined'){const changes=new EventSource('/changes?token='+encodeURIComponent(auth));changes.addEventListener('change',()=>{if(!document.hidden)void poll();});}setInterval(poll,750);poll();
+let changes=null;function connectChanges(){if(changes){changes.close();changes=null;}if(!auth||typeof EventSource==='undefined')return;changes=new EventSource('/changes?token='+encodeURIComponent(auth));changes.addEventListener('change',()=>{if(!document.hidden)void poll();});}connectChanges();setInterval(poll,750);poll();
 </script>`));
    }
    if(p==='/dm/status'&&req.method==='GET'){if(url.searchParams.get('key')!==room.host)return json(res,403,{error:'Private host required'});return json(res,200,dm.status());}
