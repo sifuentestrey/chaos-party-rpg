@@ -1,5 +1,10 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Authored-tree fire propagation — October 30 (new code, CI pending)
+
+Added `scenery-fire.mjs` and three regression scenarios. During the existing bounded Chaos fire tick, burning **ground** objects can ignite adjacent explicitly authored scenery in the same scene; authored fire reduces saved HP and eventually removes sidecar collision. Fire from carried objects or another scene is excluded. Burning authored scenery continues advancing even if the initiating Chaos object stops burning. This remains **sidecar-only**; native Fracture scenery/HP/weather are not changed. New tests and pinned CI have **not** been executed for commits through `79f49e73`, and browser/TV multi-device acceptance is unverified. Do not claim a verified gameplay milestone from this entry.
+
+
 ## Verified authored-tree game-night vertical slice — October 30, 2026
 
 **Pinned native integration PASSED** on experimental source SHA `36de73fe69315d24eb9b1349a968195580ad8f15`: [GitHub Actions run 41088458211](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41088458211). The bridge suite reported **153 passed, 1 skipped, 0 failed**; the pinned Fracture clone compiled client/server and passed **3,329 native tests**. The disposable native server booted over HTTP, independently controlled two actors, and completed majority-voted round-trip travel between The Refuge and Glitch Woods. The separate `verify-native-objects.mjs` run confirmed a real actor sees a Chaos-authored tree, `attack tree` routes through the authenticated native bridge, four strikes reduce saved HP 12→0, a second native actor sees the broken tree, native movement reaches the newly unblocked tile, and the separate objects save retains destruction. The real 10-second reaction lock was respected rather than bypassed.
