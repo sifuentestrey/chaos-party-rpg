@@ -515,3 +515,39 @@ test('player extinguishing a rug resets NPC warning before a later re-ignition',
  tick();
  assert.equal(engine.snapshot(a).ground.find(i=>i.id===rug.id).condition,'intact');
 });
+
+
+test('authored tree: phone action routes to persistent damage, TV snapshot, shared collision and restart',t=>{
+ const {a,b,engine,file}=fixture(t);
+ const first=engine.snapshot(a);
+ const tree=first.scenery.find(o=>o.kind==='tree');
+ assert.ok(tree,'a Chaos-authored tree is placed on an otherwise walkable native tile');
+ assert.equal(tree.hp,12);
+ assert.equal(tree.visual,'tree');
+ assert.equal(engine.isBlocked(a,tree.tile.x,tree.tile.y),true);
+ assert.equal(shouldUseCreative('attack tree',{chaos:first}),true);
+ assert.equal(shouldUseCreative('chop the camp tree',{chaos:first}),true);
+ assert.equal(shouldUseCreative('attack rat',{chaos:first}),false);
+ assert.deepEqual(engine.approach(a,'attack tree'),tree.tile,'a distant actor auto-approaches the tree');
+ a.x=tree.tile.x-1;a.y=tree.tile.y;
+ for(let n=0;n<4;n++){
+  const outcome=engine.execute(a,'attack tree');
+  assert.equal(outcome.success,true,'the native actor receives a truthful Chaos scenery outcome');
+  assert.equal(engine.snapshot(a).scenery.find(o=>o.id===tree.id).hp,Math.max(0,12-(n+1)*3));
+ }
+ assert.equal(engine.isBlocked(a,tree.tile.x,tree.tile.y),false,'fallen tree releases sidecar movement');
+ assert.equal(engine.snapshot(b).scenery.find(o=>o.id===tree.id).condition,'broken','another player sees the same tree');
+ const restored=createChaosWorld({file});
+ assert.equal(restored.snapshot(a).scenery.filter(o=>o.id===tree.id).length,1,'restart never duplicates the tree');
+ assert.equal(restored.isBlocked(a,tree.tile.x,tree.tile.y),false);
+ assert.equal(restored.execute(a,'attack tree').blocked,true,'a destroyed tree cannot be damaged again');
+ assert.equal(restored.execute(a,'attack native tree').blocked,true,'unregistered native art is not invented');
+});
+test('no walkable authored-tree tile means no scenery or fabricated destruction',t=>{
+ const {a,engine,world}=fixture(t);
+ world.isValidPosition=(x,y)=>x===a.x&&y===a.y;
+ const view=engine.snapshot(a);
+ assert.deepEqual(view.scenery,[]);
+ assert.equal(shouldUseCreative('attack tree',{chaos:view}),false);
+ assert.equal(engine.execute(a,'attack tree').blocked,true);
+});
