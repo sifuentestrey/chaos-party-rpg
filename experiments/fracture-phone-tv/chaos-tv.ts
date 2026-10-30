@@ -50,16 +50,20 @@ export function startChaosTV(game:any):void {
         ctx.fillStyle='#513827';ctx.fillRect(x+3*scale,y+10*scale,3*scale,6*scale);ctx.fillRect(x+11*scale,y+10*scale,3*scale,6*scale);
         ctx.fillStyle=prop.condition==='broken'?'#5b4a38':'#b88955';ctx.fillRect(x,y+3*scale,16*scale,8*scale);ctx.fillStyle='#dfb87a';ctx.fillRect(x+scale,y+4*scale,14*scale,scale);
        }else if(prop.visual==='tree'){
-        // Only Chaos-authored scenery is drawn here; native Fracture map tiles stay untouched.
-        ctx.fillStyle='#674329';ctx.fillRect(x+6*scale,y+8*scale,4*scale,8*scale);
-        if(prop.condition!=='broken'){
-          ctx.fillStyle='#28663f';ctx.fillRect(x+2*scale,y+3*scale,12*scale,9*scale);
-          ctx.fillStyle='#4caa62';ctx.fillRect(x+4*scale,y+scale,8*scale,6*scale);
+        // Canonical Fracture atlas coordinates; use the renderer's loaded scale.
+        const sheet=game.renderer.tileset,ratio=sheet?.width/320;
+        if(sheet?.complete&&ratio){
+          ctx.globalAlpha=1;
+          if(prop.condition==='broken')ctx.drawImage(sheet,208*ratio,224*ratio,32*ratio,16*ratio,x-8*scale,y,32*scale,16*scale);
+          else ctx.drawImage(sheet,192*ratio,160*ratio,64*ratio,80*ratio,x-24*scale,y-64*scale,64*scale,80*scale);
         }
       }else if(prop.visual==='rug'){
         ctx.fillStyle=prop.color||'#bd88cf';ctx.fillRect(x,y+3*scale,16*scale,11*scale);ctx.strokeStyle='#dfc16e';ctx.lineWidth=scale;ctx.strokeRect(x+2*scale,y+5*scale,12*scale,7*scale);
       }else ctx.drawImage(sprite.image,0,0,sprite.width*sprite.scale,sprite.height*sprite.scale,x,y,16*scale,16*scale);
-      if(prop.condition==='burning'){ctx.fillStyle='#f9b72f';ctx.fillRect(x+5*scale,y,6*scale,9*scale);ctx.fillStyle='#ef6338';ctx.fillRect(x+7*scale,y-4*scale,3*scale,10*scale);}ctx.restore();
+      if(prop.condition==='burning'){
+        const sheet=game.renderer.tileset,ratio=sheet?.width/320;
+        if(sheet?.complete&&ratio){const frame=Math.floor(Date.now()/140)%3;ctx.drawImage(sheet,frame*16*ratio,192*ratio,16*ratio,16*ratio,x,y-12*scale,16*scale,16*scale);}
+      }ctx.restore();
       game.renderer.drawText(prop.name,x+8*scale,y-3*scale,true,prop.color||'#efbd68',true);
     }originalEntities(dirty);
   };

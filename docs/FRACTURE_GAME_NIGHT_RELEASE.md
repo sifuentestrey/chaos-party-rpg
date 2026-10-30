@@ -9,6 +9,9 @@ For 12–20 independent controllers, the bridge previously sent a fresh `chaos:s
 
 Commits `95587caa` and `0b6916b4` harden the reusable authored-environment constructor: caller overrides can no longer replace the validated scenery ID, kind or tile; invalid durability, wetness and fire conditions are rejected before they enter a sidecar save. Two regressions were added to `environment-rules.test.mjs`. A reconstructed copy of the changed pure module passed three local Node 22.16 checks (identity, invalid states, and existing fire/damage behavior). **Full repository tests, pinned native CI, browser rehearsal and Mac packaging were not rerun for these new commits.** Earlier native/browser evidence remains valid only for the source revisions documented above.
 
+## Reuse native scenery art — October 30
+
+The reactive tree now draws Fracture's existing tree canopy/trunk tiles from the loaded tilesheet, with its original roots for the felled state. Burning objects use Fracture's existing flame frames. Atlas sampling handles the native 1x/2x/3x sheets; no generated replacement tree or duplicated asset bundle is added. The server-owned HP, fire, persistence and collision mechanics remain attached to the authored object. This visual integration does not turn every pre-existing painted native tree into a destructible object. Native production client build and actual TV screenshot verify the presentation.
 
 ## Independent reactive-world review and gameplay verification — October 30
 
