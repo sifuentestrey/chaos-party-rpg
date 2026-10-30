@@ -44,11 +44,18 @@ export function startChaosTV(game:any):void {
     const ctx=game.renderer.context,scale=game.renderer.scale;
     for(const prop of groundProps){
       const key=prop.type==='container'?'item-flask':prop.material==='cloth'?'item-leatherarmor':prop.material==='stone'?'item-morningstar':'item-sword2';
-      const sprite=game.sprites[key];if(!prop.tile||(!sprite?.isLoaded&&!['table','rug'].includes(prop.visual)))continue;
+      const sprite=game.sprites[key];if(!prop.tile||(!sprite?.isLoaded&&!['table','rug','tree'].includes(prop.visual)))continue;
       const x=prop.tile.x*16*scale,y=prop.tile.y*16*scale;ctx.save();ctx.globalAlpha=prop.condition==='broken'?0.45:1;
       if(prop.visual==='table'){
         ctx.fillStyle='#513827';ctx.fillRect(x+3*scale,y+10*scale,3*scale,6*scale);ctx.fillRect(x+11*scale,y+10*scale,3*scale,6*scale);
         ctx.fillStyle=prop.condition==='broken'?'#5b4a38':'#b88955';ctx.fillRect(x,y+3*scale,16*scale,8*scale);ctx.fillStyle='#dfb87a';ctx.fillRect(x+scale,y+4*scale,14*scale,scale);
+       }else if(prop.visual==='tree'){
+        // Only Chaos-authored scenery is drawn here; native Fracture map tiles stay untouched.
+        ctx.fillStyle='#674329';ctx.fillRect(x+6*scale,y+8*scale,4*scale,8*scale);
+        if(prop.condition!=='broken'){
+          ctx.fillStyle='#28663f';ctx.fillRect(x+2*scale,y+3*scale,12*scale,9*scale);
+          ctx.fillStyle='#4caa62';ctx.fillRect(x+4*scale,y+scale,8*scale,6*scale);
+        }
       }else if(prop.visual==='rug'){
         ctx.fillStyle=prop.color||'#bd88cf';ctx.fillRect(x,y+3*scale,16*scale,11*scale);ctx.strokeStyle='#dfc16e';ctx.lineWidth=scale;ctx.strokeRect(x+2*scale,y+5*scale,12*scale,7*scale);
       }else ctx.drawImage(sprite.image,0,0,sprite.width*sprite.scale,sprite.height*sprite.scale,x,y,16*scale,16*scale);
@@ -81,7 +88,7 @@ export function startChaosTV(game:any):void {
     const present=new Set(players.map((p:any)=>String(p.actor.id)));
     // Native Fracture compiles this client to ES5; Map.forEach avoids TS2802.
     appearances.forEach((_appearance:any,id:string)=>{if(!present.has(id))appearances.delete(id);});
-    const props=new Map();for(const p of players)for(const item of p.actor.chaos?.ground||[])props.set(item.id,item);groundProps=Array.from(props.values());
+    const props=new Map();for(const p of players)for(const item of [...(p.actor.chaos?.ground||[]),...(p.actor.chaos?.scenery||[])])props.set(item.id,item);groundProps=Array.from(props.values());
     for(const p of players){
       appearances.set(String(p.actor.id),{name:p.name,color:p.color,wearables:p.actor.chaos?.wearables||[]});
       for(const e of p.actor.nearby||[]){const entity=game.getEntityById(e.id);if(entity&&e.hp!==undefined){entity.hitPoints=e.hp;entity.maxHitPoints=e.maxHp;}}
