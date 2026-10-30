@@ -93,6 +93,7 @@ export function startChaosTV(game:any):void {
     game.client.connection.emit('chaos:watch',{key:config.key,actorId:selected||null},()=>{});
     log.textContent='';
     if(data.rally?.status==='pending'){const row=document.createElement('div');row.textContent=`Party rally vote: ${data.rally.yes}/${data.rally.required} yes · ${Math.max(0,Math.ceil((data.rally.deadline-Date.now())/1000))}s`;log.append(row);}
+    for(const d of (data.declarations||[]).slice(0,2)){const row=document.createElement('div');row.textContent=`${d.player} declares: ${d.text} · ${Math.max(0,Math.ceil((d.dueAt-Date.now())/1000))}s to help/hinder`;log.append(row);}
     for(const e of data.events.slice(-3)){const row=document.createElement('div');row.textContent=`${e.player}: ${e.message}`;log.append(row);}
     if(!players.length&&connected.length)log.textContent='Party knocked out — respawn on your phones.';
     lobby.hidden=connected.length>0;lobby.style.display=connected.length?'none':'grid';if(!connected.length){lobby.textContent='';const title=document.createElement('h1');title.textContent='Chaos Party';lobby.append(title);const qr=document.createElement('div');qr.style.cssText='width:260px;margin:auto;background:white';qr.innerHTML=data.lobby.qr;lobby.append(qr);const message=document.createElement('p');message.textContent='Scan to join. Your phone is your character.';lobby.append(message);log.textContent='Waiting for phones to join the adventure…';}
