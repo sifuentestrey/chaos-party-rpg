@@ -1,5 +1,12 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Existing native-door gameplay — October 30 (bounded parity, not native physics)
+
+The pinned Fracture map has 84 real door source coordinates (57 endpoint pairs), 13 server static chests, 8 chest areas, and 60 validated existing native oaks. A new reversible Chaos-controlled-actor interaction uses **only those existing doors and character sprites**: `hold door` temporarily blocks other party actors, `release door` restores passage, and `force door` uses original Chaos D20 DC 12, Knight break skill and Lucky-ish reroll. Both native path movement and the bridge's teleport call reject held entrances. Holds are scoped to the actor/world, never persisted as invented scenery, and expire on distance, death, disconnect, timeout or restart. One-way arrival tiles cannot be treated as door props. Nearby holds enter authenticated visible-world refresh and look text.
+
+Focused source-kit-copy tests: **187 passed, 1 skipped, 0 failed** on Node 22.16; actor TS transpilation had zero syntax diagnostics. The pinned exact-source CI for commit `a3d4556d` is [run 41123948140](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41123948140), not yet independently signed off here. This is not original Crown Job/Dawn Bell migration, arbitrary building destruction, native NPC path blocking, non-Chaos client enforcement, or physical Mac acceptance. No new art/objects were added.
+
+
 ## Native tree/rock/vegetation layer safety — October 30 (not yet tested)
 
 Commits `ae73ae9` and `7db158d` make the existing oak-art discovery reject a tree when any independently solid existing tile overlaps its 4×5 sprite, including rock or vegetation layers outside the four trunk cells. A synthetic map regression covers a solid rock under the canopy. No new native assets, objects or map content were created. **This is defensive eligibility logic, not rock or bush interaction support.** The regression test, full suite, pinned native CI and Mac/phone/TV run are not yet verified for these commits.
