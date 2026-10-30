@@ -33,3 +33,10 @@ test('authored scenery damage and fall trigger cross-phone refresh without priva
  assert.notEqual(worldFingerprint({...withTree,chaos:{...withTree.chaos,scenery:[{...tree,hp:0,condition:'broken',blocking:false}]} }),original);
  assert.equal(worldFingerprint({...withTree,chaos:{...withTree.chaos,bag:[{id:'private'}]}}),original);
 });
+
+test('native held-door changes refresh nearby phones without exposing private gear',()=>{
+ const held={...actor,chaos:{...actor.chaos,doors:[{x:27,y:209,heldBy:'Alice'}]}};
+ assert.notEqual(worldFingerprint(held),worldFingerprint(actor));
+ assert.equal(worldFingerprint({...held,chaos:{...held.chaos,bag:[{id:'secret'}]}}),worldFingerprint(held));
+ assert.notEqual(worldFingerprint({...held,chaos:{...held.chaos,doors:[]}}),worldFingerprint(held));
+});
