@@ -403,7 +403,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    const room={round,world:{expedition:{current:scene(p),creatures:state.npcs}},dmMemory:state.dmMemory,result:{id:'chaos-'+round,playerId:identity(p),name:name(p),action:text,target:{entityId:o.id},blocked:false,success,narration:canonical,changes:success?[fact]:[],sceneEvents:witnessed.map(n=>({type:'witness',entityId:n.id}))}};
    recordDMMemory(room);const event=state.dmMemory.entries.at(-1);if(event)event.tile={...contact};
    persist();syncNative(p);
-   result={blocked:false,success,text:canonical,event,...(check?{roll:check.roll,dc,bonus:check.bonus,rerolled:check.rerolled,rolls,assistedBy,hinderedBy}:{}),...(success?{object:{id:o.id,name:o.name,tile:{...contact},before:null,after:null,condition:o.condition,actorId:p.id,verb}}:{})};
+   result={blocked:false,success,text:canonical,event,...(check?{roll:check.roll,dc,bonus:check.bonus,rerolled:check.rerolled,rolls,assistedBy,hinderedBy}:{}),...(success?{object:{id:o.id,name:o.name,tile:{...nativeContact(p,o)},before:null,after:null,condition:o.condition,actorId:p.id,verb}}:{})};
   }catch(error){p.hitPoints=priorHP;state=previous;throw error;}
   if(verb==='drink'&&result.success){try{world.pushToPlayer(p,p.health());}catch{/* The next authenticated state poll also carries native health. */}}
   return result;
