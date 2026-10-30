@@ -48,3 +48,10 @@ test('one-way map teleport destinations are not invented as interactive doorways
  assert.equal(control.isBlocked(b,10,10),true);
  assert.equal(control.isBlocked(b,20,20),false);
 });
+
+test('authenticated holder disconnect immediately releases their doorway',()=>{
+ const {control,a,b}=fixture();control.use(a,control.find(a,1),'hold');
+ assert.equal(control.releaseActor(a),1);
+ assert.equal(control.isBlocked(b,20,20),false);
+ assert.equal(control.releaseActor(b),0);
+});
