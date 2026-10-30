@@ -11,6 +11,14 @@ Phone receipts distinguish received, started, succeeded, blocked, failed and can
 
 **Optional group rally:** Open **Gather the party** on a phone and choose **Propose gathering at my position**. All ready, living, connected characters must be in the same Fracture area and within twelve tiles; at least two are needed. A ten-second strict-majority vote opens, with the proposer voting yes automatically. Each other player can vote yes or no exactly once. If approved, the game asks each available native character to walk to the proposer's actual position; it never teleports them. Each character can STOP, and obstacles/disconnects can prevent some arrivals. Rejected or expired votes move nobody. This is a small **local rally**, not the original Chaos Party expedition/major travel system.
 
+## Chaos crafting on the Fracture map
+
+Every character starts with a cloth strip and wood splinter, once per saved character. Try `make blue hat from cloth strip and wood splinter`, then `equip blue hat`. The original Chaos rules roll a server D20 against DC 10. A failed roll keeps your materials; wait for the reaction window before trying again. Wearables show as colored bands on the actual TV sprites. They do not grant native combat stats.
+
+`give blue hat to <friend's full name>` transfers ownership to a nearby living player. `drop blue hat` places it at your actual tile; `take blue hat` walks to a visible nearby object and collects it. `look around` lists nearby floor objects. `inspect blue hat`, `unequip blue hat` and `separate blue hat` use the same original object rules. Use the `[item-N]` ID shown under Gear and quest when names repeat. Native gear still uses its native names: `equip sword2`. Use `eat burger` or `drink flask` for native consumables in your bag.
+
+Crafted possessions and their ingredients persist separately in the Fracture clone's `server/data/chaos-party/objects.json`. Reconnecting does not duplicate starter supplies. Only pure Chaos object modules and their dependency closure are reused; original saves, map generation and networking remain separate. Native gear gifting and the rest of the original campaign are not yet integrated.
+
 ## A 20-minute game-night route
 
 This is an optional route through existing content, not a forced campaign or a newly invented map:
@@ -49,4 +57,6 @@ The old `bridge.mjs`, `chaos-remote.ts`, and `apply-overlay.mjs` remain intact a
 
 Fracture by George Larson, pinned above: https://github.com/georgeglarson/Fracture. Code: MPL 2.0; content: CC BY-SA 3.0. Originally based on Mozilla BrowserQuest, with sprites/map by Little Workshop (Franck and Guillaume Lecollinet): https://github.com/mozilla/BrowserQuest. Native source headers, LICENSE and credits remain in the separate checkout. This kit obtains raw upstream assets separately and does not bundle databases. Included derived gameplay screenshots are CC BY-SA 3.0 with the attribution above.
 
-QR Code Generator 2.0.4 by Kazuhiko Arase is reused under MIT; source and notice are in `vendor/`. The optional AI quota ledger is reused from original Chaos code with a separate data directory; original networking and databases are never imported.
+QR Code Generator 2.0.4 by Kazuhiko Arase is reused under MIT; source and notice are in `vendor/`. Pure object rules reuse the original Chaos modules, PartyFrame RNG (Saleh Yusefnejad, MIT; `vendor/partyframe/LICENSE`) and the Dungeonz dependency (Johnathan "Arcan" Fisher, MIT; `public/vendor/Dungeonz-LICENSE.txt`). The optional AI quota ledger is reused from original Chaos code with a separate data directory; original networking and databases are never imported.
+
+Fusion browser regression (disposable data only): set `CHAOS_BETA_TEST=1`, `CHAOS_TEST_ROOM_FILE`, `CHAOS_BROWSER_TOOLS` (external Playwright Core directory), `CHAOS_TV_KEY` and optional `CHAOS_BROWSER_REPORT_DIR`, then run `node experiments/fracture-phone-tv/verify-fusion.mjs`. It creates two new characters and exercises crafting/giving/drop/pickup through real phone forms; no browser dependency is bundled in the game.

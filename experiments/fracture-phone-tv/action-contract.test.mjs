@@ -21,3 +21,9 @@ test('shortest valid cardinal routing avoids walls and identifies unreachable go
  assert.equal(shortestPath([0,0],(x,y)=>x===6&&y===6,open),null);
 });
 test('headless enemy cooldowns reuse native declared and inherited values',async()=>{const {extractNativeAttackRates}=await import('./action-contract.ts');const rates=extractNativeAttackRates('this.setAttackRate(800);',`export const Mobs = {\n  Rat: class Rat { super(id, Types.Entities.RAT); }\n  Skeleton: class Skeleton { super(id, Types.Entities.SKELETON); this.setAttackRate(1300); }\n  Goblin: class Goblin { super(id, Types.Entities.GOBLIN); this.setAttackRate(700); }\n}`);assert.equal(rates.rat,800);assert.equal(rates.skeleton,1300);assert.equal(rates.goblin,700);});
+
+test('consumable intent family stays typed and cannot grant effects',()=>{
+ for(const verb of ['eat','drink','use'])assert.deepEqual(parseIntent(verb+' flask'),{verb:'use_item',target:'flask'});
+ assert.ok(validIntent({verb:'creative',target:'make hat from item-1 and item-2'}));
+ assert.equal(validIntent({verb:'use_item',target:'flask',hp:999}),false);
+});

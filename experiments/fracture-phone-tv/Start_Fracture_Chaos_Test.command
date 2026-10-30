@@ -67,6 +67,7 @@ else
 fi
 node --test "$HERE/"*.test.mjs
 export FRACTURE_ROOT="$TARGET"
+export CHAOS_WORLD_MODULE="$HERE/chaos-world.mjs"
 export CHAOS_ACTOR_KEY="${CHAOS_ACTOR_KEY:-$(node -p "require('node:crypto').randomBytes(32).toString('hex')")}"
 export CHAOS_TV_KEY="${CHAOS_TV_KEY:-$(node -p "require('node:crypto').randomBytes(32).toString('hex')")}"
 # Never activate paid upstream providers from a saved config or environment.

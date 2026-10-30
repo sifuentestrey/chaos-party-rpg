@@ -185,3 +185,13 @@ test('benched players remain in frozen vote electorate but are never commanded a
  assert.equal(sockets[2].lastAction.intent.verb,'go');
  assert.equal((await post(base,'/rally/vote',{token:tokens[1],id:rally.id,yes:true})).status,403);
 });
+
+test('a failed dice declaration consumes the window and refreshes recipient state',async t=>{
+ const {app,base,sockets}=await setup(t);const pair=async name=>(await(await post(base,'/pair',{key:app.room.join,name})).json()).token;
+ const a=await pair('Ada'),b=await pair('Bryn');await new Promise(r=>setTimeout(r,20));
+ // Deliver the engine's terminal receipt before its action acknowledgement, as native does.
+ const emit=sockets[0].emit.bind(sockets[0]);sockets[0].emit=(event,...args)=>{if(event==='chaos:action'){emit('chaos:receipt',{id:args[0].id,status:'failed',message:'D20 2 / 10: Craft failed.',roll:2});args[1](null,{ok:true});return true;}return emit(event,...args);};
+ const response=await post(base,'/action',{token:a,text:'make hat from cloth strip and wood splinter'});assert.equal(response.status,202);
+ assert.equal((await post(base,'/action',{token:a,text:'make hat from cloth strip and wood splinter'})).status,409);
+ assert.ok(app.room.turn.participants.includes(a));assert.equal((await post(base,'/action',{token:b,text:'look around'})).status,202);
+});

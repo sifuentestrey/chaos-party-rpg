@@ -3,6 +3,9 @@ import {describe,it,expect,vi,afterEach} from 'vitest';
 import {EventEmitter} from 'node:events';
 const shared=vi.hoisted(()=>({route:vi.fn(async()=>true)}));
 vi.mock('../player/message-router',()=>({MessageRouter:class {route=shared.route;}}));
+import {Inventory} from '../inventory/inventory';
+import {Types} from '../../../shared/ts/gametypes';
+import {handleInventoryUse} from '../player/inventory.handler';
 import {installChaosActor} from '../chaos-actor';
 afterEach(()=>{vi.useRealTimers();shared.route.mockReset();shared.route.mockImplementation(async()=>true);delete process.env.CHAOS_ACTOR_KEY;delete process.env.CHAOS_TV_KEY;});
 function fixture(auth:any={chaosActorKey:'test-actor-key'}){
@@ -70,4 +73,16 @@ describe('authenticated actor lifecycle',()=>{
   socket.emit('disconnect');
  });
 
+});
+
+describe('native consumable integration',()=>{
+ it('uses native inventory/health rules and preserves food at full health',async()=>{
+  const {socket,player,world}=fixture();const inventory=new Inventory();inventory.addItem(Types.Entities.FLASK,null,2);player.getInventory=()=>inventory;player.hitPoints=50;
+  player.hasFullHealth=()=>player.hitPoints===player.maxHitPoints;player.regenHealthBy=(amount:number)=>player.hitPoints=Math.min(player.maxHitPoints,player.hitPoints+amount);player.health=()=>[];player.send=vi.fn();(world as any).pushToPlayer=vi.fn();
+  shared.route.mockImplementation(async(p:any,m:any)=>{expect(m[0]).toBe(Types.Messages.INVENTORY_USE);handleInventoryUse(p,m[1]);return true;});
+  const receipts:any[]=[];socket.on('chaos:receipt',(r:any)=>receipts.push(r));
+  const action=(id:string)=>new Promise(resolve=>socket.emit('chaos:action',{key:'test-actor-key',actorId:123,id,issuedAt:Date.now(),intent:{verb:'use_item',target:'flask'}},resolve));
+  await action('heal');expect(player.hitPoints).toBeGreaterThan(50);expect(inventory.getSlot(0)?.count).toBe(1);expect(receipts.at(-1).status).toBe('succeeded');
+  player.hitPoints=player.maxHitPoints;await action('full');expect(inventory.getSlot(0)?.count).toBe(1);expect(receipts.at(-1).status).toBe('blocked');socket.emit('disconnect');
+ });
 });

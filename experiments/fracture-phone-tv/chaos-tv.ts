@@ -38,13 +38,26 @@ export function startChaosTV(game:any):void {
   });
   const colors:any={Amber:'#efbd68',Blue:'#78bcff',Green:'#83dc9b',Rose:'#ef99bc'};
   const hues:any={Amber:'none',Blue:'hue-rotate(150deg)',Green:'hue-rotate(70deg)',Rose:'hue-rotate(290deg)'};
-  const appearances=new Map();
+  const appearances=new Map();let groundProps:any[]=[];
+  const originalEntities=game.renderer.drawEntities.bind(game.renderer);
+  game.renderer.drawEntities=(dirty:any)=>{
+    const ctx=game.renderer.context,scale=game.renderer.scale;
+    for(const prop of groundProps){
+      const key=prop.type==='container'?'item-flask':prop.material==='cloth'?'item-clotharmor':prop.material==='stone'?'item-crystalshell':'item-sword1';
+      const sprite=game.sprites[key];if(!sprite?.isLoaded||!prop.tile)continue;
+      const x=prop.tile.x*16*scale,y=prop.tile.y*16*scale;ctx.save();ctx.globalAlpha=prop.condition==='broken'?0.45:1;
+      ctx.drawImage(sprite.image,0,0,sprite.width*sprite.scale,sprite.height*sprite.scale,x,y,16*scale,16*scale);ctx.restore();
+      game.renderer.drawText(prop.name,x+8*scale,y-3*scale,true,prop.color||'#efbd68',true);
+    }originalEntities(dirty);
+  };
   const originalDraw=game.renderer.drawEntity.bind(game.renderer);
   game.renderer.drawEntity=(entity:any)=>{
     if(entity.id===game.playerId||observerIds.has(String(entity.id)))return;
     const appearance=appearances.get(String(entity.id));
     if(!appearance){originalDraw(entity);return;}
-    const context=game.renderer.context;context.save();context.strokeStyle=colors[appearance.color];context.lineWidth=2;context.beginPath();context.ellipse((entity.x+8)*game.renderer.scale,(entity.y+14)*game.renderer.scale,8*game.renderer.scale,3*game.renderer.scale,0,0,Math.PI*2);context.stroke();context.filter=hues[appearance.color]||'none';originalDraw(entity);context.restore();
+    const context=game.renderer.context;context.save();context.strokeStyle=colors[appearance.color];context.lineWidth=2;context.beginPath();context.ellipse((entity.x+8)*game.renderer.scale,(entity.y+14)*game.renderer.scale,8*game.renderer.scale,3*game.renderer.scale,0,0,Math.PI*2);context.stroke();context.filter=hues[appearance.color]||'none';originalDraw(entity);
+    for(const item of appearance.wearables||[]){context.filter='none';context.fillStyle=item.color||'#bd88cf';const y=entity.y+(item.slot==='head'?-9:item.slot==='body'?9:12);context.fillRect((entity.x+3)*game.renderer.scale,y*game.renderer.scale,10*game.renderer.scale,3*game.renderer.scale);}
+    context.restore();
   };
   const originalName=game.renderer.drawEntityName.bind(game.renderer);
   game.renderer.drawEntityName=(entity:any)=>{if(entity.id===game.playerId||observerIds.has(String(entity.id)))return;const appearance=appearances.get(String(entity.id));if(!appearance)return originalName(entity);const context=game.renderer.context;context.save();context.filter='none';game.renderer.drawText(appearance.name,(entity.x+8)*game.renderer.scale,(entity.y+entity.nameOffsetY)*game.renderer.scale,true,colors[appearance.color]);context.restore();};
@@ -62,8 +75,9 @@ export function startChaosTV(game:any):void {
     const present=new Set(players.map((p:any)=>String(p.actor.id)));
     // Native Fracture compiles this client to ES5; Map.forEach avoids TS2802.
     appearances.forEach((_appearance:any,id:string)=>{if(!present.has(id))appearances.delete(id);});
+    const props=new Map();for(const p of players)for(const item of p.actor.chaos?.ground||[])props.set(item.id,item);groundProps=Array.from(props.values());
     for(const p of players){
-      appearances.set(String(p.actor.id),{name:p.name,color:p.color});
+      appearances.set(String(p.actor.id),{name:p.name,color:p.color,wearables:p.actor.chaos?.wearables||[]});
       for(const e of p.actor.nearby||[]){const entity=game.getEntityById(e.id);if(entity&&e.hp!==undefined){entity.hitPoints=e.hp;entity.maxHitPoints=e.maxHp;}}
     }
     for(const e of data.events){if(e.combat&&!shownCombat.has(e.id+':'+e.at)){shownCombat.add(e.id+':'+e.at);const mob=game.getEntityById(e.combat.target);if(mob)game.infoManager.addDamageInfo(Math.max(0,e.combat.before-e.combat.after),mob.x,mob.y-15,'inflicted');}}

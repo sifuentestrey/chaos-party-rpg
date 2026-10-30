@@ -67,6 +67,14 @@ Source-backed comparison, not a new engine commitment:
 
 **Default recommendation:** preserve `luna/visual-game-night-release` as the canonical gameplay authority, and investigate a bounded renderer/presentation upgrade before attempting wholesale migration. The local rally is useful isolated research, **not** evidence that the more difficult original mechanics can be moved cheaply. No automatic merge, save conversion, paid provider, or public deployment follows from this checkpoint.
 
+## October 30 bounded transfer: original object rules on native tiles
+
+Owner direction in the active session broadened to combining the games with engineering discretion. The existing phone/native renderer makes a narrow pure-rule adapter cheaper to verify than another renderer rewrite today. This does not change the recommendation to preserve the original canonical game or establish that a complete Fracture port is affordable.
+
+`chaos-world.mjs` imports the original object planner/resolver and RNG, projecting a small item state onto actual Fracture coordinates. Two real phone actors crafted with server D20, wore a colored band, transferred ownership, dropped/picked up the same object through native movement, and retained it across a real restart. Materials, components and owner UUIDs persist in separate Fracture-only JSON; original networking, campaign generation and saves are excluded. The native engine still owns movement, combat, gear and damage.
+
+This advances **only** crafting/material ownership and that subset's dice/persistence from absent to partial source reuse. It does not port moving tables/rugs, fire/repair, witnessed theft, NPC trust/memory, advantage, Crown Job, Dawn Bell, original character customization or save identity. Native gear gifting and crafted combat effects are also absent. The requested complete differentiating object/NPC scenario remains unaccepted; a wearable experiment does not satisfy it.
+
 ## Objective parity acceptance
 
 - [ ] Two distinct, customized **Chaos** characters and original saves survive an engine change or a supported explicit migration; no loss/corruption.

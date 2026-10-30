@@ -1,5 +1,8 @@
 /** Chaos-owned authoritative actor driver; enabled only by a private local host key. */
 import * as fs from 'node:fs';
+import {pathToFileURL} from 'node:url';
+let chaosObjects:any=null;
+const chaosReady=process.env.CHAOS_WORLD_MODULE?import(pathToFileURL(process.env.CHAOS_WORLD_MODULE).href).then(m=>chaosObjects=m.createChaosWorld({file:'server/data/chaos-party/objects.json'})):Promise.resolve(null);
 import {Types} from '../../shared/ts/gametypes';
 import {Messages} from './message';
 import {Formulas} from './formulas';
@@ -23,15 +26,17 @@ export function installChaosActor(player:any, connection:any): void {
   const spectator=!!process.env.CHAOS_TV_KEY&&socket.handshake.auth?.chaosTVKey===process.env.CHAOS_TV_KEY;
   player.chaosSpectator=spectator;
   player.chaosControlled=local&&socket.handshake.auth?.chaosActorKey===key;
+  if(player.chaosControlled&&typeof socket.handshake.auth.chaosName==='string'&&/^[\p{L}\p{N} _-]{2,18}$/u.test(socket.handshake.auth.chaosName))player.chaosName=socket.handshake.auth.chaosName;
   const listen=connection.listenCallback;
   connection.listenCallback=(message:any[])=>{
     if(player.chaosSpectator&&![Types.Messages.WHO,Types.Messages.ZONE,...(!player.hasEnteredGame?[Types.Messages.HELLO]:[])].includes(message?.[0]))return;
     return listen?.(message);
   };
   const enemyHits=new Map(); const seen=new Set<string>();
-  const label=(e:any)=>String(e.name||Types.getKindAsString(e.kind)||e.type);
+  const label=(e:any)=>String(e.chaosName||e.name||Types.getKindAsString(e.kind)||e.type);
   const nearby=()=>Object.values(world.entities).filter((e:any)=>e.id!==player.id&&!e.chaosSpectator&&!e.isDead&&distance(player,e)<=18) as any[];
-  const state=()=>({id:player.id,name:player.name,zone:world.zoneManager.getZoneAt(player.x,player.y)?.name||'Unknown area',x:player.x,y:player.y,hp:player.hitPoints,maxHp:player.maxHitPoints,level:player.level,gold:player.gold,inventory:player.getInventory().getSlots().map((s:any,i:number)=>s?{slot:i,name:Types.getKindAsString(s.kind),count:s.count}:null).filter(Boolean),weapon:Types.getKindAsString(player.weapon),armor:Types.getKindAsString(player.armor),dead:player.isDead,ready:player.hasEnteredGame,nearby:nearby().map(e=>({id:e.id,name:label(e),type:e.type,x:e.x,y:e.y,hp:e.hitPoints,maxHp:e.maxHitPoints}))});
+  const objectSnapshot=()=>{try{return chaosObjects?.snapshot(player);}catch{return {bag:[],ground:[],wearables:[],error:'Object storage is unavailable. Ask the host to check disk space and permissions.'};}};
+  const state=()=>({id:player.id,name:player.chaosName||player.name,chaos:objectSnapshot(),zone:world.zoneManager.getZoneAt(player.x,player.y)?.name||'Unknown area',x:player.x,y:player.y,hp:player.hitPoints,maxHp:player.maxHitPoints,level:player.level,gold:player.gold,inventory:player.getInventory().getSlots().map((s:any,i:number)=>s?{slot:i,name:Types.getKindAsString(s.kind),count:s.count}:null).filter(Boolean),weapon:Types.getKindAsString(player.weapon),armor:Types.getKindAsString(player.armor),dead:player.isDead,ready:player.hasEnteredGame,nearby:nearby().map(e=>({id:e.id,name:label(e),type:e.type,x:e.x,y:e.y,hp:e.hitPoints,maxHp:e.maxHitPoints}))});
   const receipt=(id:string,status:string,message:string,detail:any={})=>socket.emit('chaos:receipt',{id,status,message,...detail,actor:state()});
   // Only the action that produced an asynchronous result may finish itself.
   // STOP, disconnect, and replacement actions invalidate all older continuations.
@@ -72,14 +77,24 @@ export function installChaosActor(player:any, connection:any): void {
       finish('cancelled','Respawning.');await router.route(player,[Types.Messages.HELLO]);receipt(id,player.isDead?'failed':'succeeded',player.isDead?'Could not respawn.':'Back on your feet at a safe checkpoint.');return ack({ok:true});
     }
     if(player.isDead)return ack({error:'Your character is knocked out. Use respawn.'});
+    if(intent.verb==='use_item'){
+      const inventory=player.getInventory(),slots=inventory.getSlots();const index=slots.findIndex((s:any)=>s&&Types.getKindAsString(s.kind)?.includes(intent.target));
+      if(index<0)return ack({error:'That item is not in your pack.'});
+      if(!inventory.isSlotConsumable(index))return ack({error:'That item cannot be eaten or drunk.'});
+      const count=slots[index].count,hp=player.hitPoints;await router.route(player,[Types.Messages.INVENTORY_USE,index]);
+      const used=(inventory.getSlot(index)?.count||0)<count;receipt(id,used?'succeeded':'blocked',used?`Used ${intent.target}. HP ${hp} → ${player.hitPoints}.`:'You are already at full health. The item was kept.');return ack({ok:true});
+    }
     if(active)return ack({error:'Finish your action or stop it first.'});
+    if(intent.verb==='creative'){
+      try{if(!chaosObjects)return ack({error:'Object rules are not installed on this host.'});const destination=chaosObjects.approach(player,intent.target);if(destination){cancel();active={id,intent,target:null,destination:[destination.x,destination.y],nearDestination:true,deadline:Date.now()+60000};receipt(id,'started','Walking to the object.');return ack({ok:true});}const result=chaosObjects.execute(player,intent.target);receipt(id,result.blocked?'blocked':result.success?'succeeded':'failed',result.text,{roll:result.roll,dc:result.dc});return ack({ok:true});}catch{receipt(id,'failed','Object action could not be saved; no success is claimed.');return ack({ok:true});}
+    }
     if(intent.verb==='equip'){
       const slots=player.getInventory().getSlots();const index=slots.findIndex((s:any)=>s&&Types.getKindAsString(s.kind)?.includes(intent.target));
       if(index<0){receipt(id,'blocked','That equipment is not in your inventory.');return ack({ok:true});}
       const kind=slots[index].kind;await router.route(player,[Types.Messages.INVENTORY_EQUIP,index]);
       const equipped=player.weapon===kind||player.armor===kind;receipt(id,equipped?'succeeded':'blocked',equipped?'Equipment changed.':'That item cannot be equipped.');return ack({ok:true});
     }
-    if(intent.verb==='look') {receipt(id,'succeeded',nearby().length?nearby().slice(0,12).map(e=>`${label(e)} (${e.x},${e.y})`).join('; '):'No characters or items nearby. Explore with movement commands.');return ack({ok:true});}
+    if(intent.verb==='look') {const props=objectSnapshot();const extras=(props?.ground||[]).map(i=>`${i.name} (${i.tile.x},${i.tile.y})`).join('; ');receipt(id,'succeeded',(extras?`Objects: ${extras}. `:'')+(nearby().length?nearby().slice(0,12).map(e=>`${label(e)} (${e.x},${e.y})`).join('; '):'No characters or items nearby. Explore with movement commands.'));return ack({ok:true});}
     if(intent.verb==='unknown'){receipt(id,'blocked','I cannot do that with the available mechanics. Try walking, talking, fighting, opening or collecting something nearby.');return ack({ok:true});}
     let target:any=null;
     if(intent.target){
@@ -129,7 +144,7 @@ export function installChaosActor(player:any, connection:any): void {
       const occupied=(x:number,y:number)=>occupiedTiles.has(`${x},${y}`);
       const walkable=(x:number,y:number)=>world.isValidPosition(x,y)&&plateau(x,y)===plateau(player.x,player.y)&&!occupied(x,y);
       if(!action.destination && !target){action.destination=action.door?[action.door.x,action.door.y]:intent.verb==='move'?[player.x+intent.dx*intent.steps,player.y+intent.dy*intent.steps]:[intent.x,intent.y];}
-      const goal=(x:number,y:number)=>target?(intent.verb==='loot'?x===target.x&&y===target.y:Math.abs(x-target.x)+Math.abs(y-target.y)===1):x===action.destination[0]&&y===action.destination[1];
+      const goal=(x:number,y:number)=>target?(intent.verb==='loot'?x===target.x&&y===target.y:Math.abs(x-target.x)+Math.abs(y-target.y)===1):action.nearDestination?Math.abs(x-action.destination[0])+Math.abs(y-action.destination[1])<=1:x===action.destination[0]&&y===action.destination[1];
       if(!goal(player.x,player.y)){
         const targetPosition=target?`${target.x},${target.y}`:'';
         if(intent.verb==='move'){
@@ -173,6 +188,7 @@ export function installChaosActor(player:any, connection:any): void {
         player.zoneCallback?.();player.checkZoneChange(player.x,player.y);
         socket.emit('chaos:position',state());finish('succeeded','Travelled through the door into another area.',{},action);return;
       }
+      if(intent.verb==='creative'){const result=chaosObjects.execute(player,intent.target);finish(result.blocked?'blocked':result.success?'succeeded':'failed',result.text,{roll:result.roll,dc:result.dc},action);return;}
       if(!target||intent.verb==='go'){finish('succeeded',intent.verb==='move'?`Walked ${action.stepsMoved||intent.steps} tile${(action.stepsMoved||intent.steps)===1?'':'s'}.`:'Reached your destination.',{},action);return;}
       if(intent.verb==='attack'){
         if(Date.now()-lastHit<800)return;lastHit=Date.now();

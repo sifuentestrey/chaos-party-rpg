@@ -7,6 +7,7 @@ import {randomBytes,randomUUID} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
 import {createOptionalDM} from './optional-dm.mjs';
+import {shouldUseCreative} from './chaos-world.mjs';
 import {parseIntent} from './action-contract.ts';
 import {proposeRally,voteRally,settleRally,rallyView} from './party-rally.mjs';
 import {preferredLanIp} from './lan-address.mjs';
@@ -31,11 +32,11 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
  const scheduleEventFlush=()=>{if(pendingEventFlush)return;pendingEventFlush=setTimeout(()=>{pendingEventFlush=null;persist();},500);pendingEventFlush.unref?.();};
  const flushEvents=()=>{if(pendingEventFlush){clearTimeout(pendingEventFlush);pendingEventFlush=null;}persist();};
  const sessions=new Map(),events=room.events||[];room.turn=null;room.rally=null;persist();
- const meaningful=new Set(['attack','talk','quest','open','loot']);
+ const meaningful=new Set(['creative','attack','talk','quest','open','loot']);
  const liveCount=()=>room.players.filter(p=>!p.parked).length;
  function record(event){events.push({...event,at:Date.now()});if(events.length>80)events.shift();room.events=events;scheduleEventFlush();}
  function connect(player){
-  const socket=io(`http://127.0.0.1:${fracturePort}`,{transports:['websocket'],reconnection:true,autoConnect:false,auth:{chaosActorKey:actorKey}});
+  const socket=io(`http://127.0.0.1:${fracturePort}`,{transports:['websocket'],reconnection:true,autoConnect:false,auth:{chaosActorKey:actorKey,chaosName:player.name}});
   const session={player,socket,actor:null,results:new Map(),declarations:new Map(),lastAction:0,epoch:0,lastSeen:0,suspending:false};sessions.set(player.token,session);
   socket.on('connect_error',()=>{session.error='Fracture is unavailable. The host should check its launcher.';});
   socket.on('connect',()=>{session.error=null;session.actor=null;socket.emit('message',[0,player.account,21,60,0,player.password]);});
@@ -51,12 +52,12 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
   }});
   socket.on('chaos:receipt',r=>{
    if(!session.results.has(r.id))return;
-   const {actor,...outcome}=r;session.results.set(r.id,outcome);if(actor)session.actor=actor;
+   const {actor,...outcome}=r;session.results.set(r.id,outcome);if(actor)session.actor=actor;if(['succeeded','failed'].includes(r.status))for(const peer of sessions.values())if(peer!==session&&!peer.player.parked)refresh(peer);
    // The native engine, not merely receipt of phone text, authorizes the
    // first-valid-action declaration. Rejections never waste a reaction turn.
    const declaration=session.declarations.get(r.id);
    if(declaration){
-    if(['started','succeeded'].includes(r.status)&&!session.player.parked&&session.socket.connected){
+    if((['started','succeeded'].includes(r.status)||(r.status==='failed'&&Number.isInteger(r.roll)))&&!session.player.parked&&session.socket.connected){
      const now=Date.now();
      if(!room.turn||room.turn.deadline<=now)room.turn={id:r.id,actor:player.name,text:declaration.text,deadline:now+10000,participants:[player.token]};
      else if(!room.turn.participants.includes(player.token))room.turn.participants.push(player.token);
@@ -168,7 +169,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
    }
    if(p==='/join'&&req.method==='GET'){
     if(url.searchParams.get('key')!==room.join)return json(res,403,{error:'Valid room link required'});
-    res.writeHead(200,{'content-type':'text/html','cache-control':'no-store'});return res.end(page('Chaos Party controller',`<h1>Chaos Party</h1><section id="pair"><p>Your own character in our shared adventure.</p><input id="name" maxlength="18" placeholder="Character name"><select id="color"><option>Amber</option><option>Blue</option><option>Green</option><option>Rose</option></select><small>Your color tints your character on TV. Equipment is earned in Fracture.</small><button id="join">Join adventure</button></section><section id="play" hidden><h2 id="who"></h2><p id="stats"></p><form id="form"><input id="text" maxlength="180" placeholder="What do you do?" required autocomplete="off"><button>Act</button></form><button id="stop">Stop my character</button><button id="revive" hidden>Respawn at checkpoint</button><p id="turn"></p><details><summary>Gather the party (optional vote)</summary><p id="rally">No group rally proposed.</p><button id="propose-rally" type="button">Propose gathering at my position</button><div class="row"><button id="rally-yes" type="button" hidden>Vote yes</button><button id="rally-no" type="button" hidden>Vote no</button></div><small>Strict majority of nearby players approves a short walk toward the proposer. No teleport; each character can STOP. This is not the full Chaos expedition travel system.</small></details><details><summary>Gear and quest</summary><p id="inventory"></p><p id="quest"></p></details><div class="row"><button data-action="walk north 3">↑</button></div><div class="row"><button data-action="walk west 3">←</button><button data-action="look around">Look</button><button data-action="walk east 3">→</button></div><div class="row"><button data-action="walk south 3">↓</button></div><small>Try: attack rat · talk to guard · open chest · pick up flask · walk north 6. Stop interrupts your action.</small></section><div class="card" id="log" role="status" aria-live="polite">Connecting…</div><script>
+    res.writeHead(200,{'content-type':'text/html','cache-control':'no-store'});return res.end(page('Chaos Party controller',`<h1>Chaos Party</h1><section id="pair"><p>Your own character in our shared adventure.</p><input id="name" maxlength="18" placeholder="Character name"><select id="color"><option>Amber</option><option>Blue</option><option>Green</option><option>Rose</option></select><small>Your color tints your character on TV. Equipment is earned in Fracture.</small><button id="join">Join adventure</button></section><section id="play" hidden><h2 id="who"></h2><p id="stats"></p><form id="form"><input id="text" maxlength="180" placeholder="What do you do?" required autocomplete="off"><button>Act</button></form><button id="stop">Stop my character</button><button id="revive" hidden>Respawn at checkpoint</button><p id="turn"></p><details><summary>Gather the party (optional vote)</summary><p id="rally">No group rally proposed.</p><button id="propose-rally" type="button">Propose gathering at my position</button><div class="row"><button id="rally-yes" type="button" hidden>Vote yes</button><button id="rally-no" type="button" hidden>Vote no</button></div><small>Strict majority of nearby players approves a short walk toward the proposer. No teleport; each character can STOP. This is not the full Chaos expedition travel system.</small></details><details><summary>Gear and quest</summary><p id="inventory"></p><p id="quest"></p></details><div class="row"><button data-action="walk north 3">↑</button></div><div class="row"><button data-action="walk west 3">←</button><button data-action="look around">Look</button><button data-action="walk east 3">→</button></div><div class="row"><button data-action="walk south 3">↓</button></div><small>Try making a blue hat from cloth strip and wood splinter, equip it, or give it to a friend. Stop interrupts movement and combat.</small></section><div class="card" id="log" role="status" aria-live="polite">Connecting…</div><script>
 const room=${JSON.stringify(room.join)},storage='chaos-party:'+location.host+':'+room;let auth=localStorage.getItem(storage),pending=null,activeRally=null;const recovery=new URLSearchParams(location.hash.slice(1)).get('recover');if(recovery){auth=recovery;localStorage.setItem(storage,auth);history.replaceState(null,'',location.pathname+location.search);}
 const el=id=>document.getElementById(id),log=s=>el('log').textContent=s;el('stop').after(el('log'));
 async function api(path,data){const r=await fetch(path,{method:data?'POST':'GET',headers:data?{'content-type':'application/json'}:{},body:data?JSON.stringify(data):undefined});const v=await r.json();if(!r.ok)throw Error(v.error);return v;}
@@ -179,7 +180,7 @@ el('propose-rally').onclick=async()=>{try{const r=await api('/rally/propose',{to
 async function castRally(yes){if(!activeRally)return;try{const r=await api('/rally/vote',{token:auth,id:activeRally.id,yes});activeRally=r.rally;log('Vote locked.');await poll();}catch(e){log(e.message);}}
 el('rally-yes').onclick=()=>castRally(true);el('rally-no').onclick=()=>castRally(false);
 document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>act(b.dataset.action));
-async function poll(){if(!auth){log('Choose your name to join.');return;}try{const v=await api('/state?token='+encodeURIComponent(auth));el('pair').hidden=true;el('play').hidden=false;el('who').textContent=v.name;el('stats').textContent=v.actor?(v.actor.dead?'Knocked out — respawn to continue.':'HP '+v.actor.hp+'/'+v.actor.maxHp+' · '+(v.actor.zone||'')+' · position '+v.actor.x+', '+v.actor.y):(v.error||'Connecting to Fracture…');el('revive').hidden=!v.actor?.dead;el('inventory').textContent=v.actor?'Gear: '+v.actor.weapon+' / '+v.actor.armor+' · Bag: '+(v.actor.inventory||[]).map(i=>i.name).join(', '):'';el('quest').textContent=v.quest?'Quest: '+(v.quest.description||'Adventure complete')+' '+(v.quest.progress!==undefined?v.quest.progress+'/'+v.quest.count:''):'Ask a nearby NPC for a quest, or explore freely.';el('turn').textContent=v.turn?'Reaction window: '+Math.max(0,Math.ceil((v.turn.deadline-Date.now())/1000))+'s · '+v.turn.actor+' declared '+v.turn.text:'';
+async function poll(){if(!auth){log('Choose your name to join.');return;}try{const v=await api('/state?token='+encodeURIComponent(auth));el('pair').hidden=true;el('play').hidden=false;el('who').textContent=v.name;el('stats').textContent=v.actor?(v.actor.dead?'Knocked out — respawn to continue.':'HP '+v.actor.hp+'/'+v.actor.maxHp+' · '+(v.actor.zone||'')+' · position '+v.actor.x+', '+v.actor.y):(v.error||'Connecting to Fracture…');el('revive').hidden=!v.actor?.dead;el('inventory').textContent=v.actor?'Gear: '+v.actor.weapon+' / '+v.actor.armor+' · Bag: '+[...(v.actor.inventory||[]),...(v.actor.chaos?.bag||[])].map(i=>i.name+(i.id?' ['+i.id+']':'')+(i.equipped?' (worn)':'')).join(', ')+(v.actor.chaos?.error?' · '+v.actor.chaos.error:''):'';el('quest').textContent=v.quest?'Quest: '+(v.quest.description||'Adventure complete')+' '+(v.quest.progress!==undefined?v.quest.progress+'/'+v.quest.count:''):'Ask a nearby NPC for a quest, or explore freely.';el('turn').textContent=v.turn?'Reaction window: '+Math.max(0,Math.ceil((v.turn.deadline-Date.now())/1000))+'s · '+v.turn.actor+' declared '+v.turn.text:'';
 activeRally=v.rally;
 el('rally').textContent=v.rally? v.rally.proposer+' proposes gathering at '+v.rally.x+', '+v.rally.y+' ('+v.rally.yes+'/'+v.rally.required+' yes needed, '+v.rally.status+(v.rally.status==='pending'?' · '+Math.max(0,Math.ceil((v.rally.deadline-Date.now())/1000))+'s left':'')+')':'No group rally proposed.';
 el('propose-rally').hidden=v.rally?.status==='pending';
@@ -238,7 +239,7 @@ setInterval(poll,750);poll();
     if(typeof b.text!=='string'||b.text.trim().length<2||b.text.length>180)return json(res,400,{error:'Action must contain 2–180 characters'});
     s.lastSeen=Date.now();
     if(!s.actor?.ready)return json(res,503,{error:'Your character is connecting. Try again shortly.'});
-    let intent=parseIntent(b.text);const epoch=intent.verb==='cancel'?++s.epoch:s.epoch;
+    let intent=shouldUseCreative(b.text,s.actor)?{verb:'creative',target:b.text}:parseIntent(b.text);const epoch=intent.verb==='cancel'?++s.epoch:s.epoch;
     const unresolved=intent.target&&['go','attack','talk','quest','open','loot','equip'].includes(intent.verb)&&![...(s.actor.nearby||[]),...(s.actor.inventory||[])].some(e=>e.name.toLowerCase().includes(intent.target.toLowerCase()));
     if(intent.verb==='unknown'||unresolved)intent=await dm.interpret(b.text,s.actor)||intent;
     if(epoch!==s.epoch)return json(res,409,{error:'That pending interpretation was cancelled.'});

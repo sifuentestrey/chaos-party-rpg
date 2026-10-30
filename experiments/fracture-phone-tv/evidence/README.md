@@ -17,3 +17,12 @@ Final automated checks: pinned server/client production builds; 71 upstream/adap
 The first endurance attempt exposed the real native idle-timer integration bug at fifteen minutes. It was fixed by refreshing Fracture's existing activity deadline for authenticated custom activity, then the full 20-minute run passed. This is not an omitted failed gate or a claim based on twenty phones controlling one character.
 
 Gameplay screenshots are derived from Fracture/BrowserQuest content and are shared under CC BY-SA 3.0. Attribution: George Larson; Mozilla; Little Workshop (Franck and Guillaume Lecollinet). See the parent README and package third-party notices for links and licenses.
+
+## October 30 fusion milestone
+
+- `fusion.json`, `fusion-tv.png`, `fusion-phone.png`: two fresh real characters through browser phone forms. Original Chaos server-D20 craft, wear, nearby gift, recipient wear, drop at the real actor tile, walk away, native auto-approach pickup, equip and phone reload. The TV uses colored wearable bands over native sprites; this does not claim bespoke hat art or native combat bonuses. No browser errors.
+- `fusion-restart.json`: actual launcher Control-C and restart; both native characters retained exact position, gold, level and gear, and crafted bags/component IDs/worn state matched before shutdown without duplicate starters.
+- `fusion-load.json`: new 60-second, 20-actor check with object snapshots enabled; all twenty actors moved, scoped STOP/reconnect passed and all sampled actors stayed connected. This supplements the earlier 1,200-second baseline; it is not another twenty-minute run or physical Mac capacity evidence.
+- Native full suite now **71 files / 3,327 tests**, focused Node checks **29/29**, production builds and original Chaos offline verification passed. The native consumable regression delegates to the real native inventory/health handler, including keeping healing items at full health; a browser consumption flow is not claimed. Optional creative AI plans were tested with mocked providers only.
+
+The object adapter reuses original Chaos pure rules and dependency modules without starting its old network or generating its old maps. Separate durable character UUID ownership, failed-save rollback, no starter-item duplication and boundary/range checks have focused regressions. Derived screenshots retain the CC BY-SA attribution above.

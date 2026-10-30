@@ -21,3 +21,10 @@ Full notice and source: experiments/fracture-phone-tv/vendor/QRCODE_LICENSE.txt 
 
 Included derived gameplay screenshots are CC BY-SA 3.0, with the Fracture,
 Mozilla and Little Workshop attribution above.
+
+Reused pure Chaos Party object/crafting modules include:
+PartyFrame RNG — Saleh Yusefnejad (2026), MIT.
+Full notice: vendor/partyframe/LICENSE
+Dungeonz dependency — Johnathan "Arcan" Fisher (2021), MIT.
+Full notice: public/vendor/Dungeonz-LICENSE.txt
+These modules do not start the original game's network or read its saves.

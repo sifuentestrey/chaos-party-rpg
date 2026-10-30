@@ -19,6 +19,7 @@ export function parseIntent(raw: string): Intent {
   if (coords) return {verb:'go',x:Number(coords[1]),y:Number(coords[2])};
   const patterns: [string, RegExp][] = [
     ['quest', /^(?:ask|request)(?: the)? (.+?) (?:for (?:a )?(?:quest|job|adventure)|quest)$/],
+    ['use_item', /^(?:eat|drink|use)\s+(.+)$/],
     ['equip', /^(?:equip|wear|wield)\s+(.+)$/],
     ['attack', /^(?:attack|hit|fight|strike|punch|kick|tackle)\s+(.+)$/],
     ['talk', /^(?:talk to|speak to|chat with|ask)\s+(.+)$/],
@@ -35,12 +36,12 @@ export function parseIntent(raw: string): Intent {
 }
 export function validIntent(value: any): value is Intent {
   if (!value || typeof value!=='object' || Array.isArray(value)) return false;
-  if (!['cancel','respawn','equip','quest','look','exit','enter','move','go','attack','talk','open','loot','manipulate','unknown'].includes(value.verb)) return false;
+  if (!['use_item','creative','cancel','respawn','equip','quest','look','exit','enter','move','go','attack','talk','open','loot','manipulate','unknown'].includes(value.verb)) return false;
   if(Object.keys(value).some(k=>!['verb','target','dx','dy','steps','x','y'].includes(k)))return false;
   if(value.target!==undefined && (typeof value.target!=='string'||!value.target.trim()||value.target.length>180))return false;
   if(value.verb==='move')return Number.isInteger(value.dx)&&Number.isInteger(value.dy)&&Math.abs(value.dx)+Math.abs(value.dy)===1&&Number.isInteger(value.steps)&&value.steps>=1&&value.steps<=12;
   if(value.verb==='go' && value.x!==undefined)return Number.isInteger(value.x)&&Number.isInteger(value.y)&&value.x>0&&value.y>0&&value.x<1000&&value.y<1000;
-  return !['go','attack','talk','quest','equip','open','loot','manipulate'].includes(value.verb)||!!value.target;
+  return !['use_item','creative','go','attack','talk','quest','equip','open','loot','manipulate'].includes(value.verb)||!!value.target;
 }
 // Breadth-first search gives a shortest cardinal path, with bounded work on the real map.
 export function shortestPath(start: number[], goal: (x:number,y:number)=>boolean, walkable: (x:number,y:number)=>boolean, limit=55000): number[][] | null {

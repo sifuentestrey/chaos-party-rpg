@@ -1,0 +1,87 @@
+{
+  "status": "passed",
+  "checks": [
+    "two real characters preserved native position, gold, level and gear",
+    "crafted ownership, components and worn state survive actual launcher restart",
+    "starter objects not duplicated"
+  ],
+  "characters": [
+    {
+      "name": "Ash7n617",
+      "x": 72,
+      "y": 223,
+      "gold": 5,
+      "level": 1,
+      "weapon": "sword1",
+      "armor": "clotharmor",
+      "bag": [
+        {
+          "id": "item-19",
+          "name": "blue hat",
+          "type": "wearable",
+          "material": "cloth",
+          "condition": "intact",
+          "equipped": true,
+          "slot": "head",
+          "color": "#7ea7d4",
+          "tile": null,
+          "components": [
+            "item-15",
+            "item-16"
+          ]
+        }
+      ],
+      "wearables": [
+        {
+          "id": "item-19",
+          "name": "blue hat",
+          "type": "wearable",
+          "material": "cloth",
+          "condition": "intact",
+          "equipped": true,
+          "slot": "head",
+          "color": "#7ea7d4",
+          "tile": null,
+          "components": [
+            "item-15",
+            "item-16"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Ember7n620",
+      "x": 73,
+      "y": 223,
+      "gold": 5,
+      "level": 1,
+      "weapon": "sword1",
+      "armor": "clotharmor",
+      "bag": [
+        {
+          "id": "item-17",
+          "name": "cloth strip",
+          "type": "fragment",
+          "material": "cloth",
+          "condition": "intact",
+          "equipped": false,
+          "color": "#bd88cf",
+          "tile": null,
+          "components": []
+        },
+        {
+          "id": "item-18",
+          "name": "wood splinter",
+          "type": "tool",
+          "material": "wood",
+          "condition": "intact",
+          "equipped": false,
+          "color": "#b88955",
+          "tile": null,
+          "components": []
+        }
+      ],
+      "wearables": []
+    }
+  ]
+}

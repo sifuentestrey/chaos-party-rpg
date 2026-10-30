@@ -1,0 +1,70 @@
+{
+  "status": "passed",
+  "checks": [
+    "original Chaos crafting on actual Fracture actors",
+    "server D20 result",
+    "visible wearable",
+    "nearby gift transfers ownership",
+    "drop at real native coordinates and auto-approach pickup",
+    "phone reload retains crafted equipment",
+    "no browser errors"
+  ],
+  "events": [
+    {
+      "player": "Ember7n620",
+      "text": "walk to 73, 223",
+      "status": "succeeded",
+      "message": "Reached your destination."
+    },
+    {
+      "player": "Ash7n617",
+      "text": "make blue hat from cloth strip and wood splinter",
+      "status": "succeeded",
+      "message": "D20 14 / 10: Ash7n617 creates blue hat (item-19) from cloth strip and wood splinter.",
+      "roll": 14
+    },
+    {
+      "player": "Ash7n617",
+      "text": "equip blue hat",
+      "status": "succeeded",
+      "message": "Ash7n617: equip blue hat."
+    },
+    {
+      "player": "Ash7n617",
+      "text": "give blue hat to Ember7n620",
+      "status": "succeeded",
+      "message": "Ash7n617: give blue hat → Ember7n620."
+    },
+    {
+      "player": "Ember7n620",
+      "text": "equip blue hat",
+      "status": "succeeded",
+      "message": "Ember7n620: equip blue hat."
+    },
+    {
+      "player": "Ember7n620",
+      "text": "drop blue hat",
+      "status": "succeeded",
+      "message": "Ember7n620: drop blue hat."
+    },
+    {
+      "player": "Ash7n617",
+      "text": "walk west 3",
+      "status": "succeeded",
+      "message": "Reached your destination."
+    },
+    {
+      "player": "Ash7n617",
+      "text": "take item-19",
+      "status": "succeeded",
+      "message": "Ash7n617: take blue hat."
+    },
+    {
+      "player": "Ash7n617",
+      "text": "equip blue hat",
+      "status": "succeeded",
+      "message": "Ash7n617: equip blue hat."
+    }
+  ],
+  "errors": []
+}

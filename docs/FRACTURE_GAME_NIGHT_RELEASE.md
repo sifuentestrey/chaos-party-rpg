@@ -1,8 +1,22 @@
 # Chaos Party — local Fracture beta acceptance
 
-> **MIGRATION WARNING (owner correction, Oct 29): This is NOT the original Chaos Party game migrated to Fracture.** It is an isolated *Fracture multiplayer/phone-to-TV technology demo*. Major existing Chaos features—Crown Job, Dawn Bell's seventeen scenes, custom characters/classes, server dice/advantage, ownership/crafting/fire/repair, NPC memory, campaign persistence, group travel voting and qualified creative storytelling—are **not** present here. Passing tests do not establish gameplay equivalence. See [full parity audit](CHAOS_TO_FRACTURE_PARITY.md). Keep original Chaos project as canonical until approved migration/renderer decision.
+> **MIGRATION WARNING (owner correction, Oct 29): This is NOT the original Chaos Party game migrated to Fracture.** It is an isolated *Fracture multiplayer/phone-to-TV technology demo*. Major existing Chaos features—Crown Job, Dawn Bell's seventeen scenes, custom characters/classes, full dice/advantage, fire/repair, NPC memory, campaign persistence, expedition travel voting and qualified creative storytelling—are **not** present here. The limited object/crafting and local rally experiments below are partial rule reuse. Passing tests do not establish gameplay equivalence. See [full parity audit](CHAOS_TO_FRACTURE_PARITY.md). Keep original Chaos project as canonical until approved migration/renderer decision.
 
-October 29, 2026. Experimental branch only: `spike/fracture-phone-tv`. Work order: [issue #12](https://github.com/sifuentestrey/chaos-party-rpg/issues/12). **Playable beta prepared for physical Mac rehearsal; not a claim of completed hardware acceptance.** No merge, public game deployment or paid service was performed.
+Updated October 30, 2026. Experimental branch only: `spike/fracture-phone-tv`. Work order: [issue #12](https://github.com/sifuentestrey/chaos-party-rpg/issues/12). **Playable beta prepared for physical Mac rehearsal; not a claim of completed hardware acceptance.** No merge, public game deployment or paid service was performed.
+
+## Current fusion milestone — October 30
+
+The owner's latest direction is to merge the games creatively, with engineering choices made independently. Fracture remains the authoritative world/combat engine; the original Chaos object/material/crafting rules now operate on its real tiles. No original networking, campaign map generator, databases or saves are imported.
+
+- [x] Reuse original `world-items.js` planning/resolution and PartyFrame RNG: server D20 crafting, ingredient ownership, failed rolls preserve ingredients, wear/equip, nearby player gifts, drop/take, inspection and separation. Repeated failed rolls consume the declaration window.
+- [x] Each native character receives cloth/wood once. Initial shared materials and dropped objects have real collision-checked native tiles. Pickup can walk to an object; every operation revalidates current ownership/range. Inventory and colored wearable bands appear on the phone/TV.
+- [x] Separate `server/data/chaos-party/objects.json`, keyed by durable native character UUID. Atomic writes, failed-save rollback, reconnect without duplicate starter objects. Original Chaos saves remain untouched.
+- [x] Two fresh browser phones: craft → equip → give → recipient equips → drop → auto-approach pickup → equip → phone reload. Real engine receipts, server D20 and screenshots.
+- [x] Native consumables use Fracture's own inventory/health handler; full-health use keeps healing items. Adapter/native-handler integration regression passes.
+- [x] Actual launcher stop/restart preserves both characters’ native progression and crafted bag/component/worn state exactly.
+- [x] Focused Node checks, pinned native tests/builds and original `npm run verify`. See fusion evidence for current counts and scope.
+
+Crafted Chaos wearables currently add colored bands to the native sprites; they do **not** grant invented Fracture armor/weapon/spell stats. Native equipment/loot and crafted objects remain distinct inventory systems behind one phone view. Native gear gifting, arbitrary terrain manipulation, the old campaign/NPC memory and full creative narration are not ported. This is a playable integration slice, not completion of every mechanic in both games.
 
 ## Verified behavior
 
@@ -14,7 +28,7 @@ October 29, 2026. Experimental branch only: `spike/fracture-phone-tv`. Work orde
 | Real combat | Rat HP 29 → 0, death, player damage and gold verified. Native formulas/range/stun/death rules retained; no rat-stat nerf. Enemy minimum cooldowns are read from the pinned native client. The earlier physical rat report is not conclusively classified as a single upstream bug versus cadence/balance. |
 | Adventure | Native NPC response, optional rat quest completed 3/3 and awarded its real reward; sword pickup/equip; Western Dwelling entry/exit; Glitch Woods travel. A suggested twenty-minute route is in the adapter README. No forced Crown Job or invented map. |
 | Shared TV | Native renderer/world, automatic read-only spectator, real player colors/names, follow/full-screen controls, corner log. Website HUD hidden; spectators hidden even with two TVs. QR in empty lobby and private host setup. |
-| Party pacing | Ten-second declaration/reaction window with parallel actors and immutable declarations. Movement/observation and personal STOP remain available. Native combat randomness retained; a new D20 system does not override Fracture. |
+| Party pacing | Ten-second declaration/reaction window with parallel actors and immutable declarations. Movement/observation and personal STOP remain available. Native combat randomness retained; Chaos crafting uses server D20 rolls without overriding Fracture combat. |
 | Bounded local rally (experimental) | New opt-in phone vote: strict majority of a frozen electorate (2–20 nearby, living, same-zone actors) approves **native per-character movement** toward the proposer's real location, within twelve tiles. Rejected/expired votes do not move actors. Every character can STOP. Engine receipts, not the vote, establish actual arrival. This is **not** original Dawn Bell major travel or campaign voting parity. |
 | Identity/recovery/presence | Server-held Fracture credentials; personal recovery links; same account and position after reconnect. Cold start does not spawn saved actors before phones return; absent phones save/log out after a 45-second grace period. |
 | Host player rotation | New host-only bench/restore saves and disconnects an inactive actor, frees a live room slot, preserves player account, credentials, inventory/position and private recovery link; refused when restoring into a full room. Up to 20 *active* slots, with retained historical registrations. Automated full-room regression passed, physical Mac acceptance pending. |
@@ -25,7 +39,7 @@ October 29, 2026. Experimental branch only: `spike/fracture-phone-tv`. Work orde
 ## Checks completed
 
 - [x] Pinned Fracture `642c00a8a2d3a95979e85bbfa3f62deee611a4a6`, pnpm `10.34.9`, production client/server builds.
-- [x] **71 Vitest files / 3,326 tests**, **21 focused Node checks**, original Chaos offline verification.
+- [x] **71 Vitest files / 3,327 tests**, **44 focused Node checks**, original Chaos offline verification.
 - [x] Actual browser phone/TV flow, recovered phones, real quest completion/reward, screenshots, no browser errors.
 - [x] Real-server rejection of wrong keys, cross-actor identity, expired/replayed actions, invented damage and arbitrary teleport.
 - [x] **New native majority-rally integration:** in disposable pinned Fracture, two distinct authenticated actors, one real tile movement, rejected outsider vote, strict two-person quorum, and separate native group `go` action **succeeded and reached the proposer**. [GitHub Actions integration run 40977145132](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/40977145132), October 29 local / October 30 UTC. This is cloud/Linux real-server proof, not a physical Mac playtest.
@@ -40,7 +54,7 @@ Evidence: [sanitized reports and screenshots](../experiments/fracture-phone-tv/e
 
 - [ ] **Owner hardware acceptance:** double-click the kit launcher on the 2015 Intel Mac; join two physical phones, move separately, kill a rat, STOP, visit a building/woods, reconnect, then try the family group while measuring responsiveness. Cloud/Linux tests do not establish Mac CPU/RAM or 12–20 physical-player capacity.
 - [ ] **Live creative DM qualification:** Groq semantic fallback is wired, explicitly opt-in and off by default. Existing key only, grounded proposals, separate quota ledger, timeout/429/invalid-plan fallback tested with mocks. No live provider calls or free-plan quality claim. A fully qualified creative storyteller is not shipped.
-- Native quests are session-scoped and may reset on server/bridge restart. Equipment, inventory, level, gold and saved position persist. No legacy Chaos save migration or full Chaos D20/campaign port is claimed.
+- Native quests are session-scoped and may reset on server/bridge restart. Equipment, inventory, level, gold and saved position persist. No legacy Chaos save migration or full campaign port is claimed; only the bounded Chaos object rules above are projected onto Fracture.
 - Deterministic text handling covers supported intent categories; unsupported mechanics receive truthful rejection. It is not universal natural-language world simulation.
 - Local party rally votes are ephemeral, deliberately reset on restart and restricted to nearby same-zone characters. Approval may produce partial native movement if an actor disconnects, moves away or encounters blocked geometry. **No teleport or all-arrived claim.** This is a bounded group-coordination experiment, not migration of the original Chaos majority-travel/scene system.
 - Automated adventure completion and the supplied twenty-minute route do not replace a human pacing/fun playtest. A dedicated tavern/campaign expansion was not invented; the route reuses the actual town, dwelling and woods.
@@ -55,6 +69,6 @@ The pure vote tests and multiplayer bridge regression suite cover frozen quorums
 
 Run the source kit's **Start_Chaos_Party.command**, or the repository's `experiments/fracture-phone-tv/Start_Fracture_Chaos_Test.command`. Stop any older test launcher first. Requires Node **22.18+ LTS or 24+**, Git and first-install internet; existing `~/Fracture-Chaos-Spike` is reused. New room credentials stay in that separate clone, never in the ZIP. Optional upstream Venice/Fish Audio providers are forced off by the launcher.
 
-The active modules are `party-bridge.mjs`, `action-contract.ts`, `chaos-actor.ts`, `chaos-tv.ts` and `apply-party-overlay.mjs`; historical one-actor files remain intact. Changes reconstruct from the pinned upstream and a hash manifest. Do not merge PR #11, modify `main`/`luna/visual-game-night-release`, mix databases, or infer hardware acceptance from these logs.
+The active modules are `party-bridge.mjs`, `action-contract.ts`, `chaos-actor.ts`, `chaos-tv.ts`, `chaos-world.mjs` and `apply-party-overlay.mjs`; historical one-actor files remain intact. Changes reconstruct from the pinned upstream and a hash manifest. Do not merge PR #11, modify `main`/`luna/visual-game-night-release`, mix databases, or infer hardware acceptance from these logs.
 
 For a resumed cloud session, the disposable upstream is `/workspace/fracture-chaos-beta`. Private raw logs are in `/workspace/scratch`; do not publish launcher host URLs, room.json or databases. Publicly reviewable evidence is already curated in the source tree. The packaging script creates an immutable source ZIP from the committed branch; it does not bundle native dependencies or raw upstream assets. Derived screenshots retain CC BY-SA attribution.
