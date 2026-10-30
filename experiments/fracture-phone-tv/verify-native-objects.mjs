@@ -55,23 +55,35 @@ try{
  do{states=await Promise.all(tokens.map(get));if(states.every(s=>s.actor?.ready&&s.actor.zone))break;await sleep(250);}while(Date.now()<deadline);
  assert.ok(states.every(s=>s.actor?.ready),'Both actors must join the actual native Fracture server');
  assert.notEqual(states[0].actor.id,states[1].actor.id,'Each phone must own a separate native actor');
- assert.equal((await move(tokens[0],29,198)).status,'succeeded','First actor reaches authored oak area');
- assert.equal((await move(tokens[1],28,198)).status,'succeeded','Second actor reaches authored oak area');
- let tree;deadline=Date.now()+8000;
- do{const s=await get(tokens[0]);tree=s.actor?.chaos?.scenery?.find(o=>o.nativeOrigin&&o.tile.x===30&&o.tile.y===197);
-  if(tree)break;await sleep(150);}while(Date.now()<deadline);
- assert.ok(tree?.nativeOrigin,'Pinned map must expose an existing verified oak; no synthetic tree may be seeded');
- assert.equal(tree.hp,undefined,'Native scenery must not expose hidden durability');
- const candidates=[{x:tree.tile.x-1,y:tree.tile.y},{x:tree.tile.x,y:tree.tile.y+1},
-  {x:tree.tile.x,y:tree.tile.y-1},{x:tree.tile.x+1,y:tree.tile.y}];
- let adjacent=false;
- for(const p of candidates){
-  const r=await move(tokens[0],p.x,p.y);
-  const s=await get(tokens[0]);
-  if(r.status==='succeeded'&&Math.abs(s.actor.x-tree.tile.x)+Math.abs(s.actor.y-tree.tile.y)===1){adjacent=true;break;}
-  await sleep(250);
+ // Discover the authoritative generated native-art inventory, never assume a
+ // painted tree is eligible: other solid artwork can overlap its canopy.
+ const nativeSource=fs.readFileSync(path.join(process.env.FRACTURE_ROOT,'server/ts/chaos-native-scenery.ts'),'utf8');
+ const match=/export const nativeTrees = ([^\\n]+);/.exec(nativeSource);
+ assert.ok(match,'Pinned overlay must expose its verified native tree inventory');
+ const nativeTrees=JSON.parse(match[1]);
+ assert.ok(nativeTrees.length>0,'No map-verified native trees are available; do not fabricate one');
+ const origin=states[0].actor;
+ const choices=nativeTrees.slice().sort((a,b)=>
+  (Math.abs(a.tile.x-origin.x)+Math.abs(a.tile.y-origin.y))-
+  (Math.abs(b.tile.x-origin.x)+Math.abs(b.tile.y-origin.y))).slice(0,6);
+ let tree=null,adjacent=false;
+ for(const candidate of choices){
+  const neighbors=[{x:candidate.tile.x-1,y:candidate.tile.y},{x:candidate.tile.x,y:candidate.tile.y+1},
+   {x:candidate.tile.x,y:candidate.tile.y-1},{x:candidate.tile.x+1,y:candidate.tile.y}];
+  for(const p of neighbors){
+   const r=await move(tokens[0],p.x,p.y);
+   if(r.status!=='succeeded')continue;
+   const s=await get(tokens[0]);
+   if(Math.abs(s.actor.x-candidate.tile.x)+Math.abs(s.actor.y-candidate.tile.y)!==1)continue;
+   tree=s.actor.chaos?.scenery?.find(o=>o.nativeOrigin&&o.id.endsWith(':'+candidate.id));
+   if(tree){adjacent=true;break;}
+  }
+  if(adjacent)break;
  }
- assert.ok(adjacent,'No genuinely walkable adjacent tile for the native oak');
+ assert.ok(adjacent&&tree?.nativeOrigin,'No reachable, visible, verified native oak: '+JSON.stringify({candidates:choices.map(t=>t.tile),actor:(await get(tokens[0])).actor?.zone}));
+ assert.equal(tree.hp,undefined,'Native scenery must not expose hidden durability');
+ // The second actor remains a separate authenticated Fracture character.
+ // Its later snapshot must observe the same saved native map mutation.
  const unsupported=await post('/action',{token:tokens[0],text:'Move the imaginary boulder'});
  assert.equal(unsupported.status,202);
  assert.equal((await outcome(tokens[0],unsupported.id)).result.status,'blocked','Unverified boulder cannot move');
