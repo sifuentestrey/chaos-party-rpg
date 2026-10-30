@@ -501,3 +501,35 @@ test('two real phone identities can commit a durable trial objective vote, witho
  assert.equal(saved.adventure.choice.route,'craft');assert.equal(saved.choiceVote,undefined,'vote credentials and ephemeral ballots are not persisted');
  const state=await(await fetch(base+'/state?token='+tokens[2])).json();assert.equal(state.adventure.choice,'craft');
 });
+
+test('native environmental changes notify another authenticated phone without room log fabrication',async t=>{
+ const {app,base}=await setup(t);
+ assert.equal((await fetch(base+'/changes?token=invalid')).status,403);
+ const pair=async name=>(await(await post(base,'/pair',{key:app.room.join,name})).json()).token;
+ const watcher=await pair('Watcher'),actorToken=await pair('Builder');
+ await new Promise(r=>setTimeout(r,40));
+ const session=app.sessions.get(actorToken);
+ const initial={...session.actor,zone:'Town',chaos:{ground:[{id:'table',condition:'intact',hp:4,tile:{x:3,y:4}}],npcs:[],story:[],camp:null}};
+ session.socket.mockActor=initial;
+ const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+ const deadline=Date.now()+2400;
+ while(session.worldFingerprint===null&&Date.now()<deadline)await sleep(50);
+ assert.notEqual(session.worldFingerprint,null,'native snapshot baseline must arrive');
+ const controller=new AbortController();
+ try{
+  const stream=await fetch(base+'/changes?token='+watcher,{signal:controller.signal});
+  assert.equal(stream.status,200);
+  assert.match(stream.headers.get('content-type'),/text\/event-stream/);
+  const reader=stream.body.getReader(),decoder=new TextDecoder();
+  const first=await reader.read();
+  assert.match(decoder.decode(first.value),/connected/);
+  session.socket.mockActor={...initial,chaos:{...initial.chaos,ground:[{...initial.chaos.ground[0],condition:'burning',hp:3}]}};
+  const event=await Promise.race([
+   reader.read().then(v=>decoder.decode(v.value)),
+   sleep(2600).then(()=>{throw Error('No world-change notification arrived');})
+  ]);
+  assert.match(event,/event: change/);
+  assert.match(event,/data: \{\}/,'event carries no private world or account data');
+  assert.equal(app.room.events.some(e=>e.message?.includes('burning')),false,'world notification must not fabricate a room event');
+ }finally{controller.abort();}
+});
