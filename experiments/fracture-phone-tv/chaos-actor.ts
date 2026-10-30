@@ -29,7 +29,7 @@ export function installChaosActor(player:any, connection:any): void {
   // The bridge authenticates each native actor and supplies a saved class.
   // Never accept a role or perk from a phone action or unauthenticated socket.
   player.chaosRole=player.chaosControlled&&['rogue','bard','wizard','knight','healer','wildcard'].includes(socket.handshake.auth?.chaosRole)?socket.handshake.auth.chaosRole:null;
-  player.chaosPerk=player.chaosControlled&&socket.handshake.auth?.chaosPerk==='lucky'?'lucky':null;
+  player.chaosPerk=player.chaosControlled&&['lucky','charming'].includes(socket.handshake.auth?.chaosPerk)?socket.handshake.auth.chaosPerk:null;
   if(player.chaosControlled&&typeof socket.handshake.auth.chaosName==='string'&&/^[\p{L}\p{N} _-]{2,18}$/u.test(socket.handshake.auth.chaosName))player.chaosName=socket.handshake.auth.chaosName;
   const listen=connection.listenCallback;
   connection.listenCallback=(message:any[])=>{
