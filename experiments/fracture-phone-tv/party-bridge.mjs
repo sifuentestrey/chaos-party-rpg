@@ -38,7 +38,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
  const scheduleEventFlush=()=>{if(pendingEventFlush)return;pendingEventFlush=setTimeout(()=>{pendingEventFlush=null;persist();},500);pendingEventFlush.unref?.();};
  const flushEvents=()=>{if(pendingEventFlush){clearTimeout(pendingEventFlush);pendingEventFlush=null;}persist();};
  const sessions=new Map(),pending=new Map(),events=room.events||[];room.turn=null;room.rally=null;room.choiceVote=null;persist();
- const meaningful=new Set(['creative','attack','talk','quest','open','loot']);
+ const meaningful=new Set(['creative','environment','attack','talk','quest','open','loot']);
  const liveCount=()=>room.players.filter(p=>!p.parked).length;
  const eventClients=new Map();
  let worldNotifyTimer=null;
@@ -309,7 +309,7 @@ el('propose-rally').onclick=async()=>{try{const r=await api('/rally/propose',{to
 for(const [id,destination] of [['travel-woods','woods'],['travel-refuge','refuge']])el(id).onclick=async()=>{try{const r=await api('/expedition/propose',{token:auth,destination});activeRally=r.rally;log('Travel vote opened.');await poll();}catch(e){log(e.message);}};
 async function castRally(yes){if(!activeRally)return;try{const r=await api('/rally/vote',{token:auth,id:activeRally.id,yes});activeRally=r.rally;log('Vote locked.');await poll();}catch(e){log(e.message);}}
 el('rally-yes').onclick=()=>castRally(true);el('rally-no').onclick=()=>castRally(false);
-for(const [id,route] of [['trial-fight','combat']]el(id).onclick=async()=>{try{const r=await api('/adventure/choice/propose',{token:auth,route});activeChoice=r.choiceVote;log('Story vote opened.');await poll();}catch(e){log(e.message);}};
+for(const [id,route] of [['trial-fight','combat']])el(id).onclick=async()=>{try{const r=await api('/adventure/choice/propose',{token:auth,route});activeChoice=r.choiceVote;log('Story vote opened.');await poll();}catch(e){log(e.message);}};
 async function castChoice(yes){if(!activeChoice)return;try{const r=await api('/adventure/choice/vote',{token:auth,id:activeChoice.id,yes});activeChoice=r.choiceVote;log('Story vote locked.');await poll();}catch(e){log(e.message);}}
 el('trial-yes').onclick=()=>castChoice(true);el('trial-no').onclick=()=>castChoice(false);
 document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>act(b.dataset.action));
@@ -422,7 +422,8 @@ let changes=null;function connectChanges(){if(changes){changes.close();changes=n
     let intent=shouldUseCreative(b.text,s.actor)?{verb:'creative',target:b.text}:parseIntent(b.text);const epoch=intent.verb==='cancel'?++s.epoch:s.epoch;
     if(intent.verb==='cancel')cancelPending(s,'Announced action cancelled by STOP before execution.');
     const unresolved=intent.target&&['go','attack','talk','quest','open','loot','equip'].includes(intent.verb)&&![...(s.actor.nearby||[]),...(s.actor.inventory||[])].some(e=>e.name.toLowerCase().includes(intent.target.toLowerCase()));
-    if(intent.verb==='unknown'||unresolved)intent=await dm.interpret(b.text,s.actor)||intent;
+    if(intent.verb==='unknown'){const judgment=await dm.interpretEnvironment?.(b.text,s.actor);if(judgment)intent={verb:'environment',judgment};}
+     if(intent.verb==='unknown'||unresolved&&intent.verb!=='environment')intent=await dm.interpret(b.text,s.actor)||intent;
     if(epoch!==s.epoch)return json(res,409,{error:'That pending interpretation was cancelled.'});
     if(intent.verb==='cancel')s.storyController?.abort();
     const now=Date.now();
