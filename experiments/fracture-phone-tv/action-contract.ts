@@ -42,10 +42,16 @@ export function validIntent(value: any): value is Intent {
      if(Object.keys(value).some(k=>!['verb','judgment'].includes(k)))return false;
      const j=value.judgment;
      if(!j||typeof j!=='object'||Array.isArray(j)||Object.keys(j).some(k=>!['action','targetId','ability','dc','description'].includes(k)))return false;
-     return ['break','ignite'].includes(j.action)&&typeof j.targetId==='string'&&j.targetId.length>0&&j.targetId.length<=180&&
-       ['strength','dexterity','wisdom','none'].includes(j.ability)&&Number.isInteger(j.dc)&&j.dc>=0&&j.dc<=30&&
-       typeof j.description==='string'&&j.description.length<=240&&
-       (j.action!=='break'||(j.ability==='strength'&&j.dc===14));
+     const move=/^move_(north|south|east|west)$/.test(j.action);
+     const allowed=['break','ignite','extinguish','repair','inspect','drink'].includes(j.action)||move;
+     const ability=move||j.action==='break'?'strength':j.action==='ignite'?'wisdom':j.action==='repair'?'dexterity':'none';
+     const dcOk=move?j.dc>=8&&j.dc<=30:j.action==='break'?j.dc>=6&&j.dc<=30:
+       j.action==='repair'?j.dc===12:['extinguish','inspect','drink'].includes(j.action)?j.dc===0:j.dc>=0&&j.dc<=30;
+     // This validates the wire shape only. The native executor still verifies
+     // exact object identity, current capabilities, position and engine-owned DC.
+     return allowed&&typeof j.targetId==='string'&&j.targetId.length>0&&j.targetId.length<=180&&
+       j.ability===ability&&Number.isInteger(j.dc)&&dcOk&&
+       typeof j.description==='string'&&j.description.length<=240;
    }
    if(value.judgment!==undefined)return false;
    if(value.target!==undefined && (typeof value.target!=='string'||!value.target.trim()||value.target.length>180))return false;
