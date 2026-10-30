@@ -1,5 +1,14 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Bounded native-waypoint majority travel — October 30 (native route pending)
+
+- [x] Implemented a reversible, opt-in **group travel vote** distinct from the old local rally. Two pinned Fracture map routes are offered: The Refuge → Glitch Woods and Glitch Woods → The Refuge. A nearby living group must be in the same starting zone; the proposer casts the first yes, and a frozen strict majority must approve within ten seconds.
+- [x] Only the server chooses route coordinates. Approval issues independent **native `go` path requests** to still-present, living actors near the departure waypoint; never a teleport, invented scene transition or guaranteed arrival. A native reported destination-zone transition is counted once. Individual STOP, benching, disconnects, path collisions and dead characters remain authoritative. Existing local rally remains unchanged.
+- [x] Local Node 22.16 with `--experimental-strip-types`: **103 passed, 1 skipped, 0 failed** across 104 focused tests, including malicious destination names, wrong-origin proposals, rejected quorums, private identity, benched/out-of-zone players, scoped STOP and an actual native-zone callback simulation. The local mock confirms dispatch and receipt semantics, **not actual pinned Fracture route traversal**.
+- [ ] Pinned Fracture client/server compilation, native route traversal, CI and Mac ZIP validation for this change are **pending**. In particular, the two pinned waypoints need a disposable native-server playthrough to establish that all actors can path through the zone boundary; no owner hardware or 12–20-phone acceptance is claimed.
+- [ ] **Not original expedition parity:** no Dawn Bell scene graph, majority-gated story transitions, saved discovered map or original campaign prerequisites. Travel is a bounded vote-to-walk experiment on existing Fracture terrain.
+
+
 ## Real opt-in D20 reaction window and interference — October 30
 
 - [x] Added an **opt-in** `declare / announce / prepare` path for supported original Chaos world checks (craft, steal, break, push, repair, appeal and similar). The bridge holds the actual action for **10 seconds** and displays a countdown on phones and TV. A queued announcement is explicitly `queued`, not a fabricated native success. Normal movement, combat and other non-announced actions remain immediate.
