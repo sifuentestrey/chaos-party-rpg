@@ -20,7 +20,7 @@
 | Creative AI Dungeon Master | Optional narrator foundations; still **not qualified live** | Optional AI is semantic action parser only; no equivalent creative story/canonical memory | **NOT PORTED** |
 | Dice, advantage, reactions, consequence rules | Server dice/rolls, advantages/disadvantages, 8–12s reactions and persistent consequences | Native combat RNG plus original server D20 for bounded object crafting; no advantage/full consequence engine | **PARTIAL OBJECT DICE ONLY** |
 | Interactive scenery and physical actions | Material/ownership/containment/crafting, fire/damage/repair, moving tables, stolen objects | Native loot/chest/doors/combat plus original craft/wear/give/drop/take rules on tiles; scenery still immovable | **PARTIAL OBJECT RULES**, no fixtures/fire/repair |
-| NPC awareness | Chaos NPC goals, trust, witness, possession/theft memory; source-backed acceptance checks | Native Fracture NPC talk/quest, without Chaos trust and memory logic | **NOT PORTED** |
+| NPC awareness | Chaos NPC goals, trust, witness, possession/theft memory; source-backed acceptance checks | Native Fracture NPCs can now hold gifted Chaos objects; original D20 theft changes durable Chaos trust/history, but native NPC dialogue/AI remains unchanged | **PARTIAL SIDECAR THEFT MEMORY, NOT NPC PARITY** |
 | Crown Job | Complete tavern heist with targets/clues, alternate tactics, state and ending | Absent; no equivalent imported campaign | **NOT PORTED** |
 | Dawn Bell story / connected world | Seventeen scenes overall incl. woods, river/bridge, ferryman cave, town/inn, castle, vault, finale | Fracture town, dwelling, Glitch Woods and native rat quest | **NOT PORTED** |
 | Major travel majority vote | Strict-majority approval documented/tested in original expedition | New **bounded local rally** votes use a frozen electorate, strict majority and native per-actor walking; **no original major-travel gating, destinations or scene transitions** | **PARTIAL RULE SPIKE, NOT EXPEDITION PARITY** |
@@ -74,6 +74,14 @@ Owner direction in the active session broadened to combining the games with engi
 `chaos-world.mjs` imports the original object planner/resolver and RNG, projecting a small item state onto actual Fracture coordinates. Two real phone actors crafted with server D20, wore a colored band, transferred ownership, dropped/picked up the same object through native movement, and retained it across a real restart. Materials, components and owner UUIDs persist in separate Fracture-only JSON; original networking, campaign generation and saves are excluded. The native engine still owns movement, combat, gear and damage.
 
 This advances **only** crafting/material ownership and that subset's dice/persistence from absent to partial source reuse. It does not port moving tables/rugs, fire/repair, witnessed theft, NPC trust/memory, advantage, Crown Job, Dawn Bell, original character customization or save identity. Native gear gifting and crafted combat effects are also absent. The requested complete differentiating object/NPC scenario remains unaccepted; a wearable experiment does not satisfy it.
+
+## October 30 native-zone authority and NPC-memory slice
+
+The Fracture object bridge now checks the **native zone and collision geometry** before allowing gifts, pickups, inspections, or auto-approach. An adjacent player in another zone cannot receive an object; a two-tile transfer across a blocked midpoint is rejected. Existing version-1 object saves remain readable and unchanged in schema.
+
+The original Chaos item planner/resolver is reused for a narrow, actual-NPC theft interaction. A player can give a crafted Chaos object to a nearby native Fracture NPC, then attempt to steal that exact item back. The original server D20/DC11 theft roll decides ownership; successful and failed attempts both update that NPC's persisted Chaos trust/history. NPC IDs come from Fracture's stable native NPC entity IDs, not from phone-supplied names or fabricated NPCs. No NPC inventory items are minted. Object state and memory stay in the separate experimental JSON save. The phone `look around` receipt can show an NPC's Chaos-held item and remembered theft.
+
+**Limitations:** This is a sidecar consequence model. Native Fracture NPC AI, dialogue, quest responses, patrol behavior, hostility/combat and visual reactions do **not** yet consult that trust. There is no full witness visibility, stolen-world-item system, Crown Job, or original Chaos NPC-goal migration. Passing isolated and pinned CI does not replace an actual two-phone Mac playtest. The original campaign branch and its saves remain untouched.
 
 ## Objective parity acceptance
 
