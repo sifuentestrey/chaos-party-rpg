@@ -1,5 +1,12 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Native visible-world change notifications — October 30 (partial live-sync parity)
+
+The Fracture bridge now compares successive **native-authoritative** actor snapshots for visible zone, ground-object, NPC, story and camp changes. It coalesces authenticated SSE change signals to other phones without transmitting world data or private inventory; each client refetches its own `/state`. This covers observed environmental fire/damage/movement and NPC changes **when they appear in a polled native snapshot**; no fabricated room-log event or new simulation authority is introduced. Existing 750-ms phone polling is preserved.
+
+Focused tests in an isolated source-kit copy: **133 passed, 1 skipped** (Node 22.16, includes two-player HTTP SSE test). Branch `ae564529` [offline CI](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41076488495) passed 210 original-game checks; that job does not execute experimental Fracture tests. The pinned native Fracture workflow, TV/browser end-to-end checks and physical Mac acceptance are not yet verified for this change. This does not restore original campaign/maps/saves, full NPC autonomy, or universal environment physics.
+
+
 ## Authenticated live event subscription lifecycle — October 30
 
 The existing same-origin room SSE stream now checks active session membership on each broadcast and closes parked/removed player subscriptions. This prevents stale connections from continuing to receive room change signals. It does not yet prove full fire/damage/movement event delivery or native Fracture world synchronization; tests and pinned CI remain pending.
