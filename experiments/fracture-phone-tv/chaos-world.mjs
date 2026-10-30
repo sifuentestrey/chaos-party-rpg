@@ -7,6 +7,7 @@ import {recordEnvironmentalIncident,propertyConcern} from './reactive-witness.mj
 import {objectCapabilities,objectBlocksTile} from './object-capabilities.mjs';
 import {registerScenery as registerAuthoredScenery,strikeScenery as damageAuthoredScenery,sceneryBlocks,visibleScenery} from './scenery-bridge.mjs';
 import {advanceAuthoredFire} from './scenery-fire.mjs';
+import {createNativeDoorControl} from './native-door-control.mjs';
 import {selectNpcFireResponses} from './reactive-npc-actions.mjs';
 import {spawnItem} from '../../public/campaign.js';
 import {Rng} from '../../public/vendor/partyframe-rng.js';
@@ -15,6 +16,14 @@ import {resolveObjectRoll} from './party-roles.mjs';
 const verbs=new Set(['take','drop','craft','attach','give','equip','unequip','separate','inspect','break','steal']);
 const environmental=new Set(['move','ignite','extinguish','repair']);
 const norm=s=>String(s||'').toLowerCase().replace(/^(?:the|a|an|my)\s+/,'').trim();
+/** Door control uses only existing native map-authored entrances and player sprites. */
+export function nativeDoorAttempt(text){
+ const clean=String(text||'').trim().replace(/^(?:please |I (?:want to |try to )?)+/i,'').replace(/[.!?]+$/,'');
+ if(/^(?:hold|brace|block|guard) (?:the )?(?:door|doorway|entrance)(?: shut)?$/i.test(clean))return 'hold';
+ if(/^(?:release|unhold|stop holding|let go of) (?:the )?(?:door|doorway|entrance)$/i.test(clean))return 'release';
+ if(/^(?:force|shove|push through|break through) (?:the )?(?:door|doorway|entrance)$/i.test(clean))return 'force';
+ return null;
+}
 export function creativeAttempt(text){
  const clean=String(text).trim().replace(/^(?:please |I (?:want to |try to )?)+/i,'').replace(/[.!?]+$/,'').replace(/^(?:pick up|pickup|collect|grab) /i,'take ');
  const direction=clean.match(/ (north|south|east|west)$/i),core=direction?clean.slice(0,-direction[0].length):clean;
@@ -42,7 +51,7 @@ function sceneryObjectAttempt(text,scenery=[]){
  const matches=scenery.filter(o=>[o.kind,o.name,o.id,o.id?.slice(o.scene.length+1)].some(ref=>norm(ref)===target));
  return (matches.length===1||matches.length&&['tree','camp tree'].includes(target))?{attempt:{...attempt,entityAction:true,target:matches[0].id},object:matches[0]}:null;
 }
-export function shouldUseCreative(text,actor){if(sceneryAttempt(text,actor?.chaos?.scenery||[])||sceneryObjectAttempt(text,actor?.chaos?.scenery||[]))return true;const a=creativeAttempt(text);if(!a)return false;if(['craft','attach','give','separate','steal','assist','hinder','appeal'].includes(a.verb))return true;const items=[...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[]),...(actor?.chaos?.npcs||[]).flatMap(n=>n.items||[])];const reference=a.item||a.target;return items.some(i=>i.id===reference||norm(i.name)===norm(reference));}
+export function shouldUseCreative(text,actor){if(nativeDoorAttempt(text))return true;if(sceneryAttempt(text,actor?.chaos?.scenery||[])||sceneryObjectAttempt(text,actor?.chaos?.scenery||[]))return true;const a=creativeAttempt(text);if(!a)return false;if(['craft','attach','give','separate','steal','assist','hinder','appeal'].includes(a.verb))return true;const items=[...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[]),...(actor?.chaos?.npcs||[]).flatMap(n=>n.items||[])];const reference=a.item||a.target;return items.some(i=>i.id===reference||norm(i.name)===norm(reference));}
 
 export const fireCatchup=(last,now)=>({steps:Math.min(3,Math.floor(Math.max(0,now-last)/10000)),next:last+Math.min(3,Math.floor(Math.max(0,now-last)/10000))*10000});
 const distance=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
@@ -66,12 +75,13 @@ const reachable=(p,q)=>{
 };
 const identity=p=>String(p.characterId||'');
 const name=p=>p.chaosName||p.name;
-export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.now,kindName=()=> 'villager',now=clock,npcName=n=>n.chaosName||n.name||kindName(n.kind),nativeTrees=[]}={}){
+export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.now,kindName=()=> 'villager',now=clock,npcName=n=>n.chaosName||n.name||kindName(n.kind),nativeTrees=[],nativeDoors=[]}={}){
  if(!file)throw Error('Separate Fracture object save path required');
  fs.mkdirSync(path.dirname(file),{recursive:true,mode:0o700});
  let state=fs.existsSync(file)?JSON.parse(fs.readFileSync(file,'utf8')):{version:1,seed,rng:seed,nextId:1,round:0,items:{},actors:{},camp:null};
  if(state.version!==1||!state.items||!state.actors)throw Error('Unsupported Chaos object save; refusing to overwrite');
- state.scenery||={};state.assists||={};state.appeals||={};state.npcs||={};state.fireClock||={};state.dmMemory||={version:1,entries:[],people:{}};
+ const doorControl=createNativeDoorControl(nativeDoors);
+  state.scenery||={};state.assists||={};state.appeals||={};state.npcs||={};state.fireClock||={};state.dmMemory||={version:1,entries:[],people:{}};
  // A native mob instance can produce only one durable defeat memory. This set
  // is ephemeral; actual canonical story facts live in the separate object save.
  const observedNativeDefeats=new WeakSet();
@@ -185,7 +195,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   // Only currently observed native owners can project their fixtures here.
   const present=new Set(nativeNPCs(p).map(n=>npcKey(p,n)));
   const owners=Object.fromEntries(Object.entries(state.npcs).filter(([id])=>present.has(id)));
-  return objectBlocksTile(state.items,scene(p),x,y,owners)||sceneryBlocks(state,scene(p),x,y);
+  return doorControl.isBlocked(p,x,y)||objectBlocksTile(state.items,scene(p),x,y,owners)||sceneryBlocks(state,scene(p),x,y);
  }
  function targetItem(s,room,reference){const matches=Object.values(s.items).filter(i=>!i.parentId&&i.condition!=='disassembled'&&(i.id===reference||norm(i.name)===norm(reference))&&(i.location===s.current||room.players.some(p=>p.id===i.ownerId)||Object.hasOwn(s.creatures,i.ownerId)));return matches.length===1?matches[0]:null;}
  function projection(p){
@@ -274,7 +284,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const story=state.dmMemory.entries.filter(e=>e.location===scene(p)&&(e.actorId===id||e.tile&&visible(p,e.tile))).slice(-3);
   const aid=state.assists[id],helper=aid?.until>now()?Object.values(p.getWorld().players||{}).find(q=>identity(q)===aid.helperId&&q.hasEnteredGame&&!q.isDead&&q.chaosControlled&&!q.chaosSpectator&&scene(q)===scene(p)&&reachable(p,q)):null;
   const assistedBy=helper&&aid.mode!==-1?name(helper):null,hinderedBy=helper&&aid.mode===-1?name(helper):null;
-  return {nativeChanges:nativeTrees.filter(t=>state.scenery[scene(p)+':'+t.id]?.condition==='broken').map(t=>t.id),bag:bag.map(plain),ground:ground.map(plain),scenery:visibleScenery(state,scene(p)).filter(o=>visible(p,o.tile,o.nativeOrigin?18:8,o.nativeOrigin?o.footprint:false)).sort((a,b)=>distance(p,a.tile)-distance(p,b.tile)),npcs,story,wearables:bag.filter(i=>i.equipped).map(plain),camp:state.camp,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})};
+  return {doors:doorControl.view(p),nativeChanges:nativeTrees.filter(t=>state.scenery[scene(p)+':'+t.id]?.condition==='broken').map(t=>t.id),bag:bag.map(plain),ground:ground.map(plain),scenery:visibleScenery(state,scene(p)).filter(o=>visible(p,o.tile,o.nativeOrigin?18:8,o.nativeOrigin?o.footprint:false)).sort((a,b)=>distance(p,a.tile)-distance(p,b.tile)),npcs,story,wearables:bag.filter(i=>i.equipped).map(plain),camp:state.camp,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})};
  }
  function apply(p,text){
   if(!identity(p))return {blocked:true,success:false,text:'Your character is still connecting.'};
@@ -439,6 +449,23 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
  }
  function execute(p,text){
   surroundings(p);pulse(p);
+  const doorVerb=nativeDoorAttempt(text);
+  if(doorVerb){
+   if(!identity(p)||p.isDead||!p.chaosControlled)return {blocked:true,success:false,text:'An active player must operate that doorway.'};
+   const entry=doorControl.find(p,1,point=>sameZone(p,point));
+   if(!entry||entry.ambiguous)return {blocked:true,success:false,text:entry?.ambiguous?'More than one doorway is equally close. Move beside one.':'Stand beside an existing Fracture doorway.'};
+   if(doorVerb!=='force')return doorControl.use(p,entry,doorVerb);
+   const probe=doorControl.use(p,entry,'force',{success:false});
+   if(probe.blocked)return probe;
+   const previous=state;state=structuredClone(state);
+   try{
+    const rng=new Rng(state.seed);rng.restore(state.rng);
+    const check=resolveObjectRoll({role:p.chaosRole,perk:p.chaosPerk,verb:'break',dc:12,roll:rng.int(1,20),rng});
+    state.rng=rng.snapshot();state.round++;persist();
+    const result=doorControl.use(p,entry,'force',{success:check.success});
+    return {...result,roll:check.roll,dc:12,bonus:check.bonus,rerolled:check.rerolled,text:`D20 ${check.roll}${check.bonus?' +'+check.bonus+' Knight':''} / 12: ${result.text}`};
+   }catch(error){state=previous;throw error;}
+  }
   const scenery=sceneryAttempt(text,visibleScenery(state,scene(p)).filter(o=>visible(p,o.tile,o.nativeOrigin?18:8,o.nativeOrigin?o.footprint:false)).sort((a,b)=>distance(p,a.tile)-distance(p,b.tile)));
   if(scenery){
    const result=strikeScenery(p,scenery.id.slice(scene(p).length+1),3);
@@ -451,6 +478,10 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const previous=state;state=structuredClone(state);try{const result=apply(p,text);if(result.blocked)state=previous;return result;}catch(error){state=previous;throw error;}}
  function approach(p,text){
   surroundings(p);
+  if(nativeDoorAttempt(text)){
+   const entry=doorControl.find(p,8,point=>sameZone(p,point));
+   return entry&&!entry.ambiguous&&entry.distance>1?{...entry.point}:null;
+  }
   const view=visibleScenery(state,scene(p)).filter(o=>visible(p,o.tile,o.nativeOrigin?18:8,o.nativeOrigin?o.footprint:false)).sort((a,b)=>distance(p,a.tile)-distance(p,b.tile));
   const scenery=sceneryAttempt(text,view)||sceneryObjectAttempt(text,view)?.object;
   if(scenery)return sameZone(p,scenery.tile)&&distance(p,scenery.tile)>1?{...scenery.tile}:null;
