@@ -160,7 +160,7 @@ test('AI DM native tree adjudication rejects off-zone and concealed targets with
  const tree=engine.snapshot(p).scenery.find(o=>o.nativeOrigin);
  const decision={action:'break',targetId:tree.id,ability:'strength',dc:14,description:'Try to break the tree.'};
  const before=fs.readFileSync(file,'utf8');
- world.zoneManager.getZoneAt=(x,y)=>({name:y>=204?'The Refuge':'Other Zone'});
+ world.zoneManager.getZoneAt=(x,y)=>({name:x>=31?'Other Zone':'The Refuge'});
  assert.equal(engine.adjudicateEnvironment(p,decision).blocked,true,'cannot adjudicate across zones');
  assert.equal(fs.readFileSync(file,'utf8'),before,'rejected check consumes no D20 or durable changes');
 });
