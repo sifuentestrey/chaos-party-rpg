@@ -1,14 +1,23 @@
 # Chaos Party — local Fracture beta acceptance
 
-## Opt-in scenery adapter — October 30 (code committed; tests and native integration unverified)
+## Verified authored-tree game-night vertical slice — October 30, 2026
 
-An authored-only scenery bridge now exposes persistent tree/structure durability and collision in the Chaos sidecar. `registerScenery(scene,id,kind,tile)` explicitly opts a fixture in; `strikeScenery(actor,id,damage)` enforces same-scene adjacency, persists damage, and removes sidecar collision after destruction. A text `attack/chop/break` action routes to registered scenery. Sidecar snapshots expose scenery and regression tests cover damage, scene isolation, JSON save/reload, and unknown-native-object refusal. **No native map object has yet been registered automatically; no TV renderer hookup or native tile/pathfinding invalidation is established.** These tests have not been run and pinned CI has not been verified for this commit. This is not the full tree-falls-visible-to-everyone gameplay acceptance loop.
+**Pinned native integration PASSED** on experimental source SHA `36de73fe69315d24eb9b1349a968195580ad8f15`: [GitHub Actions run 41088458211](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41088458211). The bridge suite reported **153 passed, 1 skipped, 0 failed**; the pinned Fracture clone compiled client/server and passed **3,329 native tests**. The disposable native server booted over HTTP, independently controlled two actors, and completed majority-voted round-trip travel between The Refuge and Glitch Woods. The separate `verify-native-objects.mjs` run confirmed a real actor sees a Chaos-authored tree, `attack tree` routes through the authenticated native bridge, four strikes reduce saved HP 12→0, a second native actor sees the broken tree, native movement reaches the newly unblocked tile, and the separate objects save retains destruction. The real 10-second reaction lock was respected rather than bypassed.
+
+The same successful run generated [Mac source kit artifact 12992099172](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41088458211) (SHA-256 digest `64442e4ea822bd81f8c9fafda6fd4e2fde6e7e58f3cef3b64424043097eadb6d`; GitHub artifact expires November 6). Packaging verifies the launcher, source identity and exclusion of credentials/databases. **This is a CI-produced source kit, not a physical Mac-tested release.**
+
+**Scope boundary:** The tree is a bounded, explicitly authored Chaos overlay placed only on passable native tiles near distinct actor spawn areas (maximum four), rendered as a tree/stump by the opt-in TV adapter. Native Fracture trees/buildings/terrain are **not** destructible; weather/water/terrain physics and native NPC HP hazards are **not** integrated. TV code compiled, but actual browser rendering, SSE latency, 12–20 players on the owner's Intel Mac, physical Mac/iPhone/TV acceptance, and original campaign/character/AI/party-vote parity remain unverified. No merge, deployment, original-save modification, or paid service occurred.
+
+
+## Opt-in scenery adapter — October 30 (historical baseline; superseded by verified tree slice above)
+
+The initial authored-only scenery bridge exposed persistent tree/structure durability and collision in the Chaos sidecar. `registerScenery(scene,id,kind,tile)` explicitly opts a fixture in; `strikeScenery(actor,id,damage)` enforces same-scene adjacency, persists damage, and removes sidecar collision after destruction. A text `attack/chop/break` action routes to registered scenery. Sidecar snapshots expose scenery and regression tests cover damage, scene isolation, JSON save/reload, and unknown-native-object refusal. **Historical state before the native-verified tree slice above.** A bounded authored tree now has a compiled TV adapter, native-verified damage and movement, and CI evidence; native Fracture scenery remains untouched and real-browser TV acceptance is still pending.
 
 
 ## Experimental environment rules foundation — October 30 (NOT native-integrated)
 
 - [x] Added a deterministic, engine-independent environment capability table for trees, bushes, grass, buildings, walls, roofs, doors, furniture, rivers, lakes, ponds, terrain, rocks, cliffs and NPCs, plus damage, adjacent fire spread, rain/water extinguishing, wind direction and lightning ignition rules. Added five focused regression scenarios.
-- [ ] These new rules are **not wired into native Fracture map, terrain, NPC HP, navigation, visual effects or persistence**. They do not make the listed scenery reactive in the playable game yet. Tests authored but not executed; pinned CI and Mac acceptance unverified. Native adapter and safe authoritatively-owned object mapping are the next required integration.
+- [ ] These new rules are **not wired into native Fracture map, terrain, NPC HP, navigation, visual effects or persistence**. They do not make the listed scenery reactive in the playable game yet. Pure-rules tests now pass in pinned CI; native physics integration and physical Mac acceptance remain unverified. Native adapter and safe authoritatively-owned object mapping are the next required integration.
 
 
 ## Native environmental world-change push — October 30 (focused local verified; offline CI verified; pinned native pending)
