@@ -4,6 +4,15 @@
 
 Updated October 30, 2026. Experimental branch only: `spike/fracture-phone-tv`. Work order: [issue #12](https://github.com/sifuentestrey/chaos-party-rpg/issues/12). **Playable beta prepared for physical Mac rehearsal; not a claim of completed hardware acceptance.** No merge, public game deployment or paid service was performed.
 
+## New cooperative start-to-finish trial — October 30
+
+- [x] Added **The Refuge Trial**, an opt-in, four-step cooperative objective built on real Fracture NPC interaction, native combat, original Chaos D20 crafting and native zone travel. The host starts it after a living player joins The Refuge. Talk to an NPC; **either** kill a real monster **or** craft successfully; reach Glitch Woods; then return to The Refuge. Different players can contribute the first two steps, but **a character who actually visited the woods must return**. The final condition does not accept an idle teammate waiting in town.
+- [x] Progress is recorded only from authoritative native receipts, original canonical craft success or actual native zone state. No player text, AI narration, failed craft, missed hit, unconfirmed death or fake travel creates progress. The trial never changes native damage, XP, loot, NPC quest flags or the original Chaos campaigns.
+- [x] Host-only start, read-only phone checklist and TV event log; isolated room save retains completed milestones across restart. Existing rooms and character saves are not reset. An already started or completed trial cannot be silently restarted.
+- [x] Pure regression tests cover alternate craft/combat routes, false victories, replay, failed rolls, wrong actor return, saved completion and unsupported save versions. Mocked two-phone bridge integration covers host authorization, real engine-style receipts, native zone transitions, durable room checkpoint and read-only phone/TV state.
+- [x] [Pinned integration workflow 40995729819](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/40995729819) passed bridge-unit, upstream Fracture build/tests/server boot and source-only Mac packaging for source `443537202d`. Later README/parity documentation changes do not change the game logic; a fresh source-kit run must be checked before distributing a newer commit.
+- [ ] **Actual owner Mac and 12–20 physical phones:** not tested for this objective. The full Crown Job, Dawn Bell seventeen-scene campaign, original character classes, original saves and major-travel voting remain unported. This is a small *independent* adventure loop, not full Chaos Party migration.
+
 ## Native combat → canonical story memory — October 30
 
 - [x] A **real Fracture HIT** that reduces a mob to zero HP now supplies a bounded, source-backed Chaos DM-memory event. The native actor captures the pre-hit tile before Fracture destroys/repositions the mob. The sidecar records only after the native server confirms death; phone text, a proposed attack or an unchanged HP value cannot fabricate a victory.
