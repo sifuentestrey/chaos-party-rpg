@@ -75,7 +75,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),now=()=>Date
  }
  const plain=i=>({id:i.id,name:i.name,type:i.type,material:i.material,condition:i.condition,equipped:i.equipped,slot:i.slot,color:i.appearance?.color,tile:i.tile?{...i.tile}:null,components:[...i.components]});
  function snapshot(p){
-  if(!identity(p))return {bag:[],ground:[],wearables:[]};seedPlayer(p);const id=identity(p);
+  if(!identity(p))return {bag:[],ground:[],wearables:[]};seedPlayer(p);const id=identity(p),world=p.getWorld();
   const bag=Object.values(state.items).filter(i=>i.ownerId===id&&!i.parentId&&i.condition!=='disassembled');
   const ground=Object.values(state.items).filter(i=>!i.ownerId&&!i.parentId&&i.location===scene(p)&&i.tile&&distance(p,i.tile)<=8&&sameZone(p,i.tile)&&i.condition!=='disassembled');
   const npcs=Object.values(world.npcs||{}).filter(q=>q&&sameZone(p,q)&&distance(p,q)<=8).map(q=>{
