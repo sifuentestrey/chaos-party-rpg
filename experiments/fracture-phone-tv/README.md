@@ -41,6 +41,10 @@ Crafted possessions and their ingredients persist separately in the Fracture clo
 
 **NPC possession and theft (experimental):** Real nearby native NPCs can hold explicitly created Chaos objects; they receive a custom rug once and can accept gifts. This does not invent native weapons, gold or combat inventory. Both failed and successful theft use original Chaos trust/history rules, while only a successful roll transfers ownership. Native zone/geometry checks protect pickup and gifts. Current memory changes conversations and access to new quests; native combat AI, existing quest progress and reward rules remain unchanged.
 
+## Replaying the optional Refuge Trial
+
+After the party completes The Refuge Trial, the private Mac host page offers **Start another trial**. This requires host confirmation, archives the previous completion in a private bounded summary, and starts a fresh four-step objective. It does **not** restart the Fracture server, reset character equipment/levels, erase native quests, alter original Chaos saves, or replay Crown Job/Dawn Bell. An active trial cannot be restarted or erased by a phone; late actions from a previous run cannot earn progress in the new run. The original campaign and class systems remain unported.
+
 ## A 20-minute game-night route
 
 This is an optional route through existing content, not a forced campaign or a newly invented map:
