@@ -19,6 +19,8 @@ Every character starts with a cloth strip and wood splinter, once per saved char
 
 Crafted possessions and their ingredients persist separately in the Fracture clone's `server/data/chaos-party/objects.json`. Reconnecting does not duplicate starter supplies. Only pure Chaos object modules and their dependency closure are reused; original saves, map generation and networking remain separate. Native gear gifting and the rest of the original campaign are not yet integrated.
 
+**NPC possession and theft (experimental):** A real nearby Fracture NPC can hold a crafted Chaos object. Try `give cloth strip to Guard`, then `look around` to see its Chaos object ID. `steal item-N from Guard` uses the original Chaos D20 theft check. Failed and successful theft attempts both affect that NPC's persistent Chaos trust and theft history; the item only changes hands after a successful roll. The NPC must really be nearby in the same native zone, and objects cannot be transferred through walls. NPCs do not automatically own invented loot: first give one a Chaos item. This **does not change native Fracture NPC dialogue, combat AI or quest outcomes**. The memory is confined to the separate Chaos object save and can be inspected with `look around`.
+
 ## A 20-minute game-night route
 
 This is an optional route through existing content, not a forced campaign or a newly invented map:
