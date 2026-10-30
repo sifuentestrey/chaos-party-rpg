@@ -131,3 +131,26 @@ test('direct native scenery damage cannot bypass the single D20 felling rule',t=
  assert.equal(world.isValidPosition(tree.tile.x,tree.tile.y),true);
  assert.equal(Object.keys(JSON.parse(fs.readFileSync(file)).items).length,0);
 });
+
+test('AI DM adjudication executes genuine native oak D20 with persistent art and collision consequences',t=>{
+ const {p,engine,file,world}=nativeFixture(t);
+ const tree=engine.snapshot(p).scenery.find(o=>o.nativeOrigin);
+ const decision={action:'break',targetId:tree.id,ability:'strength',dc:14,description:'Try to bring down this existing oak.'};
+ p.chaosControlled=false;
+ assert.equal(engine.adjudicateEnvironment(p,decision).blocked,true);
+ p.chaosControlled=true;
+ assert.equal(engine.adjudicateEnvironment(p,{...decision,targetId:'imaginary-boulder'}).blocked,true);
+ let outcome;
+ for(let i=0;i<40;i++){
+  const before=JSON.parse(fs.readFileSync(file)).scenery[tree.id].hp;
+  outcome=engine.adjudicateEnvironment(p,decision);
+  assert.equal(outcome.blocked,false);
+  assert.equal(outcome.dc,14);
+  if(!outcome.success)assert.equal(JSON.parse(fs.readFileSync(file)).scenery[tree.id].hp,before);
+  else break;
+ }
+ assert.equal(outcome.success,true);
+ assert.equal(world.isValidPosition(tree.tile.x,tree.tile.y),true);
+ assert.equal(engine.snapshot(p).nativeChanges.length,1);
+ assert.equal(engine.adjudicateEnvironment(p,decision).blocked,true);
+});
