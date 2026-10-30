@@ -11,6 +11,14 @@ Phone receipts distinguish received, started, succeeded, blocked, failed and can
 
 **Optional group rally:** Open **Gather the party** on a phone and choose **Propose gathering at my position**. All ready, living, connected characters must be in the same Fracture area and within twelve tiles; at least two are needed. A ten-second strict-majority vote opens, with the proposer voting yes automatically. Each other player can vote yes or no exactly once. If approved, the game asks each available native character to walk to the proposer's actual position; it never teleports them. Each character can STOP, and obstacles/disconnects can prevent some arrivals. Rejected or expired votes move nobody. This is a small **local rally**, not the original Chaos Party expedition/major travel system.
 
+## Optional cooperative mini-adventure: The Refuge Trial
+
+This is a **new, bounded Fracture-side game-night objective**, not the original Crown Job or Dawn Bell campaign. After at least one living phone character has joined **The Refuge**, the Mac host can select **Start The Refuge Trial**. The host starts it once; the current room's saved trial is never silently reset.
+
+The phone shows a shared four-step checklist. **Talk to any real NPC** and either **defeat a native monster** or **successfully craft an original Chaos item** (two alternate ways to prove the party's readiness). After both are done, a party member must **reach Glitch Woods** and that same woods visitor must **return to The Refuge**. Different players may contribute the NPC and proof steps. Multiple people can visit the woods; any verified visitor can return to finish. All steps come from authoritative native receipts, original crafting outcomes or native zone state. A typed claim, missed hit, failed D20 roll, DM story, or teammate waiting in town cannot finish the trial.
+
+Progress and the final completion are saved in the isolated room data and survive restart. The TV event log announces milestones, and each phone shows the checklist. The trial awards **no invented native XP, loot or quest flags**; Fracture's existing rewards remain independent. The full original campaigns, their maps, character classes and save migration are still absent. Physical Mac and real group pacing have not been accepted.
+
 ## Reactive objects, NPC memory and DM
 
 Use `look around` and **World and people** on your phone to find custom objects, their IDs, owners and nearby NPC trust. The first camp contains a **camp table**: `push camp table east`, `ignite camp table`, `extinguish camp table`, and `repair camp table`. The table occupies a real tile and blocks walking until moved or broken. Pushes cannot overlap walls, characters or another blocking object. These capabilities belong to the displayed Chaos props; native painted buildings/tents are not silently converted.
