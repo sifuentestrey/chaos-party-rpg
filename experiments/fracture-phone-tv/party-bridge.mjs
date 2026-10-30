@@ -174,7 +174,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
    progressAdventure(zoneEvidence(r.actor,s.player.name,s.player.token));
    const vote=room.rally;
    if(vote?.kind==='expedition'&&vote.status==='approved'&&vote.dispatched&&vote.electorate.includes(s.player.token)&&r.actor.ready&&!r.actor.dead&&r.actor.zone===vote.arrivalZone&&!(vote.arrivals||[]).includes(s.player.token)){
-    vote.arrivals||=[];vote.arrivals.push(s.player.token);
+    vote.arrivals||=[];vote.arrivals.push(s.player.token);vote.lastArrivalAt=Date.now();
     record({player:s.player.name,status:'arrived',message:'Native character confirmed arrival in '+vote.arrivalZone+'.'});
    }
   }
@@ -297,6 +297,8 @@ setInterval(poll,750);poll();
     const b=await body(req),s=sessions.get(b.token);
     if(!s||s.player.parked)return json(res,403,{error:'Invalid personal controller'});
     if(room.rally?.status==='pending'){finishRally();if(room.rally.status==='pending')return json(res,409,{error:'A party vote is already open.'});}
+    if(room.rally?.kind==='expedition'&&room.rally.status==='approved'&&Date.now()-(room.rally.resolvedAt||0)<45000&&(room.rally.arrivals||[]).length<room.rally.electorate.length)
+     return json(res,409,{error:'Approved group travel is still underway. Wait for native arrivals or the 45-second travel window before opening another vote.'});
     const now=Date.now();
     const actors=[...sessions.values()].filter(x=>!x.player.parked&&x.socket.connected&&x.actor?.ready&&!x.actor.dead&&now-x.lastSeen<=idleMs)
       .map(x=>({token:x.player.token,ready:true,dead:false,zone:x.actor.zone,x:x.actor.x,y:x.actor.y}));
