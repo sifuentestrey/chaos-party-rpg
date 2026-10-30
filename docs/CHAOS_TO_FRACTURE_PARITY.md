@@ -1,5 +1,10 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Grounded tile fire propagation (bounded partial parity) — October 30
+
+The isolated Fracture bridge now reuses original Chaos material and burn rules to propagate fire **one adjacent ground tile per ten-second tick** within a valid native zone. It does not ignite carried inventory, distant objects, nonflammable material or scenery across a native zone boundary. Extinguishing a source prevents subsequent spread. NPC-owned rugs that ignite from a player-started fire generate a durable personal trust and witness-memory consequence, affecting the existing native quest gate. Three regression scenarios passed locally with the source kit (112 `.mjs` passes, one skip across 113 tests). This remains **partial object/environment rule reuse**, not a complete reactive world, autonomous background simulation, original campaign parity or physical Mac acceptance. Pinned native CI and browser verification remain open.
+
+
 ## Native two-way expedition acceptance — October 30 (partial parity)
 
 A pinned real-server regression uncovered that the first Glitch Woods → The Refuge return vote dispatched a native path to an **unreachable destination** (`41,195`); the native engine correctly blocked it. The isolated Fracture adapter now targets the already traversed, walkable Refuge tile `34,210` using the same majority vote and per-actor native movement. [First CI failure](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41044650184) is preserved as evidence; [passing CI 41044865065](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41044865065) at `9f2be4b06f5403122845fd2820c6ddf1063720ca` confirmed **two independent authenticated native actors actually enter Glitch Woods and return to The Refuge** after two separate majority votes. No teleport, false arrival, original campaign save conversion or Fracture combat modification occurred. All 3,329 pinned upstream tests passed. This closes the **bounded reverse-route native verification gap**, not Dawn Bell's expedition/map/story parity or physical Mac/12–20-phone acceptance.
