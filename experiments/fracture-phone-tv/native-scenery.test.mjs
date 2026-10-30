@@ -19,7 +19,7 @@ test('real map trees use original damage, give wood once, clear only trunk cells
  const {p,engine,file,world,nativeTrees}=nativeFixture(t);const tree=engine.snapshot(p).scenery.find(o=>o.nativeOrigin);assert.ok(tree,'native solid trunk is visible and interactable');assert.equal(shouldUseCreative('please cut down the tree!',{chaos:engine.snapshot(p)}),true);
  assert.equal(shouldUseCreative('kick the tree',{chaos:engine.snapshot(p)}),true);
  assert.equal(shouldUseCreative('smash tree',{chaos:engine.snapshot(p)}),true);
- for(let i=0;i<4;i++){const result=engine.execute(p,['kick the tree','smash tree','hack tree','cut down tree'][i]);assert.equal(result.success,true);assert.equal(result.object.after,9-i*3);}
+ for(let i=0;i<4;i++){const result=engine.execute(p,['kick the tree','smash tree','hack tree','hit tree'][i]);assert.equal(result.success,true);assert.equal(result.object.after,9-i*3);}
  for(const tile of nativeTrees[0].footprint)assert.equal(world.isValidPosition(tile.x,tile.y),true);assert.equal(world.isValidPosition(35,210),false,'unrelated native obstacle remains');assert.equal(engine.snapshot(p).bag.filter(i=>i.originId===tree.id).length,0,'public bag does not expose internal origin metadata');
  assert.equal(Object.values(JSON.parse(fs.readFileSync(file)).items).filter(i=>i.originId===tree.id).length,1);assert.equal(engine.execute(p,'chop tree').blocked,true);assert.equal(engine.snapshot(p).nativeChanges.length,1);
  for(const tile of nativeTrees[0].footprint)world.map.grid[tile.y][tile.x]=1;
@@ -34,4 +34,32 @@ test('native NPC witnesses a registered map tree burning down without imaginary 
  let outcome;for(let n=0;n<20;n++){outcome=engine.execute(p,'ignite tree');if(outcome.success)break;}assert.equal(outcome.success,true);
  const npc=engine.snapshot(p).npcs.find(n=>n.nativeId==='80');assert.ok(npc);for(let n=0;n<12;n++)tick();
  const saved=JSON.parse(fs.readFileSync(file));assert.ok(saved.npcs[npc.id].memories.alice.some(e=>e.verb==='fire-destruction'));assert.equal(p.hitPoints,100);
+});
+
+test('felling an existing native tree is a single D20 action with persistent world consequences, not visible HP grinding',t=>{
+ const {p,engine,file,world}=nativeFixture(t);
+ const tree=engine.snapshot(p).scenery.find(o=>o.nativeOrigin);
+ assert.ok(tree);
+ p.chaosControlled=false;
+ assert.equal(engine.execute(p,'fell the tree').blocked,true,'no unauthenticated environmental changes');
+ p.chaosControlled=true;
+ p.x=60;
+ assert.equal(engine.execute(p,'fell the tree').blocked,true,'out-of-range actors cannot fell a native tree');
+ p.x=30;
+ let result;
+ for(let i=0;i<40;i++){
+  const prior=engine.snapshot(p).scenery.find(o=>o.id===tree.id).hp;
+  result=engine.execute(p,'fell the tree');
+  assert.equal(result.blocked,false);
+  assert.ok(Number.isInteger(result.roll));
+  assert.equal(result.dc,14);
+  assert.doesNotMatch(result.text,/\\bHP\\b/i,'do not expose object health bar');
+  if(!result.success)assert.equal(engine.snapshot(p).scenery.find(o=>o.id===tree.id).hp,prior,'failed ability check cannot chip durability');
+  else break;
+ }
+ assert.equal(result.success,true,'an eventual successful D20 check fells the tree');
+ assert.equal(engine.snapshot(p).nativeChanges.length,1);
+ assert.equal(world.isValidPosition(tree.tile.x,tree.tile.y),true,'only the original tree trunk collision is cleared');
+ assert.equal(Object.values(JSON.parse(fs.readFileSync(file)).items).filter(i=>i.originId===tree.id).length,1,'loot appears once');
+ assert.equal(engine.execute(p,'fell the tree').blocked,true,'cannot fell already cleared native tree again');
 });
