@@ -13,12 +13,13 @@ const norm=s=>String(s||'').toLowerCase().replace(/^(?:the|a|an|my)\s+/,'').trim
 export function creativeAttempt(text){
  const clean=String(text).trim().replace(/^(?:please |I (?:want to |try to )?)+/i,'').replace(/[.!?]+$/,'').replace(/^(?:pick up|pickup|collect|grab) /i,'take ');
  const direction=clean.match(/ (north|south|east|west)$/i),core=direction?clean.slice(0,-direction[0].length):clean;
+ const appeal=clean.match(/^(?:apologize to|make amends with|make peace with|reconcile with|persuade)\s+(?:the\s+)?(.+)$/i);if(appeal)return {verb:'appeal',recipient:appeal[1].trim()};
  const help=clean.match(/^(?:help|assist|aid)\s+(.+?)(?:\s+(?:craft|make|build|with crafting))?$/i);if(help)return {verb:'assist',recipient:help[1].trim()};
  const entity=parseEntityAttempt(core);
  if(entity&&environmental.has(entity.verb))return {...entity,...(direction?{direction:direction[1].toLowerCase()}:{}),entityAction:true};
  const attempt=parseItemAttempt(clean);return attempt&&verbs.has(attempt.verb)?attempt:null;
 }
-export function shouldUseCreative(text,actor){const a=creativeAttempt(text);if(!a)return false;if(['craft','attach','give','separate','steal','assist'].includes(a.verb))return true;const items=[...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[]),...(actor?.chaos?.npcs||[]).flatMap(n=>n.items||[])];const reference=a.item||a.target;return items.some(i=>i.id===reference||norm(i.name)===norm(reference));}
+export function shouldUseCreative(text,actor){const a=creativeAttempt(text);if(!a)return false;if(['craft','attach','give','separate','steal','assist','appeal'].includes(a.verb))return true;const items=[...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[]),...(actor?.chaos?.npcs||[]).flatMap(n=>n.items||[])];const reference=a.item||a.target;return items.some(i=>i.id===reference||norm(i.name)===norm(reference));}
 
 const distance=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
 const scene=p=>`fracture:${p.getWorld?.().id||'world'}`;
@@ -46,7 +47,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
  fs.mkdirSync(path.dirname(file),{recursive:true,mode:0o700});
  let state=fs.existsSync(file)?JSON.parse(fs.readFileSync(file,'utf8')):{version:1,seed,rng:seed,nextId:1,round:0,items:{},actors:{},camp:null};
  if(state.version!==1||!state.items||!state.actors)throw Error('Unsupported Chaos object save; refusing to overwrite');
- state.assists||={};state.npcs||={};state.fireClock||={};state.dmMemory||={version:1,entries:[],people:{}};
+ state.assists||={};state.appeals||={};state.npcs||={};state.fireClock||={};state.dmMemory||={version:1,entries:[],people:{}};
  // A native mob instance can produce only one durable defeat memory. This set
  // is ephemeral; actual canonical story facts live in the separate object save.
  const observedNativeDefeats=new WeakSet();
@@ -132,6 +133,35 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   if(p.isDead)return {blocked:true,success:false,text:'Respawn before handling objects.'};
   const attempt=creativeAttempt(text);if(!attempt)return {blocked:true,success:false,text:'That object action is not available yet.'};
   const {room,actor,s}=projection(p);if(!actor)return {blocked:true,success:false,text:'Your character is still connecting.'};
+  if(attempt.verb==='appeal'){
+   // A social check repairs a real, previously damaged NPC relationship. The
+   // same native quest gate consults this trust; no native NPC quest or reward
+   // is invented. Reuse original Chaos D20 and matching-class skill rules.
+   const matches=npcViews(p).filter(n=>n.id===attempt.recipient||norm(n.name)===norm(attempt.recipient));
+   if(matches.length!==1)return {blocked:true,success:false,text:'Name one visible NPC to make amends with; use their displayed ID if names repeat.'};
+   const npc=matches[0];
+   if(!reachable(p,npc.tile)||!visible(p,npc.tile))return {blocked:true,success:false,text:'Walk within two clear tiles of that NPC before making amends.'};
+   const prior=npc.trust[actor.id]||0;
+   if(prior>=0)return {blocked:true,success:false,text:`${npc.name} has no grievance with you. There is nothing to make amends for.`};
+   const key=npc.id+'|'+actor.id,at=now(),last=state.appeals[key];
+   if(Number.isFinite(last)&&at-last<30000)return {blocked:true,success:false,text:`Give ${npc.name} time before trying to make amends again.`};
+   const rng=new Rng(state.seed);rng.restore(state.rng);
+   const dc=12+Math.min(6,Math.abs(prior)),check=resolveObjectRoll({role:p.chaosRole,perk:p.chaosPerk,verb:'social',dc,roll:rng.int(1,20),rng});
+   state.rng=rng.snapshot();state.appeals[key]=at;state.round++;
+   if(check.success)npc.trust[actor.id]=Math.min(0,prior+2);
+   const observation={verb:'appeal',actorId:actor.id,round:state.round,success:check.success};
+   npc.memories||={};npc.memories[actor.id]=[...(npc.memories[actor.id]||[]),observation].slice(-4);
+   npc.history.push(observation);npc.history=npc.history.slice(-12);
+   const bonus=check.bonus?` +${check.bonus} class`:'';
+   const lucky=check.rerolled!==null?` · Lucky-ish ${check.rerolled} → ${check.roll}`:'';
+   const resultText=check.success?`${npc.name} accepts your apology. Trust ${prior} → ${npc.trust[actor.id]}.${npc.trust[actor.id]<0?' More amends are needed before asking for a job.':' You may ask for a job again.'}`:`${npc.name} is not persuaded. Trust stays ${prior}.`;
+   const outcomeText=`D20 ${check.roll}${bonus} / ${dc}${lucky}: ${resultText}`;
+   room.dmMemory=state.dmMemory;
+   room.result={id:'chaos-'+state.round,playerId:actor.id,name:actor.name,action:text,target:{entityId:npc.id},blocked:false,success:check.success,narration:outcomeText,changes:check.success?[`Trust ${prior} → ${npc.trust[actor.id]}`]:[],sceneEvents:[{type:'witness',entityId:npc.id}]};
+   recordDMMemory(room);const entry=state.dmMemory.entries.at(-1);if(entry)entry.tile={x:p.x,y:p.y};
+   persist();
+   return {blocked:false,success:check.success,text:outcomeText,roll:check.roll,dc,bonus:check.bonus,rerolled:check.rerolled,event:entry};
+  }
   if(attempt.verb==='assist'){
    // A second real character must be nearby, alive and connected. No phone can
    // grant itself advantage or grant it to an absent/off-map character.
@@ -210,7 +240,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const tile=item?.tile||state.npcs[item?.ownerId]?.tile;
   return item&&(!item.ownerId||state.npcs[item.ownerId])&&tile&&!reachable(p,tile)?{...tile}:null;
  }
- function talk(p,native){surroundings(p);const n=state.npcs[npcKey(p,native)];if(!n)return null;const history=n.memories?.[identity(p)]||n.history.filter(h=>h.actorId===identity(p));const trust=n.trust[identity(p)]||0;if(!history.length&&trust===0)return null;const last=history.at(-1)||{verb:'theft',success:false};return `${n.name}: “${trust<0?'I remember what you did. Make amends before asking for a job.':last.verb==='give'?'Thank you for the gift. I remember your kindness.':last.verb==='defend'?`I saw you fighting when ${last.targetName||'that creature'} fell.`:`I remember your ${last.success?'':'attempt at '}${last.verb}${last.itemId?' involving '+(state.items[last.itemId]?.name||'that object'):''}.`}” (trust ${trust})`;}
+ function talk(p,native){surroundings(p);const n=state.npcs[npcKey(p,native)];if(!n)return null;const history=n.memories?.[identity(p)]||n.history.filter(h=>h.actorId===identity(p));const trust=n.trust[identity(p)]||0;if(!history.length&&trust===0)return null;const last=history.at(-1)||{verb:'theft',success:false};return `${n.name}: “${trust<0?'I remember what you did. Make amends before asking for a job.':last.verb==='give'?'Thank you for the gift. I remember your kindness.':last.verb==='appeal'?'I remember your apology. We can talk again.':last.verb==='defend'?`I saw you fighting when ${last.targetName||'that creature'} fell.`:`I remember your ${last.success?'':'attempt at '}${last.verb}${last.itemId?' involving '+(state.items[last.itemId]?.name||'that object'):''}.`}” (trust ${trust})`;}
  function canQuest(p,native){surroundings(p);const n=state.npcs[npcKey(p,native)];return !n||(n.trust[identity(p)]||0)>=0;}
  // Bridge only: the authenticated native actor calls this AFTER its real HIT
  // has reduced a mob to zero HP. No phone-supplied damage, XP or kill credit.
