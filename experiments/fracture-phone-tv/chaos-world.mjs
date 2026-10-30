@@ -15,6 +15,17 @@ import {selectD20} from '../../public/vendor/dnd5e-advantage.js';
 import {resolveObjectRoll} from './party-roles.mjs';
 const verbs=new Set(['take','drop','craft','attach','give','equip','unequip','separate','inspect','break','steal']);
 const environmental=new Set(['move','ignite','extinguish','repair']);
+// A capability is never inferred from a painted Fracture tile. These
+// attempts may only act on a grounded item already present in the world.
+const nativeEnvironmentRequests=/^(?:push|pull|move|lift|pick up|grab|take|hide in|hide behind|climb|burn|ignite|break|smash|throw)\\s+(?:the\\s+)?(?:rock|boulder|bush|shrubs?|grass|tree|furniture|wall|building)(?:\\s|$)/i;
+export function unsupportedNativeEnvironment(text,view={}){
+ if(!nativeEnvironmentRequests.test(String(text||'').trim()))return null;
+ const raw=String(text).trim().toLowerCase();
+ const kind=raw.match(/\\b(rock|boulder|bush|shrub|grass|tree|furniture|wall|building)\\b/)?.[1]||'object';
+ const known=[...(view?.scenery||[]),...(view?.ground||[]),...(view?.bag||[])];
+ if(known.some(item=>String(item.kind||item.name||'').toLowerCase()===kind))return null;
+ return {blocked:true,success:false,text:`I can't interact with that ${kind} as a physical object here. The Fracture map has no verified movable or reactive ${kind} at this position.`};
+}
 const norm=s=>String(s||'').toLowerCase().replace(/^(?:the|a|an|my)\s+/,'').trim();
 /** Door control uses only existing native map-authored entrances and player sprites. */
 export function nativeDoorAttempt(text){
@@ -481,6 +492,8 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
     return {...result,roll:check.roll,dc:12,bonus:check.bonus,rerolled:check.rerolled,text:`D20 ${check.roll}${check.bonus?' +'+check.bonus+' Knight':''} / 12: ${result.text}`};
    }catch(error){state=previous;throw error;}
   }
+  const unsupported=unsupportedNativeEnvironment(text,snapshot(p));
+  if(unsupported)return unsupported;
   const scenery=sceneryAttempt(text,visibleScenery(state,scene(p)).filter(o=>visible(p,o.tile,o.nativeOrigin?18:8,o.nativeOrigin?o.footprint:false)).sort((a,b)=>distance(p,a.tile)-distance(p,b.tile)));
   if(scenery){
    const fell=/^(?:(?:chop|cut) down|fell|uproot)\s+(?:the\s+)?/i.test(String(text).trim().replace(/^(?:please |I (?:want to |try to )?)+/i,''));
