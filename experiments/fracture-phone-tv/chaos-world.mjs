@@ -6,6 +6,7 @@ import {recordDMMemory} from '../../public/dm-memory.js';
 import {recordEnvironmentalIncident,propertyConcern} from './reactive-witness.mjs';
 import {objectCapabilities,objectBlocksTile} from './object-capabilities.mjs';
 import {registerScenery as registerAuthoredScenery,strikeScenery as damageAuthoredScenery,sceneryBlocks,visibleScenery} from './scenery-bridge.mjs';
+import {advanceAuthoredFire} from './scenery-fire.mjs';
 import {selectNpcFireResponses} from './reactive-npc-actions.mjs';
 import {spawnItem} from '../../public/campaign.js';
 import {Rng} from '../../public/vendor/partyframe-rng.js';
@@ -221,6 +222,12 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
      npc.history=[...(npc.history||[]),{verb:'extinguish',actorId:npc.id,itemId:item.id,round:state.round+1,success:true}].slice(-12);
      changes.push(`${npc.name} extinguishes ${item.name}`);eventTile||={...item.tile};
     }
+   }
+   // Advance authored overlays at the same bounded fire cadence as Chaos items.
+   // Native Fracture tiles and NPC HP are never modified here.
+   for(let i=0;i<steps;i++){
+    const sceneryChanges=advanceAuthoredFire(state,current);
+    for(const change of sceneryChanges)changes.push(change.kind+' '+change.after);
    }
    state.fireClock[current]=next; // Preserve unprocessed elapsed ticks across bounded catch-up.
    if(changes.length){const room={round:++state.round,world:{expedition:{current,creatures:state.npcs}},dmMemory:state.dmMemory,result:{id:'chaos-'+state.round,playerId:'fire',name:'Fire',action:'fire progresses',target:{entityId:burning[0].id},blocked:false,success:true,narration:changes.join('. ')+'.',changes,sceneEvents:[]}};recordDMMemory(room);state.dmMemory.entries.at(-1).tile=eventTile||burning[0].tile||{x:p.x,y:p.y};}
