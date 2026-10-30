@@ -1,5 +1,12 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Verified two-way majority expedition — October 30 (native server, not physical Mac)
+
+- [x] The previously untested **Glitch Woods → The Refuge** group return failed its first real pinned-native regression: two real actors voted to return, but Fracture rejected the destination `41,195` with **“No walkable path to that destination.”** [Failing CI 41044650184](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41044650184). This was a genuine core-route defect, not a parser or presentation problem.
+- [x] Reused Fracture's existing authoritative A* movement and the already-proven reachable village tile `34,210` as the reverse waypoint; no teleport, map rewrite, new pathfinder or client-supplied coordinates. The same authenticated strict-majority electorate dispatches an independent native `go` for each character. Both directions still require real native zone changes.
+- [x] The real-server integration now walks **two distinct native actors into Glitch Woods, opens a separate return vote, walks both back to The Refuge, and confirms two independent native-zone arrivals and vote-replay rejection**. [Passing pinned integration 41044865065](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41044865065) at source `9f2be4b06f5403122845fd2820c6ddf1063720ca`. Its Fracture client/server builds, **3,329 upstream tests**, bridge tests, native object/D20 checks and Mac source packaging passed. Local Node 22.16 focused suite: **109 passed, 1 skipped, 0 failed**.
+- [ ] The CI source kit and synthetic two-actor route are **not** physical 2015 Intel Mac acceptance, a real 12–20-phone group test, a full-browser 20-minute adventure, or original Dawn Bell/Crown Job travel and campaign parity. The reverse route is now native-verified; these larger gates remain open.
+
 ## Optional majority-selected Refuge Trial objective — October 30 (pinned CI and source kit verified)
 
 - [x] Added a **real cooperative story decision**, not another cosmetic vote: after the trial records an actual native NPC conversation, at least two nearby, living, distinct Fracture characters in The Refuge can propose **fight** or **craft**. The original Chaos-style ten-second frozen-electorate, strict-majority voting implementation is reused. One private controller casts one immutable vote; the proposer starts with yes.
