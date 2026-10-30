@@ -33,6 +33,9 @@ export function validateEnvironmentJudgment(judgment,context={}){
  if(!['break','ignite'].includes(action))return {accepted:false,reason:'No authoritative native execution adapter for this environmental action'};
  if(action==='take'&&object.mass==='heavy')return {accepted:false,reason:'Object is too heavy to pick up'};
  if(action==='ignite'&&object.wet===true)return {accepted:false,reason:'Object is too wet to ignite'};
+ // All supported native environmental execution currently uses a fixed, engine-owned check.
+ // An AI-supplied ability or DC is advisory and cannot alter the authoritative dice rules.
+ if(action==='break'&&(ability!=='strength'||dc!==14))return {accepted:false,reason:'Native tree felling uses the original strength-style D20 DC 14'};
  if(context.actor?.active!==true)return {accepted:false,reason:'Actor is not active'};
  return {accepted:true,action,targetId,ability,dc,description,destination:judgment.destination??null,
   // A DM recommendation is never an executed outcome. The server still rolls,
