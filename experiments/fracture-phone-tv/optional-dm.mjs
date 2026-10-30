@@ -104,7 +104,7 @@ export function createOptionalDM({dataDir,key,model=process.env.CHAOS_DM_MODEL||
    if(!actor?.ready||actor.dead||!Number.isInteger(actor.x)||!Number.isInteger(actor.y))return Promise.resolve(null);
    const objects=(actor.chaos?.scenery||[]).filter(o=>o?.nativeOrigin&&
     typeof o.id==='string'&&typeof o.scene==='string'&&Number.isInteger((o.interactionTile||o.tile)?.x)&&Number.isInteger((o.interactionTile||o.tile)?.y)&&
-    Math.abs((o.interactionTile||o.tile).x-actor.x)+Math.abs((o.interactionTile||o.tile).y-actor.y)<=1)
+    Math.abs((o.interactionTile||o.tile).x-actor.x)+Math.abs((o.interactionTile||o.tile).y-actor.y)<=18)
     .slice(0,24).map(o=>({
      id:o.id,verifiedNative:true,nativeAdapter:o.nativeAdapter===true,scene:o.scene,
      tile:{x:(o.interactionTile||o.tile).x,y:(o.interactionTile||o.tile).y},condition:o.condition,
@@ -116,7 +116,7 @@ export function createOptionalDM({dataDir,key,model=process.env.CHAOS_DM_MODEL||
     targetId:{type:'string'},ability:{type:'string',enum:['strength','dexterity','wisdom','none']},
     dc:{type:'integer'},description:{type:'string'}},
     required:['action','targetId','ability','dc','description'],additionalProperties:false};
-   const context={scene:objects[0].scene,actor:{active:true,tile:{x:actor.x,y:actor.y}},objects,maxReach:1,authoritativeNativeExecutor:true};
+   const context={scene:objects[0].scene,actor:{active:true,tile:{x:actor.x,y:actor.y}},objects,maxReach:18,allowApproach:true,authoritativeNativeExecutor:true};
    return request('environment',[{role:'system',content:ENVIRONMENT_SYSTEM},
     {role:'user',content:JSON.stringify({text,objects:objects.map(({id,scene,tile,condition,wet,dc,kind,material,nativeAdapter,capabilities})=>({id,scene,tile,condition,wet,dc,kind,material,nativeAdapter,capabilities}))})}],
     schema,judgment=>validateEnvironmentJudgment(judgment,context).accepted?judgment:null,options);
