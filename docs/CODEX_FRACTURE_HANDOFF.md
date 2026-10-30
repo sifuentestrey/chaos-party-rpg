@@ -1,0 +1,30 @@
+# Chaos Party — Codex engineering handoff (2026-10-30)
+
+**Read first:** `AGENTS.md`, issue #12, `docs/CHAOS_TO_FRACTURE_PARITY.md`, `docs/FRACTURE_GAME_NIGHT_RELEASE.md`. These documents define the release gate. **Do not describe the Fracture spike as finished Chaos Party.** Original canonical branch: `luna/visual-game-night-release` (protected). Experimental branch: `spike/fracture-phone-tv` (draft PR #11). Never merge/deploy, spend money, or touch original saves/credentials without owner approval.
+
+## Proven vs. experimental
+
+- Fracture is pinned to `642c00a8a2d3a95979e85bbfa3f62deee611a4a6`; reuse is governed by upstream MPL 2.0 code / CC BY-SA 3.0 content, with notices in the package. No new licensed assets were introduced for the scenery work.
+- The original Chaos engine already contains substantially more campaign, character, D20, DM and voting logic than the Fracture spike. **Before expanding the migration, compare original-engine renderer replacement against individual feature porting**. Reuse existing original gameplay rules rather than rebuilding them in new code.
+- Existing Fracture spike: independently authenticated native phone actors, native combat/navigation, small Chaos object inventory/crafting, partial D20 and NPC witness behavior, SSE-triggered phone refresh. **Not** full Crown Job / Dawn Bell / AI-memory / group campaign parity.
+- Recent authored scenery vertical slice (Oct 30): `scenery-bridge.mjs` and `environment-rules.mjs`; `chaos-world.mjs` seeds a **Chaos-authored camp tree only on a native-passable, unoccupied tile**; phone `attack tree` or `chop tree` routes to a creative action with auto-approach, 3 damage per hit, separate save, collision cleared on destruction; `chaos-tv.ts` draws a tree/stump from authoritative snapshots; `world-change.mjs` includes scenery in authenticated notifications. **This is not destruction of native Fracture trees or buildings.**
+- New regression coverage in `chaos-world.test.mjs`, `scenery-bridge.test.mjs`, `environment-rules.test.mjs`, `world-change.test.mjs`; a disposable real-server tree interaction test is added to `verify-native-objects.mjs`. Confirm its pinned CI result before claiming native acceptance.
+- The pure environmental rules library defines vegetation, structures, water, weather, terrain and NPC capabilities but is **not wired to native world physics/HP or saves**. Do not treat category definitions as gameplay.
+
+## Required acceptance and failure triage
+
+1. Run `node --test experiments/fracture-phone-tv/*.test.mjs`; check **all** tests, not just the last line.
+2. Run the pinned `.github/workflows/fracture-spike.yml` integration on the experimental branch: disposable clone, `pnpm@10.34.9`, native build/tests, HTTP boot, `verify-rally.mjs`, `verify-native-objects.mjs`. The workflow packages a Mac source kit **only after all jobs pass**. A green bridge-unit job is not a green native integration run.
+3. In the native test, verify **two distinct actors**; a tree is visible in both actors' state; `attack tree` is accepted by the actual native actor; four strikes cause persistent 12→0 HP and stump; a real native `walk to x,y` reaches the cleared tile; the separate save records the broken tree. If any fails, preserve the failing evidence and fix the core adapter, not a test-only exception.
+4. Inspect TV renderer behavior in a real browser: tree/stump rendering, camera and visibility, other phones refreshing after damage. Automated server assertions are not a substitute for a TV/browser test.
+5. Physical early-2015 Intel MacBook Pro (8 GB, macOS 14.8.9) + iPhone + TV and 12–20 player latency/performance **require actual owner testing**. Never claim these passed without evidence.
+6. Save boundaries: native Fracture and `server/data/chaos-party/objects.json` remain in the separate clone; do not modify original Chaos game saves. Keep opt-in overlays reversible and upstream pinned.
+
+## Next work — prioritize user experience over breadth
+
+- **First:** get the real native tree test and rally/travel test green on the same commit, then check TV and second-phone state visually. A failing vote test may arise if the actors already occupy the same tile; the rehearsal now requires distinct native positions before asserting a movement dispatch. Do not weaken a legitimate failure.
+- **Second:** use one authoritative, explicitly mapped scenery adapter for authored doors/furniture/vegetation, with native-passable placement, persistent HP, shared rendering and collision; do **not** infer destructibility from arbitrary native map tiles.
+- **Third:** evaluate full original-engine renderer upgrade vs further Fracture porting, using one original campaign scene with real D20, object, NPC memory and party vote consequences as the comparison.
+- **Later:** broad weather/fire/water/terrain/NPC physics, only after real vertical-slice parity is demonstrated. Avoid another standalone capability table or speculative release claim.
+
+Use existing code and licensed systems, prefer minimal reversible changes, run targeted tests first, preserve CI evidence, and update both parity/release trackers with exact SHAs and verified gates.
