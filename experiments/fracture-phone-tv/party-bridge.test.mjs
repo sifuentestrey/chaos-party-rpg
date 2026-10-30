@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import fs f
 import {createOptionalDM} from './optional-dm.mjs';
 import {createPartyBridge} from './party-bridge.mjs';
 const post=(base,p,b,headers={})=>fetch(base+p,{method:'POST',headers:{'content-type':'application/json',...headers},body:JSON.stringify(b)});
-async function setup(t,options={}){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-room-test-'));const sockets=[];const app=createPartyBridge({root:dir,dataDir:dir,actorKey:'actor-key',tvKey:'tv-key',dmFactory:options.dmFactory,port:0,bind:'127.0.0.1',ioFactory:(_url,ioOptions)=>{const s=new EventEmitter();s.auth=ioOptions.auth;s.connected=true;s.connect=()=>{s.connected=true;return s;};s.disconnect=()=>{s.connected=false;s.emit('disconnect');};s.timeout=()=>s;const emit=s.emit.bind(s);s.emit=(event,...args)=>{if(event==='chaos:state'){args[1](null,{ok:true,actor:{id:sockets.indexOf(s)+1,ready:true,x:12+sockets.indexOf(s)*2,y:12,zone:options.zone||'Town',hp:100,maxHp:100,dead:false}});return true;}if(event==='chaos:save'){args[1](null,{ok:true});return true;}if(event==='chaos:action'){s.lastAction=args[0];const status=s.nextOutcome||'started';s.nextOutcome=null;emit('chaos:receipt',{id:args[0].id,status,message:status});const ackError=s.nextAckError;s.nextAckError=null;args[1](ackError?new Error('Delayed transport acknowledgment'):null,ackError?null:{ok:true});return true;}return emit(event,...args);};sockets.push(s);queueMicrotask(()=>s.emit('message',[1,sockets.length,'Test',12,12,100,100]));return s;}});await app.start();t.after(async()=>{await app.close();fs.rmSync(dir,{force:true,recursive:true});});return {app,dir,sockets,base:`http://127.0.0.1:${app.server.address().port}`};}
+async function setup(t,options={}){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-room-test-'));const sockets=[];const app=createPartyBridge({root:dir,dataDir:dir,actorKey:'actor-key',tvKey:'tv-key',dmFactory:options.dmFactory,reactionMs:options.reactionMs||10000,port:0,bind:'127.0.0.1',ioFactory:(_url,ioOptions)=>{const s=new EventEmitter();s.auth=ioOptions.auth;s.connected=true;s.connect=()=>{s.connected=true;return s;};s.disconnect=()=>{s.connected=false;s.emit('disconnect');};s.timeout=()=>s;const emit=s.emit.bind(s);s.emit=(event,...args)=>{if(event==='chaos:state'){args[1](null,{ok:true,actor:{id:sockets.indexOf(s)+1,ready:true,x:12+sockets.indexOf(s)*2,y:12,zone:options.zone||'Town',hp:100,maxHp:100,dead:false}});return true;}if(event==='chaos:save'){args[1](null,{ok:true});return true;}if(event==='chaos:action'){s.lastAction=args[0];const status=s.nextOutcome||'started';s.nextOutcome=null;emit('chaos:receipt',{id:args[0].id,status,message:status});const ackError=s.nextAckError;s.nextAckError=null;args[1](ackError?new Error('Delayed transport acknowledgment'):null,ackError?null:{ok:true});return true;}return emit(event,...args);};sockets.push(s);queueMicrotask(()=>s.emit('message',[1,sockets.length,'Test',12,12,100,100]));return s;}});await app.start();t.after(async()=>{await app.close();fs.rmSync(dir,{force:true,recursive:true});});return {app,dir,sockets,base:`http://127.0.0.1:${app.server.address().port}`};}
 test('controller script parses and credentials stay off phone',async t=>{const {app,base}=await setup(t);const html=await(await fetch(base+'/join?key='+app.room.join)).text();assert.doesNotThrow(()=>new Function(html.match(/<script>([\s\S]*)<\/script>/)[1]));assert.ok(!html.includes('actor-key'));assert.ok(!html.includes('tv-key'));assert.ok(!html.includes('password'));});
 test('two identities route to distinct actors, results stay private, and reconnect keeps credentials',async t=>{const {app,base,sockets,dir}=await setup(t);const pair=async name=>(await(await post(base,'/pair',{key:app.room.join,name})).json()).token;const a=await pair('Ada'),b=await pair('Bryn');assert.notEqual(a,b);await new Promise(r=>setTimeout(r,20));const r=await post(base,'/action',{token:a,text:'walk north 3'});assert.equal(r.status,202);const {id}=await r.json();assert.equal(sockets[0].lastAction.id,id);assert.equal(sockets[1].lastAction,undefined);const unknown=await post(base,'/action',{token:app.room.join,text:'stop'});assert.equal(unknown.status,403);const state=await(await fetch(base+'/state?token='+b)).json();assert.ok(!state.results.some(r=>r.id===id));assert.ok(!JSON.stringify(state).includes(app.room.players[0].password));const saved=JSON.parse(fs.readFileSync(path.join(dir,'room.json')));assert.equal(saved.players[0].token,a);assert.ok((fs.statSync(path.join(dir,'room.json')).mode&0o077)===0);});
 test('room pairing, origin, and TV state access are separated',async t=>{const {app,base}=await setup(t);assert.equal((await post(base,'/pair',{key:'wrong',name:'Ada'})).status,403);assert.equal((await post(base,'/pair',{key:app.room.join,name:'Ada'},{Origin:'https://evil.example'})).status,403);assert.equal((await fetch(base+'/tv-state?key='+app.room.join)).status,403);assert.equal((await fetch(base+'/host?key='+app.room.join)).status,403);assert.equal((await fetch(base+'/tv-state?key=tv-key',{headers:{Origin:'http://evil.example:8000'}})).status,403);});
@@ -303,4 +303,78 @@ test('saved original Chaos class stays bound to the correct native actor, not ph
  const action=await post(base,'/action',{token:rogueToken,text:'attack rat',role:'knight',perk:'lucky'});
  assert.equal(action.status,202);assert.equal(sockets[0].lastAction.intent.verb,'attack');
  assert.equal(sockets[0].lastAction.role,undefined,'phone cannot override class on action');
+});
+
+test('announced world action waits for a real help/hinder reaction before native execution',async t=>{
+ const {app,base,sockets}=await setup(t,{reactionMs:90});
+ const a=(await(await post(base,'/pair',{key:app.room.join,name:'Ada'})).json()).token;
+ const b=(await(await post(base,'/pair',{key:app.room.join,name:'Bryn'})).json()).token;
+ await new Promise(r=>setTimeout(r,20));
+ const q=await post(base,'/action',{token:a,text:'declare craft green hat from cloth strip and wood splinter'});
+ assert.equal(q.status,202);const {id}=await q.json();
+ assert.equal(sockets[0].lastAction,undefined,'a declaration must not fabricate a native craft');
+ assert.equal(app.sessions.get(a).results.get(id).status,'queued');
+ const visible=await(await fetch(base+'/state?token='+b)).json();
+ assert.equal(visible.declarations.length,1);assert.equal(visible.declarations[0].player,'Ada');
+ assert.equal(JSON.stringify(visible.declarations).includes(a),false);
+ const tv=await(await fetch(base+'/tv-state?key=tv-key')).json();
+ assert.equal(tv.declarations.length,1);
+ assert.equal(JSON.stringify(tv.declarations).includes(app.room.players[0].password),false);
+ const h=await post(base,'/action',{token:b,text:'hinder Ada'});
+ assert.equal(h.status,202);assert.equal(sockets[1].lastAction.intent.verb,'creative');
+ assert.equal(sockets[1].lastAction.intent.target,'hinder Ada');
+ assert.equal(app.room.turn,null,'reaction is not a second irreversible action declaration');
+ assert.equal((await post(base,'/action',{token:a,text:'steal rug'})).status,409,'actor cannot overwrite queued declaration');
+ await new Promise(r=>setTimeout(r,120));
+ assert.equal(sockets[0].lastAction.id,id,'the same receipt ID is retained through the delayed dispatch');
+ assert.equal(sockets[0].lastAction.intent.verb,'creative');
+ assert.equal(sockets[0].lastAction.intent.target,'craft green hat from cloth strip and wood splinter');
+ assert.equal(app.sessions.get(a).results.get(id).status,'started');
+ assert.equal(app.room.turn,null,'announced action does not open a second 10-second lock after execution');
+ assert.equal(app.pending.size,0);
+});
+test('STOP cancels only the owner pending action; no later native world mutation',async t=>{
+ const {app,base,sockets}=await setup(t,{reactionMs:80});
+ const a=(await(await post(base,'/pair',{key:app.room.join,name:'Ada'})).json()).token;
+ const b=(await(await post(base,'/pair',{key:app.room.join,name:'Bryn'})).json()).token;
+ await new Promise(r=>setTimeout(r,20));
+ const q=await(await post(base,'/action',{token:a,text:'announce steal guard rug'})).json();
+ assert.equal((await post(base,'/action',{token:b,text:'stop'})).status,202);
+ assert.equal(app.pending.size,1,'another player cannot cancel the declaration');
+ assert.equal((await post(base,'/action',{token:a,text:'stop'})).status,202);
+ assert.equal(app.sessions.get(a).results.get(q.id).status,'cancelled');
+ await new Promise(r=>setTimeout(r,115));
+ assert.equal(sockets[0].lastAction.intent.verb,'cancel','only the native STOP should run');
+ assert.equal(app.pending.size,0);
+});
+test('benched, disconnected and cross-zone characters cannot execute queued world actions',async t=>{
+ const {app,base,sockets}=await setup(t,{reactionMs:70});
+ const a=(await(await post(base,'/pair',{key:app.room.join,name:'Ada'})).json()).token;
+ await new Promise(r=>setTimeout(r,20));
+ const first=await(await post(base,'/action',{token:a,text:'declare craft green hat from cloth strip'})).json();
+ assert.equal((await post(base,'/host/player',{key:app.room.host,token:a,parked:true})).status,200);
+ assert.equal(app.sessions.get(a).results.get(first.id).status,'cancelled');
+ await new Promise(r=>setTimeout(r,90));assert.equal(sockets[0].lastAction,undefined);
+ assert.equal((await post(base,'/host/player',{key:app.room.host,token:a,parked:false})).status,200);
+ await fetch(base+'/state?token='+a);sockets[0].emit('message',[1,1,'Ada',12,12,100,100]);
+ await new Promise(r=>setTimeout(r,220));
+ const second=await(await post(base,'/action',{token:a,text:'declare repair camp table'})).json();
+ app.sessions.get(a).actor.zone='Glitch Woods';
+ await new Promise(r=>setTimeout(r,100));
+ assert.equal(app.sessions.get(a).results.get(second.id).status,'cancelled');
+ assert.equal(sockets[0].lastAction,undefined);
+ await new Promise(r=>setTimeout(r,220));
+ const third=await(await post(base,'/action',{token:a,text:'declare repair camp table'})).json();
+ sockets[0].disconnect();
+ assert.equal(app.sessions.get(a).results.get(third.id).status,'cancelled');
+ await new Promise(r=>setTimeout(r,100));assert.equal(sockets[0].lastAction,undefined);
+});
+test('unsupported staged commands never reserve a window or invoke AI',async t=>{
+ const {app,base,sockets}=await setup(t,{reactionMs:50});
+ const a=(await(await post(base,'/pair',{key:app.room.join,name:'Ada'})).json()).token;
+ await new Promise(r=>setTimeout(r,20));
+ for(const text of ['declare attack rat','declare move left','declare teleport to castle']){
+  const r=await post(base,'/action',{token:a,text});assert.equal(r.status,400,text);
+ }
+ assert.equal(app.pending.size,0);assert.equal(sockets[0].lastAction,undefined);
 });
