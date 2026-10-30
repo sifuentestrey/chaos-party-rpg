@@ -46,6 +46,9 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
  let state=fs.existsSync(file)?JSON.parse(fs.readFileSync(file,'utf8')):{version:1,seed,rng:seed,nextId:1,round:0,items:{},actors:{},camp:null};
  if(state.version!==1||!state.items||!state.actors)throw Error('Unsupported Chaos object save; refusing to overwrite');
  state.assists||={};state.npcs||={};state.fireClock||={};state.dmMemory||={version:1,entries:[],people:{}};
+ // A native mob instance can produce only one durable defeat memory. This set
+ // is ephemeral; actual canonical story facts live in the separate object save.
+ const observedNativeDefeats=new WeakSet();
  const persist=()=>{const temp=file+'.tmp';fs.writeFileSync(temp,JSON.stringify(state),{mode:0o600});fs.renameSync(temp,file);};
  function add(location,properties){const s={items:state.items,nextId:state.nextId};const item=spawnItem(s,location,properties);state.nextId=s.nextId;return item;}
  function seedPlayer(p){
@@ -201,7 +204,38 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const tile=item?.tile||state.npcs[item?.ownerId]?.tile;
   return item&&(!item.ownerId||state.npcs[item.ownerId])&&tile&&!reachable(p,tile)?{...tile}:null;
  }
- function talk(p,native){surroundings(p);const n=state.npcs[npcKey(p,native)];if(!n)return null;const history=n.memories?.[identity(p)]||n.history.filter(h=>h.actorId===identity(p));const trust=n.trust[identity(p)]||0;if(!history.length&&trust===0)return null;const last=history.at(-1)||{verb:'theft',success:false};return `${n.name}: “${trust<0?'I remember what you did. Make amends before asking for a job.':last.verb==='give'?'Thank you for the gift. I remember your kindness.':`I remember your ${last.success?'':'attempt at '}${last.verb}${last.itemId?' involving '+(state.items[last.itemId]?.name||'that object'):''}.`}” (trust ${trust})`;}
+ function talk(p,native){surroundings(p);const n=state.npcs[npcKey(p,native)];if(!n)return null;const history=n.memories?.[identity(p)]||n.history.filter(h=>h.actorId===identity(p));const trust=n.trust[identity(p)]||0;if(!history.length&&trust===0)return null;const last=history.at(-1)||{verb:'theft',success:false};return `${n.name}: “${trust<0?'I remember what you did. Make amends before asking for a job.':last.verb==='give'?'Thank you for the gift. I remember your kindness.':last.verb==='defend'?`I saw you fighting when ${last.targetName||'that creature'} fell.`:`I remember your ${last.success?'':'attempt at '}${last.verb}${last.itemId?' involving '+(state.items[last.itemId]?.name||'that object'):''}.`}” (trust ${trust})`;}
  function canQuest(p,native){surroundings(p);const n=state.npcs[npcKey(p,native)];return !n||(n.trust[identity(p)]||0)>=0;}
- return {snapshot,execute,approach,isBlocked:blocked,talk,canQuest};
+ // Bridge only: the authenticated native actor calls this AFTER its real HIT
+ // has reduced a mob to zero HP. No phone-supplied damage, XP or kill credit.
+ // Native Fracture remains authoritative; this stores a witnessed story fact.
+ function recordNativeDefeat(p,mob,{before,after,tile}={}){
+  if(!p?.chaosControlled||!p.hasEnteredGame||p.isDead||!identity(p)||
+     !mob||typeof mob!=='object'||!mob.isDead||observedNativeDefeats.has(mob)||
+     !Number.isFinite(before)||before<=0||after!==0||
+     !tile||!Number.isInteger(tile.x)||!Number.isInteger(tile.y)||
+     !sameZone(p,tile)||distance(p,tile)>2)return null;
+  const previous=state;state=structuredClone(state);
+  try{
+   surroundings(p);
+   const actorId=identity(p),mobName=String(mob.chaosName||mob.name||kindName(mob.kind)||'creature').replace(/[\\u0000-\\u001f]/g,' ').slice(0,50);
+   const witnessed=npcViews(p).filter(n=>visible({...p,x:n.tile.x,y:n.tile.y,getWorld:()=>p.getWorld()},tile,6));
+   const id='native-defeat-'+(++state.round);
+   for(const n of witnessed){
+    const observation={verb:'defend',actorId,targetName:mobName,round:state.round,success:true};
+    n.memories||={};n.memories[actorId]=[...(n.memories[actorId]||n.history.filter(h=>h.actorId===actorId)),observation].slice(-4);
+    n.history.push(observation);n.history=n.history.slice(-12);
+   }
+   const fact=`${name(p)} fought ${mobName}; native combat confirmed ${before} → 0 HP and the creature fell.`;
+   const room={round:state.round,world:{expedition:{current:scene(p),creatures:state.npcs}},dmMemory:state.dmMemory,
+    result:{id,playerId:actorId,name:name(p),action:'fight '+mobName,target:{entityId:'native-mob:'+String(mob.id)},
+     blocked:false,success:true,narration:fact,changes:['Native mob defeated at '+tile.x+','+tile.y],
+     sceneEvents:witnessed.map(n=>({type:'witness',entityId:n.id}))}};
+   recordDMMemory(room);
+   const entry=state.dmMemory.entries.at(-1);if(entry)entry.tile={x:tile.x,y:tile.y};
+   persist();observedNativeDefeats.add(mob);
+   return {id,fact,witnesses:witnessed.map(n=>n.name)};
+  }catch(error){state=previous;throw error;}
+ }
+ return {snapshot,execute,approach,isBlocked:blocked,talk,canQuest,recordNativeDefeat};
 }
