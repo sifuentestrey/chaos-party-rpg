@@ -27,3 +27,16 @@ test('consumable intent family stays typed and cannot grant effects',()=>{
  assert.ok(validIntent({verb:'creative',target:'make hat from item-1 and item-2'}));
  assert.equal(validIntent({verb:'use_item',target:'flask',hp:999}),false);
 });
+
+test('native environment proposals carry no damage, fake targets or arbitrary dice rules',()=>{
+ const judgment={action:'break',targetId:'fracture:test:native-tree-30-200',ability:'strength',dc:14,description:'Try to fell the existing oak.'};
+ assert.equal(validIntent({verb:'environment',judgment}),true);
+ for(const candidate of [
+  {...judgment,dc:1},{...judgment,ability:'wisdom'},{...judgment,targetId:''},
+  {...judgment,damage:999},{...judgment,action:'teleport'},
+  {...judgment,description:'x'.repeat(241)}
+ ])assert.equal(validIntent({verb:'environment',judgment:candidate}),false);
+ assert.equal(validIntent({verb:'environment',judgment,damage:999}),false);
+ assert.equal(validIntent({verb:'attack',target:'rat',judgment}),false);
+ assert.equal(validIntent({verb:'environment',target:'tree',judgment}),false);
+});
