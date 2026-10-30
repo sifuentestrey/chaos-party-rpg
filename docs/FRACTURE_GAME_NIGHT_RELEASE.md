@@ -1,5 +1,12 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Active-fire NPC warning priority — October 30 (focused local regression only)
+
+- [x] NPCs with several visible damaged possessions now request extinguishing a currently burning object before repair of an older burned object. Reuses `propertyConcern` and existing grounded visibility/ownership checks; no new NPC AI, invented movement or world state.
+- [x] Added regression test covering both priority order and fallback to repair once the fire is out. Isolated local `node --test reactive-witness.test.mjs`: **8 passed, 0 failed**.
+- [ ] Pinned Fracture CI and physical Mac/phone fire scenario **not yet verified for this change**. Full NPC autonomy and multiplayer fire synchronization remain unaccepted.
+
+
 ## Grounded native-NPC fire awareness and restorative player actions — October 30 (pinned CI verified)
 
 - [x] Reused the existing original Chaos `advanceEntities` burn-through rules, Fracture's real NPC identities/tiles and the adapter's original D20 repair planner. **A visible native NPC can now react to an actually burning NPC-owned rug, warn about the fire in `talk`/`look around`, and request repair only after real heat-based destruction.** The concern disappears when the object is restored. No scripted fake damage, native NPC movement or fabricated native quest reward.
