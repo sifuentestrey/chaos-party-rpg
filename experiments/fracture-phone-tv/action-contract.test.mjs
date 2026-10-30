@@ -40,3 +40,20 @@ test('native environment proposals carry no damage, fake targets or arbitrary di
  assert.equal(validIntent({verb:'attack',target:'rat',judgment}),false);
  assert.equal(validIntent({verb:'environment',target:'tree',judgment}),false);
 });
+
+test('expanded native DM wire contract passes only bounded proposals to the authoritative executor',()=>{
+ const targetId='fracture:native:native-tent-10-200';
+ for(const judgment of [
+  {action:'move_east',targetId,ability:'strength',dc:10,description:'Move the original tent east.'},
+  {action:'break',targetId,ability:'strength',dc:16,description:'Break a verified roof.'},
+  {action:'repair',targetId,ability:'dexterity',dc:12,description:'Repair the original roof.'},
+  {action:'extinguish',targetId,ability:'none',dc:0,description:'Extinguish an existing fire.'},
+  {action:'inspect',targetId,ability:'none',dc:0,description:'Examine existing scenery.'},
+  {action:'drink',targetId,ability:'none',dc:0,description:'Drink from an existing well.'}
+ ])assert.equal(validIntent({verb:'environment',judgment}),true,judgment.action);
+ const move={action:'move_east',targetId,ability:'strength',dc:10,description:'Move the original tent east.'};
+ for(const bad of [{...move,dc:1},{...move,ability:'none'},{...move,action:'move'},
+  {...move,action:'move_diagonal'},{...move,damage:1000},{...move,targetId:''}]){
+  assert.equal(validIntent({verb:'environment',judgment:bad}),false,JSON.stringify(bad));
+ }
+});
