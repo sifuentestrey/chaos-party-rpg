@@ -6,6 +6,8 @@ test('complete native trees register; incomplete art and independent solid layer
  map.data[200*172+30]=155;assert.deepEqual(discoverNativeTrees(map,[274,275,294,295]),[]);
  const wall=mapFixture();wall.data[203*172+31]=[999,274];assert.deepEqual(discoverNativeTrees(wall,[999,274,275,294,295]),[]);
  const blocked=mapFixture();blocked.blocking.push(203*172+31);assert.deepEqual(discoverNativeTrees(blocked,[274,275,294,295]),[]);
+ const overlapped=mapFixture();overlapped.data[203*172+31]=[155,274,275];
+ assert.deepEqual(discoverNativeTrees(overlapped,[274,275,294,295]),[],'overlapping native tree artwork cannot lose another tree collision');
 });
 function nativeFixture(t){const map=mapFixture(),nativeTrees=discoverNativeTrees(map,[274,275,294,295]);const dir=fs.mkdtempSync(path.join(os.tmpdir(),'native-map-mechanics-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));const file=path.join(dir,'objects.json');const grid=Array.from({length:314},()=>Array(172).fill(0));for(const n of map.collisions)grid[Math.floor(n/172)][n%172]=1;grid[210][35]=1;
  const world={id:'test',map:{grid},entities:{},players:{},zoneManager:{getZoneAt:()=>({name:'The Refuge'})},isValidPosition:(x,y)=>x>0&&x<172&&y>0&&y<314&&grid[y][x]===0};
