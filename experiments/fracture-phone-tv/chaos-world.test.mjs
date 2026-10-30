@@ -315,3 +315,42 @@ test('successful amends can restore quest access without gifts, but never farm p
  assert.equal(reloaded.canQuest(a,guard),true);
  assert.match(reloaded.talk(a,guard),/apology/);
 });
+
+test('real opponent interference selects the lower original D20 without inventing outcomes',t=>{
+ let clock=1000;const {a,b,engine,file}=fixture(t,()=>clock);
+ engine.snapshot(a);engine.snapshot(b);
+ assert.equal(shouldUseCreative('hinder Alice',{}),true);
+ assert.equal(shouldUseCreative('interfere with Alice on their roll',{}),true);
+ assert.equal(engine.execute(a,'hinder Alice').blocked,true,'self-interference is not an exploit');
+ assert.equal(engine.execute(b,'hinder Alice').success,true);
+ assert.equal(engine.snapshot(a).hinderedBy,'Bob');
+ assert.equal(engine.execute(b,'help Alice').blocked,true,'cannot stack advantage and disadvantage');
+ assert.equal(engine.execute(a,'make hat from imaginary cloth').blocked,true);
+ assert.equal(engine.snapshot(a).hinderedBy,'Bob','blocked actions do not consume reactions');
+ const result=engine.execute(a,'make green hat from cloth strip and wood splinter');
+ assert.equal(result.blocked,false);
+ assert.equal(result.rolls.length,2);
+ assert.equal(result.roll,Math.min(...result.rolls),'the real original disadvantage helper chooses the lower die');
+ assert.equal(result.hinderedBy,'Bob');
+ assert.equal(result.assistedBy,undefined);
+ assert.match(result.text,/D20 disadvantage/);
+ assert.match(result.text,/hindered by Bob/);
+ assert.equal(engine.snapshot(a).hinderedBy,undefined,'one legitimate roll consumes the intervention');
+ assert.equal(JSON.parse(fs.readFileSync(file)).assists[a.characterId],undefined);
+ assert.equal(engine.snapshot(a).bag.some(i=>i.name==='green hat'),result.success,'real roll, not declaration, controls item creation');
+});
+test('interference expires, cannot target an absent actor, and never changes native HP',t=>{
+ let clock=1000;const {a,b,engine}=fixture(t,()=>clock);
+ engine.snapshot(a);engine.snapshot(b);
+ assert.equal(engine.execute(b,'sabotage Alice').success,true);
+ b.x=90;
+ assert.equal(engine.snapshot(a).hinderedBy,undefined);
+ const far=engine.execute(a,'make green hat from cloth strip and wood splinter');
+ assert.equal(far.rolls,undefined,'a distant opponent cannot force disadvantage');
+ const other=fixture(t,()=>clock);other.engine.snapshot(other.a);other.engine.snapshot(other.b);
+ assert.equal(other.engine.execute(other.b,'hinder Alice').success,true);
+ clock+=15001;
+ assert.equal(other.engine.snapshot(other.a).hinderedBy,undefined);
+ assert.equal(other.a.hitPoints,100);
+ assert.equal(other.engine.execute(other.b,'hinder Nobody').blocked,true);
+});
