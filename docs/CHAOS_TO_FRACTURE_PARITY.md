@@ -1,5 +1,11 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Repeatable objective boundary
+
+The optional **Refuge Trial** is now replayable after a confirmed completion. The private host must explicitly start another run; the bridge archives a bounded summary of the prior run, resets only trial checkpoints, and binds native action receipts to the run in which they were issued. A delayed attack or NPC conversation from an earlier run cannot advance the next one. Unknown-version and unfinished saves are not overwritten. This reuses Fracture's actual combat/NPC/zone state and the original Chaos crafting result without modifying either authority.
+
+**Parity limit:** A replayable four-step trial is not the original Crown Job or seventeen-scene Dawn Bell campaign, not original quest/world-map persistence, and not proof of fun or group-scale Mac performance. Original Chaos remains canonical.
+
 > **Owner correction:** The current Fracture build is **NOT** a full Chaos Party migration and must not be called a finished Chaos Party game. "Game-night beta" here means *experimental Fracture gameplay with an independent multi-phone bridge*, not parity with the original Chaos Party. Do not promote, merge or replace the original release based on Fracture CI success.
 
 ## Authoritative source snapshots and limits
