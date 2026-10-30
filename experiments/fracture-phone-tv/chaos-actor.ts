@@ -2,7 +2,7 @@
 import * as fs from 'node:fs';
 import {pathToFileURL} from 'node:url';
 let chaosObjects:any=null;
-const chaosReady=process.env.CHAOS_WORLD_MODULE?import(pathToFileURL(process.env.CHAOS_WORLD_MODULE).href).then(m=>chaosObjects=m.createChaosWorld({file:'server/data/chaos-party/objects.json'})):Promise.resolve(null);
+const chaosReady=process.env.CHAOS_WORLD_MODULE?import(pathToFileURL(process.env.CHAOS_WORLD_MODULE).href).then(m=>chaosObjects=m.createChaosWorld({file:'server/data/chaos-party/objects.json',npcName:(npc:any)=>Types.getKindAsString(npc.kind)||'NPC'})):Promise.resolve(null);
 import {Types} from '../../shared/ts/gametypes';
 import {Messages} from './message';
 import {Formulas} from './formulas';
@@ -94,7 +94,7 @@ export function installChaosActor(player:any, connection:any): void {
       const kind=slots[index].kind;await router.route(player,[Types.Messages.INVENTORY_EQUIP,index]);
       const equipped=player.weapon===kind||player.armor===kind;receipt(id,equipped?'succeeded':'blocked',equipped?'Equipment changed.':'That item cannot be equipped.');return ack({ok:true});
     }
-    if(intent.verb==='look') {const props=objectSnapshot();const extras=(props?.ground||[]).map(i=>`${i.name} (${i.tile.x},${i.tile.y})`).join('; ');receipt(id,'succeeded',(extras?`Objects: ${extras}. `:'')+(nearby().length?nearby().slice(0,12).map(e=>`${label(e)} (${e.x},${e.y})`).join('; '):'No characters or items nearby. Explore with movement commands.'));return ack({ok:true});}
+    if(intent.verb==='look') {const props=objectSnapshot();const extras=(props?.ground||[]).map(i=>`${i.name} (${i.tile.x},${i.tile.y})`).join('; ');const memories=(props?.npcs||[]).filter(n=>n.items?.length||n.trust<0).map(n=>`${n.name} [${n.id}]: ${n.items.map(i=>i.name+' ['+i.id+']').join(', ')||'no Chaos items'}${n.trust<0?' · remembers your theft attempt':''}`).join('; ');receipt(id,'succeeded',(extras?`Objects: ${extras}. `:'')+(nearby().length?nearby().slice(0,12).map(e=>`${label(e)} (${e.x},${e.y})`).join('; '):'No characters or items nearby. Explore with movement commands.')+(memories?` Chaos NPC possessions/memory: ${memories}.`:''));return ack({ok:true});}
     if(intent.verb==='unknown'){receipt(id,'blocked','I cannot do that with the available mechanics. Try walking, talking, fighting, opening or collecting something nearby.');return ack({ok:true});}
     let target:any=null;
     if(intent.target){
