@@ -60,10 +60,35 @@ try{
  }else{
   assert.ok(before.every(id=>after.some(i=>i.id===id)),'failed roll keeps all materials');
  }
+ // A true ten-second, opt-in announcement lets a second real native actor
+ // hinder the next original Chaos world check BEFORE it executes. No mock rolls.
+ const announced=await post('/action',{token:helperToken,text:'declare make green hat from cloth strip and wood splinter'});
+ assert.equal(announced.status,202);
+ helperState=await get(helperToken);
+ assert.equal(helperState.results.find(r=>r.id===announced.id)?.status,'queued','announcement is not an engine result');
+ assert.ok(helperState.declarations.some(d=>d.id===announced.id),'party can see a real reaction window');
+ await sleep(250);
+ const hinder=await post('/action',{token,text:'hinder '+helperState.name});
+ assert.equal(hinder.status,202);
+ let hinderResult;deadline=Date.now()+10000;
+ do{state=await get(token);hinderResult=state.results.find(r=>r.id===hinder.id);if(hinderResult&&['succeeded','failed','blocked'].includes(hinderResult.status))break;await sleep(150);}while(Date.now()<deadline);
+ assert.equal(hinderResult?.status,'succeeded','the first real actor must be able to interfere with the second');
+ deadline=Date.now()+3000;
+ do{helperState=await get(helperToken);if(helperState.actor.chaos.hinderedBy===state.name)break;await sleep(100);}while(Date.now()<deadline);
+ assert.equal(helperState.actor.chaos.hinderedBy,state.name,'the actual target carries the pending disadvantage');
+ let hindered;deadline=Date.now()+15000;
+ do{helperState=await get(helperToken);hindered=helperState.results.find(r=>r.id===announced.id);if(hindered&&['succeeded','failed','blocked'].includes(hindered.status))break;await sleep(150);}while(Date.now()<deadline);
+ assert.ok(hindered&&['succeeded','failed'].includes(hindered.status),'native actor must execute after the reaction window');
+ assert.equal(hindered.rolls?.length,2,'a real hinderer supplies two D20 dice');
+ assert.equal(hindered.hinderedBy,state.name);
+ assert.equal(hindered.rerolled??hindered.roll,Math.min(...hindered.rolls),'disadvantage selects lower die before any original Lucky-ish reroll');
+ deadline=Date.now()+3000;
+ do{helperState=await get(helperToken);if(helperState.actor.chaos.hinderedBy===undefined)break;await sleep(100);}while(Date.now()<deadline);
+ assert.equal(helperState.actor.chaos.hinderedBy,undefined,'interference is consumed after the real check');
  const file=path.join(process.env.FRACTURE_ROOT,'server/data/chaos-party/objects.json');
  const saved=JSON.parse(fs.readFileSync(file,'utf8'));
  assert.equal(saved.version,1);
  assert.ok(Object.keys(saved.actors).length>=1);
  assert.ok(Object.keys(saved.items).length>=2);
- console.log(JSON.stringify({status:'passed',checks:['real native actor has Chaos starter materials','server D20 crafting receipt','native actor inventory agrees with result','separate persistent object save','two distinct native actors with one consumed D20 advantage'],craftStatus:result.status}));
+ console.log(JSON.stringify({status:'passed',checks:['real native actor has Chaos starter materials','server D20 crafting receipt','native actor inventory agrees with result','separate persistent object save','two distinct native actors with one consumed D20 advantage','10-second real declaration followed by native D20 disadvantage from opponent'],craftStatus:result.status}));
 }finally{await app.close();fs.rmSync(dir,{recursive:true,force:true});}
