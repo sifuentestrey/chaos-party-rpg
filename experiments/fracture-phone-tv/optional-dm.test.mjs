@@ -5,10 +5,10 @@ test('approved grounded interpretation is a proposal and never an outcome',async
 test('429, malformed plans, and timeouts preserve deterministic fallback',async t=>{for(const response of [async()=>({ok:false,status:429}),async()=>{throw Error('timeout');},async()=>({ok:true,json:async()=>({choices:[{message:{content:'{"verb":"go","x":1,"y":1}'}}]})})]){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-dm-'));try{const dm=createOptionalDM({dataDir:dir,key:'test-key',enabled:true,fetchImpl:response});assert.equal(await dm.interpret('anything',actor),null);}finally{fs.rmSync(dir,{recursive:true,force:true});}}});
 
 test('creative proposals require existing component IDs and cannot supply game outcomes',async t=>{
- for(const [target,ok] of [['make crown from item-1 and item-2',true],['make crown from item-1 and item-999',false],['equip item-2',true]]){
+ for(const [target,ok] of [['make crown from item-1 and item-2',true],['make crown from item-1 and item-999',false],['equip item-2',true],['help Bob craft',true],['help invented player craft',false]]){
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-dm-craft-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
  const proposal={verb:'creative',target};const dm=createOptionalDM({dataDir:dir,key:'test-key',enabled:true,fetchImpl:async()=>({ok:true,json:async()=>({choices:[{message:{content:JSON.stringify(proposal)}}]})})});
- const result=await dm.interpret('make something royal',{chaos:{bag:[{id:'item-1'},{id:'item-2'}]}});assert.deepEqual(result,ok?proposal:null);
+ const result=await dm.interpret('make something royal',{nearby:[{name:'Bob',type:'player'}],chaos:{bag:[{id:'item-1'},{id:'item-2'}]}});assert.deepEqual(result,ok?proposal:null);
  }
 });
 
