@@ -174,3 +174,11 @@ test('story vote cannot change a completed proof, expired vote, stale run, or an
  advanceAdventure(replay,talk('t3'),12005);
  assert.equal(settleTrialChoice(cross,replay,12006,'Ada').approved,false);assert.equal(replay.choice,null);
 });
+
+test('native-only party can explicitly replace an unavailable saved craft objective by majority vote',()=>{
+ const a=startAdventure(100);advanceAdventure(a,talk('t1'),110);a.choice={route:'craft',by:'Old party',at:120};const original=structuredClone(a.choice);
+ assert.throws(()=>proposeTrialChoice(a,voters(),'ada','combat',130,'normal'),/chosen proof/);
+ const vote=proposeTrialChoice(a,voters(),'ada','combat',140,'recovery',{allowCraft:false});assert.deepEqual(a.choice,original,'Opening a vote never rewrites a save');assert.equal(settleTrialChoice(vote,a,141,'Ada'),null);
+ voteTrialChoice(vote,'bryn',true,142);assert.equal(settleTrialChoice(vote,a,143,'Ada').approved,true);assert.equal(a.choice.route,'combat');assert.deepEqual(a.choiceHistory,[original]);assert.ok(advanceAdventure(a,kill('real-kill'),150));
+ assert.throws(()=>proposeTrialChoice(a,voters(),'ada','combat',160,'cannot-rewrite-proof',{allowCraft:false}),/completed or chosen proof/);
+});

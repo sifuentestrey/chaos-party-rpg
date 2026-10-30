@@ -43,6 +43,13 @@ test('AI may propose an action on a visible authored object, never an invented s
  assert.equal(await dm.interpret('save that burning tree',scene),null);
 });
 
+test('large native scenes stay within free-provider input limits without leaking atlas geometry',async t=>{
+ const scenery=Array.from({length:400},(_,i)=>({id:'fracture:world:native-grass-'+i,kind:'grass',name:'grass',condition:'intact',nativeOrigin:{x:i,y:0},tile:{x:i,y:0},cells:Array.from({length:64},(_,x)=>({x,y:i,gid:155})),capabilities:{flammable:true}}));
+ const target='push fracture:world:native-tent-1 east';scenery.push({id:'fracture:world:native-tent-1',kind:'tent',name:'tent',tile:{x:4,y:3},nativeOrigin:{x:4,y:1},condition:'intact',capabilities:{movable:true}});let context;
+ const {dm}=dmFixture(t,async(_u,init)=>{context=JSON.parse(init.body).messages[1].content;return {ok:true,json:async()=>({choices:[{message:{content:JSON.stringify({verb:'creative',target})}}]})};});
+ assert.deepEqual(await dm.interpret('shift that canvas shelter aside',{x:3,y:3,chaos:{scenery}}),{verb:'creative',target});assert.ok(context.length<12000,'Dense grass must not cause Groq HTTP 413');assert.ok(context.includes('native-tent-1'));assert.ok(!context.includes('"cells"'));assert.ok(!context.includes('nativeOrigin'));
+});
+
 test('open-ended AI DM proposes only verified adjacent native scenery, never an outcome',async t=>{
  const oak={id:'fracture:test:native-tree-30-200',nativeOrigin:{x:30,y:200},kind:'tree',scene:'fracture:test',tile:{x:10,y:10},condition:'intact',wet:0};
  const actor={ready:true,dead:false,x:10,y:11,chaos:{scenery:[oak]}};

@@ -1,5 +1,6 @@
 /** Chaos-owned shared TV adapter. Ordinary Fracture is unchanged without chaosTV. */
 import {nativeTrees} from './chaos-native-scenery';
+import {reconcileNativeMap} from './chaos-native-map-state';
 import {Types} from '../../shared/ts/gametypes';
 import {getZoneAtPosition,INTERIOR_ZONES} from '../../shared/ts/zones';
 function pairing(): any {
@@ -41,11 +42,21 @@ export function startChaosTV(game:any):void {
   const colors:any={Amber:'#efbd68',Blue:'#78bcff',Green:'#83dc9b',Rose:'#ef99bc'};
   const hues:any={Amber:'none',Blue:'hue-rotate(150deg)',Green:'hue-rotate(70deg)',Rose:'hue-rotate(290deg)'};
   const appearances=new Map();let groundProps:any[]=[],followed:any=null;
-  const clearedTrees=new Set<string>(),shownObjects=new Set<string>();
+  const shownObjects=new Set<string>();
   const originalEntities=game.renderer.drawEntities.bind(game.renderer);
   game.renderer.drawEntities=(dirty:any)=>{
     const ctx=game.renderer.context,scale=game.renderer.scale;
     for(const prop of groundProps){
+      // Existing scenery is painted by Fracture itself, including moved and
+      // restored layers. Never substitute an inventory sprite or a drawn prop.
+      if(prop.nativeOrigin){
+        if(prop.condition==='burning'&&prop.kind!=='fire'){
+          const sheet=game.renderer.tileset,ratio=sheet?.width/320;
+          const tile=prop.interactionTile||prop.tile;
+          if(sheet?.complete&&ratio){const frame=Math.floor(Date.now()/140)%3;ctx.drawImage(sheet,frame*16*ratio,192*ratio,16*ratio,16*ratio,tile.x*16*scale,(tile.y*16-12)*scale,16*scale,16*scale);}
+        }
+        continue;
+      }
       const key=prop.type==='container'?'item-flask':prop.material==='cloth'?'item-leatherarmor':prop.material==='stone'?'item-morningstar':'item-sword2';
       const sprite=game.sprites[key];if(!prop.tile||(!sprite?.isLoaded&&!['table','rug','tree'].includes(prop.visual)))continue;
       const x=prop.tile.x*16*scale,y=prop.tile.y*16*scale;ctx.save();ctx.globalAlpha=prop.condition==='broken'?0.45:1;
@@ -95,19 +106,9 @@ export function startChaosTV(game:any):void {
     const present=new Set(players.map((p:any)=>String(p.actor.id)));
     // Native Fracture compiles this client to ES5; Map.forEach avoids TS2802.
     appearances.forEach((_appearance:any,id:string)=>{if(!present.has(id))appearances.delete(id);});
-    let changedMap=false;
-    for(const p of players)for(const id of p.actor.chaos?.nativeChanges||[]){
-      if(clearedTrees.has(id))continue;
-      const tree=nativeTrees.find(t=>t.id===id);if(!tree)continue;
-      for(let dy=0;dy<5;dy++)for(let dx=0;dx<4;dx++){
-        const index=(tree.nativeOrigin.y+dy)*game.map.width+tree.nativeOrigin.x+dx,gid=213+dy*20+dx;
-        const original=game.map.data[index],layers=Array.isArray(original)?original:[original];
-        const remaining=layers.filter((v:number)=>v!==gid);game.map.data[index]=remaining.length?remaining:0;
-      }
-      for(const tile of tree.footprint)if(game.map.grid[tile.y])game.map.grid[tile.y][tile.x]=0;
-      clearedTrees.add(id);changedMap=true;
-    }
-    if(changedMap)game.renderer.renderStaticCanvases();
+    const nativeUpdates=new Map();
+    for(const p of connected)for(const change of p.actor.chaos?.nativeUpdates||[])nativeUpdates.set(change.id,change);
+    if(reconcileNativeMap(game.map,nativeTrees,Array.from(nativeUpdates.values()))){game.initAnimatedTiles();game.renderer.renderStaticCanvases();}
     for(const event of data.events){
       const object=event.object,key=event.id+':'+event.at;
       if(!object||shownObjects.has(key))continue;shownObjects.add(key);

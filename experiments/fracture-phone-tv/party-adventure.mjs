@@ -95,13 +95,14 @@ export function adventureView(a,{allowCraft=true}={}){
  * 10-second vote and strict-majority math as native travel. This only gates
  * the independent Refuge Trial proof, never native combat, items or quests.
  */
-export function proposeTrialChoice(adventure,actors,proposer,route,now,id){
- if(!adventure||adventure.id!==ADVENTURE_ID||adventure.version!==1||adventure.status!=='active'||!adventure.npc||adventure.proof||adventure.choice)
+export function proposeTrialChoice(adventure,actors,proposer,route,now,id,{allowCraft=true}={}){
+ const recovery=!allowCraft&&route==='combat'&&adventure?.choice?.route==='craft';
+ if(!adventure||adventure.id!==ADVENTURE_ID||adventure.version!==1||adventure.status!=='active'||!adventure.npc||adventure.proof||adventure.choice&&!recovery)
   throw Error('Meet a local before voting; a completed or chosen proof cannot be changed.');
  if(!['combat','craft'].includes(route))throw Error('Choose fight or craft.');
  const vote=proposeRally(actors,proposer,now,id);
  if(vote.zone!==REFUGE)throw Error('The party must choose together in The Refuge.');
- return {...vote,kind:'trial-choice',route,instanceId:adventure.instanceId};
+ return {...vote,kind:'trial-choice',route,instanceId:adventure.instanceId,...(recovery?{replacesChoiceAt:adventure.choice.at}:{} )};
 }
 export function voteTrialChoice(vote,token,yes,now){return voteRally(vote,token,yes,now);}
 export function settleTrialChoice(vote,adventure,now,by){
@@ -109,12 +110,14 @@ export function settleTrialChoice(vote,adventure,now,by){
  const status=settleRally(vote,now);
  if(status==='pending')return null;
  vote.dispatched=true;
+ const recovery=Object.hasOwn(vote,'replacesChoiceAt')&&vote.route==='combat'&&adventure?.choice?.route==='craft'&&adventure.choice.at===vote.replacesChoiceAt;
  // Never let a delayed vote change a run that has moved on or been replayed.
  if(status!=='approved'||!adventure||adventure.id!==ADVENTURE_ID||adventure.version!==1||adventure.status!=='active'||
-    adventure.instanceId!==vote.instanceId||!adventure.npc||adventure.proof||adventure.choice){
+    adventure.instanceId!==vote.instanceId||!adventure.npc||adventure.proof||adventure.choice&&!recovery){
   if(status==='approved')vote.status='declined';
   return {approved:false};
  }
+ if(recovery)adventure.choiceHistory=[...(adventure.choiceHistory||[]),adventure.choice].slice(-3);
  adventure.choice={route:vote.route,by:String(by||'Party member').slice(0,32),at:now};
  return {approved:true,route:vote.route};
 }

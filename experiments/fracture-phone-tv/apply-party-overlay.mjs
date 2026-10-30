@@ -1,6 +1,6 @@
 // Reviewed, repeatable overlay for the pinned separate Fracture checkout only.
 import fs from 'node:fs';
-import {discoverNativeTrees} from './native-scenery.mjs';
+import {discoverNativeObjects} from './native-scenery.mjs';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
@@ -58,7 +58,7 @@ for(const [file,a,b,c,d] of patches){
  if(current!==upstream&&current!==patched&&current!==legacy&&previous[file]!==digest(current))throw Error(`Local source edits in ${file}; refusing overwrite`);
  writes.push([file,patched]);
 }
-for(const [source,dest] of [['chaos-actor.test.ts','server/ts/__tests__/chaos-actor.test.ts'],['chaos-actor.ts','server/ts/chaos-actor.ts'],['action-contract.ts','server/ts/chaos-action-contract.ts'],['chaos-tv.ts','client/ts/chaos-tv.ts']]){
+for(const [source,dest] of [['chaos-actor.test.ts','server/ts/__tests__/chaos-actor.test.ts'],['chaos-actor.ts','server/ts/chaos-actor.ts'],['action-contract.ts','server/ts/chaos-action-contract.ts'],['chaos-tv.ts','client/ts/chaos-tv.ts'],['native-map-state.ts','client/ts/chaos-native-map-state.ts']]){
  const p=path.join(root,dest);
  const canonical=fs.readFileSync(path.join(dir,source),'utf8');
  if(fs.existsSync(p)){const current=fs.readFileSync(p,'utf8');if(!current.startsWith('/** Chaos-owned')||(current!==canonical&&previous[dest]!==digest(current)))throw Error(`Local or unrecognized edits in ${dest}; refusing overwrite`);}
@@ -72,7 +72,7 @@ if(digest(tmx)!=='9b92eb9fb7b63c5db803dbe456d35c518f8f650d69d4a47897b484e5ce8c7d
 const nativeMap=fs.readFileSync(path.join(root,'client/maps/world_client.json'),'utf8');
 if(nativeMap!==execFileSync('git',['show','HEAD:client/maps/world_client.json'],{cwd:root,encoding:'utf8',maxBuffer:2097152}))throw Error('Native scenery requires the pinned map; local map edits were preserved.');
 const solid=[...tmx.matchAll(/<tile id="(\d+)"[^>]*>([\s\S]*?)<\/tile>/g)].filter(m=>/<property name="c"/.test(m[2])).map(m=>Number(m[1])+1);
-const nativeTrees=discoverNativeTrees(JSON.parse(nativeMap),solid);
+const nativeTrees=discoverNativeObjects(JSON.parse(nativeMap),solid);
 for(const dest of ['server/ts/chaos-native-scenery.ts','client/ts/chaos-native-scenery.ts']){
  const content='// Generated from pinned Fracture map and atlas properties.\nexport const nativeTrees = '+JSON.stringify(nativeTrees)+';\n';
  const file=path.join(root,dest);
