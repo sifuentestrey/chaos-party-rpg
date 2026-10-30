@@ -13,6 +13,7 @@ import {spawnItem} from '../../public/campaign.js';
 import {Rng} from '../../public/vendor/partyframe-rng.js';
 import {selectD20} from '../../public/vendor/dnd5e-advantage.js';
 import {resolveObjectRoll} from './party-roles.mjs';
+import {validateEnvironmentJudgment} from './dm-environment-adjudication.mjs';
 const verbs=new Set(['take','drop','craft','attach','give','equip','unequip','separate','inspect','break','steal']);
 const environmental=new Set(['move','ignite','extinguish','repair']);
 // A capability is never inferred from a painted Fracture tile. These
@@ -482,6 +483,37 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    return result;
   }catch(error){state=previous;throw error;}
  }
+ // This entry accepts a structured AI-DM suggestion from the trusted bridge,
+ // not a phone-supplied world mutation. The validator checks the real native
+ // object's identity, reach and capability before invoking the same existing
+ // D20/scene persistence paths that normal commands use.
+ function adjudicateEnvironment(p,judgment){
+  surroundings(p);pulse(p);
+  if(!p?.chaosControlled||!p.hasEnteredGame||p.isDead||!identity(p))
+   return {blocked:true,success:false,text:'An active character must attempt the action.'};
+  const objects=visibleScenery(state,scene(p)).filter(o=>o.nativeOrigin&&o.kind==='tree').map(o=>({
+   id:o.id,verifiedNative:true,scene:o.scene,tile:o.tile,condition:o.condition,wet:o.wet>0,
+   capabilities:{breakable:o.condition!=='broken',flammable:o.condition!=='broken'&&o.condition!=='burning'}
+  }));
+  const decision=validateEnvironmentJudgment(judgment,{scene:scene(p),actor:{active:true,tile:{x:p.x,y:p.y}},objects,maxReach:1});
+  if(!decision.accepted)return {blocked:true,success:false,text:decision.reason};
+  const target=state.scenery[decision.targetId];
+  if(!target||!target.nativeOrigin)return {blocked:true,success:false,text:'The native object is no longer available.'};
+  // The DM can choose narrative framing, but never substitute invented damage,
+  // a fabricated roll, or self-reported world state. Original native execution
+  // remains the sole source of truth.
+  if(decision.action==='break'){
+   const result=strikeScenery(p,target.id.slice(scene(p).length+1),3,{fell:true});
+   return {blocked:!result.changed&&!result.attempted,success:!!result.changed,
+    ...(result.attempted?{roll:result.roll,dc:result.dc,bonus:result.bonus,rerolled:result.rerolled}:{}),
+    event:result.event,object:result.feedback,
+    text:result.changed?'The existing tree falls and its native trunk no longer blocks the path.':
+     (result.error||'The tree remains standing.')};
+  }
+  // Existing original-Chaos ignite path performs a real roll, changes the
+  // persistent tree state, starts its fire clock, and updates witnesses.
+  return apply(p,'ignite '+target.id);
+ }
  function execute(p,text){
   surroundings(p);pulse(p);
   const doorVerb=nativeDoorAttempt(text);
@@ -565,5 +597,5 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    return {id,fact,witnesses:witnessed.map(n=>n.name)};
   }catch(error){state=previous;throw error;}
  }
- return {prepareWorld:world=>seedNative({getWorld:()=>world}),snapshot,execute,approach,isBlocked:blocked,releaseDoorHolds:doorControl.releaseActor,talk,canQuest,recordNativeDefeat,registerScenery,strikeScenery};
+ return {prepareWorld:world=>seedNative({getWorld:()=>world}),snapshot,execute,adjudicateEnvironment,approach,isBlocked:blocked,releaseDoorHolds:doorControl.releaseActor,talk,canQuest,recordNativeDefeat,registerScenery,strikeScenery};
 }
