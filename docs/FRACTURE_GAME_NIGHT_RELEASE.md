@@ -1,5 +1,10 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Opt-in scenery adapter — October 30 (code committed; tests and native integration unverified)
+
+An authored-only scenery bridge now exposes persistent tree/structure durability and collision in the Chaos sidecar. `registerScenery(scene,id,kind,tile)` explicitly opts a fixture in; `strikeScenery(actor,id,damage)` enforces same-scene adjacency, persists damage, and removes sidecar collision after destruction. A text `attack/chop/break` action routes to registered scenery. Sidecar snapshots expose scenery and regression tests cover damage, scene isolation, JSON save/reload, and unknown-native-object refusal. **No native map object has yet been registered automatically; no TV renderer hookup or native tile/pathfinding invalidation is established.** These tests have not been run and pinned CI has not been verified for this commit. This is not the full tree-falls-visible-to-everyone gameplay acceptance loop.
+
+
 ## Experimental environment rules foundation — October 30 (NOT native-integrated)
 
 - [x] Added a deterministic, engine-independent environment capability table for trees, bushes, grass, buildings, walls, roofs, doors, furniture, rivers, lakes, ponds, terrain, rocks, cliffs and NPCs, plus damage, adjacent fire spread, rain/water extinguishing, wind direction and lightning ignition rules. Added five focused regression scenarios.
