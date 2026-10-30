@@ -1,5 +1,11 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Live-NPC presence gates fixture collision — October 30 (CI pending)
+
+- [x] Native NPC presence is now required before an NPC-owned sidecar fixture projects blocking collision. Saved NPC records alone cannot leave phantom obstacles after native NPC departure. Added a focused absent-owner regression, without modifying native Fracture map collision.
+- [ ] Focused test execution, pinned CI, browser movement acceptance and physical Mac verification are outstanding for this exact commit. No native scenery-wide destructibility is claimed.
+
+
 ## NPC-owned fixture collision — October 30 (regression authored, CI pending)
 
 - [x] Corrected a real core capability integration gap: intact blocking objects owned by a present NPC now obstruct movement in that NPC's native scene, while stale player inventory tiles and absent/other-zone NPC objects do not. Destroying the fixture clears collision through the same derived capability rule. No native Fracture terrain collision bypass.
