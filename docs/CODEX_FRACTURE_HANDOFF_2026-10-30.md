@@ -1,5 +1,12 @@
 # Codex handoff — Chaos Party experimental Fracture integration (October 30, 2026)
 
+## Original Chaos character-perk choice — October 30 (code committed; pinned CI queued)
+
+Reused the **canonical** original Chaos Party `PERKS` definitions rather than inventing a new class system. New characters on the isolated Fracture bridge may choose **Lucky-ish** (existing once-per-action natural 1–3 reroll) or **Suspiciously charming** (+2 on the genuinely implemented original Chaos NPC social-amends D20 check). The bridge validates the selected perk at pairing, persists it per character, binds it to that character's authenticated native socket, and rejects unsupported `tough`/unknown perks rather than fabricating native HP bonuses. Existing characters keep their saved Lucky-ish perk; no original save migration. The canonical apology result now exposes both class and perk modifiers and persists the resulting NPC trust/quest gate. This is a **bounded feature-parity increment**, not complete classes/avatar/campaign parity.
+
+Regression tests added for the social D20 modifier and natural 1/20, theft isolation, per-player pairing persistence and anti-spoofing, and a real Chaos-sidecar NPC apology with unchanged native HP. Two reconstructed pure-module Node 22.16 tests **passed locally (2/2)**; full repository/native/browser tests **have not been verified** for the new commits. GitHub Actions for source `334a397a8b1a459802582b51169a3a8d089e44b2` were **queued** at check: [pinned Fracture CI 41111523004](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41111523004), [offline PR CI 41111529506](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41111529506). No new Mac kit should be labeled verified until pinned CI succeeds. Physical Intel Mac/iPhone/TV acceptance remains outstanding.
+
+
 ## October 30 update — verified reactive gameplay and current code gate
 
 The earlier handoff below predates an independent **local Linux native/browser rehearsal** recorded at the top of `docs/FRACTURE_GAME_NIGHT_RELEASE.md` and in `experiments/fracture-phone-tv/evidence/README.md`. Do **not** repeat already verified work:
