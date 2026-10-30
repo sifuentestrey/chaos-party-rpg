@@ -53,3 +53,10 @@ test('a bystander who did not see the original ignition observes damage without 
  assert.equal(npcs.owner.memories['actor-1'],undefined);
  assert.equal(npcs.owner.history.at(-1).actorId,null);
 });
+
+test('NPC warns about active fire before previously burned property',()=>{
+ const npcs=sample();const items={old:{...item,id:'old',name:'old rug',condition:'broken',heat:4},active:{...item,id:'active',name:'new rug',condition:'burning',heat:1}};
+ assert.match(propertyConcern(items,npcs.owner,()=>true),/new rug is on fire/);
+ items.active.condition='intact';
+ assert.match(propertyConcern(items,npcs.owner,()=>true),/old rug burned through/);
+});
