@@ -115,9 +115,14 @@ try{
   assert.equal(updated?.hp,12-3*(n+1),'the saved world must record real damage');
  }
  assert.equal(state.actor.chaos.scenery.find(o=>o.id===tree.id).condition,'broken');
- helperState=await get(helperToken);
+ deadline=Date.now()+5000;
+ do{
+  helperState=await get(helperToken);
+  if(helperState.actor.chaos?.scenery?.find(o=>o.id===tree.id)?.condition==='broken')break;
+  await sleep(150);
+ }while(Date.now()<deadline);
  assert.equal(helperState.actor.chaos?.scenery?.find(o=>o.id===tree.id)?.condition,'broken',
-  'second native actor must observe the same fallen tree');
+  'second native actor must observe the same fallen tree after authoritative refresh');
  await sleep(250);
  const walkThrough=await post('/action',{token,text:'walk to '+tree.tile.x+','+tree.tile.y});
  assert.equal(walkThrough.status,202);
