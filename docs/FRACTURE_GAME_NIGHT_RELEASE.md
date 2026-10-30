@@ -1,5 +1,11 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Experimental environment rules foundation — October 30 (NOT native-integrated)
+
+- [x] Added a deterministic, engine-independent environment capability table for trees, bushes, grass, buildings, walls, roofs, doors, furniture, rivers, lakes, ponds, terrain, rocks, cliffs and NPCs, plus damage, adjacent fire spread, rain/water extinguishing, wind direction and lightning ignition rules. Added five focused regression scenarios.
+- [ ] These new rules are **not wired into native Fracture map, terrain, NPC HP, navigation, visual effects or persistence**. They do not make the listed scenery reactive in the playable game yet. Tests authored but not executed; pinned CI and Mac acceptance unverified. Native adapter and safe authoritatively-owned object mapping are the next required integration.
+
+
 ## Native environmental world-change push — October 30 (focused local verified; offline CI verified; pinned native pending)
 
 - [x] Added a reusable authoritative **visible-world fingerprint** for each Fracture-controlled actor (zone, ground objects, NPCs, story, camp). Changes to fire condition/HP, moved objects, NPC relationships or scene now schedule a coalesced, authenticated SSE `change` notification to active phones; each phone fetches its own `/state`. Private inventory, credentials and HP are not included in event payload or fingerprint. Existing 750-ms polling remains the fallback.
