@@ -530,6 +530,6 @@ test('native environmental changes notify another authenticated phone without ro
   ]);
   assert.match(event,/event: change/);
   assert.match(event,/data: \{\}/,'event carries no private world or account data');
-  assert.equal(app.room.events.some(e=>e.message?.includes('burning')),false,'world notification must not fabricate a room event');
+  assert.equal((app.room.events||[]).some(e=>e.message?.includes('burning')),false,'world notification must not fabricate a room event');
  }finally{controller.abort();}
 });
