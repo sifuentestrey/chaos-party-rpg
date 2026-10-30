@@ -636,7 +636,7 @@ test('chosen Charming perk changes real NPC apology roll without changing theft 
  assert.equal(apology.blocked,false,apology.text);
  assert.equal(apology.bonus,3);
  assert.equal(apology.perkBonus,2);
- assert.match(apology.text,/\\+3 class \\+2 Charming/);
+ assert.match(apology.text,/\+3 class \+2 Charming/);
  assert.equal(apology.success,apology.roll===20||(apology.roll!==1&&apology.roll+5>=apology.dc));
  assert.equal(a.hitPoints,hp,'native HP remains untouched by social perks');
  const saved=JSON.parse(fs.readFileSync(file,'utf8'));
