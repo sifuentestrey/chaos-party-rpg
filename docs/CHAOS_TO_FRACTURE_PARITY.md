@@ -1,5 +1,10 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Authenticated live room-event notifications — October 30
+
+The experimental room bridge now provides authenticated same-origin SSE change notifications to active phones, triggered by authoritative room event recording. Phones refresh their state immediately on receipt while retaining their existing polling fallback. This is room-event push, **not** a complete environmental object event bus or native TV synchronization; native fire/object changes without a bridge record may still be observed only through polling. No live browser/native CI or physical Mac verification for this change yet.
+
+
 ## Live native NPC presence for physical collision — October 30
 
 Sidecar collision now filters saved NPC owners against the native NPCs actually present in the world. This prevents a stale NPC save record from keeping an owned object as a phantom obstacle after the native NPC leaves. Regression authored; not yet executed or native-CI verified. This does not affect native map terrain collision.
