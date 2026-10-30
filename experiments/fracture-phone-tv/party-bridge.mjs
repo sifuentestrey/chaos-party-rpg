@@ -9,6 +9,7 @@ import {pathToFileURL} from 'node:url';
 import {createOptionalDM} from './optional-dm.mjs';
 import {shouldUseCreative} from './chaos-world.mjs';
 import {worldFingerprint} from './world-change.mjs';
+import {beginActorRefresh,finishActorRefresh,invalidateActorRefresh} from './actor-refresh.mjs';
 import {parseIntent} from './action-contract.ts';
 import {proposeRally,proposeExpedition,expeditionEligible,voteRally,settleRally,rallyView} from './party-rally.mjs';
 import {preferredLanIp} from './lan-address.mjs';
@@ -91,7 +92,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
   const session={player,socket,actor:null,worldFingerprint:null,results:new Map(),declarations:new Map(),attempts:new Map(),lastAction:0,epoch:0,lastSeen:0,suspending:false};sessions.set(player.token,session);
   socket.on('connect_error',()=>{session.error='Fracture is unavailable. The host should check its launcher.';});
   socket.on('connect',()=>{session.error=null;session.actor=null;socket.emit('message',[0,player.account,21,60,0,player.password]);});
-  socket.on('disconnect',()=>{session.worldFingerprint=null;cancelPending(session,'Announced action cancelled: character disconnected.');session.actor=null;session.epoch++;session.storyController?.abort();session.declarations.clear();session.attempts.clear();for(const [id,result] of session.results)if(['received','started'].includes(result.status))session.results.set(id,{...result,status:'failed',message:'Game connection lost. Reconnect and try again.'});});
+  socket.on('disconnect',()=>{invalidateActorRefresh(session);session.worldFingerprint=null;cancelPending(session,'Announced action cancelled: character disconnected.');session.actor=null;session.epoch++;session.storyController?.abort();session.declarations.clear();session.attempts.clear();for(const [id,result] of session.results)if(['received','started'].includes(result.status))session.results.set(id,{...result,status:'failed',message:'Game connection lost. Reconnect and try again.'});});
   socket.on('message',data=>{const messages=Array.isArray(data?.[0])?data:[data];for(const msg of messages){
    if(!Array.isArray(msg))continue;
    if(msg[0]===1){session.actor={id:msg[1],name:player.name,x:msg[3],y:msg[4],hp:msg[5],ready:true};refresh(session);}
@@ -190,7 +191,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
    dispatch(s,{verb:'go',x:target.x,y:target.y},expedition?'Approved travel: walk toward '+rally.arrivalZone:'Party rally: walk to '+target.x+', '+target.y);
   }
  }
- function refresh(s){if(s.socket.connected&&s.actor)s.socket.timeout(1500).emit('chaos:state',{key:actorKey},(err,r)=>{if(!err&&r?.ok){
+ function refresh(s){const ticket=beginActorRefresh(s);if(!ticket)return;s.socket.timeout(1500).emit('chaos:state',{key:actorKey},(err,r)=>{if(!finishActorRefresh(s,ticket))return;if(!err&&r?.ok){
   s.actor=r.actor;
   if(!s.player.parked){
    const nextWorld=worldFingerprint(r.actor);
