@@ -1,5 +1,12 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Native environment AI wiring — October 30, 2026 (partial parity; pinned CI pass)
+
+On experimental `spike/fracture-phone-tv`, unexpected free-form player text can now reach the optional DM's structured, grounded native-environment proposal, cross the phone/bridge action contract and execute through the existing authenticated native Fracture oak mutation boundary. The engine revalidates reach, zone, line of sight and DC 14 before committing a real D20 tree fall and original-map collision change; model descriptions are not state truth. No new art or objects. The live Groq model itself has **not** been verified with a physical phone/TV; native integration CI uses a clearly labeled model stub.
+
+[Pinned CI 41136693795](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41136693795) at `8c1088ac5904e9b6ea418b56025c935ec579d5ae` passed **3,331 upstream Fracture tests**, client/server build, native server boot, two distinct actors, a three-roll authored-oak fall with persistent shared collision and walk-through, and majority travel to and back from Glitch Woods. This confirms only the bounded existing-oak vertical slice. The original Chaos adventure/character feature parity, generalized native furniture/vegetation/rocks, true model-driven creative adjudication acceptance, physical Mac/iPhone/TV, and full release remain **open**. CI Mac packaging is held until owner physical acceptance.
+
+
 ## Native-art-only environmental gate — October 30, 2026 (code committed; pinned native acceptance pending)
 
 The owner forbids creating or seeding any new visual assets, props, trees, rugs, furniture, maps, or placeholder scenery. Live `createChaosWorld` now defaults to `allowSyntheticFixtures=false`: a fresh Fracture session no longer generates starter supplies, camp items/table, per-spawn trees, NPC rugs or wood-offcut loot. Synthetic object setup is explicitly enabled **only by isolated legacy unit-test fixtures**; existing separate save data is preserved rather than silently deleted. Manual registration of unverified scenery and crafting/attachment that would create unverified props are blocked, with a mutation-boundary check rejecting new item IDs. These restrictions intentionally reduce legacy crafting/object play until real native assets are verified and mapped.
