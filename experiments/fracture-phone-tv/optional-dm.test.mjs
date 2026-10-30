@@ -34,3 +34,11 @@ test('saved connection reloads privately, stays off by default and can be checke
 test('known entity capitalization is canonicalized without accepting invented names',async t=>{const {dm}=dmFixture(t,async()=>({ok:true,json:async()=>({choices:[{message:{content:'{"verb":"talk","target":"Guard"}'}}]})}));assert.deepEqual(await dm.interpret('ask the watchman',{nearby:[{name:'guard',type:'npc'}]}),{verb:'talk',target:'guard'});});
 
 test('queued requests respect a newly received provider rate limit',async t=>{let calls=0;const {dm}=dmFixture(t,async()=>{calls++;await new Promise(r=>setTimeout(r,5));return {ok:false,status:429};});const results=await Promise.all(Array.from({length:4},(_,i)=>dm.narrate({...resolved,id:'rate-'+i})));assert.ok(results.every(r=>r===null));assert.equal(calls,2,'Only the two already in flight are sent');});
+test('AI may propose an action on a visible authored object, never an invented scenery ID',async t=>{
+ let target='extinguish fracture:world:authored-tree-1';
+ const {dm}=dmFixture(t,async()=>({ok:true,json:async()=>({choices:[{message:{content:JSON.stringify({verb:'creative',target})}}]})}));
+ const scene={chaos:{scenery:[{id:'fracture:world:authored-tree-1',condition:'burning'}]}};
+ assert.deepEqual(await dm.interpret('save that burning tree',scene),{verb:'creative',target});
+ target='extinguish fracture:world:invented-tree';
+ assert.equal(await dm.interpret('save that burning tree',scene),null);
+});

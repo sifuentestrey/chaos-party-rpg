@@ -25,7 +25,7 @@ export function environmentObject(id,kind,tile,overrides={}){
  if(!base||!id||!Number.isInteger(tile?.x)||!Number.isInteger(tile?.y))throw Error('Invalid environmental object');
  return {id,kind,tile:{x:tile.x,y:tile.y},...base,condition:'intact',wet:0,...overrides};
 }
-export function environmentStep(objects,{rain=0,wind={x:0,y:0},lightningTile=null}={}){
+export function environmentStep(objects,{rain=0,wind={x:0,y:0},lightningTile=null,canSpread=()=>true}={}){
  if(!Number.isFinite(rain)||rain<0||rain>1||![wind.x,wind.y].every(Number.isFinite))throw Error('Invalid weather');
  const previous=Object.values(objects||{});
  const next=Object.fromEntries(previous.map(o=>[o.id,{...o,tile:{...o.tile}}]));
@@ -38,7 +38,7 @@ export function environmentStep(objects,{rain=0,wind={x:0,y:0},lightningTile=nul
   const wet=Math.min(3,Math.max(0,(item.wet||0)+(rain>0?1:nearWater?1:-1)));
   item.wet=wet;
   const lightning=lightningTile&&item.tile.x===lightningTile.x&&item.tile.y===lightningTile.y;
-  const source=previous.find(o=>o.id!==item.id&&o.condition==='burning'&&adjacent(o.tile,item.tile)&&
+  const source=previous.find(o=>o.id!==item.id&&o.condition==='burning'&&adjacent(o.tile,item.tile)&&canSpread(o,item)&&
    (wind.x===0&&wind.y===0||(item.tile.x-o.tile.x)*wind.x+(item.tile.y-o.tile.y)*wind.y>=0));
   if(item.condition==='burning'){
    if(rain>=0.5||nearWater){item.condition='intact';changes.push({id:item.id,type:'extinguished'});}

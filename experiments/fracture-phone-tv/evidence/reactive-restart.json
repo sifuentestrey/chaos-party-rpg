@@ -1,0 +1,34 @@
+{
+  "status": "passed",
+  "checks": [
+    "actual launcher stop and fresh process restart",
+    "both native character positions, health, gear and inventories retained",
+    "authored tree zero HP and cleared collision state retained",
+    "all Chaos object conditions and ownership retained",
+    "NPC personal trust and witnessed-action histories retained",
+    "canonical DM memory retained"
+  ],
+  "players": [
+    {
+      "name": "ReactorAsh",
+      "x": 40,
+      "y": 224
+    },
+    {
+      "name": "ReactorEmber",
+      "x": 39,
+      "y": 224
+    }
+  ],
+  "tree": [
+    {
+      "name": "camp tree",
+      "tile": {
+        "x": 40,
+        "y": 224
+      },
+      "condition": "broken",
+      "hp": 0
+    }
+  ]
+}

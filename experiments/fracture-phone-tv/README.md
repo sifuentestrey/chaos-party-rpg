@@ -53,6 +53,14 @@ Crafted possessions and their ingredients persist separately in the Fracture clo
 
 **NPC possession and theft (experimental):** Real nearby native NPCs can hold explicitly created Chaos objects; they receive a custom rug once and can accept gifts. This does not invent native weapons, gold or combat inventory. Both failed and successful theft use original Chaos trust/history rules, while only a successful roll transfers ownership. Native zone/geometry checks protect pickup and gifts. Current memory changes conversations and access to new quests; native combat AI, existing quest progress and reward rules remain unchanged.
 
+## Reactive objects on the native map
+
+Chaos floor objects support real pushing, burning, extinguishing, repair, ownership and original D20 checks. The explicitly authored **camp tree** can be chopped or ignited; its saved HP and fallen state control phone-driver collision and appear on the shared TV. Use its displayed ID when names repeat. `put out camp tree` and `extinguish <object ID>` use the same existing Chaos action rules. A rooted tree cannot be pushed, and a felled tree cannot be repaired into a living tree.
+
+Fire spreads only between adjacent eligible objects on valid tiles in the same native zone. Adjacent fires can relight each other: two players can extinguish both during the same interval. Nearby native NPCs warn about their burning Chaos property and can extinguish it after a warning tick; absent NPCs cannot rescue it. Native painted scenery and character HP remain under Fracture's own rules. Weather definitions are not a playable weather system.
+
+Developer browser check (disposable saves only): `verify-reactive.mjs` uses two existing isolated characters, a carried wood item, an intact camp tree and the pinned guard's intact rug. Supply `CHAOS_BETA_TEST=1`, `CHAOS_TEST_ROOM_FILE`, `CHAOS_BROWSER_TOOLS`, `CHAOS_TV_KEY`, and optionally `CHAOS_BROWSER_REPORT_DIR`. It submits actual phone forms and captures TV/phone evidence; it consumes real materials and tree HP, so use a new disposable world rather than resetting player saves.
+
 ## Replaying the optional Refuge Trial
 
 After the party completes The Refuge Trial, the private Mac host page offers **Start another trial**. This requires host confirmation, archives the previous completion in a private bounded summary, and starts a fresh four-step objective. It does **not** restart the Fracture server, reset character equipment/levels, erase native quests, alter original Chaos saves, or replay Crown Job/Dawn Bell. An active trial cannot be restarted or erased by a phone; late actions from a previous run cannot earn progress in the new run. The original campaign and class systems remain unported.

@@ -32,10 +32,16 @@ export function sceneryAttempt(text,scenery=[]){
  if(!m)return null;
  const target=norm(m[1]);
  const matches=scenery.filter(o=>o&&o.scene&&o.tile&&
-  [o.kind,o.name,o.id?.slice(o.scene.length+1)].some(ref=>norm(ref)===target));
+  [o.kind,o.name,o.id,o.id?.slice(o.scene.length+1)].some(ref=>norm(ref)===target));
  return matches.length===1?matches[0]:null;
 }
-export function shouldUseCreative(text,actor){if(sceneryAttempt(text,actor?.chaos?.scenery||[]))return true;const a=creativeAttempt(text);if(!a)return false;if(['craft','attach','give','separate','steal','assist','hinder','appeal'].includes(a.verb))return true;const items=[...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[]),...(actor?.chaos?.npcs||[]).flatMap(n=>n.items||[])];const reference=a.item||a.target;return items.some(i=>i.id===reference||norm(i.name)===norm(reference));}
+function sceneryObjectAttempt(text,scenery=[]){
+ const attempt=creativeAttempt(text);if(!attempt||!['ignite','extinguish','repair','move','inspect'].includes(attempt.verb))return null;
+ const target=norm(attempt.target||attempt.item);
+ const matches=scenery.filter(o=>[o.kind,o.name,o.id,o.id?.slice(o.scene.length+1)].some(ref=>norm(ref)===target));
+ return matches.length===1?{attempt:{...attempt,entityAction:true,target:matches[0].id},object:matches[0]}:null;
+}
+export function shouldUseCreative(text,actor){if(sceneryAttempt(text,actor?.chaos?.scenery||[])||sceneryObjectAttempt(text,actor?.chaos?.scenery||[]))return true;const a=creativeAttempt(text);if(!a)return false;if(['craft','attach','give','separate','steal','assist','hinder','appeal'].includes(a.verb))return true;const items=[...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[]),...(actor?.chaos?.npcs||[]).flatMap(n=>n.items||[])];const reference=a.item||a.target;return items.some(i=>i.id===reference||norm(i.name)===norm(reference));}
 
 export const fireCatchup=(last,now)=>({steps:Math.min(3,Math.floor(Math.max(0,now-last)/10000)),next:last+Math.min(3,Math.floor(Math.max(0,now-last)/10000))*10000});
 const distance=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
@@ -151,7 +157,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    if(tile){const previous=state;state=structuredClone(state);try{state.camp.tableId=add(scene(p),{name:'camp table',type:'fixture',material:'wood',portable:true,blocks:true,tile,visual:'table',hp:4,maxHp:4}).id;persist();}catch(error){state=previous;throw error;}}
   }
  }
- function npcViews(p){const present=new Set(nativeNPCs(p).map(n=>npcKey(p,n)));return Object.values(state.npcs).filter(n=>present.has(n.id)&&n.location===scene(p)&&visible(p,n));}
+ function npcViews(p){const present=new Map(nativeNPCs(p).map(n=>[npcKey(p,n),n]));return Object.values(state.npcs).filter(n=>present.has(n.id)&&n.location===scene(p)&&visible(p,n)).map(n=>{n.nativeId=String(present.get(n.id).id);return n;});}
  function blocked(p,x,y){
   // Persisted NPC ownership is not proof the native NPC is still present.
   // Only currently observed native owners can project their fixtures here.
@@ -189,7 +195,8 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    const onFloor=i=>i.tile&&(!i.ownerId?i.location===current:state.npcs[i.ownerId]?.location===current);
    const zone=tile=>tile&&p.getWorld().isValidPosition(tile.x,tile.y)?zoneAt(p.getWorld(),tile.x,tile.y):null;
    for(let i=0;i<steps;i++){
-    const sources=Object.values(state.items).filter(item=>onFloor(item)&&item.condition==='burning');
+    const sources=[...Object.values(state.items).filter(item=>onFloor(item)&&item.condition==='burning'),
+     ...visibleScenery(state,current).filter(item=>item.condition==='burning')];
     changes.push(...advanceEntities({round:state.round,players:owned},{current,items:state.items,creatures:{}}));
     for(const source of sources)if(onFloor(source)&&source.condition==='broken'){
      witnessed('fire-destruction',source,source.ignitedBy);
@@ -222,12 +229,11 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
      npc.history=[...(npc.history||[]),{verb:'extinguish',actorId:npc.id,itemId:item.id,round:state.round+1,success:true}].slice(-12);
      changes.push(`${npc.name} extinguishes ${item.name}`);eventTile||={...item.tile};
     }
-   }
-   // Advance authored overlays at the same bounded fire cadence as Chaos items.
-   // Native Fracture tiles and NPC HP are never modified here.
-   for(let i=0;i<steps;i++){
-    const sceneryChanges=advanceAuthoredFire(state,current);
-    for(const change of sceneryChanges)changes.push(change.kind+' '+change.after);
+    const sceneryChanges=advanceAuthoredFire(state,current,{
+     sources:sources.filter(src=>src.condition==='burning'),
+     canSpread:(src,target)=>!!zone(src.tile)&&zone(src.tile)===zone(target.tile)
+    });
+    for(const change of sceneryChanges){changes.push(change.kind+' '+change.after);eventTile||=state.scenery[change.id].tile;}
    }
    state.fireClock[current]=next; // Preserve unprocessed elapsed ticks across bounded catch-up.
    if(changes.length){const room={round:++state.round,world:{expedition:{current,creatures:state.npcs}},dmMemory:state.dmMemory,result:{id:'chaos-'+state.round,playerId:'fire',name:'Fire',action:'fire progresses',target:{entityId:burning[0]?.id||'authored-scenery'},blocked:false,success:true,narration:changes.join('. ')+'.',changes,sceneEvents:[]}};recordDMMemory(room);state.dmMemory.entries.at(-1).tile=eventTile||burning[0]?.tile||{x:p.x,y:p.y};}
@@ -247,8 +253,15 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
  function apply(p,text){
   if(!identity(p))return {blocked:true,success:false,text:'Your character is still connecting.'};
   if(p.isDead)return {blocked:true,success:false,text:'Respawn before handling objects.'};
-  const attempt=creativeAttempt(text);if(!attempt)return {blocked:true,success:false,text:'That object action is not available yet.'};
+  const sceneryAction=sceneryObjectAttempt(text,visibleScenery(state,scene(p)).filter(o=>visible(p,o.tile)));
+  const attempt=sceneryAction?.attempt||creativeAttempt(text);if(!attempt)return {blocked:true,success:false,text:'That object action is not available yet.'};
   const {room,actor,s}=projection(p);if(!actor)return {blocked:true,success:false,text:'Your character is still connecting.'};
+  if(sceneryAction){
+   const o=sceneryAction.object;
+   if(attempt.verb==='repair'&&o.kind==='tree')return {blocked:true,success:false,text:'A felled tree cannot be repaired. The cleared tile remains passable.'};
+   if(attempt.verb==='ignite'&&o.condition==='broken')return {blocked:true,success:false,text:'That scenery is already destroyed.'};
+   s.items[o.id]={...o,location:s.current,type:'fixture',portable:false,maxHp:o.maxHp??12,components:[]};
+  }
   // One reusable original Chaos advantage check for any legitimate world D20
   // action, including social checks. Only an actual roll consumes assistance.
   // Projection includes ONLY living, nearby, connected actors in this zone.
@@ -315,7 +328,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const planning=publicAid?{...s,items:{...s.items,[projectedTarget.id]:{...projectedTarget,ownerId:null,location:s.current}}}:s;
   const plan=attempt.entityAction?planEntity(room,planning,actor,attempt,(_s,r,ref)=>targetItem(planning,r,ref)):planItemAttempt(room,actor,attempt);
   if(!plan)return {blocked:true,success:false,text:'No unique object matches that request.'};
-  const item=state.items[plan.itemId||plan.targetId];
+  const item=state.items[plan.itemId||plan.targetId]||(sceneryAction?s.items[plan.targetId]:null);
   if(item?.ownerId&&item.ownerId!==actor.id&&!state.npcs[item.ownerId])return {blocked:true,success:false,text:'Another player owns that object. Ask them to give or drop it.'};
   const itemTile=item?.tile||state.npcs[item?.ownerId]?.tile;
   if(item&&(itemTile||state.npcs[item.ownerId])&&(!itemTile||(!item.ownerId&&scene(p)!==item.location)||!reachable(p,itemTile)))return {blocked:true,success:false,text:'Walk closer to that object before interacting with it.'};
@@ -338,9 +351,14 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   }
   const success=plan.automatic||check.success;
   const result=attempt.entityAction?resolveEntity(room,s,actor,plan,success):resolveItem(room,actor,plan,success);
+  if(sceneryAction){
+   const updated=s.items[sceneryAction.object.id];
+   Object.assign(state.scenery[updated.id],{condition:updated.condition,hp:updated.hp,heat:updated.heat});
+   delete s.items[updated.id];
+  }
   Object.assign(state.items,s.items);state.nextId=s.nextId;state.rng=rng.snapshot();state.round++;
   if(result.success&&destination)item.tile=destination;
-  if(result.success&&plan.verb==='ignite'&&item){item.ignitedBy=actor.id;item.ignitionOriginId=item.id;}
+  if(result.success&&plan.verb==='ignite'&&item){item.ignitedBy=actor.id;item.ignitionOriginId=item.id;if(sceneryAction)Object.assign(state.scenery[item.id],{ignitedBy:item.ignitedBy,ignitionOriginId:item.id});}
   if(result.success&&plan.verb==='extinguish'&&item?.ownerId&&state.npcs[item.ownerId])delete state.npcs[item.ownerId].fireAlert;
   if(result.success&&attempt.verb==='drop'&&item)item.tile={x:p.x,y:p.y};
   if(result.success&&['take','give','steal'].includes(attempt.verb)&&item)delete item.tile;
@@ -369,15 +387,19 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
  function registerScenery(sceneId,id,kind,tile){
   const existing=state.scenery?.[sceneId+':'+id];
   if(existing)return existing;
-  const obj=registerAuthoredScenery(state,{scene:sceneId,id,kind,tile});persist();return obj;
+  const previous=state;state=structuredClone(state);try{
+   const obj=registerAuthoredScenery(state,{scene:sceneId,id,kind,tile});persist();return obj;
+  }catch(error){state=previous;throw error;}
  }
  function strikeScenery(p,id,damage=1){
   if(!identity(p)||p.isDead)return {changed:false,error:'Active living actor required'};
   const obj=state.scenery[scene(p)+':'+id];
   if(!obj||!sameZone(p,obj.tile)||distance(p,obj.tile)>1)return {changed:false,error:'Scenery out of reach'};
-  const result=damageAuthoredScenery(state,{scene:scene(p),id,damage});
-  if(result.changed)persist();
-  return result;
+  const previous=state;state=structuredClone(state);try{
+   const result=damageAuthoredScenery(state,{scene:scene(p),id,damage});
+   if(result.changed)persist();
+   return result;
+  }catch(error){state=previous;throw error;}
  }
  function execute(p,text){
   surroundings(p);pulse(p);
@@ -393,7 +415,8 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const previous=state;state=structuredClone(state);try{const result=apply(p,text);if(result.blocked)state=previous;return result;}catch(error){state=previous;throw error;}}
  function approach(p,text){
   surroundings(p);
-  const scenery=sceneryAttempt(text,visibleScenery(state,scene(p)).filter(o=>visible(p,o.tile)));
+  const view=visibleScenery(state,scene(p)).filter(o=>visible(p,o.tile));
+  const scenery=sceneryAttempt(text,view)||sceneryObjectAttempt(text,view)?.object;
   if(scenery)return sameZone(p,scenery.tile)&&distance(p,scenery.tile)>1?{...scenery.tile}:null;
   const attempt=creativeAttempt(text);if(!attempt)return null;
   const {room,actor,s}=projection(p);if(!actor||attempt.entityAction&&!targetItem(s,room,attempt.target))return null;

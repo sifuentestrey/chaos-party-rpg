@@ -552,3 +552,72 @@ test('no walkable authored-tree tile means no scenery or fabricated destruction'
  assert.equal(shouldUseCreative('attack tree',{chaos:view}),false);
  assert.equal(engine.execute(a,'attack tree').blocked,true);
 });
+
+test('authored fire respects native zones within the same world',t=>{
+ const {a,engine,world,tick,file}=fixture(t);
+ const tree=engine.snapshot(a).scenery[0];
+ a.x=tree.tile.x-1;a.y=tree.tile.y;
+ engine.execute(a,'drop cloth strip');
+ succeed(engine,a,'ignite cloth strip');
+ world.zoneManager.getZoneAt=x=>({name:x<tree.tile.x?'west':'east'});
+ tick();
+ assert.equal(JSON.parse(fs.readFileSync(file)).scenery[tree.id].condition,'intact');
+});
+
+test('batched fire catch-up agrees with individual ticks for authored scenery',t=>{
+ const results=[];
+ for(const batched of [false,true]){
+  const {a,engine,file,tick}=fixture(t);
+  const tree=engine.snapshot(a).scenery[0];a.x=tree.tile.x-1;a.y=tree.tile.y;
+  engine.execute(a,'drop cloth strip');succeed(engine,a,'ignite cloth strip');
+  if(batched)createChaosWorld({file,clock:()=>31000}).snapshot(a);
+  else {tick();tick();tick();}
+  const saved=JSON.parse(fs.readFileSync(file));
+  results.push({condition:saved.scenery[tree.id].condition,hp:saved.scenery[tree.id].hp});
+ }
+ assert.deepEqual(results[0],results[1]);
+ assert.equal(results[0].condition,'burning');
+});
+test('players can douse authored fire through original rules and canonical receipts',t=>{
+ const {a,b,engine,file,tick}=fixture(t);
+ const tree=engine.snapshot(a).scenery[0];a.x=tree.tile.x-1;a.y=tree.tile.y;
+ succeed(engine,a,'ignite camp tree');tick();
+ assert.equal(engine.snapshot(a).scenery[0].condition,'burning');
+ const hp=engine.snapshot(a).scenery[0].hp;
+ assert.equal(shouldUseCreative('put out the camp tree',{chaos:engine.snapshot(a)}),true);
+ assert.equal(engine.execute(a,'put out the camp tree').success,true);
+ tick();assert.equal(engine.snapshot(a).scenery[0].hp,hp);
+ assert.equal(engine.snapshot(a).scenery[0].condition,'intact');
+ assert.equal(engine.isBlocked(a,tree.tile.x,tree.tile.y),true);
+ b.x=a.x;b.y=a.y;
+ assert.equal(engine.snapshot(b).scenery[0].condition,'intact');
+ assert.equal(createChaosWorld({file,clock:()=>21000}).snapshot(a).scenery[0].condition,'intact');
+ assert.ok(engine.snapshot(a).story.some(e=>/extinguish/i.test(e.fact)));
+ assert.equal(engine.execute(a,'push camp tree east').blocked,true,'rooted scenery cannot be pushed');
+});
+test('authored damage rolls back when the durable save fails',t=>{
+ const {a,engine,file}=fixture(t);const tree=engine.snapshot(a).scenery[0];
+ a.x=tree.tile.x-1;a.y=tree.tile.y;
+ fs.renameSync(file,file+'.saved');fs.mkdirSync(file);
+ assert.throws(()=>engine.execute(a,'attack tree'));
+ fs.rmdirSync(file);fs.renameSync(file+'.saved',file);
+ assert.equal(engine.snapshot(a).scenery[0].hp,12);
+});
+test('authored and ordinary objects conduct fire one hop per tick in both directions',t=>{
+ const {a,engine,tick}=fixture(t);const tree=engine.snapshot(a).scenery[0];
+ a.x=tree.tile.x-1;a.y=tree.tile.y;engine.execute(a,'drop cloth strip');
+ a.x--;engine.execute(a,'drop wood splinter');a.x++;
+ succeed(engine,a,'ignite camp tree');tick();
+ let view=engine.snapshot(a);
+ assert.equal(view.ground.find(i=>i.name==='cloth strip').condition,'burning');
+ assert.equal(view.ground.find(i=>i.name==='wood splinter').condition,'intact');
+ tick();view=engine.snapshot(a);
+ assert.equal(view.ground.find(i=>i.name==='wood splinter').condition,'burning');
+ assert.equal(engine.execute(a,'extinguish '+tree.id).success,true,'full displayed IDs work too');
+});
+test('stable NPC identities bind to the current native body after reconnect',t=>{
+ const {a,guard,engine,file}=npcFixture(t);const original=engine.snapshot(a).npcs.find(n=>n.nativeId==='91');
+ assert.ok(original);guard.id=912;
+ const restored=createChaosWorld({file});const current=restored.snapshot(a).npcs.find(n=>n.id===original.id);
+ assert.equal(current.nativeId,'912');assert.equal(current.id,original.id);assert.deepEqual(current.items.map(i=>i.id),original.items.map(i=>i.id));
+});

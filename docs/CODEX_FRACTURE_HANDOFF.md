@@ -1,5 +1,7 @@
 # Chaos Party — Codex engineering handoff (2026-10-30)
 
+**Latest continuation:** independent review imported remote work through `7a5f4cd` and repaired zone/tick ordering, authored extinguishing, save rollback and displayed-identity grounding. Real two-phone/native-TV reactive fire, stump/collision, NPC alarm/autonomous rescue and launcher restart now have local evidence under `experiments/fracture-phone-tv/evidence/reactive*`. The latest section of `docs/FRACTURE_GAME_NIGHT_RELEASE.md` supersedes the browser/fire gaps listed below. 165 focused checks, nine final native actor checks, native builds/full 3,329-test milestone and original verification passed locally. Physical Mac/group acceptance, native scenery/weather and full campaign parity remain unverified. Do not reset synthetic saves to replay consumed trees/materials; use another disposable world.
+
 **Read first:** `AGENTS.md`, issue #12, `docs/CHAOS_TO_FRACTURE_PARITY.md`, `docs/FRACTURE_GAME_NIGHT_RELEASE.md`. These documents define the release gate. **Do not describe the Fracture spike as finished Chaos Party.** Original canonical branch: `luna/visual-game-night-release` (protected). Experimental branch: `spike/fracture-phone-tv` (draft PR #11). Never merge/deploy, spend money, or touch original saves/credentials without owner approval.
 
 ## Proven vs. experimental

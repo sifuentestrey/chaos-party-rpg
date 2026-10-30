@@ -86,3 +86,13 @@ describe('native consumable integration',()=>{
   player.hitPoints=player.maxHitPoints;await action('full');expect(inventory.getSlot(0)?.count).toBe(1);expect(receipts.at(-1).status).toBe('blocked');socket.emit('disconnect');
  });
 });
+
+describe('grounded native entity identity',()=>{
+ it('selects the displayed identity instead of a closer character with a similar name',()=>{
+  const {socket,world}=fixture();const receipts:any[]=[];socket.on('chaos:receipt',r=>receipts.push(r));
+  (world as any).entities={near:{id:7,name:'near guard8',type:'npc',kind:Types.Entities.GUARD,x:11,y:10},far:{id:8,name:'far guard',type:'npc',kind:Types.Entities.GUARD,x:13,y:10}};
+  const ack=vi.fn();socket.emit('chaos:action',{key:'test-actor-key',actorId:123,id:'identity-talk',issuedAt:Date.now(),intent:{verb:'talk',target:'8'}},ack);
+  expect(ack).toHaveBeenCalledWith({ok:true});expect(receipts.at(-1).message).toBe('talk: approaching far guard.');
+  socket.emit('disconnect');
+ });
+});

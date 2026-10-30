@@ -55,3 +55,16 @@ The old live adapter was broken: its hard-coded Llama model returned HTTP 404, p
 - Current **69 focused checks** cover immediate interpretation→narration, bounded parallel queueing, cancellation, safe provider/auth/quota/model status, respecting a new rate limit for queued calls, and private key configuration/reload with no credential exposure.
 
 The private host can save an existing Groq key only to the isolated data folder, test it, and enable live AI. The kit contains no keys. The existing free allowance is shared by interpretation and narration, with no automatic retry or paid provider fallback. These live scenarios establish a functioning bounded DM, not universal semantic correctness or untested twenty-player live-AI capacity.
+
+## Independent integration review and reactive-world browser proof — October 30
+
+The latest review retained the other session's remote work through `7a5f4cd`, then fixed native-zone leakage, batched fire ordering, missing player extinguishing of authored scenery, non-atomic scenery saves and displayed-ID grounding.
+
+- `reactive-core.json`, `reactive-table-tv.png`, `reactive-guard-memory-tv.png`: new actual phone-form replay of table movement/collision/fire/repair plus witnessed theft, independent reputation, native quest gating, original Bard social D20, gift recovery and remembered native dialogue. No browser errors.
+- `reactive.json`: two different native actors, ground-fuel → authored-tree propagation, live second-phone update, two-player extinguishing with retained HP, direct original-D20 ignition, unattended server-clock destruction, native walking through the newly cleared tile, real guard alarm and autonomous owned-rug rescue, persisted ownership/history and reload. No browser errors.
+- `reactive-tree-fire-tv.png`, `reactive-tree-stump-tv.png`, `reactive-second-phone.png`, `reactive-npc-alarm-tv.png`: rendered native TV and phone proof, not mock screens. The small camp tree/stump is explicitly Chaos-authored; larger native map trees are not destructible through this adapter.
+- `reactive-restart.json`: actual ordered launcher shutdown and fresh processes retained both native positions/gear/inventories, all Chaos objects, authored destruction/collision state, NPC trust/history and canonical DM memory.
+
+An earlier sequential-extinguishing rehearsal failed its stable-HP assertion because the remaining adjacent fire legitimately relit its neighbor during separate action windows. The successful proof coordinates two real players; propagation was preserved. Regression checks separately prove same-world native-zone isolation, chronological batch/individual tick equivalence, one-hop propagation, rollback on disk failure and rebinding stable NPC IDs to their current native bodies.
+
+Validation: 165 focused Node checks (no skips with the isolated native checkout), native production builds and full existing 3,329 tests, then nine final native actor checks after exact-ID precedence; original `npm run verify`. The final source kit has its own extracted Node 22 check. No new physical Mac/12–20-phone acceptance or full campaign/native weather/terrain/HP integration is implied. Screenshot attribution remains the Fracture CC BY-SA notice above.

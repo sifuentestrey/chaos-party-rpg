@@ -104,7 +104,10 @@ export function installChaosActor(player:any, connection:any): void {
     let target:any=null;
     if(intent.target){
       const phrase=intent.target.toLowerCase();
-      const candidates=nearby().filter(e=>{const name=label(e).toLowerCase();return name===phrase || name.includes(phrase) || (phrase==='item'&&Types.isItem(e.kind)) || (phrase==='enemy'&&Types.isMob(e.kind)) || (phrase==='guard'&&Types.isNpc(e.kind)&&name.includes('guard'));});
+      const alias=objectSnapshot()?.npcs?.find((n:any)=>n.id===intent.target);
+      const visible=nearby();
+      const exact=visible.find(e=>String(e.id)===phrase || (alias&&String(e.id)===String(alias.nativeId)));
+      const candidates=exact?[exact]:visible.filter(e=>{const name=label(e).toLowerCase();return name===phrase || name.includes(phrase) || (phrase==='item'&&Types.isItem(e.kind)) || (phrase==='enemy'&&Types.isMob(e.kind)) || (phrase==='guard'&&Types.isNpc(e.kind)&&name.includes('guard'));});
       candidates.sort((a,b)=>distance(player,a)-distance(player,b)); target=candidates[0];
       if(intent.verb==='manipulate'){receipt(id,'blocked',target?`${label(target)} cannot be moved by the available mechanics.`:`I don't see an interactable ${intent.target} nearby. Scenery cannot be moved.`);return ack({ok:true});}
       if(!target){receipt(id,'blocked',`I don't see ${intent.target} nearby. Use look around.`);return ack({ok:true});}
