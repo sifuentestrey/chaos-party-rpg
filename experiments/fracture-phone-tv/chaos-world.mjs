@@ -453,7 +453,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
     if(result.object.condition==='broken'&&obj.nativeOrigin)add(null,{name:'wood offcut',material:'wood',type:'tool',ownerId:identity(p),originId:obj.id});
     state.round++;
     const fact=fell?`${name(p)} brings down the existing ${obj.name} after a D20 check. Its original trunk is no longer blocking the path.`:`${name(p)} chops ${obj.name}. ${before} → ${result.object.hp} HP.${result.object.condition==='broken'?' The tree falls and its trunk tiles are cleared.':''}`;
-    const room={round:state.round,world:{expedition:{current:scene(p),creatures:state.npcs}},dmMemory:state.dmMemory,result:{id:'chaos-'+state.round,playerId:identity(p),name:name(p),action:'chop '+obj.name,target:{entityId:obj.id},success:true,blocked:false,narration:fact,changes:[fact],sceneEvents:[]}};
+    const room={round:state.round,world:{expedition:{current:scene(p),creatures:state.npcs}},dmMemory:state.dmMemory,result:{id:'chaos-'+state.round,playerId:identity(p),name:name(p),action:(fell?'fell ':'chop ')+obj.name,target:{entityId:obj.id},success:true,blocked:false,narration:fact,changes:[fact],sceneEvents:[]}};
     recordDMMemory(room);state.dmMemory.entries.at(-1).tile={...obj.tile};
     result.event=state.dmMemory.entries.at(-1);persist();syncNative(p);
     result.feedback={id:obj.id,name:obj.name,tile:obj.tile,before:fell?null:before,after:fell?null:result.object.hp,condition:result.object.condition,actorId:p.id,verb:fell?'fell':'chop'};
