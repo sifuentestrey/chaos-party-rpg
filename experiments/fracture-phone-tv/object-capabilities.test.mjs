@@ -34,3 +34,10 @@ test('NPC-owned blocking fixtures obstruct only their actual zone',()=>{
  assert.equal(objectBlocksTile({fixture},'zone',2,3,{}),false);
  assert.equal(objectBlocksTile({fixture:{...fixture,condition:'broken',hp:0}},'zone',2,3,{'npc-1':{location:'zone'}}),false);
 });
+
+test('owned fixture does not block when owner is missing from live native scene',()=>{
+ const rug={...base,ownerId:'npc-gone'};
+ const present={'npc-here':{location:'zone'}};
+ assert.equal(objectBlocksTile({rug},'zone',2,3,present),false);
+ assert.equal(objectBlocksTile({rug},'zone',2,3,{'npc-gone':{location:'zone'}}),true);
+});
