@@ -26,3 +26,11 @@ test('fire and extinguish capabilities follow condition',()=>{
  assert.equal(objectCapabilities({...base,condition:'broken'}).flammable,false);
  assert.equal(objectCapabilities({...base,material:'glass'}).flammable,false);
 });
+
+test('NPC-owned blocking fixtures obstruct only their actual zone',()=>{
+ const fixture={...base,ownerId:'npc-1'};
+ assert.equal(objectBlocksTile({fixture},'zone',2,3,{'npc-1':{location:'zone'}}),true);
+ assert.equal(objectBlocksTile({fixture},'other',2,3,{'npc-1':{location:'zone'}}),false);
+ assert.equal(objectBlocksTile({fixture},'zone',2,3,{}),false);
+ assert.equal(objectBlocksTile({fixture:{...fixture,condition:'broken',hp:0}},'zone',2,3,{'npc-1':{location:'zone'}}),false);
+});
