@@ -71,3 +71,57 @@ test('live DM contract grounds native physical proposals in exact IDs and actual
  const {engine,p,file}=fixture(t);let target='push fracture:native:native-tent-10-200 east';const dm=createOptionalDM({dataDir:path.dirname(file),key:'test',enabled:true,fetchImpl:async()=>({ok:true,json:async()=>({choices:[{message:{content:JSON.stringify({verb:'creative',target})}}]})})});t.after(()=>dm.close());
  const actor={...p,chaos:engine.snapshot(p)};assert.ok(await dm.interpret('slide the canvas shelter aside',actor));target='push fracture:native:imaginary-tent east';assert.equal(await dm.interpret('slide it',actor),null);target='ignite fracture:native:native-boulder-32-200';actor.chaos.scenery.push({id:'fracture:native:native-boulder-32-200',cells:[{}],capabilities:{flammable:false}});assert.equal(await dm.interpret('melt the rock',actor),null);
 });
+
+test('typed AI DM moves an existing Fracture tent with a real D20, original tiles and durable collision',t=>{
+ const {engine,p,world,file,nativeTrees,worldFromMap}=fixture(t);
+ const tent=engine.snapshot(p).scenery.find(o=>o.kind==='tent');
+ assert.ok(tent?.nativeAdapter,'the exact native object must expose an authoritative adapter');
+ const proposal={action:'move_east',targetId:tent.id,ability:'strength',dc:10,description:'Shift the existing tent one tile east.'};
+ const before=fs.readFileSync(file,'utf8');
+ assert.equal(engine.adjudicateEnvironment(p,{...proposal,dc:1}).blocked,true);
+ assert.equal(engine.adjudicateEnvironment(p,{...proposal,targetId:'fracture:native:invented-tent'}).blocked,true);
+ assert.equal(fs.readFileSync(file,'utf8'),before,'invalid model proposals consume no dice or saved changes');
+ let result;
+ for(let n=0;n<40;n++){result=engine.adjudicateEnvironment(p,proposal);assert.equal(result.blocked,false,result.text);if(result.success)break;}
+ assert.equal(result.success,true,'a genuine D20 eventually moves the existing tent');
+ assert.ok(Number.isInteger(result.roll));assert.equal(result.dc,10);
+ assert.equal(world.isValidPosition(10,202),true);
+ assert.equal(world.isValidPosition(12,202),false);
+ assert.ok(world.map.data[202*172+12].includes(182),'original atlas art moves, not a synthetic prop');
+ assert.equal(Object.keys(JSON.parse(fs.readFileSync(file)).items).length,0);
+ const restoredWorld=worldFromMap(),restored=createChaosWorld({file,nativeTrees});
+ restored.prepareWorld(restoredWorld);
+ assert.equal(restoredWorld.isValidPosition(12,202),false,'restarted collision follows the original tent');
+});
+test('typed AI DM repairs an actual native roof, but never moves protected architecture',t=>{
+ const {engine,p,world,file}=fixture(t);p.x=17;p.y=203;
+ const roof=engine.snapshot(p).scenery.find(o=>o.kind==='roof');
+ assert.ok(roof?.nativeAdapter);
+ const push={action:'move_east',targetId:roof.id,ability:'strength',dc:roof.dc,description:'Move the whole house.'};
+ assert.equal(engine.adjudicateEnvironment(p,push).blocked,true);
+ let broken;
+ for(let n=0;n<40;n++){
+  broken=engine.adjudicateEnvironment(p,{action:'break',targetId:roof.id,ability:'strength',dc:16,description:'Bring down the existing roof.'});
+  assert.equal(broken.blocked,false,broken.text);if(broken.success)break;
+ }
+ assert.equal(broken.success,true);
+ let repaired;
+ for(let n=0;n<40;n++){
+  repaired=engine.adjudicateEnvironment(p,{action:'repair',targetId:roof.id,ability:'dexterity',dc:12,description:'Restore the original roof.'});
+  assert.equal(repaired.blocked,false,repaired.text);if(repaired.success)break;
+ }
+ assert.equal(repaired.success,true);
+ assert.ok(world.map.data[197*172+18].includes(65),'the exact original roof art returns');
+ assert.equal(Object.keys(JSON.parse(fs.readFileSync(file)).items).length,0);
+});
+test('optional AI environment proposal can select an existing movable tent without inventing geometry',async t=>{
+ const {engine,p,file}=fixture(t);
+ const tent=engine.snapshot(p).scenery.find(o=>o.kind==='tent');
+ const proposal={action:'move_east',targetId:tent.id,ability:'strength',dc:10,description:'Try to move the tent east.'};
+ const dm=createOptionalDM({dataDir:path.dirname(file),key:'test',enabled:true,
+  fetchImpl:async()=>({ok:true,json:async()=>({choices:[{message:{content:JSON.stringify(proposal)}}]})})});
+ t.after(()=>dm.close());
+ const actor={...p,ready:true,dead:false,chaos:engine.snapshot(p)};
+ assert.deepEqual(await dm.interpretEnvironment('Could you shift the canvas shelter to the right?',actor),proposal);
+ assert.equal(await dm.interpretEnvironment('Could you shift it?',{...actor,chaos:{scenery:[]}}),null);
+});
