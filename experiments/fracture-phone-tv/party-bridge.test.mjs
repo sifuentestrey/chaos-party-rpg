@@ -553,3 +553,42 @@ test('approved travel interrupts each eligible actor before starting the new rou
  assert.equal((await(await post(base,'/rally/vote',{token:tokens[1],id:vote.id,yes:true})).json()).rally.status,'approved');
  assert.deepEqual(calls,[['cancel','go'],['cancel','go'],[]]);assert.equal(app.sessions.get(tokens[0]).epoch,1);assert.equal(app.sessions.get(tokens[2]).epoch,0);
 });
+
+test('optional DM native environment plan travels only through the authenticated actor intent',async t=>{
+ const oak={id:'fracture:test:native-tree-30-200',nativeOrigin:{x:30,y:200},scene:'fracture:test',kind:'tree',tile:{x:12,y:13},condition:'intact'};
+ const judgment={action:'break',targetId:oak.id,ability:'strength',dc:14,description:'Attempt to fell the real oak.'};
+ let environmentCalls=0;
+ const {app,base,sockets}=await setup(t,{dmFactory:()=>({
+  enabled:true,interpretEnvironment:async()=>{environmentCalls++;return judgment;},
+  interpret:async()=>{throw Error('Grounded environment plan must not be overwritten');},
+  narrate:async()=>null,close:()=>{}
+ })});
+ const {token}=(await(await post(base,'/pair',{key:app.room.join,name:'OakTester'})).json());
+ await new Promise(r=>setTimeout(r,20));
+ app.sessions.get(token).actor={id:1,ready:true,dead:false,x:12,y:12,zone:'The Refuge',chaos:{scenery:[oak]}};
+ const response=await post(base,'/action',{token,text:'Could I topple that oak into the trail?'});
+ assert.equal(response.status,202);
+ assert.equal(environmentCalls,1);
+ assert.equal(sockets[0].lastAction.intent.verb,'environment');
+ assert.deepEqual(sockets[0].lastAction.intent.judgment,judgment);
+ assert.equal(sockets[0].lastAction.actorId,1);
+ assert.equal(Object.hasOwn(sockets[0].lastAction.intent,'damage'),false);
+});
+test('STOP invalidates an in-flight AI environment judgment before native dispatch',async t=>{
+ const judgment={action:'break',targetId:'fracture:test:native-tree-30-200',ability:'strength',dc:14,description:'Attempt to fell the oak.'};
+ let resolveJudgment,started;
+ const entered=new Promise(r=>started=r);
+ const {app,base,sockets}=await setup(t,{dmFactory:()=>({
+  enabled:true,interpretEnvironment:()=>{started();return new Promise(r=>resolveJudgment=r);},
+  interpret:async()=>null,narrate:async()=>null,close:()=>{}
+ })});
+ const {token}=(await(await post(base,'/pair',{key:app.room.join,name:'StopTester'})).json());
+ await new Promise(r=>setTimeout(r,20));
+ const request=post(base,'/action',{token,text:'Could I topple that oak into the trail?'});
+ await entered;
+ const stop=await post(base,'/action',{token,text:'stop'});
+ assert.equal(stop.status,202);
+ resolveJudgment(judgment);
+ assert.equal((await request).status,409);
+ assert.equal(sockets[0].lastAction.intent.verb,'cancel','stale AI result never reaches native engine');
+});
