@@ -9,6 +9,8 @@ Run **Start_Fracture_Chaos_Test.command** on the Mac (Node **22.18+ LTS or 24+**
 
 Phone receipts distinguish received, started, succeeded, blocked, failed and cancelled. Walking/attacks are bounded and validated by Fracture. STOP interrupts only your actor, including during the ten-second declaration/reaction window. Other players act in parallel; no twenty-person turn queue. Ordinary movement and observations remain available during the window. Enemies can still attack a player who stops.
 
+**Optional group rally:** Open **Gather the party** on a phone and choose **Propose gathering at my position**. All ready, living, connected characters must be in the same Fracture area and within twelve tiles; at least two are needed. A ten-second strict-majority vote opens, with the proposer voting yes automatically. Each other player can vote yes or no exactly once. If approved, the game asks each available native character to walk to the proposer's actual position; it never teleports them. Each character can STOP, and obstacles/disconnects can prevent some arrivals. Rejected or expired votes move nobody. This is a small **local rally**, not the original Chaos Party expedition/major travel system.
+
 ## A 20-minute game-night route
 
 This is an optional route through existing content, not a forced campaign or a newly invented map:
