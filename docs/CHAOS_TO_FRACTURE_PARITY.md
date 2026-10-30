@@ -23,7 +23,7 @@
 | NPC awareness | Chaos NPC goals, trust, witness, possession/theft memory; source-backed acceptance checks | Native Fracture NPC talk/quest, without Chaos trust and memory logic | **NOT PORTED** |
 | Crown Job | Complete tavern heist with targets/clues, alternate tactics, state and ending | Absent; no equivalent imported campaign | **NOT PORTED** |
 | Dawn Bell story / connected world | Seventeen scenes overall incl. woods, river/bridge, ferryman cave, town/inn, castle, vault, finale | Fracture town, dwelling, Glitch Woods and native rat quest | **NOT PORTED** |
-| Major travel majority vote | Strict-majority approval documented/tested in original expedition | No equivalent travel-vote system in Fracture | **NOT PORTED** |
+| Major travel majority vote | Strict-majority approval documented/tested in original expedition | New **bounded local rally** votes use a frozen electorate, strict majority and native per-actor walking; **no original major-travel gating, destinations or scene transitions** | **PARTIAL RULE SPIKE, NOT EXPEDITION PARITY** |
 | Persistent world state and maps | Campaign and discovered-map persistence, regional objects, bridge repair, NPC consequence memory | Fracture native save: character position, HP, gear, level, inventory; native quest state may reset | **NOT PORTED** world/campaign persistence |
 | Host controls | Chaos host tools including pause/moderation, campaign flow, private DM setup | Basic Fracture host/QR, spectator, bench/restore | **PARTIAL / not equivalent** |
 | Licensed cohesive look and effects | Ninja Adventure/Kenney and custom Chaos art/effects/sounds | Fracture/BrowserQuest and its independently licensed assets | **VISUAL FOUNDATION REPLACED**; Chaos art not imported |
@@ -39,6 +39,33 @@ The existing Fracture beta can be shared only as an **engine/integration playtes
 2. **Continue Fracture as authoritative engine and port original Chaos game systems systematically** through a documented boundary: actors/saves/characters, action and dice contracts, world objects, owner/visibility, NPC attitudes, campaigns/scenes/travel votes, canonical persistence, AI narration. Each step must include a source→destination semantic parity test and visually observable end-to-end gameplay. **Do not** assume importing files makes Colyseus and Socket.IO compatible or that Fracture can implement arbitrary world mechanics without redesign.
 
 **Recommendation pending a short architectural spike:** Protect both branches and **prioritize preserving what already exists**. Avoid yet another rewrite. Benchmark integration of one real, differentiating Chaos scenario on the chosen visual engine (e.g. move a table, steal a rug with real visibility/ownership/dice and persistence, and have an NPC react). If this cannot be reproduced efficiently in Fracture, keep the original rules engine and upgrade only visual/audio presentation instead.
+
+
+## Bounded rule-transfer experiment: local majority rally
+
+The isolated Fracture adapter now has an **opt-in group rally** on the phone controller, not a port of the original Dawn Bell travel system. This is a reversible test of whether a useful original Chaos rule can be adapted without mixing Colyseus and Socket.IO.
+
+- The proposer offers their **actual server-reported position**; at least two connected, living, ready characters must be in the same native zone and within twelve Manhattan tiles. No phone-supplied arbitrary teleport coordinate is accepted.
+- A ten-second vote snapshots eligible character identities. The proposer counts as yes; a strict majority is `floor(n/2)+1`. One authenticated vote per member, immutable once cast. Missing votes are not yes; an impossible or expired quorum declines without moving anyone.
+- Approval sends a **separate validated `go` request** to each still-eligible native Fracture actor. Native collision, pathing, receipt and personal STOP still apply. An approved vote is **not proof that everyone arrived**; actors who disconnected, were benched, changed zone or moved out of range are skipped and reported.
+- Votes are ephemeral and deliberately reset after a bridge restart. They do not alter Chaos campaign files, native Fracture quests, character saves, or the canonical original branch.
+- Focused tests cover 2/3/4/20-member quorums, replay/outsider/expiry, rejected travel, per-actor native dispatch and benched-player protection. CI and actual hardware results must be recorded separately in the release tracker.
+
+This does **not** satisfy the original product's majority-controlled expedition scene travel, region persistence, NPC memory, world-object ownership, or D20 advantage rules. Those gates remain unchecked.
+
+## Architecture decision checkpoint: preserve original rules by default
+
+Source-backed comparison, not a new engine commitment:
+
+| Criterion | Original Chaos authority + improve renderer | Fracture authority + port original mechanics |
+| --- | --- | --- |
+| Already implemented | Crown Job, seventeen Dawn Bell scenes, original saves, object ownership/crafting/fire/repair, NPC witness/trust, D20/advantage, travel vote and reactions | Native walkable maps, animated combat, NPC/quest loop, doors, equipment, plus experimental phone/TV bridge |
+| Largest remaining work | Fix the original TV/phone visual presentation and verify physical feel/performance; re-use already included CC0 Ninja Adventure and Kenney sheets/audio/effects | Rebuild original world state, custom characters, quest graph, object capabilities, campaign persistence, dice/advantage, NPC memory and votes in a second rules engine |
+| Data/protocol risk | Existing Colyseus and campaign files remain authoritative; no conversion needed | Distinct Socket.IO, SQLite native character state and Chaos JSON campaigns; requires explicit versioned migration and rollback |
+| Licensing | Original assets have source manifests and CC0 notices; preserve provenance | Fracture MPL 2.0 code and CC BY-SA 3.0 art/content require separate attribution and derivative-sharing review |
+| Best next proof | Original **move/steal rug + NPC witnesses + saved consequence** visibly works in a focused 90-second TV scene with two phone controllers | The same exact scenario must be genuinely implemented and saved through Fracture native authority, not merely narrated in a sidecar |
+
+**Default recommendation:** preserve `luna/visual-game-night-release` as the canonical gameplay authority, and investigate a bounded renderer/presentation upgrade before attempting wholesale migration. The local rally is useful isolated research, **not** evidence that the more difficult original mechanics can be moved cheaply. No automatic merge, save conversion, paid provider, or public deployment follows from this checkpoint.
 
 ## Objective parity acceptance
 
