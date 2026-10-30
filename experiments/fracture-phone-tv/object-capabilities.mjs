@@ -14,6 +14,11 @@ export function objectCapabilities(item){
  });
 }
 
-export function objectBlocksTile(items,location,x,y){
- return Object.values(items||{}).some(item=>!item.ownerId&&item.location===location&&item.tile?.x===x&&item.tile?.y===y&&objectCapabilities(item).blocking);
+export function objectBlocksTile(items,location,x,y,npcs={}){
+ return Object.values(items||{}).some(item=>{
+  // A physical NPC-owned fixture still blocks movement. Player inventory
+  // never becomes scenery, even if a stale saved item retained a tile.
+  const onGround=item.ownerId?npcs[item.ownerId]?.location===location:item.location===location;
+  return onGround&&item.tile?.x===x&&item.tile?.y===y&&objectCapabilities(item).blocking;
+ });
 }
