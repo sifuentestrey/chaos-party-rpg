@@ -37,8 +37,12 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
  const sessions=new Map(),pending=new Map(),events=room.events||[];room.turn=null;room.rally=null;room.choiceVote=null;persist();
  const meaningful=new Set(['creative','attack','talk','quest','open','loot']);
  const liveCount=()=>room.players.filter(p=>!p.parked).length;
- const eventClients=new Set();
- function notifyClients(){for(const res of eventClients){if(res.destroyed){eventClients.delete(res);continue;}try{res.write('event: change\\ndata: {}\\n\\n'.replaceAll('\\n','\n'));}catch{eventClients.delete(res);}}}
+ const eventClients=new Map();
+ function notifyClients(){for(const [res,token] of eventClients){
+  const session=sessions.get(token);
+  if(res.destroyed||!session||session.player.parked){eventClients.delete(res);if(!res.destroyed)res.end();continue;}
+  try{res.write('event: change\\ndata: {}\\n\\n'.replaceAll('\\n','\n'));}catch{eventClients.delete(res);res.end();}
+ }}
  function record(event){events.push({...event,at:Date.now()});if(events.length>80)events.shift();room.events=events;scheduleEventFlush();notifyClients();}
  function progressAdventure(evidence){
   const change=advanceAdventure(room.adventure,evidence);
@@ -209,7 +213,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
     if(!session||session.player.parked)return json(res,403,{error:'Active character required'});
     res.writeHead(200,{'content-type':'text/event-stream; charset=utf-8','cache-control':'no-store, no-transform','connection':'keep-alive','x-content-type-options':'nosniff'});
     res.write(': connected\\n\\n'.replaceAll('\\n','\n'));
-    eventClients.add(res);req.on('close',()=>eventClients.delete(res));return;
+    eventClients.set(res,session.player.token);req.on('close',()=>eventClients.delete(res));return;
    }
    if(p==='/health')return json(res,200,{ok:true,players:liveCount(),registered:sessions.size,connected:[...sessions.values()].filter(s=>!s.player.parked&&s.actor).length});
    if(p==='/host'&&req.method==='GET'){
@@ -410,6 +414,6 @@ let changes=null;function connectChanges(){if(changes){changes.close();changes=n
   }catch(e){json(res,400,{error:'Invalid request'});}
  });
  server.requestTimeout=5000;server.headersTimeout=5000;
- return {server,room,sessions,pending,async start(){await new Promise((resolve,reject)=>server.once('error',reject).listen(port,bind,resolve));return server.address();},async close(){dm.close?.();for(const s of sessions.values())cancelPending(s,'Announced action cancelled: host is shutting down.');clearInterval(polling);for(const client of eventClients)client.end();eventClients.clear();await Promise.all([...sessions.values()].filter(s=>s.socket.connected&&s.actor).map(s=>new Promise(resolve=>s.socket.timeout(2000).emit('chaos:save',{key:actorKey},(error,result)=>{if(error||result?.error)console.error('[Chaos Party] Save acknowledgment failed; attempting native disconnect save.');resolve();}))));flushEvents();for(const s of sessions.values())s.socket.disconnect();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}};
+ return {server,room,sessions,pending,async start(){await new Promise((resolve,reject)=>server.once('error',reject).listen(port,bind,resolve));return server.address();},async close(){dm.close?.();for(const s of sessions.values())cancelPending(s,'Announced action cancelled: host is shutting down.');clearInterval(polling);for(const client of eventClients.keys())client.end();eventClients.clear();await Promise.all([...sessions.values()].filter(s=>s.socket.connected&&s.actor).map(s=>new Promise(resolve=>s.socket.timeout(2000).emit('chaos:save',{key:actorKey},(error,result)=>{if(error||result?.error)console.error('[Chaos Party] Save acknowledgment failed; attempting native disconnect save.');resolve();}))));flushEvents();for(const s of sessions.values())s.socket.disconnect();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){const app=createPartyBridge();app.start().then(()=>console.log(`Chaos Fracture local bridge: http://localhost:4748/host?key=${app.room.host}`)).catch(e=>{console.error(e.message);process.exit(1);});let stopping=false;for(const sig of ['SIGTERM','SIGINT'])process.on(sig,async()=>{if(stopping)return;stopping=true;await app.close();process.exit(0);});}
