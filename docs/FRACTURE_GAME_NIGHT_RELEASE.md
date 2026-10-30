@@ -1,5 +1,9 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Native rock and vegetation grounding — October 30 (code committed, CI pending)
+
+Commits `60aba08`, `dd5dd81`, `9f16a49`, `18e17d4`, and `9012656` add a guarded natural-language path for **unsupported real-map rock/boulder/bush/shrub/grass** interaction attempts. The live Chaos world now returns an explicit blocked result when such objects have **not** been verified and bound to an existing native Fracture object, rather than pretending to push or burn painted scenery. Verified native-tree attack/felling and existing Chaos item interactions are evaluated first and remain available. New regression checks requests including `push boulder north`, `pick up rock`, `hide in bush`, `smash rock`, and `burn grass`, plus unchanged native collision. **This is not native rock movement or bush hiding**; genuine artwork IDs, world-state/collision mutation and native render hooks remain to implement. New test and pinned CI have not been verified for this SHA. No new artwork, assets or prop instances introduced.
+
 ## Whole-environment follow-up — October 30 (partial rule-level implementation, native integration outstanding)
 
 Commits `a00a24f` and `544b201` harden the shared environmental fire step so nonflammable/non-damageable scenery is never reduced to invalid durability by a burn tick, and add a cross-category regression for **existing-type** rock, cliff, river and burning tree. These changes use no new map assets or object instances. **This is rule-level infrastructure only**: verified native Fracture rock/vegetation asset identification, movable boulders, hiding in bushes, water physics, furniture manipulation, building collapse, NPC physics, full pinned native tests, and actual Mac/phone/TV acceptance remain open. The new test has been committed but not yet executed; do not count the previous CI run for this SHA.
