@@ -108,7 +108,8 @@ export function createOptionalDM({dataDir,key,model=process.env.CHAOS_DM_MODEL||
     .slice(0,24).map(o=>({
      id:o.id,verifiedNative:true,nativeAdapter:o.nativeAdapter===true,scene:o.scene,
      tile:{x:(o.interactionTile||o.tile).x,y:(o.interactionTile||o.tile).y},condition:o.condition,
-     wet:o.wet===true,dc:o.dc,material:o.material,kind:o.kind,capabilities:o.capabilities||{}
+     wet:typeof o.wet==='number'?o.wet>0:o.wet===true,dc:o.dc,material:o.material,kind:o.kind,
+     capabilities:o.capabilities||{breakable:o.kind==='tree'&&o.condition!=='broken',flammable:o.kind==='tree'&&o.condition!=='broken'&&o.condition!=='burning'}
    }));
    if(!objects.length)return Promise.resolve(null);
    const schema={type:'object',properties:{action:{type:'string',enum:['break','ignite','extinguish','repair','inspect','drink','move_north','move_south','move_east','move_west']},
