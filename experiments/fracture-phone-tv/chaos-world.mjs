@@ -27,7 +27,7 @@ export function creativeAttempt(text){
 /** Only a named, visible Chaos-authored fixture can receive scenery commands.
  * Native mobs and unregistered map art always retain their own engine rules. */
 export function sceneryAttempt(text,scenery=[]){
- const m=/^(?:attack|hit|strike|chop|break)\\s+(?:the\\s+)?(.+)$/i.exec(String(text||'').trim());
+ const m=/^(?:attack|hit|strike|chop|break)\s+(?:the\s+)?(.+)$/i.exec(String(text||'').trim());
  if(!m)return null;
  const target=norm(m[1]);
  const matches=scenery.filter(o=>o&&o.scene&&o.tile&&
