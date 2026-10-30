@@ -1,5 +1,14 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Real opt-in D20 reaction window and interference — October 30
+
+- [x] Added an **opt-in** `declare / announce / prepare` path for supported original Chaos world checks (craft, steal, break, push, repair, appeal and similar). The bridge holds the actual action for **10 seconds** and displays a countdown on phones and TV. A queued announcement is explicitly `queued`, not a fabricated native success. Normal movement, combat and other non-announced actions remain immediate.
+- [x] A separate nearby living player may `help <name>` or `hinder <name>` during the window. Reused the **same original Chaos MIT-licensed D20 selection** for advantage (higher) and disadvantage (lower), with existing class/Lucky-ish modifiers and authoritative world effects. Reactions last 15 seconds, cannot stack, do not consume on blocked actions, and do not change Fracture's native combat damage or HP.
+- [x] Only the authenticated actor's original queued action executes after the deadline, using a fresh native engine check of current zone, target, reach, ownership and dice. STOP, disconnect, benching, actor change, cross-zone movement and host shutdown cancel pending actions without executing them. No extra 10-second lock follows an announced check. Pending declarations are ephemeral across restarts and are not legacy campaign data.
+- [x] Local Node 22.16 focused suite after this change: **97 passed, 1 skipped, 0 failed** (98 checks). New regressions cover actual lower-die selection, no false item creation, no stacking, expiry/proximity, two independent controller identities, TV/phone countdown privacy, STOP isolation, host bench, disconnect, zone change and unsupported command rejection.
+- [ ] Pinned Fracture CI now includes a **real two-actor native-server 10-second announcement → opponent hindrance → D20 receipt** check. Its result must be verified before any new Mac source kit is called accepted. No physical 2015 Mac / 12–20-phone acceptance, complete original reactions or Crown Job/Dawn Bell parity is claimed.
+
+
 ## Cooperative D20 reactions across world actions — October 30
 
 - [x] Reused the original Chaos `selectD20` advantage rule in one shared, authoritative roll path. A **second nearby, living, connected character** may now help with the next valid **Chaos world D20** action: crafting, attaching, object checks (including NPC theft) and social reconciliation. Previously, help only affected craft/attach. This is one 15-second, one-use bonus, not free items, guaranteed success or native Fracture combat advantage.
