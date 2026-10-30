@@ -5,8 +5,8 @@ export function reconcileNativeMap(map:any, catalog:any[], updates:any[]):boolea
   if(!cache){cache={data:new Map(),grid:new Map(),signature:'',affected:[]};originals.set(map,cache);}
   const states=new Map(updates.map(o=>[o.id,o]));
   const changed=catalog.map(def=>({def,state:states.get(def.id)})).filter(({def,state}:any)=>state&&
-    (state.condition==='broken'||state.tile.x!==def.tile.x||state.tile.y!==def.tile.y||def.fireSource&&state.condition!=='burning'));
-  const signature=JSON.stringify(changed.map(({def,state}:any)=>[def.id,state.tile,state.condition==='broken',def.fireSource&&state.condition]));
+    (state.condition==='broken'||!!state.carriedBy||state.tile.x!==def.tile.x||state.tile.y!==def.tile.y||def.fireSource&&state.condition!=='burning'));
+  const signature=JSON.stringify(changed.map(({def,state}:any)=>[def.id,state.tile,state.condition==='broken',state.carriedBy||null,def.fireSource&&state.condition]));
   if(signature===cache.signature)return false;
   const indices=new Set<number>(cache.affected);
   for(const {def,state} of changed as any[]){
@@ -31,11 +31,11 @@ export function reconcileNativeMap(map:any, catalog:any[], updates:any[]):boolea
       map.data[index]=rest.length?rest:0;
       if(state.condition==='broken'&&def.replacementGid)map.data[index]=[def.replacementGid,...rest];
     }
-    if(state.condition==='broken'||state.tile.x!==def.tile.x||state.tile.y!==def.tile.y)
+    if(state.condition==='broken'||state.carriedBy||state.tile.x!==def.tile.x||state.tile.y!==def.tile.y)
       for(const cell of def.clearFootprint||def.footprint||[])if(map.grid?.[cell.y])map.grid[cell.y][cell.x]=0;
   }
   for(const {def,state} of changed as any[]){
-    if(state.condition==='broken'||def.fireSource&&state.condition!=='burning')continue;
+    if(state.condition==='broken'||state.carriedBy||def.fireSource&&state.condition!=='burning')continue;
     const dx=state.tile.x-def.tile.x,dy=state.tile.y-def.tile.y;
     if(map.data)for(const cell of def.cells){
       const index=(cell.y+dy)*map.width+cell.x+dx,value=map.data[index];
