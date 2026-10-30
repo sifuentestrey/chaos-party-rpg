@@ -87,3 +87,53 @@ test('native collision tiles block two-step gifts through walls, but a clear rou
  assert.equal(engine.execute(a,'give cloth strip to Bob').success,true,'clear two-step path allows a gift');
  assert.equal(engine.snapshot(b).bag.filter(i=>i.name==='cloth strip').length,2);
 });
+
+test('original NPC theft, failed-roll witness memory and durable trust use a real native NPC',t=>{
+ const {a,engine,world,file}=fixture(t);
+ const guard={id:841210,kind:42,name:'Guard',type:'npc',x:41,y:210};
+ world.npcs={[guard.id]:guard};
+ const initial=engine.snapshot(a);
+ assert.equal(initial.npcs.length,1);
+ assert.equal(initial.npcs[0].items.length,0,'no fake NPC possessions are minted');
+ const item=initial.bag.find(i=>i.name==='cloth strip');
+ assert.ok(item);
+ assert.equal(engine.execute(a,'give '+item.id+' to Guard').success,true);
+ assert.equal(engine.snapshot(a).bag.some(i=>i.id===item.id),false);
+ assert.deepEqual(engine.snapshot(a).npcs[0].items,[{id:item.id,name:item.name}]);
+ assert.equal(shouldUseCreative('steal '+item.id+' from Guard',{}),true);
+ let result;
+ for(let i=0;i<30;i++){
+  result=engine.execute(a,'steal '+item.id+' from Guard');
+  assert.equal(result.blocked,false,result.text);
+  assert.ok(Number.isInteger(result.roll));
+  assert.equal(result.dc,11);
+  if(result.success)break;
+  assert.equal(engine.snapshot(a).npcs[0].trust<0,true,'failed theft has an enduring witness consequence');
+ }
+ assert.equal(result.success,true,'eventually succeeds under original D20 resolver');
+ assert.equal(engine.snapshot(a).bag.some(i=>i.id===item.id),true);
+ const npc=engine.snapshot(a).npcs[0];
+ assert.equal(npc.attitude,'hostile');
+ assert.ok(npc.trust<=-2);
+ const stored=JSON.parse(fs.readFileSync(file));
+ assert.equal(stored.npcs[String(guard.id)].attitude,'hostile');
+ assert.ok(stored.npcs[String(guard.id)].history.some(h=>h.verb==='theft'&&h.actorId===a.characterId));
+ const restored=createChaosWorld({file});
+ assert.equal(restored.snapshot(a).npcs[0].trust,npc.trust,'memory survives independent restart');
+ assert.equal(restored.snapshot(a).bag.some(i=>i.id===item.id),true,'item ownership survives restart');
+});
+test('NPC ownership and proximity are checked by the original resolver before theft',t=>{
+ const {a,engine,world}=fixture(t);
+ const guard={id:841210,name:'Guard',kind:42,type:'npc',x:41,y:210};
+ const merchant={id:842210,name:'Merchant',kind:43,type:'npc',x:42,y:210};
+ world.npcs={[guard.id]:guard,[merchant.id]:merchant};
+ engine.snapshot(a);
+ assert.equal(engine.execute(a,'give cloth strip to Guard').success,true);
+ assert.equal(engine.execute(a,'steal cloth strip from Merchant').blocked,true,'cannot steal an item from the wrong NPC');
+ assert.equal(engine.snapshot(a).npcs.find(n=>n.name==='Guard').trust,0,'invalid attempt does not fabricate witness memory');
+ a.x=70;
+ assert.equal(engine.execute(a,'steal cloth strip from Guard').blocked,true,'distant NPC is not available');
+ assert.equal(engine.snapshot(a).bag.some(i=>i.name==='cloth strip'),false);
+ a.x=40;
+ assert.equal(engine.snapshot(a).npcs.find(n=>n.name==='Guard').items[0].name,'cloth strip');
+});
