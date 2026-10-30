@@ -499,3 +499,19 @@ test('unattended NPC property burns through; returning owner sees damage without
  succeed(engine,a,'repair '+rug.id);
  assert.equal(engine.snapshot(a).npcs.find(n=>n.name==='guard').concern,null);
 });
+
+test('player extinguishing a rug resets NPC warning before a later re-ignition',t=>{
+ const {a,engine,tick}=npcFixture(t);
+ const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');
+ a.x=rug.tile.x+1;a.y=rug.tile.y;
+ assert.equal(engine.execute(a,'drop cloth strip').success,true);
+ const cloth=engine.snapshot(a).ground.find(i=>i.name==='cloth strip');
+ succeed(engine,a,'ignite '+cloth.id);
+ tick();
+ assert.equal(engine.snapshot(a).ground.find(i=>i.id===rug.id).condition,'burning');
+ assert.equal(engine.execute(a,'extinguish '+rug.id).success,true);
+ tick(); // Still-burning cloth reignites the rug, but the NPC warning restarts.
+ assert.equal(engine.snapshot(a).ground.find(i=>i.id===rug.id).condition,'burning');
+ tick();
+ assert.equal(engine.snapshot(a).ground.find(i=>i.id===rug.id).condition,'intact');
+});
