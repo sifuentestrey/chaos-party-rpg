@@ -34,14 +34,17 @@ test('assistance expires, requires live proximity and never creates free craftin
  assert.equal(engine.snapshot(a).assistedBy,undefined);
  const expired=engine.execute(a,'make blue hat from cloth strip and wood splinter');
  assert.equal(expired.rolls,undefined,'expired assistance is not a second roll');
- const fresh=createChaosWorld({file,seed:1,now:()=>clock});
- const before=fresh.snapshot(b).bag.length;
- assert.equal(fresh.execute(b,'help Alice').success,true);
- assert.equal(fresh.snapshot(b).bag.length,before,'help never duplicates inventory');
- b.x=70;
- const distant=fresh.execute(a,'make green belt from cloth strip and wood splinter');
- if(!distant.blocked)assert.equal(distant.rolls,undefined,'moving away removes advantage');
- assert.equal(fresh.snapshot(a).assistedBy,undefined,'no active help should remain after craft');
+ // A separate fresh pair avoids conflating a successful first craft with
+ // missing materials on the second attempt.
+ const other=fixture(t,()=>clock);other.engine.snapshot(other.a);other.engine.snapshot(other.b);
+ const before=other.engine.snapshot(other.b).bag.length;
+ assert.equal(other.engine.execute(other.b,'help Alice').success,true);
+ assert.equal(other.engine.snapshot(other.b).bag.length,before,'help never duplicates inventory');
+ other.b.x=70;
+ const distant=other.engine.execute(other.a,'make green belt from cloth strip and wood splinter');
+ assert.equal(distant.blocked,false,'the unassisted craft must be a valid attempt');
+ assert.equal(distant.rolls,undefined,'moving away removes advantage');
+ assert.equal(other.engine.snapshot(other.a).assistedBy,undefined,'no active help should remain after craft');
 });
 test('invalid craft cannot consume help and a dead helper cannot grant advantage',t=>{
  let clock=1000;const {a,b,engine}=fixture(t,()=>clock);
