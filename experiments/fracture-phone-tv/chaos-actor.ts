@@ -196,13 +196,20 @@ export function installChaosActor(player:any, connection:any): void {
         await router.route(player,[Types.Messages.ATTACK,target.id]);
         if(active!==action)return;
         const before=target.hitPoints;
+        // Fracture may reset a defeated mob's coordinates during destruction.
+        // Capture the pre-HIT tile, then record only a native-confirmed death.
+        const combatTile={x:target.x,y:target.y};
         await router.route(player,[Types.Messages.HIT,target.id]);
         if(active!==action)return; // Never report damage or finish a newly started action.
         // Mob.destroy resets HP/position immediately after death; audit before/after
         // plus isDead is authoritative, never infer a kill from just disappearance.
         const dead=target.isDead,after=dead?0:target.hitPoints;
         receipt(action.id,'started',`${label(target)} HP ${before} → ${after}${dead?' — defeated!':''}`,{combat:{target:target.id,before,after,dead}});
-        if(dead){cancel();finish('succeeded',`${label(target)} defeated. Check nearby loot.`);}
+        if(dead){
+          try{chaosObjects?.recordNativeDefeat(player,target,{before,after,tile:combatTile});}
+          catch(error){console.error('[Chaos Party] Native defeat memory could not be saved:',error instanceof Error?error.message:'unknown error');}
+          cancel();finish('succeeded',`${label(target)} defeated. Check nearby loot.`);
+        }
         return;
       }
       const speakMemory=(response:string)=>{
