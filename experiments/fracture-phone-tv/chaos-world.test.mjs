@@ -203,3 +203,69 @@ test('original class +3 modifies actual theft D20, but never native combat or le
  assert.equal(result.success,result.roll===20||(result.roll!==1&&result.roll+3>=result.dc));
  assert.equal(engine.snapshot(a).npcs[0].trust<0,true,'NPC still remembers an attempted theft');
 });
+
+
+test('social amends is a native-NPC-bound original D20 check; Bard bonus, trust and quest gate persist',t=>{
+ const {a,b,guard,engine,file}=npcFixture(t);
+ const original=engine.snapshot(a),rug=original.ground.find(i=>i.owner==='guard');
+ a.x=rug.tile.x;a.y=rug.tile.y;
+ assert.equal(engine.execute(a,'steal '+rug.id).blocked,false);
+ assert.equal(engine.canQuest(a,guard),false);
+ a.chaosRole='bard';
+ const first=engine.execute(a,'apologize to guard');
+ assert.equal(first.blocked,false,first.text);
+ assert.equal(first.bonus,3,'original Bard social skill applies to real NPC trust check');
+ assert.ok(Number.isInteger(first.roll));
+ assert.equal(first.success,first.roll===20||(first.roll!==1&&first.roll+3>=first.dc));
+ assert.match(first.text,/D20/);
+ assert.equal(engine.execute(a,'make amends with guard').blocked,true,'cannot spam the same NPC during cooldown');
+ assert.equal(engine.canQuest(b,guard),true,'theft and social consequences are personal');
+ const trust=engine.snapshot(a).npcs[0].trust;
+ const saved=JSON.parse(fs.readFileSync(file));
+ assert.ok(saved.npcs[engine.snapshot(a).npcs[0].id].history.some(h=>h.verb==='appeal'&&h.actorId===a.characterId));
+ const restarted=createChaosWorld({file});
+ assert.equal(restarted.snapshot(a).npcs[0].trust,trust);
+ assert.equal(restarted.execute(a,'apologize to guard').blocked,true,'cooldown survives a restart');
+ assert.equal(restarted.canQuest(a,guard),trust>=0);
+ assert.ok(restarted.snapshot(a).story.some(e=>e.attempt.startsWith('apologize')));
+});
+test('social apologies reject distant, ambiguous, cross-zone, non-grievance and dead actors without trust changes',t=>{
+ const {a,b,guard,engine,file,world}=npcFixture(t);
+ const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');a.x=rug.tile.x;a.y=rug.tile.y;
+ engine.execute(a,'steal '+rug.id);
+ const before=engine.snapshot(a).npcs[0].trust;
+ a.x=70;assert.equal(engine.execute(a,'apologize to guard').blocked,true);
+ a.x=40;
+ world.zoneManager.getZoneAt=(x)=>({id:x===41?'woods':'refuge'});
+ assert.equal(engine.execute(a,'apologize to guard').blocked,true,'native zone separation is mandatory');
+ world.zoneManager.getZoneAt=()=>({name:'The Refuge'});
+ const another={id:92,type:'npc',kind:55,name:'guard',x:42,y:210};world.entities={guard,another};
+ assert.equal(engine.execute(a,'apologize to guard').blocked,true,'ambiguous native NPC names reject');
+ const exact=engine.snapshot(a).npcs.find(n=>n.nativeId===String(guard.id));
+ assert.equal(engine.execute(a,'apologize to '+exact.id).blocked,false,'stable NPC ID disambiguates');
+ assert.equal(engine.execute(b,'apologize to '+exact.id).blocked,true,'innocent character cannot farm trust');
+ a.isDead=true;assert.equal(engine.execute(a,'apologize to '+exact.id).blocked,true);
+ assert.ok(engine.snapshot(a).npcs.find(n=>n.id===exact.id).trust>=before);
+ assert.ok(JSON.parse(fs.readFileSync(file)).npcs[exact.id].history.some(h=>h.verb==='appeal'));
+});
+test('successful amends can restore quest access without gifts, but never farm positive trust',t=>{
+ let time=100000;
+ const {a,guard,file}=npcFixture(t);
+ const engine=createChaosWorld({file,seed:1,now:()=>time,clock:()=>time});
+ const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');a.x=rug.tile.x;a.y=rug.tile.y;
+ engine.execute(a,'steal '+rug.id);a.chaosRole='healer';
+ assert.equal(engine.canQuest(a,guard),false);
+ let result;
+ for(let i=0;i<30&& !engine.canQuest(a,guard);i++){
+  result=engine.execute(a,'make peace with guard');
+  assert.equal(result.blocked,false,result.text);
+  assert.equal(result.bonus,3,'Healer social skill is canonical');
+  time+=30001;
+ }
+ assert.equal(engine.canQuest(a,guard),true,'real social success unlocks native quest gate');
+ assert.equal(engine.snapshot(a).npcs[0].trust,0,'apology cannot create free positive trust');
+ assert.equal(engine.execute(a,'persuade guard').blocked,true,'no trust farming at neutral attitude');
+ const reloaded=createChaosWorld({file,now:()=>time,clock:()=>time});
+ assert.equal(reloaded.canQuest(a,guard),true);
+ assert.match(reloaded.talk(a,guard),/apology/);
+});
