@@ -61,6 +61,7 @@ jobs:
         run: |
           export CHAOS_ACTOR_KEY=disposable-ci-actor-key
           export CHAOS_TV_KEY=disposable-ci-tv-key
+          export CHAOS_WORLD_MODULE="$GITHUB_WORKSPACE/experiments/fracture-phone-tv/chaos-world.mjs"
           cd "$RUNNER_TEMP/Fracture"
           NO_DEBUG=1 node dist/server/ts/main.js > "$RUNNER_TEMP/fracture-startup.log" 2>&1 &
           game_pid=$!
@@ -76,6 +77,7 @@ jobs:
           echo 'Fracture game server responds to HTTP, AI unset.'
           cd "$GITHUB_WORKSPACE"
           CHAOS_BETA_TEST=1 FRACTURE_ROOT="$RUNNER_TEMP/Fracture" node experiments/fracture-phone-tv/verify-rally.mjs
+          CHAOS_BETA_TEST=1 FRACTURE_ROOT="$RUNNER_TEMP/Fracture" node experiments/fracture-phone-tv/verify-native-objects.mjs
 
   mac-source-kit:
     name: Verified Mac beta source kit
