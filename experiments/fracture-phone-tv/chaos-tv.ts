@@ -92,7 +92,7 @@ export function startChaosTV(game:any):void {
     select.textContent='';for(const p of players){const option=document.createElement('option');option.value=String(p.actor.id);option.textContent=`${p.name}${p.role?' · '+p.role:''} · HP ${p.actor.hp}/${p.actor.maxHp}`;select.append(option);}select.value=selected;
     game.client.connection.emit('chaos:watch',{key:config.key,actorId:selected||null},()=>{});
     log.textContent='';
-    if(data.rally?.status==='pending'){const row=document.createElement('div');row.textContent=`Party rally vote: ${data.rally.yes}/${data.rally.required} yes · ${Math.max(0,Math.ceil((data.rally.deadline-Date.now())/1000))}s`;log.append(row);}
+    if(data.rally?.status==='pending'){const row=document.createElement('div');row.textContent=`Party ${data.rally.kind==='expedition'?'travel to '+data.rally.destination:'rally'} vote: ${data.rally.yes}/${data.rally.required} yes · ${Math.max(0,Math.ceil((data.rally.deadline-Date.now())/1000))}s`;log.append(row);}
     for(const d of (data.declarations||[]).slice(0,2)){const row=document.createElement('div');row.textContent=`${d.player} declares: ${d.text} · ${Math.max(0,Math.ceil((d.dueAt-Date.now())/1000))}s to help/hinder`;log.append(row);}
     for(const e of data.events.slice(-3)){const row=document.createElement('div');row.textContent=`${e.player}: ${e.message}`;log.append(row);}
     if(!players.length&&connected.length)log.textContent='Party knocked out — respawn on your phones.';
