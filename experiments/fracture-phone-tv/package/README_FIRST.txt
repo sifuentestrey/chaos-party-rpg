@@ -1,9 +1,9 @@
 CHAOS PARTY — LOCAL FRACTURE TECHNOLOGY BETA
 
 IMPORTANT: This is NOT the original Chaos Party game migrated to Fracture.
-Crown Job, Dawn Bell, original character customization, NPC memory and original
-campaign saves are not present. Crafting D20/object ownership and local rally
-are partial experiments, not full gameplay parity. This is a separate native Fracture playtest.
+Crown Job, Dawn Bell, original character customization, the full NPC goal system and original
+campaign saves are not present. Reactive objects, D20 crafting, persistent NPC
+trust/memory, bounded DM support and local rally are partial transfers, not full parity. This is a separate native Fracture playtest.
 Read docs/CHAOS_TO_FRACTURE_PARITY.md before treating it as a release.
 
 Double-click Start_Chaos_Party.command on the Mac.
@@ -12,7 +12,8 @@ If macOS blocks opening a downloaded script, inspect it and run this in Terminal
   bash Start_Chaos_Party.command
 
 Open the private host link from Terminal, open the TV, and join each phone using its QR.
-Try making a blue hat from cloth strip and wood splinter, equip it, and give it to a friend.
+Try moving or lighting the camp table, extinguishing/repairing it, and talking to a guard.
+NPCs remember witnessed theft; actual gifts can restore trust. You can still craft and trade.
 Use the same Wi-Fi. Each phone controls its own character. Keep Terminal open.
 The private host page can BENCH a player to free a 20-player slot without erasing their saved character.
 Restore that player from the host page when another slot becomes available.

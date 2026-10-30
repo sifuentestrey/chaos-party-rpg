@@ -11,7 +11,19 @@ Phone receipts distinguish received, started, succeeded, blocked, failed and can
 
 **Optional group rally:** Open **Gather the party** on a phone and choose **Propose gathering at my position**. All ready, living, connected characters must be in the same Fracture area and within twelve tiles; at least two are needed. A ten-second strict-majority vote opens, with the proposer voting yes automatically. Each other player can vote yes or no exactly once. If approved, the game asks each available native character to walk to the proposer's actual position; it never teleports them. Each character can STOP, and obstacles/disconnects can prevent some arrivals. Rejected or expired votes move nobody. This is a small **local rally**, not the original Chaos Party expedition/major travel system.
 
+## Reactive objects, NPC memory and DM
+
+Use `look around` and **World and people** on your phone to find custom objects, their IDs, owners and nearby NPC trust. The first camp contains a **camp table**: `push camp table east`, `ignite camp table`, `extinguish camp table`, and `repair camp table`. The table occupies a real tile and blocks walking until moved or broken. Pushes cannot overlap walls, characters or another blocking object. These capabilities belong to the displayed Chaos props; native painted buildings/tents are not silently converted.
+
+Fire ticks every ten seconds on the server and burns an object through after three ticks. Extinguish it before then, or repair it afterward. Fire changes objects, not native character HP. Dice resolve risky actions; failed rolls preserve state but still use your declaration window.
+
+Native NPCs have displayed owned rugs. `steal <rug item ID>` attempts real ownership transfer. The owner and visible nearby witnesses remember, lose trust toward that character, and may refuse new quests. Other players keep their own reputations. `talk to guard` reflects that memory; `give <owned item ID> to <NPC ID>` makes amends with a real inventory transfer. Use IDs when NPC names repeat. NPC identities, personal memories and trust survive reconnect and restart. This is bounded action memory/reputation, not autonomous AI training.
+
+The DM always has canonical offline results and saved facts. Optional Groq now supports both grounded interpretation and short post-result narration using the original Chaos narration instructions/validator. It remains off by default, uses only an existing configured key and the shared free-quota ledger, and never owns game outcomes. Live storytelling quality remains unqualified.
+
 ## Chaos crafting on the Fracture map
+
+A nearby friend can type `help <your full character name> craft` before your next craft. Within fifteen seconds, while they stay alive and nearby, the server rolls two D20s and uses the higher once. Invalid crafts keep the help; real attempts consume it, including failures.
 
 Every character starts with a cloth strip and wood splinter, once per saved character. Try `make blue hat from cloth strip and wood splinter`, then `equip blue hat`. The original Chaos rules roll a server D20 against DC 10. A failed roll keeps your materials; wait for the reaction window before trying again. Wearables show as colored bands on the actual TV sprites. They do not grant native combat stats.
 
@@ -62,3 +74,5 @@ Fracture by George Larson, pinned above: https://github.com/georgeglarson/Fractu
 QR Code Generator 2.0.4 by Kazuhiko Arase is reused under MIT; source and notice are in `vendor/`. Pure object rules reuse the original Chaos modules, PartyFrame RNG (Saleh Yusefnejad, MIT; `vendor/partyframe/LICENSE`) and the Dungeonz dependency (Johnathan "Arcan" Fisher, MIT; `public/vendor/Dungeonz-LICENSE.txt`). The optional AI quota ledger is reused from original Chaos code with a separate data directory; original networking and databases are never imported.
 
 Fusion browser regression (disposable data only): set `CHAOS_BETA_TEST=1`, `CHAOS_TEST_ROOM_FILE`, `CHAOS_BROWSER_TOOLS` (external Playwright Core directory), `CHAOS_TV_KEY` and optional `CHAOS_BROWSER_REPORT_DIR`, then run `node experiments/fracture-phone-tv/verify-fusion.mjs`. It creates two new characters and exercises crafting/giving/drop/pickup through real phone forms; no browser dependency is bundled in the game.
+
+Core gameplay regression: use the same disposable-browser environment variables as `verify-fusion.mjs`, then run `verify-core.mjs`. It expects an unclaimed native guard rug in a disposable world, creates two characters, and tests native movement/collision, timed fire, NPC trust, quest refusal/amends and reload. Never reset family possessions to rerun a test.

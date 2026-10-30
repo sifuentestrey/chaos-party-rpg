@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "checks": [
+    "fresh launcher loads persisted native NPC memories",
+    "real phone conversation reflects saved gift/reputation",
+    "offline DM narrates completed native conversation receipt",
+    "saved NPC facts available after restart",
+    "remembered reply appears as a native NPC speech bubble on TV"
+  ],
+  "events": [
+    {
+      "text": "walk to 41, 196",
+      "message": "Reached your destination.",
+      "status": "succeeded"
+    },
+    {
+      "text": "talk to guard",
+      "message": "guard: “Thank you for the gift. I remember your kindness.” (trust 0)",
+      "status": "succeeded"
+    }
+  ]
+}

@@ -1,0 +1,249 @@
+{
+  "status": "passed",
+  "checks": [
+    "actual launcher restart preserves native positions and owned items",
+    "moved/repaired blocking table remains in place",
+    "per-player native NPC trust and witnessed-action memory survive restart",
+    "canonical DM facts survive restart"
+  ],
+  "facts": {
+    "characters": [
+      {
+        "name": "CoreAsh8wbxe",
+        "x": 41,
+        "y": 196,
+        "bag": [
+          {
+            "id": "item-115",
+            "name": "wood splinter",
+            "type": "tool",
+            "material": "wood",
+            "condition": "intact",
+            "equipped": false,
+            "color": "#b88955",
+            "blocks": false,
+            "hp": 4,
+            "maxHp": 4,
+            "tile": null,
+            "components": []
+          },
+          {
+            "id": "item-123",
+            "name": "guard's rug",
+            "type": "fragment",
+            "material": "cloth",
+            "condition": "intact",
+            "equipped": false,
+            "color": "#bd88cf",
+            "visual": "rug",
+            "blocks": false,
+            "hp": 4,
+            "maxHp": 4,
+            "tile": null,
+            "components": []
+          }
+        ],
+        "npcs": [
+          {
+            "id": "fracture:world1:npc:40:41:195",
+            "name": "guard",
+            "trust": 0,
+            "memory": [
+              {
+                "verb": "theft",
+                "actorId": "44fb2357-75a8-4263-9c9c-77f62a872a7e",
+                "itemId": "item-123",
+                "success": true,
+                "round": 48
+              },
+              {
+                "verb": "steal",
+                "actorId": "44fb2357-75a8-4263-9c9c-77f62a872a7e",
+                "itemId": "item-123",
+                "round": 49,
+                "success": true
+              },
+              {
+                "verb": "give",
+                "actorId": "44fb2357-75a8-4263-9c9c-77f62a872a7e",
+                "itemId": "item-114",
+                "round": 50,
+                "success": true
+              }
+            ]
+          },
+          {
+            "id": "fracture:world1:npc:40:47:195",
+            "name": "guard",
+            "trust": 0,
+            "memory": []
+          }
+        ],
+        "story": [
+          {
+            "id": "chaos-48",
+            "round": 47,
+            "location": "fracture:world1",
+            "actorId": "44fb2357-75a8-4263-9c9c-77f62a872a7e",
+            "actor": "CoreAsh8wbxe",
+            "attempt": "repair camp table",
+            "targetId": "item-117",
+            "outcome": "success",
+            "fact": "D20 20 / 11: CoreAsh8wbxe: repair camp table.",
+            "changes": [
+              "REPAIR: camp table"
+            ],
+            "tile": {
+              "x": 41,
+              "y": 209
+            }
+          },
+          {
+            "id": "chaos-49",
+            "round": 48,
+            "location": "fracture:world1",
+            "actorId": "44fb2357-75a8-4263-9c9c-77f62a872a7e",
+            "actor": "CoreAsh8wbxe",
+            "attempt": "steal item-123",
+            "targetId": "item-123",
+            "outcome": "success",
+            "fact": "D20 13 / 11: CoreAsh8wbxe steals guard's rug from guard. guard notices and remembers.",
+            "changes": [
+              "STOLEN: guard's rug"
+            ],
+            "witnessIds": [
+              "fracture:world1:npc:40:41:195"
+            ],
+            "tile": {
+              "x": 41,
+              "y": 196
+            }
+          },
+          {
+            "id": "chaos-50",
+            "round": 49,
+            "location": "fracture:world1",
+            "actorId": "44fb2357-75a8-4263-9c9c-77f62a872a7e",
+            "actor": "CoreAsh8wbxe",
+            "attempt": "give cloth strip to fracture:world1:npc:40:41:195",
+            "targetId": "item-114",
+            "outcome": "success",
+            "fact": "CoreAsh8wbxe: give cloth strip → guard.",
+            "changes": [
+              "GIVE: cloth strip"
+            ],
+            "witnessIds": [
+              "fracture:world1:npc:40:41:195"
+            ],
+            "tile": {
+              "x": 41,
+              "y": 196
+            }
+          }
+        ]
+      },
+      {
+        "name": "CoreEmber8wc9u",
+        "x": 41,
+        "y": 196,
+        "bag": [
+          {
+            "id": "item-118",
+            "name": "cloth strip",
+            "type": "fragment",
+            "material": "cloth",
+            "condition": "intact",
+            "equipped": false,
+            "color": "#bd88cf",
+            "blocks": false,
+            "hp": 4,
+            "maxHp": 4,
+            "tile": null,
+            "components": []
+          },
+          {
+            "id": "item-119",
+            "name": "wood splinter",
+            "type": "tool",
+            "material": "wood",
+            "condition": "intact",
+            "equipped": false,
+            "color": "#b88955",
+            "blocks": false,
+            "hp": 4,
+            "maxHp": 4,
+            "tile": null,
+            "components": []
+          }
+        ],
+        "npcs": [
+          {
+            "id": "fracture:world1:npc:40:41:195",
+            "name": "guard",
+            "trust": 0,
+            "memory": []
+          },
+          {
+            "id": "fracture:world1:npc:40:47:195",
+            "name": "guard",
+            "trust": 0,
+            "memory": []
+          }
+        ],
+        "story": [
+          {
+            "id": "chaos-49",
+            "round": 48,
+            "location": "fracture:world1",
+            "actorId": "44fb2357-75a8-4263-9c9c-77f62a872a7e",
+            "actor": "CoreAsh8wbxe",
+            "attempt": "steal item-123",
+            "targetId": "item-123",
+            "outcome": "success",
+            "fact": "D20 13 / 11: CoreAsh8wbxe steals guard's rug from guard. guard notices and remembers.",
+            "changes": [
+              "STOLEN: guard's rug"
+            ],
+            "witnessIds": [
+              "fracture:world1:npc:40:41:195"
+            ],
+            "tile": {
+              "x": 41,
+              "y": 196
+            }
+          },
+          {
+            "id": "chaos-50",
+            "round": 49,
+            "location": "fracture:world1",
+            "actorId": "44fb2357-75a8-4263-9c9c-77f62a872a7e",
+            "actor": "CoreAsh8wbxe",
+            "attempt": "give cloth strip to fracture:world1:npc:40:41:195",
+            "targetId": "item-114",
+            "outcome": "success",
+            "fact": "CoreAsh8wbxe: give cloth strip → guard.",
+            "changes": [
+              "GIVE: cloth strip"
+            ],
+            "witnessIds": [
+              "fracture:world1:npc:40:41:195"
+            ],
+            "tile": {
+              "x": 41,
+              "y": 196
+            }
+          }
+        ]
+      }
+    ],
+    "table": {
+      "id": "item-117",
+      "tile": {
+        "x": 42,
+        "y": 209
+      },
+      "condition": "intact",
+      "hp": 4
+    }
+  }
+}

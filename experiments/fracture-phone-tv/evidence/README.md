@@ -29,3 +29,14 @@ Gameplay screenshots are derived from Fracture/BrowserQuest content and are shar
 The object adapter reuses original Chaos pure rules and dependency modules without starting its old network or generating its old maps. Separate durable character UUID ownership, failed-save rollback, no starter-item duplication and boundary/range checks have focused regressions. Derived screenshots retain the CC BY-SA attribution above.
 
 The fusion change was rebased onto the newer experimental branch (room bench/restore, event buffering, LAN selection, action receipt fences, straight directional movement and local rally). Those changes were preserved. The combined build passed 45 focused checks, 3,329 native tests, production builds, and the real native two-actor majority-rally verification. The 60-second 20-actor report was rerun on that combined build. Original `public`/`src` rules were unchanged by the branch synchronization.
+
+## Core-mechanics follow-through — October 30
+
+- `core.json`: two actual phone browser forms, server D20 misses/successes, table movement and real native path blocking, ignite/extinguish, **burn-through on the server clock without further commands**, repair, real guard rug theft, remembered quest refusal, innocent second player, actual gift and restored native quest access. No browser errors.
+- `core-visual.json`, `core-fire-tv.png`: fresh TV after fixing icon loading; custom table/rug/fire render independently of optional sprite availability. The first screenshot exposed a missing-prop render defect and was replaced only after correction and visual inspection.
+- `core-native-dm.json`, `core-npc-tv.png`, `core-memory-phone.png`: final fresh launch; actual native NPC conversation reflects saved memory, appears in the native speech bubble and produces an offline DM receipt after completion.
+- `core-restart.json`: actual launcher stop/restart preserves native positions/items, moved/repaired table, per-player NPC trust/action memory and canonical DM facts.
+- `core-load.json`: new 60-second 20-actor run with reactive-world snapshots enabled; native independent movement, scoped STOP, reconnect and continued activity. Not a new twenty-minute soak or Mac certification.
+- Original Chaos offline verification passed. Current focused checks **51/51**, native full suite **3,329/71 files**, plus final actor lifecycle regressions after NPC speech integration. Production client/server builds passed. Optional provider narration uses original Chaos instructions/validator and was tested with mocks; no live model or free-plan quality claim.
+
+NPC learning is bounded durable witnessed-action memory/reputation, with real per-player quest-access consequences. It is not an AI training claim or all original NPC routines. Native painted scenery, original campaigns/characters, full advantage/reaction simulation and native character fire damage are not ported. All derived screenshots retain the attribution/license stated above.

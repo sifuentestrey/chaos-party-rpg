@@ -1,18 +1,26 @@
 /** Chaos Party object rules projected onto real Fracture tiles; no legacy networking or saves. */
 import fs from 'node:fs';import path from 'node:path';import {randomInt} from 'node:crypto';
 import {parseItemAttempt,planItemAttempt,resolveItem,ITEM_TYPES,MATERIALS} from '../../public/world-items.js';
+import {parseEntityAttempt,planEntity,resolveEntity,advanceEntities} from '../../public/entity-rules.js';
+import {recordDMMemory} from '../../public/dm-memory.js';
 import {spawnItem} from '../../public/campaign.js';
 import {Rng} from '../../public/vendor/partyframe-rng.js';
 import {selectD20} from '../../public/vendor/dnd5e-advantage.js';
 const verbs=new Set(['take','drop','craft','attach','give','equip','unequip','separate','inspect','break','steal']);
+const environmental=new Set(['move','ignite','extinguish','repair']);
 const norm=s=>String(s||'').toLowerCase().replace(/^(?:the|a|an|my)\s+/,'').trim();
-export function creativeAttempt(text){const command=String(text).trim().replace(/^(?:please |I (?:want to |try to )?)+/i,'').replace(/^(?:pick up|pickup|collect|grab) /i,'take ');const help=command.match(/^(?:help|assist|aid)\s+(.+?)(?:\s+(?:craft|make|build|with crafting))?$/i);if(help)return {verb:'assist',recipient:help[1].trim()};const attempt=parseItemAttempt(command);return attempt&&verbs.has(attempt.verb)?attempt:null;}
-export function shouldUseCreative(text,actor){const a=creativeAttempt(text);if(!a)return false;if(['craft','attach','give','separate','assist','steal'].includes(a.verb))return true;const items=[...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[])];return items.some(i=>i.id===a.item||norm(i.name)===norm(a.item));}
+export function creativeAttempt(text){
+ const clean=String(text).trim().replace(/^(?:please |I (?:want to |try to )?)+/i,'').replace(/[.!?]+$/,'').replace(/^(?:pick up|pickup|collect|grab) /i,'take ');
+ const direction=clean.match(/ (north|south|east|west)$/i),core=direction?clean.slice(0,-direction[0].length):clean;
+ const help=clean.match(/^(?:help|assist|aid)\s+(.+?)(?:\s+(?:craft|make|build|with crafting))?$/i);if(help)return {verb:'assist',recipient:help[1].trim()};
+ const entity=parseEntityAttempt(core);
+ if(entity&&environmental.has(entity.verb))return {...entity,...(direction?{direction:direction[1].toLowerCase()}:{}),entityAction:true};
+ const attempt=parseItemAttempt(clean);return attempt&&verbs.has(attempt.verb)?attempt:null;
+}
+export function shouldUseCreative(text,actor){const a=creativeAttempt(text);if(!a)return false;if(['craft','attach','give','separate','steal','assist'].includes(a.verb))return true;const items=[...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[]),...(actor?.chaos?.npcs||[]).flatMap(n=>n.items||[])];const reference=a.item||a.target;return items.some(i=>i.id===reference||norm(i.name)===norm(reference));}
+
 const distance=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
 const scene=p=>`fracture:${p.getWorld?.().id||'world'}`;
-// A tile's native zone and collision geometry are part of object authority.
- // Nearby coordinates alone do not authorize handing an item through a wall,
- // stealing from another interior, or picking up a prop across a zone boundary.
 const zoneAt=(world,x,y)=>{const zone=world.zoneManager?.getZoneAt(x,y);return zone?String(zone.id??zone.name??''):null;};
 const sameZone=(p,q)=>{
  const world=p.getWorld();
@@ -32,14 +40,12 @@ const reachable=(p,q)=>{
 };
 const identity=p=>String(p.characterId||'');
 const name=p=>p.chaosName||p.name;
-export function createChaosWorld({file,seed=randomInt(1,0xffffffff),now=()=>Date.now(),npcName=n=>n.chaosName||n.name||String(n.kind||'NPC')}={}){
+export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.now,kindName=()=> 'villager',now=clock,npcName=n=>n.chaosName||n.name||kindName(n.kind)}={}){
  if(!file)throw Error('Separate Fracture object save path required');
  fs.mkdirSync(path.dirname(file),{recursive:true,mode:0o700});
  let state=fs.existsSync(file)?JSON.parse(fs.readFileSync(file,'utf8')):{version:1,seed,rng:seed,nextId:1,round:0,items:{},actors:{},camp:null};
  if(state.version!==1||!state.items||!state.actors)throw Error('Unsupported Chaos object save; refusing to overwrite');
- // Optional version-1 extension. Existing saves load unchanged and acquire this
- // field only on the next successful object write.
- state.assists||={};state.npcs||={};
+ state.assists||={};state.npcs||={};state.fireClock||={};state.dmMemory||={version:1,entries:[],people:{}};
  const persist=()=>{const temp=file+'.tmp';fs.writeFileSync(temp,JSON.stringify(state),{mode:0o600});fs.renameSync(temp,file);};
  function add(location,properties){const s={items:state.items,nextId:state.nextId};const item=spawnItem(s,location,properties);state.nextId=s.nextId;return item;}
  function seedPlayer(p){
@@ -56,35 +62,66 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),now=()=>Date
    persist();
    }catch(error){state=previous;throw error;}
   }else state.actors[id].name=name(p);
+  if(state.actors[id])state.actors[id].scene=scene(p);
  }
+ function visible(p,q,radius=8){
+  q=q?.tile||q;if(!q||![p.x,p.y,q.x,q.y].every(Number.isInteger))return false;
+  if(!sameZone(p,q)||distance(p,q)>radius)return false;
+  let x=p.x,y=p.y;const dx=Math.abs(q.x-x),dy=Math.abs(q.y-y),sx=x<q.x?1:-1,sy=y<q.y?1:-1;let err=dx-dy;
+  while(x!==q.x||y!==q.y){const e=2*err;if(e>-dy){err-=dy;x+=sx;}if(e<dx){err+=dx;y+=sy;}if(!p.getWorld().isValidPosition(x,y))return false;}return true;
+ }
+ const npcKey=(p,n)=>`${scene(p)}:npc:${n.kind}:${n.x}:${n.y}`;
+ function nativeNPCs(p){const w=p.getWorld();return [...new Map([...Object.values(w.entities||{}).filter(n=>n.type==='npc'),...Object.values(w.npcs||{})].map(n=>[String(n.id),n])).values()];}
+ function seedNPCs(p){
+  const native=nativeNPCs(p).filter(n=>visible(p,n));
+  const fresh=native.filter(n=>!state.npcs[npcKey(p,n)]);if(!fresh.length)return;
+  const previous=state;state=structuredClone(state);try{
+   for(const n of fresh){const id=npcKey(p,n),label=npcName(n),legacy=state.npcs[String(n.id)]||{};
+    state.npcs[id]={id,nativeId:String(n.id),name:label,kind:'person',location:scene(p),tile:{x:n.x,y:n.y},position:[n.x*16,n.y*16],hp:1,maxHp:1,attitude:legacy.attitude||'wary',trust:legacy.trust||{},history:legacy.history||[],memories:legacy.memories||{}};
+    if(state.npcs[String(n.id)]&&String(n.id)!==id){for(const item of Object.values(state.items))if(item.ownerId===String(n.id))item.ownerId=id;delete state.npcs[String(n.id)];}
+    const tile=[[0,1],[1,0],[-1,0],[0,-1]].map(([dx,dy])=>({x:n.x+dx,y:n.y+dy})).find(t=>p.getWorld().isValidPosition(t.x,t.y)&&sameZone(p,t)&&!Object.values(state.items).some(i=>i.tile&&distance(i.tile,t)===0));
+    if(tile)add(null,{name:label+"'s rug",type:'fragment',material:'cloth',ownerId:id,tile,visual:'rug',hp:4,maxHp:4,appearance:{shape:'rug',color:'#bd88cf'}});
+   }persist();
+  }catch(error){state=previous;throw error;}
+ }
+ function surroundings(p){seedPlayer(p);seedNPCs(p);
+  if(state.camp?.scene===scene(p)&&!state.camp.tableId){const c=state.camp,world=p.getWorld();const tile=[[2,0],[-2,0],[0,2],[0,-2]].map(([dx,dy])=>({x:c.x+dx,y:c.y+dy})).find(t=>world.isValidPosition(t.x,t.y)&&sameZone(p,t)&&!Object.values(world.entities||{}).concat(Object.values(world.players||{})).some(e=>e.x===t.x&&e.y===t.y)&&!Object.values(state.items).some(i=>i.tile&&distance(i.tile,t)===0));
+   if(tile){const previous=state;state=structuredClone(state);try{state.camp.tableId=add(scene(p),{name:'camp table',type:'fixture',material:'wood',portable:true,blocks:true,tile,visual:'table',hp:4,maxHp:4}).id;persist();}catch(error){state=previous;throw error;}}
+  }
+ }
+ function npcViews(p){const present=new Set(nativeNPCs(p).map(n=>npcKey(p,n)));return Object.values(state.npcs).filter(n=>present.has(n.id)&&n.location===scene(p)&&visible(p,n));}
+ function blocked(p,x,y){return Object.values(state.items).some(i=>i.blocks&&!i.ownerId&&i.location===scene(p)&&i.tile?.x===x&&i.tile?.y===y&&i.condition!=='broken');}
+ function targetItem(s,room,reference){const matches=Object.values(s.items).filter(i=>!i.parentId&&i.condition!=='disassembled'&&(i.id===reference||norm(i.name)===norm(reference))&&(i.location===s.current||room.players.some(p=>p.id===i.ownerId)||Object.hasOwn(s.creatures,i.ownerId)));return matches.length===1?matches[0]:null;}
  function projection(p){
-  seedPlayer(p);const current=scene(p),id=identity(p),world=p.getWorld();
+  surroundings(p);const current=scene(p),id=identity(p),world=p.getWorld();
   const peers=Object.values(world.players||{}).filter(q=>q.chaosControlled&&!q.chaosSpectator&&q.hasEnteredGame&&!q.isDead&&scene(q)===current&&reachable(p,q));
   if(!peers.includes(p))peers.push(p);
   const players=peers.map(q=>({id:identity(q),name:name(q),hp:q.hitPoints,maxHp:q.maxHitPoints}));
-  // Reuse original NPC-owned item/theft/trust rules, but map them to actual
-  // nearby native Fracture NPCs. Stable native NPC IDs survive a host restart.
-  // No synthetic NPC or inventory item is spawned by this adapter.
-  const creatures=Object.fromEntries(Object.values(world.npcs||{}).filter(q=>q&&reachable(p,q)).map(q=>{
-   const id=String(q.id),saved=state.npcs[id]||{};
-   return [id,{id,name:npcName(q),location:current,hp:1,maxHp:1,
-     attitude:saved.attitude||'neutral',trust:{...(saved.trust||{})},history:[...(saved.history||[])]}];
-  }));
-  const s={current,items:Object.fromEntries(Object.entries(state.items).filter(([,i])=>!i.location||(i.location===current&&i.tile&&distance(p,i.tile)<=8&&sameZone(p,i.tile)))),nextId:state.nextId,creatures,regions:{},campaign:{day:1,history:[],completed:[]},locations:{[current]:{id:current,name:world.zoneManager?.getZoneAt(p.x,p.y)?.name||'Fracture',exits:[],danger:0}}};
+  const s={current,items:Object.fromEntries(Object.entries(state.items).filter(([,i])=>!i.location||(i.location===current&&i.tile&&distance(p,i.tile)<=8&&sameZone(p,i.tile)))),nextId:state.nextId,creatures:Object.fromEntries(npcViews(p).map(n=>[n.id,n])),regions:{},campaign:{day:1,history:[],completed:[]},locations:{[current]:{id:current,name:world.zoneManager?.getZoneAt(p.x,p.y)?.name||'Fracture',exits:[],danger:0}}};
   return {room:{seed:state.seed,round:state.round,world:{expedition:s},players},actor:players.find(q=>q.id===id),s};
  }
- const plain=i=>({id:i.id,name:i.name,type:i.type,material:i.material,condition:i.condition,equipped:i.equipped,slot:i.slot,color:i.appearance?.color,tile:i.tile?{...i.tile}:null,components:[...i.components]});
+ const plain=i=>({id:i.id,name:i.name,type:i.type,material:i.material,condition:i.condition,equipped:i.equipped,slot:i.slot,color:i.appearance?.color,visual:i.visual,blocks:!!i.blocks,owner:i.ownerId?state.npcs[i.ownerId]?.name:null,hp:i.hp,maxHp:i.maxHp,tile:i.tile?{...i.tile}:null,components:[...i.components]});
+ function pulse(p){
+  const current=scene(p),now=clock();if(!state.fireClock[current])state.fireClock[current]=now;
+  const burning=Object.values(state.items).filter(i=>i.condition==='burning'&&(i.location===current||state.npcs[i.ownerId]?.location===current||state.actors[i.ownerId]?.scene===current));
+  if(!burning.length){state.fireClock[current]=now;return;}
+  const steps=Math.min(3,Math.floor((now-state.fireClock[current])/10000));if(steps<1)return;
+  const previous=state;state=structuredClone(state);try{
+   const owned=[...Object.values(state.npcs).filter(n=>n.location===current).map(n=>({id:n.id})),...Object.entries(state.actors).filter(([,a])=>a.scene===current).map(([id])=>({id}))];
+   const changes=[];for(let i=0;i<steps;i++)changes.push(...advanceEntities({round:state.round,players:owned},{current,items:state.items,creatures:{}}));
+   state.fireClock[current]=now;
+   if(changes.length){const room={round:++state.round,world:{expedition:{current,creatures:state.npcs}},dmMemory:state.dmMemory,result:{id:'chaos-'+state.round,playerId:'fire',name:'Fire',action:'fire progresses',target:{entityId:burning[0].id},blocked:false,success:true,narration:changes.join('. ')+'.',changes,sceneEvents:[]}};recordDMMemory(room);state.dmMemory.entries.at(-1).tile=burning[0].tile||{x:p.x,y:p.y};}
+   persist();
+  }catch(error){state=previous;throw error;}
+ }
  function snapshot(p){
-  if(!identity(p))return {bag:[],ground:[],wearables:[]};seedPlayer(p);const id=identity(p),world=p.getWorld();
+  if(!identity(p))return {bag:[],ground:[],wearables:[]};surroundings(p);pulse(p);const id=identity(p);
   const bag=Object.values(state.items).filter(i=>i.ownerId===id&&!i.parentId&&i.condition!=='disassembled');
-  const ground=Object.values(state.items).filter(i=>!i.ownerId&&!i.parentId&&i.location===scene(p)&&i.tile&&distance(p,i.tile)<=8&&sameZone(p,i.tile)&&i.condition!=='disassembled');
-  const npcs=Object.values(world.npcs||{}).filter(q=>q&&sameZone(p,q)&&distance(p,q)<=8).map(q=>{
-   const npcId=String(q.id),saved=state.npcs[npcId]||{};
-   return {id:npcId,name:npcName(q),attitude:saved.attitude||'neutral',
-     trust:(saved.trust||{})[id]||0,items:Object.values(state.items).filter(i=>i.ownerId===npcId&&!i.parentId).map(i=>({id:i.id,name:i.name}))};
-  });
-  const aid=state.assists[id];const helper=aid?.until>now()?Object.values(p.getWorld().players||{}).find(q=>identity(q)===aid.helperId&&q.chaosControlled&&q.hasEnteredGame&&!q.isDead&&reachable(p,q)):null;const assistedBy=helper?name(helper):null;
-  return {bag:bag.map(plain),ground:ground.map(plain),wearables:bag.filter(i=>i.equipped).map(plain),npcs,camp:state.camp,...(assistedBy?{assistedBy}:{})};
+  const ground=Object.values(state.items).filter(i=>(!i.ownerId&&i.location===scene(p)||state.npcs[i.ownerId]?.location===scene(p))&&!i.parentId&&i.tile&&visible(p,i.tile)&&i.condition!=='disassembled');
+  const npcs=npcViews(p).map(n=>({id:n.id,nativeId:n.nativeId,name:n.name,tile:n.tile,attitude:(n.trust[identity(p)]||0)<0?'hostile':(n.trust[identity(p)]||0)>0?'friendly':'neutral',trust:n.trust[identity(p)]||0,memory:(n.memories?.[identity(p)]||n.history.filter(h=>h.actorId===identity(p))).slice(-3),items:Object.values(state.items).filter(i=>i.ownerId===n.id&&!i.parentId).map(plain)}));
+  const story=state.dmMemory.entries.filter(e=>e.location===scene(p)&&(e.actorId===id||e.tile&&visible(p,e.tile))).slice(-3);
+  const aid=state.assists[id],helper=aid?.until>now()?Object.values(p.getWorld().players||{}).find(q=>identity(q)===aid.helperId&&q.hasEnteredGame&&!q.isDead&&q.chaosControlled&&!q.chaosSpectator&&scene(q)===scene(p)&&reachable(p,q)):null,assistedBy=helper?name(helper):null;
+  return {bag:bag.map(plain),ground:ground.map(plain),npcs,story,wearables:bag.filter(i=>i.equipped).map(plain),camp:state.camp,...(assistedBy?{assistedBy}:{})};
  }
  function apply(p,text){
   if(!identity(p))return {blocked:true,success:false,text:'Your character is still connecting.'};
@@ -103,11 +140,24 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),now=()=>Date
    state.round++;persist();
    return {blocked:false,success:true,text:`${actor.name} helps ${recipient.name}. Their next valid craft or attachment roll gets D20 advantage for 15 seconds while you stay nearby.`};
   }
-  const plan=planItemAttempt(room,actor,attempt);
+  if(attempt.entityAction&&!targetItem(s,room,attempt.target))return {blocked:true,success:false,text:'Choose a visible Chaos object for that interaction; native scenery and characters are not movable objects.'};
+  const plan=attempt.entityAction?planEntity(room,s,actor,attempt,(_s,r,ref)=>targetItem(s,r,ref)):planItemAttempt(room,actor,attempt);
   if(!plan)return {blocked:true,success:false,text:'No unique object matches that request.'};
-  const item=state.items[plan.itemId];
-  if(item&&!item.ownerId&&(!item.tile||scene(p)!==item.location||!reachable(p,item.tile)))return {blocked:true,success:false,text:'Walk closer to that object before interacting with it.'};
+  const item=state.items[plan.itemId||plan.targetId];
+  if(item?.ownerId&&item.ownerId!==actor.id&&!state.npcs[item.ownerId])return {blocked:true,success:false,text:'Another player owns that object. Ask them to give or drop it.'};
+  const itemTile=item?.tile||state.npcs[item?.ownerId]?.tile;
+  if(item&&(itemTile||state.npcs[item.ownerId])&&(!itemTile||(!item.ownerId&&scene(p)!==item.location)||!reachable(p,itemTile)))return {blocked:true,success:false,text:'Walk closer to that object before interacting with it.'};
+  if(plan.recipientId){const recipient=state.npcs[plan.recipientId];if(recipient&&!reachable(p,recipient.tile))return {blocked:true,success:false,text:'Walk closer to the recipient.'};}
+  if(attempt.verb==='give'&&Object.values(s.creatures).concat(room.players).filter(n=>norm(n.name)===norm(attempt.recipient)).length>1)return {blocked:true,success:false,text:'That name is ambiguous. Use the displayed recipient ID.'};
   if(plan.error)return {blocked:true,success:false,text:plan.error};
+  if(plan.verb==='ignite'&&item?.condition==='burning')return {blocked:true,success:false,text:'That object is already burning. Extinguish it to prevent damage.'};
+  let destination;
+  if(plan.verb==='move'&&item){
+   if(item.ownerId)return {blocked:true,success:false,text:'Drop a carried object before pushing it.'};
+   const dirs={north:[0,-1],south:[0,1],east:[1,0],west:[-1,0]};const dx=item.tile.x-p.x,dy=item.tile.y-p.y;
+   const [mx,my]=dirs[attempt.direction]||(Math.abs(dx)>=Math.abs(dy)?[Math.sign(dx)||1,0]:[0,Math.sign(dy)||1]);destination={x:item.tile.x+mx,y:item.tile.y+my};
+   if(!sameZone(p,destination)||!p.getWorld().isValidPosition(destination.x,destination.y)||blocked(p,destination.x,destination.y)||Object.values(p.getWorld().entities||{}).concat(Object.values(p.getWorld().players||{})).some(e=>e.x===destination.x&&e.y===destination.y))return {blocked:true,success:false,text:'That object cannot move into a wall, another object or a character.'};
+  }
   const rng=new Rng(state.seed);rng.restore(state.rng);
   let roll=null,rolls=null,assistedBy=null;
   if(!plan.automatic){
@@ -117,25 +167,41 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),now=()=>Date
    if(helper){rolls=[rng.int(1,20),rng.int(1,20)];roll=selectD20(rolls,1);assistedBy=helper.name;}
    else roll=rng.int(1,20);
   }
-  const result=resolveItem(room,actor,plan,plan.automatic||roll>=plan.dc);
-  Object.assign(state.items,s.items);
-  // The original resolver changes NPC trust/history on *both* successful and
-  // failed theft. Persist that consequence separately from native dialogue/AI.
-  for(const npc of Object.values(s.creatures))if(npc.history?.length||npc.attitude!=='neutral')
-   state.npcs[npc.id]={attitude:npc.attitude,trust:npc.trust||{},history:npc.history||[]};
-  state.nextId=s.nextId;state.rng=rng.snapshot();state.round++;
+  const result=attempt.entityAction?resolveEntity(room,s,actor,plan,plan.automatic||roll>=plan.dc):resolveItem(room,actor,plan,plan.automatic||roll>=plan.dc);
+  Object.assign(state.items,s.items);state.nextId=s.nextId;state.rng=rng.snapshot();state.round++;
+  if(result.success&&destination)item.tile=destination;
   if(result.success&&attempt.verb==='drop'&&item)item.tile={x:p.x,y:p.y};
-  if(result.success&&['take','give'].includes(attempt.verb)&&item)delete item.tile;
+  if(result.success&&['take','give','steal'].includes(attempt.verb)&&item)delete item.tile;
+  const witnesses=npcViews(p).filter(n=>visible(p,n.tile,6)&&(!item?.tile||visible({...p,x:n.tile.x,y:n.tile.y,getWorld:()=>p.getWorld()},item.tile,6)));
+  for(const n of witnesses){
+   let delta=0;if(attempt.verb==='steal'&&plan.previousOwnerId!==n.id)delta=-2;
+   if(['ignite','break'].includes(attempt.verb))delta=-1;
+   if(result.success&&['repair','extinguish'].includes(attempt.verb))delta=1;
+   if(result.success&&attempt.verb==='give'&&plan.recipientId===n.id)delta=2;
+   n.trust[actor.id]=Math.max(-10,Math.min(10,(n.trust[actor.id]||0)+delta));
+   if(!['inspect','equip','unequip'].includes(attempt.verb)){
+    const observation={verb:attempt.verb,actorId:actor.id,itemId:item?.id,round:state.round,success:!!result.success};
+    n.memories||={};n.memories[actor.id]=[...(n.memories[actor.id]||n.history.filter(h=>h.actorId===actor.id)),observation].slice(-4);
+    n.history.push(observation);n.history=n.history.slice(-12);
+   }
+  }
+  const changes=[];
+  const canonical=(rolls?`D20 advantage ${rolls.join(' / ')} → ${roll} / ${plan.dc} (helped by ${assistedBy}): `:roll!==null?`D20 ${roll} / ${plan.dc}: `:'')+result.text+(changes.length?' '+changes.join('. ')+'.':'');
+  room.dmMemory=state.dmMemory;room.result={id:'chaos-'+state.round,playerId:actor.id,name:actor.name,action:text,target:{entityId:item?.id},blocked:false,success:result.success,narration:canonical,changes:[result.change,...changes].filter(Boolean),sceneEvents:witnesses.map(n=>({type:'witness',entityId:n.id}))};
+  recordDMMemory(room);const entry=state.dmMemory.entries.at(-1);if(entry)entry.tile={x:p.x,y:p.y};
   persist();
-  return {...result,...(roll!==null?{roll,dc:plan.dc,...(rolls?{rolls,assistedBy}:{}),text:rolls?`D20 advantage ${rolls.join(' / ')} → ${roll} / ${plan.dc} (helped by ${assistedBy}): ${result.text}`:`D20 ${roll} / ${plan.dc}: ${result.text}`}:{})};
+  return {...result,...(roll!==null?{roll,dc:plan.dc,...(rolls?{rolls,assistedBy}:{}),text:canonical}:{text:canonical}),witnesses:witnesses.map(n=>n.name),event:entry};
  }
- function execute(p,text){seedPlayer(p);const previous=state;state=structuredClone(state);try{const result=apply(p,text);if(result.blocked)state=previous;return result;}catch(error){state=previous;throw error;}}
+ function execute(p,text){surroundings(p);pulse(p);const previous=state;state=structuredClone(state);try{const result=apply(p,text);if(result.blocked)state=previous;return result;}catch(error){state=previous;throw error;}}
  function approach(p,text){
   const attempt=creativeAttempt(text);if(!attempt)return null;
-  const {room,actor}=projection(p);if(!actor)return null;
-  const plan=planItemAttempt(room,actor,attempt);if(!plan||plan.error)return null;
-  const item=state.items[plan.itemId];
-  return item&&!item.ownerId&&item.tile&&!reachable(p,item.tile)?{...item.tile}:null;
+  const {room,actor,s}=projection(p);if(!actor||attempt.entityAction&&!targetItem(s,room,attempt.target))return null;
+  const plan=attempt.entityAction?planEntity(room,room.world.expedition,actor,attempt,(_s,r,ref)=>targetItem(room.world.expedition,r,ref)):planItemAttempt(room,actor,attempt);if(!plan||plan.error)return null;
+  const item=state.items[plan.itemId||plan.targetId];
+  const tile=item?.tile||state.npcs[item?.ownerId]?.tile;
+  return item&&(!item.ownerId||state.npcs[item.ownerId])&&tile&&!reachable(p,tile)?{...tile}:null;
  }
- return {snapshot,execute,approach};
+ function talk(p,native){surroundings(p);const n=state.npcs[npcKey(p,native)];if(!n)return null;const history=n.memories?.[identity(p)]||n.history.filter(h=>h.actorId===identity(p));const trust=n.trust[identity(p)]||0;if(!history.length&&trust===0)return null;const last=history.at(-1)||{verb:'theft',success:false};return `${n.name}: “${trust<0?'I remember what you did. Make amends before asking for a job.':last.verb==='give'?'Thank you for the gift. I remember your kindness.':`I remember your ${last.success?'':'attempt at '}${last.verb}${last.itemId?' involving '+(state.items[last.itemId]?.name||'that object'):''}.`}” (trust ${trust})`;}
+ function canQuest(p,native){surroundings(p);const n=state.npcs[npcKey(p,native)];return !n||(n.trust[identity(p)]||0)>=0;}
+ return {snapshot,execute,approach,isBlocked:blocked,talk,canQuest};
 }

@@ -43,10 +43,16 @@ export function startChaosTV(game:any):void {
   game.renderer.drawEntities=(dirty:any)=>{
     const ctx=game.renderer.context,scale=game.renderer.scale;
     for(const prop of groundProps){
-      const key=prop.type==='container'?'item-flask':prop.material==='cloth'?'item-clotharmor':prop.material==='stone'?'item-crystalshell':'item-sword1';
-      const sprite=game.sprites[key];if(!sprite?.isLoaded||!prop.tile)continue;
+      const key=prop.type==='container'?'item-flask':prop.material==='cloth'?'item-leatherarmor':prop.material==='stone'?'item-morningstar':'item-sword2';
+      const sprite=game.sprites[key];if(!prop.tile||(!sprite?.isLoaded&&!['table','rug'].includes(prop.visual)))continue;
       const x=prop.tile.x*16*scale,y=prop.tile.y*16*scale;ctx.save();ctx.globalAlpha=prop.condition==='broken'?0.45:1;
-      ctx.drawImage(sprite.image,0,0,sprite.width*sprite.scale,sprite.height*sprite.scale,x,y,16*scale,16*scale);ctx.restore();
+      if(prop.visual==='table'){
+        ctx.fillStyle='#513827';ctx.fillRect(x+3*scale,y+10*scale,3*scale,6*scale);ctx.fillRect(x+11*scale,y+10*scale,3*scale,6*scale);
+        ctx.fillStyle=prop.condition==='broken'?'#5b4a38':'#b88955';ctx.fillRect(x,y+3*scale,16*scale,8*scale);ctx.fillStyle='#dfb87a';ctx.fillRect(x+scale,y+4*scale,14*scale,scale);
+      }else if(prop.visual==='rug'){
+        ctx.fillStyle=prop.color||'#bd88cf';ctx.fillRect(x,y+3*scale,16*scale,11*scale);ctx.strokeStyle='#dfc16e';ctx.lineWidth=scale;ctx.strokeRect(x+2*scale,y+5*scale,12*scale,7*scale);
+      }else ctx.drawImage(sprite.image,0,0,sprite.width*sprite.scale,sprite.height*sprite.scale,x,y,16*scale,16*scale);
+      if(prop.condition==='burning'){ctx.fillStyle='#f9b72f';ctx.fillRect(x+5*scale,y,6*scale,9*scale);ctx.fillStyle='#ef6338';ctx.fillRect(x+7*scale,y-4*scale,3*scale,10*scale);}ctx.restore();
       game.renderer.drawText(prop.name,x+8*scale,y-3*scale,true,prop.color||'#efbd68',true);
     }originalEntities(dirty);
   };

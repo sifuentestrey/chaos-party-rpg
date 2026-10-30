@@ -11,3 +11,13 @@ test('creative proposals require existing component IDs and cannot supply game o
  const result=await dm.interpret('make something royal',{chaos:{bag:[{id:'item-1'},{id:'item-2'}]}});assert.deepEqual(result,ok?proposal:null);
  }
 });
+
+test('DM narration reuses canonical validation, supplied memories and safe fallback',async t=>{
+ const receipt={id:'turn-7',status:'failed',player:'Ada',message:'The rug was not stolen. Guard noticed.',event:{attempt:'steal rug'},actor:{chaos:{npcs:[{id:'guard-1',name:'Guard',trust:-2,memory:[{verb:'theft'}]}],story:[{fact:'Guard noticed the attempt.'}]}}};
+ for(const [answer,ok] of [[{turnId:'turn-7',outcome:'failure',text:'The guard gives Ada a suspicious look.',dialogue:[{speakerId:'guard-1',line:'I remember that attempt.'}]},true],[{turnId:'turn-7',outcome:'success',text:'You stole it!',dialogue:[]},false],[{turnId:'turn-7',outcome:'failure',text:'A dragon appears.',dialogue:[{speakerId:'dragon',line:'Hello'}]},false]]){
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-story-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));let sent;
+  const dm=createOptionalDM({dataDir:dir,key:'test',enabled:true,fetchImpl:async(_url,init)=>{sent=JSON.parse(init.body);return {ok:true,json:async()=>({choices:[{message:{content:JSON.stringify(answer)}}]})};}});
+  assert.equal(!!await dm.narrate(receipt),ok);assert.ok(sent.messages[1].content.includes('Guard noticed the attempt'));assert.equal(receipt.status,'failed');
+ }
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-story-off-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));let calls=0;const dm=createOptionalDM({dataDir:dir,key:'test',fetchImpl:async()=>calls++});assert.equal(await dm.narrate(receipt),null);assert.equal(calls,0);
+});

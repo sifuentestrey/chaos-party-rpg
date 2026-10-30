@@ -195,3 +195,5 @@ test('a failed dice declaration consumes the window and refreshes recipient stat
  assert.equal((await post(base,'/action',{token:a,text:'make hat from cloth strip and wood splinter'})).status,409);
  assert.ok(app.room.turn.participants.includes(a));assert.equal((await post(base,'/action',{token:b,text:'look around'})).status,202);
 });
+
+test('offline DM uses terminal native facts and never treats started as success',async t=>{const {app,base,sockets}=await setup(t);const token=(await(await post(base,'/pair',{key:app.room.join,name:'Ada'})).json()).token;await new Promise(r=>setTimeout(r,20));const request=await post(base,'/action',{token,text:'talk to guard'});const {id}=await request.json();let state=await(await fetch(base+'/state?token='+token)).json();assert.equal(state.story,undefined);sockets[0].emit('chaos:receipt',{id,status:'succeeded',message:'Guard remembers the gift.'});state=await(await fetch(base+'/state?token='+token)).json();assert.deepEqual(state.story,{id,text:'Guard remembers the gift.',mode:'offline'});});
