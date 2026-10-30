@@ -65,6 +65,52 @@ test('invalid craft cannot consume help and a dead helper cannot grant advantage
  assert.equal(result.rolls,undefined,'dead helpers cannot grant advantage');
 });
 
+
+test('nearby teammate grants one real advantage roll to Bard NPC reconciliation, with durable canonical result',t=>{
+ const {a,b,guard,engine,file}=npcFixture(t);
+ a.chaosRole='bard';
+ const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');
+ assert.ok(rug);a.x=rug.tile.x;a.y=rug.tile.y;b.x=a.x+1;b.y=a.y;
+ engine.snapshot(b);
+ const theft=engine.execute(a,'steal '+rug.id);
+ assert.equal(theft.blocked,false);
+ assert.ok(engine.snapshot(a).npcs.find(n=>n.name==='guard').trust<0);
+ assert.equal(engine.execute(b,'help Alice').success,true);
+ const appeal=engine.execute(a,'apologize to guard');
+ assert.equal(appeal.blocked,false);
+ assert.equal(appeal.bonus,3);
+ assert.equal(appeal.rolls.length,2);
+ assert.equal(appeal.roll,Math.max(...appeal.rolls));
+ assert.equal(appeal.assistedBy,'Bob');
+ assert.match(appeal.text,/D20 advantage/);
+ assert.match(appeal.text,/helped by Bob/);
+ assert.equal(engine.snapshot(a).assistedBy,undefined,'one social check consumes help even if the roll fails');
+ const npc=engine.snapshot(a).npcs.find(n=>n.name==='guard');
+ assert.ok(npc.memory.some(m=>m.verb==='appeal'));
+ const stored=JSON.parse(fs.readFileSync(file));
+ assert.equal(stored.assists[a.characterId],undefined);
+ assert.ok(stored.npcs[npc.id].history.some(m=>m.verb==='appeal'));
+ assert.equal(engine.execute(b,'help Alice').success,true);
+ const cooldown=engine.execute(a,'apologize to guard');
+ assert.equal(cooldown.blocked,true,'cooldown or resolved grievance prevents an extra roll');
+ assert.equal(engine.snapshot(a).assistedBy,'Bob','blocked social checks do not consume the next helper roll');
+});
+test('original D20 help applies to actual NPC theft, not merely crafting, without inventing loot',t=>{
+ const {a,b,engine}=npcFixture(t);
+ const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');
+ assert.ok(rug);a.x=rug.tile.x;a.y=rug.tile.y;b.x=a.x+1;b.y=a.y;
+ engine.snapshot(b);
+ assert.equal(engine.execute(b,'help Alice').success,true);
+ const result=engine.execute(a,'steal '+rug.id);
+ assert.equal(result.blocked,false);
+ assert.equal(result.rolls.length,2);
+ assert.equal(result.roll,Math.max(...result.rolls));
+ assert.equal(result.assistedBy,'Bob');
+ assert.equal(engine.snapshot(a).assistedBy,undefined);
+ assert.equal(engine.snapshot(a).bag.some(i=>i.id===rug.id),result.success,
+  'the actual D20 outcome, not the helper declaration, determines ownership');
+});
+
 test('native zone boundary blocks cross-zone gifts, pickup, inspection and approach even on adjacent tiles',t=>{
  const {a,b,engine,world}=fixture(t);
  world.zoneManager.getZoneAt=(x,y)=>({id:x<42?'village':'forest',name:x<42?'The Refuge':'Glitch Woods'});
