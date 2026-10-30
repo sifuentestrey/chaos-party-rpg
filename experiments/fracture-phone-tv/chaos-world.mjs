@@ -138,7 +138,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
     for(const item of Object.values(state.items)){
      if(!onFloor(item)||item.condition!=='intact'||!MATERIAL_RULES[item.material]?.burns)continue;
      const itemZone=zone(item.tile);if(!itemZone)continue;
-     const source=sources.find(src=>src.id!==item.id&&zone(src.tile)===itemZone&&distance(src.tile,item.tile)===1);
+     const source=sources.find(src=>src.id!==item.id&&src.condition==='burning'&&zone(src.tile)===itemZone&&distance(src.tile,item.tile)===1);
      if(!source)continue;
      item.condition='burning';item.heat=0;
      if(source.ignitedBy)item.ignitedBy=source.ignitedBy;
