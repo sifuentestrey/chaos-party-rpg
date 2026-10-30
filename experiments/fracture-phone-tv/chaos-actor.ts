@@ -255,5 +255,5 @@ export function installChaosActor(player:any, connection:any): void {
     }
     finally{ticking=false;}
   },220);
-  socket.on('disconnect',()=>{clearInterval(timer);cancel();active=null;});
+  socket.on('disconnect',()=>{clearInterval(timer);if(player.chaosControlled)chaosObjects?.releaseDoorHolds(player);cancel();active=null;});
 }
