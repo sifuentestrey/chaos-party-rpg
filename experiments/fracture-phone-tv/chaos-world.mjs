@@ -6,6 +6,7 @@ import {recordDMMemory} from '../../public/dm-memory.js';
 import {spawnItem} from '../../public/campaign.js';
 import {Rng} from '../../public/vendor/partyframe-rng.js';
 import {selectD20} from '../../public/vendor/dnd5e-advantage.js';
+import {resolveObjectRoll} from './party-roles.mjs';
 const verbs=new Set(['take','drop','craft','attach','give','equip','unequip','separate','inspect','break','steal']);
 const environmental=new Set(['move','ignite','extinguish','repair']);
 const norm=s=>String(s||'').toLowerCase().replace(/^(?:the|a|an|my)\s+/,'').trim();
@@ -162,15 +163,18 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    if(!sameZone(p,destination)||!p.getWorld().isValidPosition(destination.x,destination.y)||blocked(p,destination.x,destination.y)||Object.values(p.getWorld().entities||{}).concat(Object.values(p.getWorld().players||{})).some(e=>e.x===destination.x&&e.y===destination.y))return {blocked:true,success:false,text:'That object cannot move into a wall, another object or a character.'};
   }
   const rng=new Rng(state.seed);rng.restore(state.rng);
-  let roll=null,rolls=null,assistedBy=null;
+  let roll=null,rolls=null,assistedBy=null,check=null;
   if(!plan.automatic){
    const aid=['craft','attach'].includes(attempt.verb)?state.assists[actor.id]:null;
    const helper=aid?.until>now()?room.players.find(q=>q.id===aid.helperId&&q.id!==actor.id):null;
    if(aid)delete state.assists[actor.id]; // Consume on a real attempt, even a failed roll.
    if(helper){rolls=[rng.int(1,20),rng.int(1,20)];roll=selectD20(rolls,1);assistedBy=helper.name;}
    else roll=rng.int(1,20);
+   check=resolveObjectRoll({role:p.chaosRole,perk:p.chaosPerk,verb:attempt.verb,dc:plan.dc,roll,rolls,rng});
+   roll=check.roll;
   }
-  const result=attempt.entityAction?resolveEntity(room,s,actor,plan,plan.automatic||roll>=plan.dc):resolveItem(room,actor,plan,plan.automatic||roll>=plan.dc);
+  const success=plan.automatic||check.success;
+  const result=attempt.entityAction?resolveEntity(room,s,actor,plan,success):resolveItem(room,actor,plan,success);
   Object.assign(state.items,s.items);state.nextId=s.nextId;state.rng=rng.snapshot();state.round++;
   if(result.success&&destination)item.tile=destination;
   if(result.success&&attempt.verb==='drop'&&item)item.tile={x:p.x,y:p.y};
@@ -189,11 +193,13 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    }
   }
   const changes=[];
-  const canonical=(rolls?`D20 advantage ${rolls.join(' / ')} → ${roll} / ${plan.dc} (helped by ${assistedBy}): `:roll!==null?`D20 ${roll} / ${plan.dc}: `:'')+result.text+(changes.length?' '+changes.join('. ')+'.':'');
+  const modifier=check?.bonus?` +${check.bonus} class`:'';
+  const lucky=check?.rerolled!==null&&check?.rerolled!==undefined?` · Lucky-ish ${check.rerolled} → ${roll}`:'';
+  const canonical=(rolls?`D20 advantage ${rolls.join(' / ')} → ${roll}${modifier} / ${plan.dc} (helped by ${assistedBy}${lucky}): `:roll!==null?`D20 ${roll}${modifier} / ${plan.dc}${lucky}: `:'')+result.text+(changes.length?' '+changes.join('. ')+'.':'');
   room.dmMemory=state.dmMemory;room.result={id:'chaos-'+state.round,playerId:actor.id,name:actor.name,action:text,target:{entityId:item?.id},blocked:false,success:result.success,narration:canonical,changes:[result.change,...changes].filter(Boolean),sceneEvents:witnesses.map(n=>({type:'witness',entityId:n.id}))};
   recordDMMemory(room);const entry=state.dmMemory.entries.at(-1);if(entry)entry.tile={x:p.x,y:p.y};
   persist();
-  return {...result,...(roll!==null?{roll,dc:plan.dc,...(rolls?{rolls,assistedBy}:{}),text:canonical}:{text:canonical}),witnesses:witnesses.map(n=>n.name),event:entry};
+  return {...result,...(roll!==null?{roll,dc:plan.dc,bonus:check.bonus,...(check.rerolled!==null?{rerolled:check.rerolled}:{}),...(rolls?{rolls,assistedBy}:{}),text:canonical}:{text:canonical}),witnesses:witnesses.map(n=>n.name),event:entry};
  }
  function execute(p,text){surroundings(p);pulse(p);const previous=state;state=structuredClone(state);try{const result=apply(p,text);if(result.blocked)state=previous;return result;}catch(error){state=previous;throw error;}}
  function approach(p,text){
