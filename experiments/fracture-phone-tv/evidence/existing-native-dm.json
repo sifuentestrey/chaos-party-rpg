@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "checks": [
+    "two authenticated native actors",
+    "existing pinned-map oak only",
+    "open-ended phone intent -> grounded mock DM proposal -> authoritative native D20",
+    "failed checks preserve collision",
+    "successful check persists native tree fall",
+    "second actor sees shared change",
+    "original trunk becomes walkable",
+    "no new art or props"
+  ],
+  "rolls": 2,
+  "aiModel": "stubbed; live Groq and physical Mac/phone/TV remain unverified"
+}

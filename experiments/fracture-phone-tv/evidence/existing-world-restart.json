@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "checks": [
+    "same saved native characters and positions",
+    "moved original tent and boulder retained",
+    "roof repairs and felled native trees retained",
+    "saved actor resumes inside formerly solid boulder cell",
+    "no invented props or save reset"
+  ]
+}
