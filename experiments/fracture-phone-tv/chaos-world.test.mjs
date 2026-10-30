@@ -427,6 +427,7 @@ test('native NPC reacts to a real burning rug, remembers destruction, and stops 
  const reloaded=createChaosWorld({file});
  assert.match(reloaded.talk(a,guard),/repair/i,'actual damage survives restart');
  succeed(reloaded,a,'repair '+rug.id);
+ assert.equal(JSON.parse(fs.readFileSync(file)).items[rug.id].ownerId,npc.id,'repair cannot steal or transfer NPC property');
  assert.equal(reloaded.snapshot(a).npcs.find(n=>n.name==='guard').concern,null);
  assert.doesNotMatch(reloaded.talk(a,guard)||'',/on fire|burned through/i);
 });
