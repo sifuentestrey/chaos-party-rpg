@@ -11,8 +11,9 @@ test('real cooperative proof + actual zone travel yields one durable, reward-fre
  assert.ok(advanceAdventure(a,talk('t1'),200));
  assert.ok(advanceAdventure(a,kill('k1'),300));
  assert.equal(a.proof.route,'combat');
- assert.ok(advanceAdventure(a,zoneEvidence(actor('Glitch Woods'),'Bryn'),400));
- assert.ok(advanceAdventure(a,zoneEvidence(actor('The Refuge'),'Ada'),500));
+ assert.ok(advanceAdventure(a,zoneEvidence(actor('Glitch Woods'),'Bryn','bryn-token'),400));
+ assert.equal(advanceAdventure(a,zoneEvidence(actor('The Refuge'),'Ada','ada-token'),450),null,'a teammate who never entered the woods cannot finish');
+ assert.ok(advanceAdventure(a,zoneEvidence(actor('The Refuge'),'Bryn','bryn-token'),500));
  assert.equal(a.status,'completed');assert.equal(a.completedAt,500);
  assert.equal(adventureView(a).steps.filter(s=>s.done).length,4);
  assert.equal(advanceAdventure(a,talk('t2'),600),null);
@@ -25,8 +26,8 @@ test('craft route uses original Chaos item parser and confirmed success only',()
  assert.ok(advanceAdventure(a,craft('c1'),200));
  assert.equal(a.proof.route,'craft');
  assert.ok(advanceAdventure(a,talk('t1'),300));
- assert.ok(advanceAdventure(a,zoneEvidence(actor('Glitch Woods'),'Ada'),400));
- assert.ok(advanceAdventure(a,zoneEvidence(actor('The Refuge'),'Ada'),500));
+ assert.ok(advanceAdventure(a,zoneEvidence(actor('Glitch Woods'),'Ada','ada-token'),400));
+ assert.ok(advanceAdventure(a,zoneEvidence(actor('The Refuge'),'Bryn','bryn-token'),500));
  assert.equal(a.status,'completed');
 });
 test('no story progression from text, fabricated outcomes, failed rolls, AI narration or native misses',()=>{
@@ -51,17 +52,17 @@ test('no story progression from text, fabricated outcomes, failed rolls, AI narr
 });
 test('no early travel credit, no dead/unready zone spoof, and no replay of the same action ID',()=>{
  const a=startAdventure(100);
- assert.equal(advanceAdventure(a,zoneEvidence(actor('Glitch Woods'),'Ada'),110),null);
- assert.equal(zoneEvidence(actor('Glitch Woods'),'Ada')?.kind,'zone');
- assert.equal(zoneEvidence({ready:true,dead:true,zone:'Glitch Woods'},'Ada'),null);
- assert.equal(zoneEvidence({ready:false,dead:false,zone:'Glitch Woods'},'Ada'),null);
- assert.equal(zoneEvidence(actor('Unknown area'),'Ada'),null);
+ assert.equal(advanceAdventure(a,zoneEvidence(actor('Glitch Woods'),'Ada','ada-token'),110),null);
+ assert.equal(zoneEvidence(actor('Glitch Woods'),'Ada','ada-token')?.kind,'zone');
+ assert.equal(zoneEvidence({ready:true,dead:true,zone:'Glitch Woods'},'Ada','ada-token'),null);
+ assert.equal(zoneEvidence({ready:false,dead:false,zone:'Glitch Woods'},'Ada','ada-token'),null);
+ assert.equal(zoneEvidence(actor('Unknown area'),'Ada','ada-token'),null);
  assert.ok(advanceAdventure(a,talk('t1'),120));
  assert.equal(advanceAdventure(a,talk('t1'),121),null);
  assert.ok(advanceAdventure(a,kill('k1'),130));
- assert.ok(advanceAdventure(a,zoneEvidence(actor('Glitch Woods'),'Ada'),140));
- assert.equal(advanceAdventure(a,zoneEvidence(actor('Glitch Woods'),'Ada'),141),null);
- assert.equal(advanceAdventure(a,zoneEvidence(actor('The Refuge'),'Ada'),150).completed,true);
+ assert.ok(advanceAdventure(a,zoneEvidence(actor('Glitch Woods'),'Ada','ada-token'),140));
+ assert.equal(advanceAdventure(a,zoneEvidence(actor('Glitch Woods'),'Ada','ada-token'),141),null);
+ assert.equal(advanceAdventure(a,zoneEvidence(actor('The Refuge'),'Ada','ada-token'),150).completed,true);
 });
 test('unsupported persisted version is read-only and cannot erase or rewrite progress',()=>{
  const a={version:99,id:'refuge-trial-v1',status:'active',proof:{route:'craft'}};
