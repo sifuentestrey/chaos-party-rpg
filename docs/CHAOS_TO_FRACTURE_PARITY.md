@@ -1,5 +1,9 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Native tree/rock/vegetation layer safety — October 30 (not yet tested)
+
+Commits `ae73ae9` and `7db158d` make the existing oak-art discovery reject a tree when any independently solid existing tile overlaps its 4×5 sprite, including rock or vegetation layers outside the four trunk cells. A synthetic map regression covers a solid rock under the canopy. No new native assets, objects or map content were created. **This is defensive eligibility logic, not rock or bush interaction support.** The regression test, full suite, pinned native CI and Mac/phone/TV run are not yet verified for these commits.
+
 ## Existing-Fracture-art overlap guard — October 30 (committed, not verified)
 
 Commits `8a83a7c` and `b405533` update existing native oak discovery to refuse destructive registration when another oak atlas tile overlaps any trunk collision cell. Added a synthetic overlapping-tile regression to `native-scenery.test.mjs`. This change uses **no new art, scenery or props**; it is limited to permission to change existing art/collision. **The new test, pinned native CI, browser proof and physical Mac acceptance have not been run for these commits.** This is a collision safety fix, not evidence of door/furniture/structure interactivity or expanded Chaos feature parity.
