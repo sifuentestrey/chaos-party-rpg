@@ -1,5 +1,12 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Existing Fracture doors — October 30 (native CI pending)
+
+Only pre-existing Fracture door positions are used; no new art, map objects, sprites, scenery, or teleport destinations were created. The pinned map has 84 authored door sources (57 unique endpoint pairs), 13 server static chests, 8 chest areas, and 60 previously verified native oaks. Added authenticated `hold door` / `release door` / `force door` interactions using existing character sprites and map doors. A 15-second adjacent hold blocks other Chaos-controlled actors through native path/teleport checks; another actor may force passage with the original D20 DC 12 and existing class/perk rules. Holds end on release, movement away, death, disconnect, timeout or restart. Only map-authored **source** door cells can be held; one-way destinations cannot be fabricated into doors. Native NPCs and non-Chaos clients do not obey this temporary party overlay.
+
+New regression tests cover shared two-actor collision, one-way safety, expiry, disconnect, original D20 and sidecar save isolation. In a reconstructed extracted-kit copy, Node 22.16 ran **187 passing, 1 skipped, 0 failed** .test.mjs checks; TypeScript transpilation had zero syntax diagnostics. The native-dependent test requires the pinned checkout. The exact source commit `a3d4556d` was submitted to [pinned CI 41123948140](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41123948140); native/browser acceptance and a replacement Mac kit must not be claimed until verified. The original campaigns/saves and physical Mac acceptance remain unchanged.
+
+
 ## Native tree/rock/vegetation layer safety — October 30 (not yet tested)
 
 Commits `ae73ae9` and `7db158d` make the existing oak-art discovery reject a tree when any independently solid existing tile overlaps its 4×5 sprite, including rock or vegetation layers outside the four trunk cells. A synthetic map regression covers a solid rock under the canopy. No new native assets, objects or map content were created. **This is defensive eligibility logic, not rock or bush interaction support.** The regression test, full suite, pinned native CI and Mac/phone/TV run are not yet verified for these commits.
