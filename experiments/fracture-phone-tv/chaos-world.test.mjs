@@ -433,3 +433,21 @@ test('native NPC reacts to a real burning rug, remembers destruction, and stops 
  assert.equal(reloaded.snapshot(a).npcs.find(n=>n.name==='guard').concern,null);
  assert.doesNotMatch(reloaded.talk(a,guard)||'',/on fire|burned through/i);
 });
+
+test('restorative aid only applies to NPC floor property; ownership never transfers',t=>{
+ const {a,guard,engine,file,tick}=npcFixture(t);
+ const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');
+ a.x=rug.tile.x+1;a.y=rug.tile.y;
+ assert.equal(engine.execute(a,'drop cloth strip').success,true);
+ const cloth=engine.snapshot(a).ground.find(i=>i.name==='cloth strip');
+ succeed(engine,a,'ignite '+cloth.id);tick();
+ assert.equal(engine.snapshot(a).ground.find(i=>i.id===rug.id).condition,'burning');
+ assert.equal(engine.execute(a,'extinguish '+rug.id).success,true,'players may safely extinguish witnessed NPC property');
+ const saved=JSON.parse(fs.readFileSync(file));
+ assert.equal(saved.items[rug.id].ownerId,engine.snapshot(a).npcs.find(n=>n.name==='guard').id);
+ saved.items[rug.id].condition='broken';saved.items[rug.id].heat=3;delete saved.items[rug.id].tile;
+ fs.writeFileSync(file,JSON.stringify(saved));
+ const restored=createChaosWorld({file,clock:()=>11000});
+ assert.equal(restored.execute(a,'repair '+rug.id).blocked,true,'NPC-carried property cannot be accessed as floor scenery');
+ assert.equal(JSON.parse(fs.readFileSync(file)).items[rug.id].ownerId,saved.items[rug.id].ownerId);
+});

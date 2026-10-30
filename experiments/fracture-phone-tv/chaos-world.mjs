@@ -228,7 +228,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   // possessions. A broken or burning NPC-owned floor object is an exception
   // ONLY for public-safety repair/extinguish. Plan against a temporary view;
   // resolve and persist against the original owner-bound item.
-  const publicAid=projectedTarget&&state.npcs[projectedTarget.ownerId]&&['repair','extinguish'].includes(attempt.verb);
+  const publicAid=projectedTarget?.tile&&state.npcs[projectedTarget.ownerId]&&['repair','extinguish'].includes(attempt.verb);
   const planning=publicAid?{...s,items:{...s.items,[projectedTarget.id]:{...projectedTarget,ownerId:null,location:s.current}}}:s;
   const plan=attempt.entityAction?planEntity(room,planning,actor,attempt,(_s,r,ref)=>targetItem(planning,r,ref)):planItemAttempt(room,actor,attempt);
   if(!plan)return {blocked:true,success:false,text:'No unique object matches that request.'};
