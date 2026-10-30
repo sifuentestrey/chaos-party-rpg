@@ -28,6 +28,7 @@ October 29, 2026. Experimental branch only: `spike/fracture-phone-tv`. Work orde
 - [x] **71 Vitest files / 3,326 tests**, **21 focused Node checks**, original Chaos offline verification.
 - [x] Actual browser phone/TV flow, recovered phones, real quest completion/reward, screenshots, no browser errors.
 - [x] Real-server rejection of wrong keys, cross-actor identity, expired/replayed actions, invented damage and arbitrary teleport.
+- [x] **New native majority-rally integration:** in disposable pinned Fracture, two distinct authenticated actors, one real tile movement, rejected outsider vote, strict two-person quorum, and separate native group `go` action **succeeded and reached the proposer**. [GitHub Actions integration run 40977145132](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/40977145132), October 29 local / October 30 UTC. This is cloud/Linux real-server proof, not a physical Mac playtest.
 - [x] **20 actors / 20 minutes**, plus real reconnect, scoped interruption, smaller final result-payload follow-up and cloud resource sample.
 - [x] Actual TV connection beyond the native fifteen-minute deadline: **960 seconds**, no timeout/disconnect.
 - [x] Config/database preservation and refusal of unexpected local edits, including generated adapter edits.
