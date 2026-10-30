@@ -1,5 +1,12 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Opt-in original D20 reactions, not full original party reactions — October 30
+
+The Fracture sidecar now supports a **real optional ten-second pre-execution window** for original Chaos world checks. A player types `declare ...`, and the server queues the request without claiming success. Other nearby, living, separately authenticated characters may help (higher of two original D20 rolls) or hinder (lower of two), but cannot stack modifiers. The actual native actor revalidates world reach, object ownership and available mechanics when the window ends. STOP/disconnect/bench/zone change cancels the pending declaration; no world action is fabricated. Ordinary movement and combat remain immediate, and native combat RNG is unchanged. This uses the already bundled MIT-licensed original Chaos D20 selection, not a new dice engine.
+
+**Parity boundary:** Original Chaos reaction rules, universal first-valid free-form resolution, campaign-specific reactions, native combat advantage, group travel voting and story/world migration are **not ported**. This is a bounded cooperative/competitive world-check mechanic, not complete reaction parity. Local 98 focused checks completed with 97 passes and one existing skip; pinned native-server/CI verification is pending.
+
+
 ## Native NPC reconciliation and Bard/Healer social D20 — October 30
 
 The experimental Fracture sidecar now accepts **apologize to / make amends with / make peace with / persuade [visible NPC]** when that real native NPC personally distrusts the authenticated character. The original Chaos `social` skill grants Bard and Healer **+3** on a server-owned D20 check (including the existing Lucky-ish/critical rules); a successful check repairs up to two negative trust points, never above neutral. The existing native quest gate reads that same durable trust, so successful amends can restore eligibility to request an actual Fracture quest without minting rewards or changing native combat. Failed checks leave trust unchanged. Attempts are restricted to a visible, unambiguous, same-zone NPC within two walkable tiles, and a per-NPC/per-character **30-second cooldown persists across restarts**. A private original Chaos DM-memory entry records the true result.
