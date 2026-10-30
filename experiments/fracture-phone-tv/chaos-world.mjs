@@ -4,6 +4,7 @@ import {parseItemAttempt,planItemAttempt,resolveItem,ITEM_TYPES,MATERIALS} from 
 import {parseEntityAttempt,planEntity,resolveEntity,advanceEntities,MATERIAL_RULES} from '../../public/entity-rules.js';
 import {recordDMMemory} from '../../public/dm-memory.js';
 import {recordEnvironmentalIncident,propertyConcern} from './reactive-witness.mjs';
+import {selectNpcFireResponses} from './reactive-npc-actions.mjs';
 import {spawnItem} from '../../public/campaign.js';
 import {Rng} from '../../public/vendor/partyframe-rng.js';
 import {selectD20} from '../../public/vendor/dnd5e-advantage.js';
@@ -144,6 +145,23 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
      item.ignitedBy=source.ignitedBy||null;item.ignitionOriginId=source.ignitionOriginId||(source.ignitedBy?source.id:null);
      changes.push(`Fire spreads to ${item.name}`);eventTile||={...item.tile};
      witnessed('fire-spread',item,item.ignitedBy);
+    }
+    // Nearby native NPCs can save their own burning floor property after one
+    // full warning tick. No movement is simulated: a real native NPC must
+    // already be beside the object in the same valid zone.
+    const responders=new Set(nativeNPCs(p).filter(n=>!n.isDead&&(n.hitPoints??1)>0).map(n=>npcKey(p,n)));
+    const responses=selectNpcFireResponses({npcs:state.npcs,items:state.items,location:current,present:responders,
+     zoneAt:zone,validTile:tile=>!!tile&&p.getWorld().isValidPosition(tile.x,tile.y),
+     tick:state.fireClock[current]+(i+1)*10000});
+    for(const {npcId,itemId} of responses){
+     const npc=state.npcs[npcId],item=state.items[itemId];
+     if(!npc||!item||item.condition!=='burning')continue;
+     // Reuse the canonical original Chaos object resolver, not a new fire rule.
+     resolveEntity({seq:0,round:state.round+1,players:owned},
+      {current,items:state.items,creatures:{},campaign:{day:1,history:[]}},
+      {id:npc.id,name:npc.name},{verb:'extinguish',targetId:item.id},true);
+     npc.history=[...(npc.history||[]),{verb:'extinguish',actorId:npc.id,itemId:item.id,round:state.round+1,success:true}].slice(-12);
+     changes.push(`${npc.name} extinguishes ${item.name}`);eventTile||={...item.tile};
     }
    }
    state.fireClock[current]=next; // Preserve unprocessed elapsed ticks across bounded catch-up.
