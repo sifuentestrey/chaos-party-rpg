@@ -13,7 +13,7 @@ def git(*args):
     return subprocess.check_output(['git', *args], cwd=root)
 if git('branch', '--show-current').decode().strip() != 'spike/fracture-phone-tv':
     raise SystemExit('Only the isolated experimental branch may be packaged.')
-paths = ['experiments/fracture-phone-tv', 'src/free-ai-budget.mjs', 'docs/FRACTURE_GAME_NIGHT_RELEASE.md']
+paths = ['experiments/fracture-phone-tv', 'src/free-ai-budget.mjs', 'docs/FRACTURE_GAME_NIGHT_RELEASE.md', 'docs/CHAOS_TO_FRACTURE_PARITY.md']
 if git('diff', '--name-only', 'HEAD', '--', *paths).strip():
     raise SystemExit('Commit the reviewed source/checklist before packaging an immutable snapshot.')
 sha = git('rev-parse', 'HEAD').decode().strip()
