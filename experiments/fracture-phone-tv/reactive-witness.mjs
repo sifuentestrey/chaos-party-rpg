@@ -34,8 +34,10 @@ export function recordEnvironmentalIncident(npcs, {kind, item, actorId=null, rou
 /** NPCs react to the actual condition of their own visible property. */
 export function propertyConcern(items,npc,canWitness){
  if (!npc || typeof canWitness!=='function') return null;
- const property=Object.values(items||{}).find(i=>i.ownerId===npc.id && i.tile &&
+ const visibleProperty=Object.values(items||{}).filter(i=>i.ownerId===npc.id && i.tile &&
   (i.condition==='burning'||(i.condition==='broken'&&i.heat>=3)) && canWitness(npc,i.tile));
+ // Active danger takes priority over damage that can be repaired later.
+ const property=visibleProperty.find(i=>i.condition==='burning')||visibleProperty[0];
  if (!property) return null;
  const itemName=String(property.name||'property').replace(/[\u0000-\u001f]/g,' ').slice(0,60);
  return property.condition==='burning'
