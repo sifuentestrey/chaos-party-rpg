@@ -38,7 +38,7 @@ export function creativeAttempt(text){
  * Native mobs and unregistered map art always retain their own engine rules. */
 export function sceneryAttempt(text,scenery=[]){
  const clean=String(text||'').trim().replace(/^(?:please |I (?:want to |try to )?)+/i,'').replace(/[.!?]+$/,'');
- const m=/^(?:attack|hit|strike|chop(?: down)?|cut down|fell|break|kick|smash|hack)\s+(?:the\s+)?(.+)$/i.exec(clean);
+ const m=/^(?:attack|hit|strike|chop(?: down)?|cut down|fell|break|kick|smash|hack|uproot)\s+(?:the\s+)?(.+)$/i.exec(clean);
  if(!m)return null;
  const target=norm(m[1]);
  const matches=scenery.filter(o=>o&&o.scene&&o.tile&&
@@ -428,22 +428,37 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    const obj=registerAuthoredScenery(state,{scene:sceneId,id,kind,tile});persist();return obj;
   }catch(error){state=previous;throw error;}
  }
- function strikeScenery(p,id,damage=1){
-  if(!identity(p)||p.isDead)return {changed:false,error:'Active living actor required'};
+ function strikeScenery(p,id,damage=1,{fell=false}={}){
+  if(!identity(p)||p.isDead||!p.chaosControlled)return {changed:false,error:'Active living actor required'};
   const obj=state.scenery[scene(p)+':'+id];
   if(!obj||!sameZone(p,obj.tile)||distance(p,obj.tile)>1)return {changed:false,error:'Scenery out of reach'};
+  if(fell&&(!obj.nativeOrigin||obj.kind!=='tree'))return {changed:false,error:'Only a real nearby tree can be felled.'};
+  if(obj.condition==='broken')return {changed:false,error:'That tree is already down.'};
   const previous=state;state=structuredClone(state);try{
+   let check=null;
+   if(fell){
+    // One original-Chaos D20 check for deliberate tree felling, not a
+    // visible sequence of HP-bar attacks. The native map remains authoritative.
+    const rng=new Rng(state.seed);rng.restore(state.rng);
+    check=resolveObjectRoll({role:p.chaosRole,perk:p.chaosPerk,verb:'break',dc:14,roll:rng.int(1,20),rng});
+    state.rng=rng.snapshot();
+    if(!check.success){
+     state.round++;persist();
+     return {changed:false,attempted:true,roll:check.roll,dc:14,bonus:check.bonus,rerolled:check.rerolled,error:'The tree holds fast. It is still standing.'};
+    }
+   }
    const before=obj.hp;
-   const result=damageAuthoredScenery(state,{scene:scene(p),id,damage});
+   const result=damageAuthoredScenery(state,{scene:scene(p),id,damage:fell?obj.hp:damage});
    if(result.changed){
     if(result.object.condition==='broken'&&obj.nativeOrigin)add(null,{name:'wood offcut',material:'wood',type:'tool',ownerId:identity(p),originId:obj.id});
     state.round++;
-    const fact=`${name(p)} chops ${obj.name}. ${before} → ${result.object.hp} HP.${result.object.condition==='broken'?' The tree falls and its trunk tiles are cleared.':''}`;
+    const fact=fell?`${name(p)} brings down the existing ${obj.name} after a D20 check. Its original trunk is no longer blocking the path.`:`${name(p)} chops ${obj.name}. ${before} → ${result.object.hp} HP.${result.object.condition==='broken'?' The tree falls and its trunk tiles are cleared.':''}`;
     const room={round:state.round,world:{expedition:{current:scene(p),creatures:state.npcs}},dmMemory:state.dmMemory,result:{id:'chaos-'+state.round,playerId:identity(p),name:name(p),action:'chop '+obj.name,target:{entityId:obj.id},success:true,blocked:false,narration:fact,changes:[fact],sceneEvents:[]}};
     recordDMMemory(room);state.dmMemory.entries.at(-1).tile={...obj.tile};
     result.event=state.dmMemory.entries.at(-1);persist();syncNative(p);
-    result.feedback={id:obj.id,name:obj.name,tile:obj.tile,before,after:result.object.hp,condition:result.object.condition,actorId:p.id,verb:'chop'};
+    result.feedback={id:obj.id,name:obj.name,tile:obj.tile,before:fell?null:before,after:fell?null:result.object.hp,condition:result.object.condition,actorId:p.id,verb:fell?'fell':'chop'};
    }
+   if(fell&&check)Object.assign(result,{attempted:true,roll:check.roll,dc:14,bonus:check.bonus,rerolled:check.rerolled});
    return result;
   }catch(error){state=previous;throw error;}
  }
@@ -468,10 +483,13 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   }
   const scenery=sceneryAttempt(text,visibleScenery(state,scene(p)).filter(o=>visible(p,o.tile,o.nativeOrigin?18:8,o.nativeOrigin?o.footprint:false)).sort((a,b)=>distance(p,a.tile)-distance(p,b.tile)));
   if(scenery){
-   const result=strikeScenery(p,scenery.id.slice(scene(p).length+1),3);
+   const fell=/^(?:(?:chop|cut) down|fell|uproot)\s+(?:the\s+)?/i.test(String(text).trim().replace(/^(?:please |I (?:want to |try to )?)+/i,''));
+   const result=strikeScenery(p,scenery.id.slice(scene(p).length+1),3,{fell});
    const description=scenery.name||scenery.kind;
-   return {blocked:!result.changed,success:result.changed,event:result.event,object:result.feedback,text:result.changed?
-    (result.object.condition==='broken'?'The '+description+' falls. The route is clear.':
+   return {blocked:!result.changed&&!result.attempted,success:result.changed,event:result.event,object:result.feedback,
+    ...(result.attempted?{roll:result.roll,dc:result.dc,bonus:result.bonus,rerolled:result.rerolled}:{}),
+    text:result.changed?(fell?'You bring down the '+description+'. Its old trunk no longer blocks the path.':
+    result.object.condition==='broken'?'The '+description+' falls. The route is clear.':
      'You strike the '+description+'. '+result.object.hp+' HP remains.'):
     (result.error||'That object is already destroyed.')};
   }
