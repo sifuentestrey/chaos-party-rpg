@@ -12,11 +12,13 @@ const get=token=>fetch(base+'/state?token='+token).then(r=>r.json());
 const post=async(p,b)=>{const r=await fetch(base+p,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});return {status:r.status,...await r.json()};};
 try{
  await app.start();base='http://127.0.0.1:'+app.server.address().port;
- const joined=await post('/pair',{key:app.room.join,name:'ObjectCI_'+Math.random().toString(36).slice(2,6)});
+ const joined=await post('/pair',{key:app.room.join,name:'ObjectCI_'+Math.random().toString(36).slice(2,6),role:'rogue'});
  assert.equal(joined.status,201);const token=joined.token;
  let state,deadline=Date.now()+20000;
  do{state=await get(token);if(state.actor?.ready&&state.actor.chaos?.bag?.length===2)break;await sleep(250);}while(Date.now()<deadline);
  assert.equal(state.actor?.chaos?.bag?.length,2,'real Fracture actor must receive two durable Chaos starter materials');
+ assert.equal(state.role,'rogue','private room remembers the class');
+ assert.equal(state.actor.role,'rogue','native Fracture actor receives the authenticated class');
  const before=state.actor.chaos.bag.map(i=>i.id);
  const action=await post('/action',{token,text:'make blue hat from cloth strip and wood splinter'});
  assert.equal(action.status,202);
@@ -26,6 +28,7 @@ try{
  assert.ok(['succeeded','failed'].includes(result.status),JSON.stringify(result));
  assert.ok(Number.isInteger(result.roll)&&result.roll>=1&&result.roll<=20);
  assert.equal(result.dc,10);
+ assert.equal(result.bonus,0,'Rogue does not gain a fabricated bonus to crafting');
  const after=state.actor.chaos.bag;
  if(result.status==='succeeded'){
   assert.ok(after.some(i=>i.name==='blue hat'));
