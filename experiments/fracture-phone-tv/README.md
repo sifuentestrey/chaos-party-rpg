@@ -19,7 +19,7 @@ Fire ticks every ten seconds on the server and burns an object through after thr
 
 Native NPCs have displayed owned rugs. `steal <rug item ID>` attempts real ownership transfer. The owner and visible nearby witnesses remember, lose trust toward that character, and may refuse new quests. Other players keep their own reputations. `talk to guard` reflects that memory; `give <owned item ID> to <NPC ID>` makes amends with a real inventory transfer. Use IDs when NPC names repeat. NPC identities, personal memories and trust survive reconnect and restart. This is bounded action memory/reputation, not autonomous AI training.
 
-The DM always has canonical offline results and saved facts. Optional Groq now supports both grounded interpretation and short post-result narration using the original Chaos narration instructions/validator. It remains off by default, uses only an existing configured key and the shared free-quota ledger, and never owns game outcomes. Live storytelling quality remains unqualified.
+The DM always has canonical offline results and saved facts. Optional Groq now supports both grounded interpretation and short post-result narration using the original Chaos narration instructions/validator. It remains off by default, uses only an existing configured key and the shared free-quota ledger, and never owns game outcomes. Live phone-to-engine-to-TV interpretation/narration is verified; broad campaign storytelling and group-scale quality remain unqualified.
 
 ## Chaos crafting on the Fracture map
 
@@ -57,7 +57,7 @@ The room's transient event log now writes at most twice per second during busy c
 
 Saved actors connect only when their phone returns. Closing a phone saves/logs out its actor after a 45-second grace period, so inactive characters are not left fighting unattended. Reopening the same phone/room restores its personal controller from browser storage. The private host page also lists personal recovery links for lost browser storage or another phone. Give each link only to that player. Fracture passwords remain on the Mac in the isolated room file, never on a phone. Native progression, equipment, inventory and position persist; **native quest progress is currently session-scoped and can reset on server/bridge restart**.
 
-Optional Groq semantic interpretation is **off by default**, requires an already configured `GROQ_API_KEY`, and is explicitly enabled from the private host page. It proposes only grounded supported actions. The engine owns outcomes. A separate local quota ledger, short timeout and deterministic fallback keep play available on errors or quota exhaustion. No paid upstream Venice or Fish Audio connection is enabled. Live Groq quality/free-plan qualification is not claimed by mocked tests.
+Optional Groq semantic interpretation is **off by default**, requires an already configured `GROQ_API_KEY`, and is explicitly enabled from the private host page. It proposes only grounded supported actions. The engine owns outcomes. A separate local quota ledger, short timeout and deterministic fallback keep play available on errors or quota exhaustion. No paid upstream Venice or Fish Audio connection is enabled. The live GPT-OSS path has bounded browser/provider evidence; this does not establish unlimited free usage or general storytelling quality.
 
 ## Native combat now informs persistent NPC/DM memory
 
@@ -82,3 +82,9 @@ QR Code Generator 2.0.4 by Kazuhiko Arase is reused under MIT; source and notice
 Fusion browser regression (disposable data only): set `CHAOS_BETA_TEST=1`, `CHAOS_TEST_ROOM_FILE`, `CHAOS_BROWSER_TOOLS` (external Playwright Core directory), `CHAOS_TV_KEY` and optional `CHAOS_BROWSER_REPORT_DIR`, then run `node experiments/fracture-phone-tv/verify-fusion.mjs`. It creates two new characters and exercises crafting/giving/drop/pickup through real phone forms; no browser dependency is bundled in the game.
 
 Core gameplay regression: use the same disposable-browser environment variables as `verify-fusion.mjs`, then run `verify-core.mjs`. It expects an unclaimed native guard rug in a disposable world, creates two characters, and tests native movement/collision, timed fire, NPC trust, quest refusal/amends and reload. Never reset family possessions to rerun a test.
+
+## Enable the live AI DM
+
+On the private host page, open **Configure free Groq connection** and save your own existing free-account key (or use an already configured `GROQ_API_KEY`). Click **Test AI connection**, then turn **Live AI DM** on. The host shows real connection/quota errors. The key stays in the separate Fracture clone's `server/data/chaos-party/dm-config.json` with private permissions; it is not copied from original Chaos or included in this kit. Live AI is off at startup; offline game rules always remain available.
+
+Live verification is explicit and bounded: `verify-live-dm.mjs` requires `CHAOS_BETA_TEST=1`, `CHAOS_LIVE_DM_TEST=1`, a disposable room, external browser tools and TV key. It uses the host controls and existing approved free connection, then disables AI afterward. Use an actor with two expendable carried materials; it performs a real craft rather than resetting saves.

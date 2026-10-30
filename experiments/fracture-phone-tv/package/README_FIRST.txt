@@ -27,3 +27,7 @@ No subscription, public hosting or paid AI service is needed.
 Read experiments/fracture-phone-tv/README.md for controls, the optional adventure route,
 credits and precise beta limitations. Read docs/FRACTURE_GAME_NIGHT_RELEASE.md for evidence.
 Physical 2015 Mac + phone + TV acceptance remains unverified by cloud testing.
+
+AI DM: On the private host page, configure your existing free Groq key,
+Test AI connection, then enable Live AI DM. No key is included in this ZIP.
+Offline play remains available when AI is off or its free quota is exhausted.

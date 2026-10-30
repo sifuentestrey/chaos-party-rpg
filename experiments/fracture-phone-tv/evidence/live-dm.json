@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "model": "openai/gpt-oss-120b",
+  "checks": [
+    "host connection check uses real configured Groq",
+    "unexpected phone phrasing receives live grounded interpretation",
+    "native engine executes D20 and inventory matches result",
+    "same action gets live AI narration after interpretation",
+    "phone and TV display AI narration with canonical receipt intact",
+    "no browser errors"
+  ],
+  "attempt": "Could you fashion a green headband out of two things in my bag?",
+  "canonical": {
+    "status": "succeeded",
+    "message": "D20 11 / 10: CoreAsh8wbxe creates green headband (item-169) from wood splinter and guard's rug.",
+    "roll": 11,
+    "dc": 10
+  },
+  "story": "CoreAsh8wbxe fashions a green headband from a wood splinter and the guard's rug. guard: Nice work, that's a fine headband! guard: Looks like you've got style now.",
+  "errors": []
+}

@@ -73,6 +73,11 @@ export CHAOS_TV_KEY="${CHAOS_TV_KEY:-$(node -p "require('node:crypto').randomByt
 # Never activate paid upstream providers from a saved config or environment.
 export VENICE_API_KEY=''
 export FISH_AUDIO_API_KEY=''
+# Match the original free-AI launcher: Node fetch must honor an injected proxy.
+if [[ -n "${HTTPS_PROXY:-}${HTTP_PROXY:-}" ]]; then
+  export NODE_USE_ENV_PROXY="${NODE_USE_ENV_PROXY:-1}"
+  export NO_PROXY="localhost,127.0.0.1,::1,${NO_PROXY:-}"
+fi
 export NODE_ENV=production
 echo 'Starting local Fracture server...'
 NO_DEBUG=1 node "$HERE/start-child.mjs" dist/server/ts/main.js > "$LOG_DIR/fracture.log" 2>&1 &

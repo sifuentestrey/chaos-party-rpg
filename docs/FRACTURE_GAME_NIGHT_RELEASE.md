@@ -13,6 +13,15 @@ Updated October 30, 2026. Experimental branch only: `spike/fracture-phone-tv`. W
 
 This closes one important *memory integration* gap between Fracture combat and original Chaos narration, **not** the original Crown Job/Dawn Bell campaign, original character classes or full NPC goals. Fracture still owns all hits, mob death, loot, XP and native quests.
 
+## Live AI DM repair — October 30
+
+- [x] Real configured Groq requests diagnosed retired Llama model HTTP 404; replaced with the original approved **GPT-OSS** model family. Uses strict structured schemas and original canonical narration validation. Proxy-aware launch follows the original free-AI launcher.
+- [x] Removed the shared cooldown that dropped narration after an interpreted action. Bounded concurrent requests/queue, cancellation, free-quota/provider backoff and truthful host diagnostics preserve offline play. Known entity capitalization is normalized without accepting invented targets.
+- [x] **Actual phone→AI interpretation→native D20/inventory→live narration→phone/TV passed.** The player asked for a green headband using carried objects; engine roll 11/DC10 created it, and the live DM described that same result. Real-model failed-roll and blocked-quest narration also preserved their outcomes.
+- [x] Host supports masked isolated-key configuration, connection test and explicit enable/disable. Keys are never returned to phones/status or packaged. Default remains off; failures retain canonical offline results.
+
+This is now a functioning live-tested DM for supported grounded actions and short narration. It is not a complete original story campaign, universal intent simulator or certification of twenty simultaneous live-AI players. Provider/account availability and the shared free quota still apply.
+
 ## Core mechanics milestone — October 30
 
 - [x] Preserved the concurrent nearby-player assistance change: another live character can grant one D20 advantage craft/attachment roll for fifteen seconds. No self-help, stacking or absent/dead helper advantage; original MIT selection helper and its license are bundled.
@@ -20,7 +29,7 @@ This closes one important *memory integration* gap between Fracture combat and o
 - [x] Fire advances on a server-owned ten-second clock, including without further action submissions; three ticks burn an object through. Repair and extinguishing change actual saved object state. No fabricated native character fire damage is applied.
 - [x] Real native NPCs get stable identities for custom possessions, observed actions and per-character reputation. Original theft resolution changes ownership/trust. Nearby visible witnesses remember; unseen NPCs do not learn the action. Private memories are bounded per NPC/player so another busy player cannot erase them.
 - [x] A distrusted NPC refuses **new native quest requests** from that player. An innocent player remains eligible. Gifting an actual carried object restores trust; conversation reflects the saved relationship. Existing native quest progress/rewards remain native.
-- [x] Original canonical DM memory and narration rules are reused. Completed/failed/blocked engine receipts provide offline narration for supported declarations. Optional opt-in Groq narration receives authoritative outcomes and relevant saved facts; schema/outcome/speaker validation rejects bad proposals. It cannot mutate gameplay. API errors/quota/timeouts retain offline play. **No live model quality qualification or provider calls were performed.**
+- [x] Original canonical DM memory and narration rules are reused. Completed/failed/blocked engine receipts provide offline narration for supported declarations. Optional opt-in Groq narration receives authoritative outcomes and relevant saved facts; schema/outcome/speaker validation rejects bad proposals. It cannot mutate gameplay. API errors/quota/timeouts retain offline play. That earlier checkpoint used mocks; the live follow-up above now supplies bounded provider/browser qualification.
 - [x] Browser forms and actual native TV: table moves and blocks walking; real failed rolls; ignite → extinguish → timed burn-through → repair; witnessed rug theft → remembered refusal → independent innocent player → gift → native quest access restored. Restart retains moved/repaired props, ownership, NPC memory and canonical DM facts.
 
 An actual screenshot caught a rendering defect: several old prop-icon names existed in the registry but were not loaded by Fracture. The fallback now uses loaded icons, and table/rug/fire rendering does not depend on an optional icon. Corrected fresh-TV evidence is included; the missing-object screenshot was not accepted as visual proof.
@@ -73,7 +82,7 @@ Crafted Chaos wearables currently add colored bands to the native sprites; they 
 ## Checks completed
 
 - [x] Pinned Fracture `642c00a8a2d3a95979e85bbfa3f62deee611a4a6`, pnpm `10.34.9`, production client/server builds.
-- [x] **71 Vitest files / 3,329 tests**, **59 focused Node checks**, original Chaos offline verification.
+- [x] **71 Vitest files / 3,329 tests**, **69 focused Node checks**, original Chaos offline verification.
 - [x] Actual browser phone/TV flow, recovered phones, real quest completion/reward, screenshots, no browser errors.
 - [x] Real-server rejection of wrong keys, cross-actor identity, expired/replayed actions, invented damage and arbitrary teleport.
 - [x] **New native majority-rally integration:** in disposable pinned Fracture, two distinct authenticated actors, one real tile movement, rejected outsider vote, strict two-person quorum, and separate native group `go` action **succeeded and reached the proposer**. [GitHub Actions integration run 40977145132](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/40977145132), October 29 local / October 30 UTC. This is cloud/Linux real-server proof, not a physical Mac playtest.
@@ -87,7 +96,7 @@ Evidence: [sanitized reports and screenshots](../experiments/fracture-phone-tv/e
 ## Explicit remaining limits
 
 - [ ] **Owner hardware acceptance:** double-click the kit launcher on the 2015 Intel Mac; join two physical phones, move separately, kill a rat, STOP, visit a building/woods, reconnect, then try the family group while measuring responsiveness. Cloud/Linux tests do not establish Mac CPU/RAM or 12–20 physical-player capacity.
-- [ ] **Live creative DM qualification:** Groq semantic fallback is wired, explicitly opt-in and off by default. Existing key only, grounded proposals, separate quota ledger, timeout/429/invalid-plan fallback tested with mocks. No live provider calls or free-plan quality claim. A fully qualified creative storyteller is not shipped.
+- [x] **Bounded live DM qualification:** GPT-OSS interpretation and narration passed a real phone/native/TV flow, plus failure/refusal checks. Broad campaign storytelling and group-scale live-AI quality remain outside that proof.
 - Native quests are session-scoped and may reset on server/bridge restart. Equipment, inventory, level, gold and saved position persist. No legacy Chaos save migration or full campaign port is claimed; only the bounded Chaos object rules above are projected onto Fracture.
 - Deterministic text handling covers supported intent categories; unsupported mechanics receive truthful rejection. It is not universal natural-language world simulation.
 - Local party rally votes are ephemeral, deliberately reset on restart and restricted to nearby same-zone characters. Approval may produce partial native movement if an actor disconnects, moves away or encounters blocked geometry. **No teleport or all-arrived claim.** This is a bounded group-coordination experiment, not migration of the original Chaos majority-travel/scene system.
