@@ -36,3 +36,11 @@ test('invalid incidents do not mutate state',()=>{
  assert.deepEqual(recordEnvironmentalIncident(npcs,{kind:'fire',item,actorId:'actor-1',round:1,location:'world',canWitness:()=>true}),[]);
  assert.deepEqual(npcs,before);
 });
+
+test('repeated observation of the same object and tick cannot double-penalize the owner',()=>{
+ const npcs=sample(),event={kind:'fire-spread',item,actorId:'actor-1',round:9,location:'world',canWitness:()=>true};
+ assert.deepEqual(recordEnvironmentalIncident(npcs,event),['owner','observer']);
+ assert.deepEqual(recordEnvironmentalIncident(npcs,event),[]);
+ assert.equal(npcs.owner.trust['actor-1'],-1);
+ assert.equal(npcs.owner.memories['actor-1'].length,1);
+});
