@@ -8,6 +8,7 @@ export function worldFingerprint(actor){
  return JSON.stringify({
   zone:actor.zone??null,
   ground:world.ground??[],
+  scenery:world.scenery??[],
   npcs:world.npcs??[],
   story:world.story??[],
   camp:world.camp??null
