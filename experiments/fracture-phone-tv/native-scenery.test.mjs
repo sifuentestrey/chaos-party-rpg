@@ -106,3 +106,20 @@ test('unmapped native rocks and shrubs cannot produce fictional movement or dest
  assert.equal(world.isValidPosition(35,210),false,'existing native solid tile is not changed');
  assert.equal(unsupportedNativeEnvironment('walk left'),null,'ordinary native controls are untouched');
 });
+
+test('direct native scenery damage cannot bypass the single D20 felling rule',t=>{
+ const {p,engine,file,world}=nativeFixture(t);
+ const tree=engine.snapshot(p).scenery.find(o=>o.nativeOrigin);
+ let result;
+ for(let i=0;i<40;i++){
+  const hp=JSON.parse(fs.readFileSync(file)).scenery[tree.id].hp;
+  result=engine.strikeScenery(p,tree.id.slice('fracture:test:'.length),1);
+  assert.equal(result.attempted,true);assert.equal(result.dc,14);
+  if(!result.changed)assert.equal(JSON.parse(fs.readFileSync(file)).scenery[tree.id].hp,hp);
+  else break;
+ }
+ assert.equal(result.changed,true);
+ assert.equal(engine.snapshot(p).nativeChanges.length,1);
+ assert.equal(world.isValidPosition(tree.tile.x,tree.tile.y),true);
+ assert.equal(Object.keys(JSON.parse(fs.readFileSync(file)).items).length,0);
+});
