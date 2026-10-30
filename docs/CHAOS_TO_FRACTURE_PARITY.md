@@ -47,7 +47,7 @@ The optional **Refuge Trial** is now replayable after a confirmed completion. Th
 
 ## October 30 cooperative world-check advantage extension
 
-The original Chaos D20 advantage helper is now shared across valid Fracture-side Chaos world checks, including social NPC reconciliation and NPC theft, rather than only craft/attach. It is a 15-second, one-use assist from a separate live, nearby, same-zone player; the authoritative roll, NPC trust and item ownership still decide results. Focused regressions were added, and the native-server integration check now requires two distinct Fracture actors to produce and consume an actual advantage roll. The pinned build must pass before this can be called native-verified.
+The original Chaos D20 advantage helper is now shared across valid Fracture-side Chaos world checks, including social NPC reconciliation and NPC theft, rather than only craft/attach. It is a 15-second, one-use assist from a separate live, nearby, same-zone player; the authoritative roll, NPC trust and item ownership still decide results. Focused regressions were added, and the native-server integration check now requires two distinct Fracture actors to produce and consume an actual advantage roll. The pinned integration build passed at `7ac1d48198226f39a117fad9c82e81db7e3d57b4`, including the real two-actor assistance receipt; the source-only Mac ZIP was checksum-verified and its extracted focused tests passed. This remains native-server/automated evidence, not a real-phone/TV or hardware playtest.
 
 **Parity remains partial.** This does not import original free-form reactions, class abilities, native Fracture combat advantage, expedition voting, Crown Job, Dawn Bell, legacy saves, or the original campaign world.
 
