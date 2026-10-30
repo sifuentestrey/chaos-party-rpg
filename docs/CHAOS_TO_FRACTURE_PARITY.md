@@ -1,5 +1,10 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Environmental rules library — October 30 (not gameplay parity)
+
+An isolated pure-rules module defines 15 categories spanning vegetation, structures, furniture, water, terrain and NPCs, with deterministic damage, burning, wetness, adjacent spread, lightning and wind/rain effects. Five regression tests authored. **This is an unintegrated foundation**: native Fracture tiles, buildings, water, NPC HP, saves and rendering are unchanged. No playable-world reactivity or test pass is claimed for this work; integration, native CI and physical Mac tests remain required.
+
+
 ## Native visible-world change notifications — October 30 (partial live-sync parity)
 
 The Fracture bridge now compares successive **native-authoritative** actor snapshots for visible zone, ground-object, NPC, story and camp changes. It coalesces authenticated SSE change signals to other phones without transmitting world data or private inventory; each client refetches its own `/state`. This covers observed environmental fire/damage/movement and NPC changes **when they appear in a polled native snapshot**; no fabricated room-log event or new simulation authority is introduced. Existing 750-ms phone polling is preserved.
