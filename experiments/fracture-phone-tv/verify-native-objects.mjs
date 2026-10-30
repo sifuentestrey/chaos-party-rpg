@@ -1,7 +1,15 @@
 /** Actual native-engine environmental checks. Explicit disposable server only. */
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import assert from 'node:assert/strict';import {createPartyBridge} from './party-bridge.mjs';
 if(process.env.CHAOS_BETA_TEST!=='1'||!process.env.FRACTURE_ROOT||!process.env.CHAOS_ACTOR_KEY||!process.env.CHAOS_TV_KEY||!process.env.CHAOS_WORLD_MODULE)throw Error('Disposable native server, isolated keys and object module required');
-const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-native-objects-')),app=createPartyBridge({root:process.env.FRACTURE_ROOT,dataDir:dir,actorKey:process.env.CHAOS_ACTOR_KEY,tvKey:process.env.CHAOS_TV_KEY,port:0,bind:'127.0.0.1'}),sleep=ms=>new Promise(r=>setTimeout(r,ms));let base;
+let nativeProposalTarget=null,nativeProposals=0;
+const dmFactory=()=>({enabled:true,interpretEnvironment:async(text,actor)=>{
+ if(!/canvas shelter/i.test(text)||!nativeProposalTarget)return null;
+ const object=actor?.chaos?.scenery?.find(o=>o.id===nativeProposalTarget&&o.nativeAdapter&&o.capabilities?.movable);
+ if(!object)return null;
+ nativeProposals++;
+ return {action:'move_east',targetId:object.id,ability:'strength',dc:object.dc,description:'Try shifting the existing shelter east.'};
+},interpret:async()=>null,narrate:async()=>null,close:()=>{}});
+const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-native-objects-')),app=createPartyBridge({root:process.env.FRACTURE_ROOT,dataDir:dir,actorKey:process.env.CHAOS_ACTOR_KEY,tvKey:process.env.CHAOS_TV_KEY,port:0,bind:'127.0.0.1',dmFactory}),sleep=ms=>new Promise(r=>setTimeout(r,ms));let base;
 const get=token=>fetch(base+'/state?token='+token).then(r=>r.json());
 const post=async(p,b)=>{const r=await fetch(base+p,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});return {status:r.status,...await r.json()};};
 async function action(token,text){
@@ -19,8 +27,11 @@ try{
  await success(helper,'help '+state.name);const cut=await action(token,'chop '+tree.id);assert.ok(['succeeded','failed'].includes(cut.r.status),cut.r.message);assert.equal(cut.r.dc,14);assert.equal(cut.r.rolls.length,2,'Real adjacent second actor grants advantage');assert.equal(cut.r.bonus,3);
  if(cut.r.status==='failed')await success(token,'chop '+tree.id);
  await success(token,`walk to ${tree.tile.x}, ${tree.tile.y}`);state=await get(token);assert.deepEqual([state.actor.x,state.actor.y],[tree.tile.x,tree.tile.y],'Actual native path must enter the cleared trunk');
- await success(token,'walk to 10, 234');state=await get(token);const tent=state.actor.chaos.scenery.find(o=>o.kind==='tent'&&o.nativeOrigin.x===11&&o.nativeOrigin.y===231);assert.ok(tent);const before={...tent.tile};await success(token,'push '+tent.id+' east');
+ await success(token,'walk to 10, 234');state=await get(token);const tent=state.actor.chaos.scenery.find(o=>o.kind==='tent'&&o.nativeOrigin.x===11&&o.nativeOrigin.y===231);assert.ok(tent);const before={...tent.tile};nativeProposalTarget=tent.id;
+ const shifted=await success(token,'Could you shove the canvas shelter a little to the right?');
+ assert.ok(nativeProposals>0,'Unexpected phone wording must reach the grounded typed DM');
+ assert.equal(shifted.r.dc,10,'Native tent owns its D20 difficulty');
  state=await get(token);assert.equal(state.actor.chaos.scenery.find(o=>o.id===tent.id).tile.x,before.x+1);assert.equal(state.actor.chaos.bag.length,0);
  const saved=JSON.parse(fs.readFileSync(path.join(process.env.FRACTURE_ROOT,'server/data/chaos-party/objects.json')));assert.equal(Object.keys(saved.items).length,0);assert.equal(saved.scenery[tree.id].condition,'broken');assert.equal(saved.scenery[tent.id].tile.x,before.x+1);
- console.log(JSON.stringify({status:'passed',checks:['two distinct authenticated native actors','no invented props or wood drops','original D20, class and real teammate advantage','tree fall, real native trunk movement, river layer preserved by adapter','original tent shifts with persisted state','separate native saves']}));
+ console.log(JSON.stringify({status:'passed',checks:['two distinct authenticated native actors','no invented props or wood drops','original D20, class and real teammate advantage','tree fall, real native trunk movement, river layer preserved by adapter','typed DM proposal shifts original tent with persisted collision','separate native saves']}));
 }finally{await app.close();fs.rmSync(dir,{recursive:true,force:true});}
