@@ -13,6 +13,12 @@ Phone receipts distinguish received, started, succeeded, blocked, failed and can
 
 **Optional group rally:** Open **Gather the party** on a phone and choose **Propose gathering at my position**. All ready, living, connected characters must be in the same Fracture area and within twelve tiles; at least two are needed. A ten-second strict-majority vote opens, with the proposer voting yes automatically. Each other player can vote yes or no exactly once. If approved, the game asks each available native character to walk to the proposer's actual position; it never teleports them. Each character can STOP, and obstacles/disconnects can prevent some arrivals. Rejected or expired votes move nobody. This is a small **local rally**, not the original Chaos Party expedition/major travel system.
 
+## Experimental majority-approved travel (native route not yet qualified)
+
+In **Gather the party**, players near the departure area may vote to walk together between **The Refuge** and **Glitch Woods**. The vote uses a frozen, strict majority of connected, ready, living characters within twelve tiles of the proposer. No arbitrary destination coordinates are accepted from phones. Approval asks each still-eligible native actor to walk toward a pinned waypoint; Fracture's own terrain, collisions, zone changes, and each player's STOP determine what actually happens. The TV and phone show the vote; the host log counts an arrival only when the native actor reports the destination zone. A vote is **not a teleport or a guarantee that the group arrives together**.
+
+This is a separate reversible rule experiment from the local rally, not a port of the Dawn Bell scene graph or original majority-gated campaign. Mocked bridge and rule tests passed; native waypoint traversal on the pinned Fracture map, physical Mac and actual family group are still unverified. If native pathfinding blocks the route, travel must be completed with ordinary individual movement until the route is corrected.
+
 ## Optional cooperative mini-adventure: The Refuge Trial
 
 This is a **new, bounded Fracture-side game-night objective**, not the original Crown Job or Dawn Bell campaign. After at least one living phone character has joined **The Refuge**, the Mac host can select **Start The Refuge Trial**. The host starts it once; the current room's saved trial is never silently reset.
