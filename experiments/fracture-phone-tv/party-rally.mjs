@@ -18,6 +18,28 @@ export function proposeRally(actors,proposer,now,id){
    electorate:actors.map(p=>p.token),votes:{[proposer]:true},
    required:Math.floor(actors.length/2)+1,deadline:now+10000,status:'pending',resolvedAt:null};
 }
+/** Fixed native-map waypoints, not phone-supplied coordinates or teleports.
+ * The vote approves an attempt; native Fracture remains authoritative.
+ */
+export const EXPEDITION_WAYPOINTS=Object.freeze({
+ woods:Object.freeze({from:'The Refuge',to:'Glitch Woods',start:Object.freeze({x:41,y:195}),end:Object.freeze({x:34,y:188})}),
+ refuge:Object.freeze({from:'Glitch Woods',to:'The Refuge',start:Object.freeze({x:34,y:188}),end:Object.freeze({x:41,y:195})})
+});
+const distance=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
+export function proposeExpedition(actors,proposer,destination,now,id){
+ const route=Object.hasOwn(EXPEDITION_WAYPOINTS,destination)?EXPEDITION_WAYPOINTS[destination]:null;
+ if(!route)throw Error('Choose a known Fracture destination.');
+ const vote=proposeRally(actors,proposer,now,id);
+ if(vote.zone!==route.from)throw Error('The group must start in '+route.from+'.');
+ if(actors.some(a=>distance(a,route.start)>24))throw Error('Gather near the mapped departure area before voting on travel.');
+ return {...vote,kind:'expedition',destination,arrivalZone:route.to,
+  departure:{...route.start},waypoint:{...route.end}};
+}
+export function expeditionEligible(rally,actor){
+ return !!rally&&rally.kind==='expedition'&&!!actor&&actor.ready===true&&!actor.dead&&
+  actor.zone===rally.zone&&Number.isInteger(actor.x)&&Number.isInteger(actor.y)&&
+  distance(actor,rally.departure)<=24;
+}
 export function settleRally(rally,now){
  if(!rally||rally.status!=='pending')return rally?.status||null;
  const votes=Object.values(rally.votes),yes=votes.filter(Boolean).length;
@@ -38,7 +60,9 @@ export function voteRally(rally,token,yes,now){
 }
 export function rallyView(rally,token,now){
  if(!rally||(rally.status!=='pending'&&now-(rally.resolvedAt||0)>8000))return null;
- return {id:rally.id,x:rally.x,y:rally.y,zone:rally.zone,
+ return {id:rally.id,x:rally.x,y:rally.y,zone:rally.zone,kind:rally.kind||'rally',
+  destination:rally.kind==='expedition'?rally.arrivalZone:undefined,
+  arrived:rally.kind==='expedition'?(rally.arrivals||[]).length:undefined,
   proposer:rally.proposer,required:rally.required,yes:Object.values(rally.votes).filter(Boolean).length,
   total:rally.electorate.length,deadline:rally.deadline,status:rally.status,
   eligible:token? rally.electorate.includes(token):undefined,
