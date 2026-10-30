@@ -7,16 +7,16 @@
   ],
   "characters": [
     {
-      "name": "Ash7n617",
-      "x": 72,
-      "y": 223,
+      "name": "Ash7xh1a",
+      "x": 10,
+      "y": 221,
       "gold": 5,
       "level": 1,
       "weapon": "sword1",
       "armor": "clotharmor",
       "bag": [
         {
-          "id": "item-19",
+          "id": "item-108",
           "name": "blue hat",
           "type": "wearable",
           "material": "cloth",
@@ -26,14 +26,14 @@
           "color": "#7ea7d4",
           "tile": null,
           "components": [
-            "item-15",
-            "item-16"
+            "item-104",
+            "item-105"
           ]
         }
       ],
       "wearables": [
         {
-          "id": "item-19",
+          "id": "item-108",
           "name": "blue hat",
           "type": "wearable",
           "material": "cloth",
@@ -43,23 +43,23 @@
           "color": "#7ea7d4",
           "tile": null,
           "components": [
-            "item-15",
-            "item-16"
+            "item-104",
+            "item-105"
           ]
         }
       ]
     },
     {
-      "name": "Ember7n620",
-      "x": 73,
-      "y": 223,
+      "name": "Ember7xh27",
+      "x": 11,
+      "y": 221,
       "gold": 5,
       "level": 1,
       "weapon": "sword1",
       "armor": "clotharmor",
       "bag": [
         {
-          "id": "item-17",
+          "id": "item-106",
           "name": "cloth strip",
           "type": "fragment",
           "material": "cloth",
@@ -70,7 +70,7 @@
           "components": []
         },
         {
-          "id": "item-18",
+          "id": "item-107",
           "name": "wood splinter",
           "type": "tool",
           "material": "wood",

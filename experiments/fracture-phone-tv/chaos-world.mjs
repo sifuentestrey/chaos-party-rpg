@@ -68,6 +68,12 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff)}={}){
   return {...result,...(roll!==null?{roll,dc:plan.dc,text:`D20 ${roll} / ${plan.dc}: ${result.text}`}:{})};
  }
  function execute(p,text){seedPlayer(p);const previous=state;state=structuredClone(state);try{const result=apply(p,text);if(result.blocked)state=previous;return result;}catch(error){state=previous;throw error;}}
- function approach(p,text){seedPlayer(p);const a=creativeAttempt(text);if(!a?.item)return null;const matches=snapshot(p).ground.filter(i=>i.id===a.item||norm(i.name)===norm(a.item));return matches.length===1&&!reachable(p,matches[0].tile)?{...matches[0].tile}:null;}
+ function approach(p,text){
+  const attempt=creativeAttempt(text);if(!attempt)return null;
+  const {room,actor}=projection(p);if(!actor)return null;
+  const plan=planItemAttempt(room,actor,attempt);if(!plan||plan.error)return null;
+  const item=state.items[plan.itemId];
+  return item&&!item.ownerId&&item.tile&&!reachable(p,item.tile)?{...item.tile}:null;
+ }
  return {snapshot,execute,approach};
 }

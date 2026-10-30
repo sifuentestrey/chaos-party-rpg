@@ -13,29 +13,29 @@
     {
       "elapsedSeconds": 3,
       "connected": 20,
-      "requestBatchMs": 47,
-      "bridgeRssMiB": 100,
+      "requestBatchMs": 26,
+      "bridgeRssMiB": 99,
       "accepted": 20
     },
     {
       "elapsedSeconds": 18,
       "connected": 20,
-      "requestBatchMs": 53,
-      "bridgeRssMiB": 103,
+      "requestBatchMs": 43,
+      "bridgeRssMiB": 102,
       "accepted": 20
     },
     {
       "elapsedSeconds": 33,
       "connected": 20,
-      "requestBatchMs": 61,
-      "bridgeRssMiB": 112,
+      "requestBatchMs": 38,
+      "bridgeRssMiB": 103,
       "accepted": 20
     },
     {
       "elapsedSeconds": 48,
       "connected": 20,
-      "requestBatchMs": 29,
-      "bridgeRssMiB": 120,
+      "requestBatchMs": 46,
+      "bridgeRssMiB": 103,
       "accepted": 20
     }
   ],

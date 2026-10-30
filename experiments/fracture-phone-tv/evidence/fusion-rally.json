@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "checks": [
+    "two distinct native actors",
+    "actual native one-tile movement",
+    "majority vote cannot move early",
+    "invalid voter rejected",
+    "per-actor native go receipt"
+  ],
+  "rallyOutcome": "succeeded"
+}

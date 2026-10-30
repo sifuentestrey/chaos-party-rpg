@@ -11,59 +11,86 @@
   ],
   "events": [
     {
-      "player": "Ember7n620",
-      "text": "walk to 73, 223",
+      "player": "Ember813da",
+      "text": "walk to 11, 220",
       "status": "succeeded",
-      "message": "Reached your destination."
+      "message": "Reached your destination.",
+      "x": 11,
+      "y": 220
     },
     {
-      "player": "Ash7n617",
+      "player": "Ash813ce",
+      "text": "make blue hat from cloth strip and wood splinter",
+      "status": "failed",
+      "message": "D20 8 / 10: Ash813ce tries, but the materials resist. Nothing is consumed or changed.",
+      "roll": 8,
+      "x": 10,
+      "y": 220
+    },
+    {
+      "player": "Ash813ce",
       "text": "make blue hat from cloth strip and wood splinter",
       "status": "succeeded",
-      "message": "D20 14 / 10: Ash7n617 creates blue hat (item-19) from cloth strip and wood splinter.",
-      "roll": 14
+      "message": "D20 16 / 10: Ash813ce creates blue hat (item-113) from cloth strip and wood splinter.",
+      "roll": 16,
+      "x": 10,
+      "y": 220
     },
     {
-      "player": "Ash7n617",
+      "player": "Ash813ce",
       "text": "equip blue hat",
       "status": "succeeded",
-      "message": "Ash7n617: equip blue hat."
+      "message": "Ash813ce: equip blue hat.",
+      "x": 10,
+      "y": 220
     },
     {
-      "player": "Ash7n617",
-      "text": "give blue hat to Ember7n620",
+      "player": "Ash813ce",
+      "text": "give blue hat to Ember813da",
       "status": "succeeded",
-      "message": "Ash7n617: give blue hat → Ember7n620."
+      "message": "Ash813ce: give blue hat → Ember813da.",
+      "x": 10,
+      "y": 220
     },
     {
-      "player": "Ember7n620",
+      "player": "Ember813da",
       "text": "equip blue hat",
       "status": "succeeded",
-      "message": "Ember7n620: equip blue hat."
+      "message": "Ember813da: equip blue hat.",
+      "x": 11,
+      "y": 220
     },
     {
-      "player": "Ember7n620",
+      "player": "Ember813da",
       "text": "drop blue hat",
       "status": "succeeded",
-      "message": "Ember7n620: drop blue hat."
+      "message": "Ember813da: drop blue hat.",
+      "x": 11,
+      "y": 220
     },
     {
-      "player": "Ash7n617",
-      "text": "walk west 3",
+      "player": "Ash813ce",
+      "text": "walk to 8, 220",
       "status": "succeeded",
-      "message": "Reached your destination."
+      "message": "Reached your destination.",
+      "x": 8,
+      "y": 220
     },
     {
-      "player": "Ash7n617",
-      "text": "take item-19",
+      "player": "Ash813ce",
+      "text": "take item-113",
       "status": "succeeded",
-      "message": "Ash7n617: take blue hat."
+      "message": "Ash813ce: take blue hat.",
+      "x": 10,
+      "y": 220
     },
     {
-      "player": "Ash7n617",
+      "player": "Ash813ce",
       "text": "equip blue hat",
       "status": "succeeded",
-      "message": "Ash7n617: equip blue hat."
+      "message": "Ash813ce: equip blue hat.",
+      "x": 10,
+      "y": 220
     }
   ],
   "errors": []

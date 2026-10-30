@@ -7,10 +7,10 @@ let browser;const sleep=ms=>new Promise(r=>setTimeout(r,ms)),events=[];
 async function until(p,predicate){for(let n=0;n<40;n++){const s=await state(p);if(predicate(s))return s;
  await sleep(150);}throw Error('State failed to converge');}
 const state=p=>fetch(base+'/state?token='+p.token).then(r=>r.json());
-async function act(page,p,text,wait=true){let s=await state(p);if(wait&&s.turn)await sleep(Math.max(0,s.turn.deadline-Date.now()+100));const reply=page.waitForResponse(r=>r.url()===base+'/action'&&r.request().method()==='POST');
+async function act(page,p,text,wait=true){await sleep(220);let s=await state(p);if(wait&&s.turn)await sleep(Math.max(0,s.turn.deadline-Date.now()+100));const reply=page.waitForResponse(r=>r.url()===base+'/action'&&r.request().method()==='POST');
  await page.locator('#text').fill(text);
  await page.locator('#form button').click();const r=await reply,b=await r.json();
- assert.equal(r.status(),202,b.error);for(let i=0;i<200;i++){await sleep(150);s=await state(p);const result=s.results.find(r=>r.id===b.id);if(result&&!['received','started'].includes(result.status)){events.push({player:p.name,text,status:result.status,message:result.message,roll:result.roll});console.log(JSON.stringify(events.at(-1)));return {s,result};}}throw Error('Action timeout');}
+ assert.equal(r.status(),202,b.error);for(let i=0;i<200;i++){await sleep(150);s=await state(p);const result=s.results.find(r=>r.id===b.id);if(result&&!['received','started'].includes(result.status)){events.push({player:p.name,text,status:result.status,message:result.message,roll:result.roll,x:s.actor.x,y:s.actor.y});console.log(JSON.stringify(events.at(-1)));return {s,result};}}throw Error('Action timeout');}
 (async()=>{for(const [i,name] of ['Ash','Ember'].entries()){const r=await fetch(base+'/pair',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key:room.join,name:name+Date.now().toString(36).slice(-5),color:i?'Rose':'Blue'})});
  assert.equal(r.status,201);const b=await r.json();players.push({name:JSON.parse(fs.readFileSync(process.env.CHAOS_TEST_ROOM_FILE)).players.at(-1).name,token:b.token});}browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox']});const pages=[],errors=[];for(const p of players){const c=await browser.newContext({viewport:{width:390,height:844},isMobile:true}),page=await c.newPage();page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base+'/join?key='+room.join+'#recover='+p.token);
@@ -34,8 +34,16 @@ const tv=await browser.newPage({viewport:{width:1280,height:720}});tv.on('pageer
  await act(pages[1],players[1],'drop blue hat');const dropped=(await state(players[1])).actor.chaos.ground.find(i=>i.name==='blue hat');
  assert.ok(dropped);const dropState=await state(players[1]);
  assert.deepEqual(dropped.tile,{x:dropState.actor.x,y:dropState.actor.y});
- await act(pages[0],players[0],'walk west 3',false);
- await act(pages[0],players[0],'take '+dropped.id);
+ let away;
+ for(const [dx,dy] of [[-3,0],[3,0],[0,-3],[0,3]]){
+  away=await act(pages[0],players[0],`walk to ${dropped.tile.x+dx}, ${dropped.tile.y+dy}`,false);
+  const d=Math.abs(away.s.actor.x-dropped.tile.x)+Math.abs(away.s.actor.y-dropped.tile.y);
+  if(away.result.status==='succeeded'&&d>2&&d<=8)break;
+ }
+ assert.ok(Math.abs(away.s.actor.x-dropped.tile.x)+Math.abs(away.s.actor.y-dropped.tile.y)>2,'Must actually walk away before testing auto-approach');
+ const beforePickup=[away.s.actor.x,away.s.actor.y];
+ const pickup=await act(pages[0],players[0],'take '+dropped.id);
+ assert.equal(pickup.result.status,'succeeded');assert.notDeepEqual([pickup.s.actor.x,pickup.s.actor.y],beforePickup);
  assert.ok((await state(players[0])).actor.chaos.bag.some(i=>i.id===dropped.id));
  await act(pages[0],players[0],'equip blue hat');
  await pages[0].reload();
