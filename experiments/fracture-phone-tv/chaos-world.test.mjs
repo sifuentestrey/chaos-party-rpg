@@ -621,3 +621,24 @@ test('stable NPC identities bind to the current native body after reconnect',t=>
  const restored=createChaosWorld({file});const current=restored.snapshot(a).npcs.find(n=>n.id===original.id);
  assert.equal(current.nativeId,'912');assert.equal(current.id,original.id);assert.deepEqual(current.items.map(i=>i.id),original.items.map(i=>i.id));
 });
+
+test('chosen Charming perk changes real NPC apology roll without changing theft or native HP',t=>{
+ const {a,guard,engine,file}=npcFixture(t);
+ const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');
+ a.x=rug.tile.x;a.y=rug.tile.y;
+ a.chaosRole='bard';a.chaosPerk='charming';
+ const theft=engine.execute(a,'steal '+rug.id);
+ assert.equal(theft.blocked,false);
+ assert.equal(theft.bonus,0,'Bard and Charming do not gain theft bonuses');
+ assert.equal(engine.canQuest(a,guard),false);
+ const hp=a.hitPoints;
+ const apology=engine.execute(a,'apologize to guard');
+ assert.equal(apology.blocked,false,apology.text);
+ assert.equal(apology.bonus,3);
+ assert.equal(apology.perkBonus,2);
+ assert.match(apology.text,/\\+3 class \\+2 Charming/);
+ assert.equal(apology.success,apology.roll===20||(apology.roll!==1&&apology.roll+5>=apology.dc));
+ assert.equal(a.hitPoints,hp,'native HP remains untouched by social perks');
+ const saved=JSON.parse(fs.readFileSync(file,'utf8'));
+ assert.ok(saved.npcs[engine.snapshot(a).npcs[0].id].history.some(h=>h.verb==='appeal'));
+});
