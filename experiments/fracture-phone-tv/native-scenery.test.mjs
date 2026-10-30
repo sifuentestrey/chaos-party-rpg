@@ -50,6 +50,14 @@ test('live native Fracture mode never seeds imaginary props, trees, rugs or camp
  assert.equal(view.scenery.length,1);assert.ok(view.scenery[0].nativeOrigin);
  assert.equal(Object.keys(JSON.parse(fs.readFileSync(file)).items).length,0);
  assert.equal(engine.execute(p,'push boulder').blocked,true,'unmapped native assets are not fake movable objects');
+ for(const action of ['push boulder','pick up rock','hide in bush','burn grass']){
+  assert.equal(shouldUseCreative(action,{chaos:view}),true,action+' must reach the grounded action resolver');
+  const result=engine.execute(p,action);
+  assert.equal(result.blocked,true,action);
+  assert.equal(result.success,false,action);
+  assert.match(result.text,/no verified movable or reactive/i,action);
+ }
+ assert.equal(shouldUseCreative('walk north',{chaos:view}),false,'ordinary native movement stays native');
  assert.equal(engine.execute(p,'make mask from cloth strip and wood splinter').blocked,true);
  assert.throws(()=>engine.registerScenery('fracture:test','imaginary','tree',{x:30,y:202}),/validated native/);
  assert.equal(engine.snapshot(p).scenery.length,1);
