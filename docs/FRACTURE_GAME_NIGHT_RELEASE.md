@@ -1,5 +1,11 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Authenticated room-event push to phones — October 30 (CI pending)
+
+- [x] Added authenticated same-origin Server-Sent Events `/changes` for active phone sessions. Room `record()` notifies all subscribed phones immediately; the phone refreshes authoritative `/state` on notification. Existing 750-ms polling remains the fallback. Subscription initializes on recovered sessions and after pairing, and closes with the host. This does not expose credentials or trust client-authored game state.
+- [ ] No direct native Fracture object-event hook or complete TV live-event stream is claimed. Fire ticks that do not create a room record still rely on existing polling; real multi-phone browser verification, pinned CI and physical Mac acceptance are pending. Tests not run for this exact change.
+
+
 ## Live-NPC presence gates fixture collision — October 30 (CI pending)
 
 - [x] Native NPC presence is now required before an NPC-owned sidecar fixture projects blocking collision. Saved NPC records alone cannot leave phantom obstacles after native NPC departure. Added a focused absent-owner regression, without modifying native Fracture map collision.
