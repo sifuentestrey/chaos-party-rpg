@@ -458,3 +458,17 @@ test('only a native reported destination-zone transition records a travel arriva
  await new Promise(r=>setTimeout(r,1100));
  assert.equal(app.room.events.filter(e=>e.status==='arrived').length,1,'arrival cannot be double-counted');
 });
+
+test('an unfinished approved expedition cannot be silently replaced by another vote',async t=>{
+ const {app,base}=await setup(t,{zone:'The Refuge'});
+ const tokens=[];for(const name of ['Ada','Bryn'])tokens.push((await(await post(base,'/pair',{key:app.room.join,name})).json()).token);
+ await new Promise(r=>setTimeout(r,25));
+ for(let i=0;i<2;i++)app.sessions.get(tokens[i]).actor={id:i+1,ready:true,dead:false,zone:'The Refuge',x:41+i,y:195};
+ const proposal=(await(await post(base,'/expedition/propose',{token:tokens[0],destination:'woods'})).json()).rally;
+ assert.equal((await(await post(base,'/rally/vote',{token:tokens[1],id:proposal.id,yes:true})).json()).rally.status,'approved');
+ assert.equal((await post(base,'/rally/propose',{token:tokens[0]})).status,409);
+ assert.equal((await post(base,'/expedition/propose',{token:tokens[0],destination:'woods'})).status,409);
+ assert.equal(app.room.rally.id,proposal.id);
+ app.room.rally.resolvedAt=Date.now()-45001;
+ assert.equal((await post(base,'/rally/propose',{token:tokens[0]})).status,201,'stale travel does not lock future votes');
+});
