@@ -20,7 +20,11 @@ export function validateEnvironmentJudgment(judgment,context={}){
  if(object.condition==='broken'&&action!=='repair')return {accepted:false,reason:'Object is already destroyed'};
  if(object.scene!==context.scene||!object.tile||!context.actor?.tile)return {accepted:false,reason:'Object is not in the actor world'};
  const dist=Math.abs(object.tile.x-context.actor.tile.x)+Math.abs(object.tile.y-context.actor.tile.y);
- if(dist>Math.min(2,Math.max(0,context.maxReach??1)))return {accepted:false,reason:'Object is out of reach'};
+ // The optional DM may *suggest* a visible distant native object for a
+ // server-driven walk. Actual execution always rechecks arm's reach.
+ const maxReach=context.allowApproach===true&&object.nativeAdapter===true?Math.min(18,Math.max(0,context.maxReach??1)):
+  Math.min(2,Math.max(0,context.maxReach??1));
+ if(dist>maxReach)return {accepted:false,reason:'Object is out of reach'};
  const direction=DIRECTIONAL.exec(action)?.[1]||null;
  const resolvedAction=direction?'move':action;
  const capability=CAPABILITY[resolvedAction];
