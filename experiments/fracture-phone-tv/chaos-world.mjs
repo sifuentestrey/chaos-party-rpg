@@ -503,7 +503,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   }
   const scenery=sceneryAttempt(text,visibleScenery(state,scene(p)).filter(o=>visible(p,o.tile,o.nativeOrigin?18:8,o.nativeOrigin?o.footprint:false)).sort((a,b)=>distance(p,a.tile)-distance(p,b.tile)));
   if(scenery){
-   const fell=!!scenery.nativeOrigin||/^(?:(?:chop|cut) down|fell|uproot)\s+(?:the\s+)?/i.test(String(text).trim().replace(/^(?:please |I (?:want to |try to )?)+/i,''));
+   const fell=/^(?:(?:chop|cut) down|fell|uproot)\s+(?:the\s+)?/i.test(String(text).trim().replace(/^(?:please |I (?:want to |try to )?)+/i,''));
    const result=strikeScenery(p,scenery.id.slice(scene(p).length+1),3,{fell});
    const description=scenery.name||scenery.kind;
    return {blocked:!result.changed&&!result.attempted,success:result.changed,event:result.event,object:result.feedback,
