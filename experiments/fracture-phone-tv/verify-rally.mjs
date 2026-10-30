@@ -49,14 +49,15 @@ try{
  assert.equal(proposal.rally.required,2);
  assert.equal(proposal.rally.status,'pending');
  const noAction=app.sessions.get(tokens[1]).results.size;
+ const existingIds=new Set(app.sessions.get(tokens[1]).results.keys());
  assert.equal((await post('/rally/vote',{token:app.room.join,id:proposal.rally.id,yes:true})).status,403);
  assert.equal(app.sessions.get(tokens[1]).results.size,noAction,'Invalid vote must not dispatch movement');
  const approved=await post('/rally/vote',{token:tokens[1],id:proposal.rally.id,yes:true});
  assert.equal(approved.status,200);
  assert.equal(approved.rally.status,'approved');
  const s=app.sessions.get(tokens[1]);
- const [id,r]=[...s.results.entries()].at(-1);
- assert.match(r.message,/Party rally/);
+ const [id,r]=[...s.results.entries()].find(([id])=>!existingIds.has(id))||[];
+ assert.ok(id&&r,'An approved vote must issue a distinct native actor request');
  const outcome=await finalResult(tokens[1],id);
  assert.ok(['succeeded','blocked'].includes(outcome.status),'Native Fracture, not vote, owns final outcome');
  if(outcome.status==='succeeded'){
