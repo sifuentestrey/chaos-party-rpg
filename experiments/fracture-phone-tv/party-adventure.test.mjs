@@ -27,7 +27,7 @@ test('craft route uses original Chaos item parser and confirmed success only',()
  assert.equal(a.proof.route,'craft');
  assert.ok(advanceAdventure(a,talk('t1'),300));
  assert.ok(advanceAdventure(a,zoneEvidence(actor('Glitch Woods'),'Ada','ada-token'),400));
- assert.ok(advanceAdventure(a,zoneEvidence(actor('The Refuge'),'Bryn','bryn-token'),500));
+ assert.ok(advanceAdventure(a,zoneEvidence(actor('The Refuge'),'Ada','ada-token'),500));
  assert.equal(a.status,'completed');
 });
 test('no story progression from text, fabricated outcomes, failed rolls, AI narration or native misses',()=>{
