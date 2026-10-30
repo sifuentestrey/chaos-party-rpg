@@ -59,6 +59,12 @@ Saved actors connect only when their phone returns. Closing a phone saves/logs o
 
 Optional Groq semantic interpretation is **off by default**, requires an already configured `GROQ_API_KEY`, and is explicitly enabled from the private host page. It proposes only grounded supported actions. The engine owns outcomes. A separate local quota ledger, short timeout and deterministic fallback keep play available on errors or quota exhaustion. No paid upstream Venice or Fish Audio connection is enabled. Live Groq quality/free-plan qualification is not claimed by mocked tests.
 
+## Native combat now informs persistent NPC/DM memory
+
+When a real native Fracture HIT defeats a monster, the separate Chaos object sidecar records a canonical encounter fact with the **actual HP transition and location**. Nearby NPCs who could see it may remember that character fighting when the creature fell, even after a restart. A submitted attack, miss, failed hit or narrative suggestion cannot create a victory. This adds no native damage, gold, XP or reputation, and it does not turn Fracture's native quests into the original Chaos campaigns.
+
+The pure combat-memory regressions and pinned Fracture adapter compile pass. The disposable browser adventure includes a new assertion that a real rat defeat appears in DM memory; **do not claim that assertion passed until the full browser journey is actually run**. The physical Intel Mac/phone/TV test and live creative-model qualification remain separate and outstanding.
+
 ## Verification and limits
 
 Read [the release tracker](../../docs/FRACTURE_GAME_NIGHT_RELEASE.md) and the sanitized evidence alongside this file. Cloud/Linux browser and concurrency tests do **not** establish performance on the 2015 Intel MacBook or physical iPhones/TV. That hardware check remains the owner's final acceptance.
