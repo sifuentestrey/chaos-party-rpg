@@ -296,14 +296,15 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    npc.memories||={};npc.memories[actor.id]=[...(npc.memories[actor.id]||[]),observation].slice(-4);
    npc.history.push(observation);npc.history=npc.history.slice(-12);
    const bonus=check.bonus?` +${check.bonus} class`:'';
+   const charming=check.perkBonus?` +${check.perkBonus} Charming`:'';
    const lucky=check.rerolled!==null?` · Lucky-ish ${check.rerolled} → ${check.roll}`:'';
    const resultText=check.success?`${npc.name} accepts your apology. Trust ${prior} → ${npc.trust[actor.id]}.${npc.trust[actor.id]<0?' More amends are needed before asking for a job.':' You may ask for a job again.'}`:`${npc.name} is not persuaded. Trust stays ${prior}.`;
-   const outcomeText=(rolls?`D20 ${hinderedBy?'disadvantage':'advantage'} ${rolls.join(' / ')} → ${check.roll}${bonus} / ${dc} (${hinderedBy?'hindered by '+hinderedBy:'helped by '+assistedBy})${lucky}`:`D20 ${check.roll}${bonus} / ${dc}${lucky}`)+': '+resultText;
+   const outcomeText=(rolls?`D20 ${hinderedBy?'disadvantage':'advantage'} ${rolls.join(' / ')} → ${check.roll}${bonus}${charming} / ${dc} (${hinderedBy?'hindered by '+hinderedBy:'helped by '+assistedBy})${lucky}`:`D20 ${check.roll}${bonus}${charming} / ${dc}${lucky}`)+': '+resultText;
    room.dmMemory=state.dmMemory;
    room.result={id:'chaos-'+state.round,playerId:actor.id,name:actor.name,action:text,target:{entityId:npc.id},blocked:false,success:check.success,narration:outcomeText,changes:check.success?[`Trust ${prior} → ${npc.trust[actor.id]}`]:[],sceneEvents:[{type:'witness',entityId:npc.id}]};
    recordDMMemory(room);const entry=state.dmMemory.entries.at(-1);if(entry)entry.tile={x:p.x,y:p.y};
    persist();
-   return {blocked:false,success:check.success,text:outcomeText,roll:check.roll,dc,bonus:check.bonus,rerolled:check.rerolled,...(rolls?{rolls,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})}:{}),event:entry};
+   return {blocked:false,success:check.success,text:outcomeText,roll:check.roll,dc,bonus:check.bonus,perkBonus:check.perkBonus,rerolled:check.rerolled,...(rolls?{rolls,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})}:{}),event:entry};
   }
   if(attempt.verb==='assist'||attempt.verb==='hinder'){
    // A second real character must be nearby, alive and connected. No phone can
