@@ -1,4 +1,9 @@
-CHAOS PARTY — LOCAL FRACTURE BETA
+CHAOS PARTY — LOCAL FRACTURE TECHNOLOGY BETA
+
+IMPORTANT: This is NOT the original Chaos Party game migrated to Fracture.
+Crown Job, Dawn Bell, original character customization, D20/object/NPC memory
+and campaign saves are not present. This is a separate native Fracture playtest.
+Read docs/CHAOS_TO_FRACTURE_PARITY.md before treating it as a release.
 
 Double-click Start_Chaos_Party.command on the Mac.
 Requires Node 22.18+ LTS (owner-tested baseline: 22.23.4), Git and first-install internet.
