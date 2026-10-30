@@ -1,5 +1,10 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Bounded majority-approved native travel (native route pending) — October 30
+
+The experimental adapter now offers two **server-defined Fracture waypoint** travel votes, The Refuge ↔ Glitch Woods, using the existing strict-majority electorate and native per-actor `go` authority. Proposers and voters must be real nearby living characters in the departure zone. A vote never teleports, grants story completion or claims everyone arrived; only a later native destination-zone report can count an arrival. STOP and disconnections still apply. The local mock/contract suite passed **103/104 checks (one skipped)**. Actual native path traversal and CI remain pending, so this is **partial rule transfer**, not original Dawn Bell majority travel, campaign map or story-scene migration.
+
+
 ## Opt-in original D20 reactions, not full original party reactions — October 30
 
 The Fracture sidecar now supports a **real optional ten-second pre-execution window** for original Chaos world checks. A player types `declare ...`, and the server queues the request without claiming success. Other nearby, living, separately authenticated characters may help (higher of two original D20 rolls) or hinder (lower of two), but cannot stack modifiers. The actual native actor revalidates world reach, object ownership and available mechanics when the window ends. STOP/disconnect/bench/zone change cancels the pending declaration; no world action is fabricated. Ordinary movement and combat remain immediate, and native combat RNG is unchanged. This uses the already bundled MIT-licensed original Chaos D20 selection, not a new dice engine.
