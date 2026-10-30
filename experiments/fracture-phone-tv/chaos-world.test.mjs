@@ -1,17 +1,17 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import {createChaosWorld,shouldUseCreative} from './chaos-world.mjs';
-function fixture(t,assistNow=()=>Date.now()){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-objects-')),file=path.join(dir,'objects.json');t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));const world={players:{},zoneManager:{getZoneAt:()=>({name:'The Refuge'})},isValidPosition:(x,y)=>x>0&&y>0&&x<100&&y<314};const player=(id,name,x=40)=>({characterId:id,name,chaosName:name,x,y:210,hitPoints:100,maxHitPoints:100,chaosControlled:true,hasEnteredGame:true,isDead:false,getWorld:()=>world});const a=player('alice','Alice'),b=player('bob','Bob',41);world.players={alice:a,bob:b};let now=1000;const engine=createChaosWorld({file,seed:1,clock:()=>now,now:assistNow});return {a,b,engine,file,world,tick:()=>{now+=10000;return engine.snapshot(a);}};}
+function fixture(t,assistNow=()=>Date.now()){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-objects-')),file=path.join(dir,'objects.json');t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));const world={players:{},zoneManager:{getZoneAt:()=>({name:'The Refuge'})},isValidPosition:(x,y)=>x>0&&y>0&&x<100&&y<314};const player=(id,name,x=40)=>({characterId:id,name,chaosName:name,x,y:210,hitPoints:100,maxHitPoints:100,chaosControlled:true,hasEnteredGame:true,isDead:false,getWorld:()=>world});const a=player('alice','Alice'),b=player('bob','Bob',41);world.players={alice:a,bob:b};let now=1000;const engine=createChaosWorld({allowSyntheticFixtures:true,file,seed:1,clock:()=>now,now:assistNow});return {a,b,engine,file,world,tick:()=>{now+=10000;return engine.snapshot(a);}};}
 test('original crafting, wearing, giving and separation work without a legacy map',t=>{const {a,b,engine,file}=fixture(t);const initial=engine.snapshot(a);assert.equal(initial.bag.length,2);assert.ok(initial.ground.length);assert.ok(initial.ground.every(i=>i.tile));let crafted;for(let i=0;i<12;i++){crafted=engine.execute(a,'make blue hat from cloth strip and wood splinter');if(crafted.success)break;assert.equal(engine.snapshot(a).bag.length,2);}assert.ok(crafted.success);assert.ok(crafted.roll>=10);let bag=engine.snapshot(a).bag;assert.equal(bag.length,1);assert.equal(bag[0].name,'blue hat');assert.equal(engine.execute(a,'equip blue hat').success,true);assert.equal(engine.snapshot(a).wearables[0].color,'#7ea7d4');assert.equal(engine.execute(a,'give blue hat to Bob').success,true);assert.equal(engine.snapshot(a).bag.length,0);assert.ok(engine.snapshot(b).bag.some(i=>i.name==='blue hat'));assert.equal(engine.execute(b,'separate blue hat').success,true);assert.ok(engine.snapshot(b).bag.some(i=>i.name==='cloth strip'));const data=JSON.parse(fs.readFileSync(file));assert.ok(Object.values(data.items).every(i=>!i.location||i.location.startsWith('fracture:')));});
-test('material ownership, range, persistence and reconnect do not mint duplicates',t=>{const {a,b,engine,file}=fixture(t);engine.snapshot(a);engine.snapshot(b);const floor=engine.snapshot(a).ground[0];a.x=60;assert.equal(engine.execute(a,'take '+floor.id).blocked,true);a.x=40;assert.equal(engine.execute(a,'take '+floor.id).success,true);assert.equal(engine.execute(b,'take '+floor.id).blocked,true);assert.equal(engine.execute(a,'give '+floor.id+' to Bob').success,true);b.x=80;assert.equal(engine.execute(a,'give cloth strip to Bob').blocked,true);const count=Object.keys(JSON.parse(fs.readFileSync(file)).items).length;const restored=createChaosWorld({file});restored.snapshot({...a,id:999});assert.equal(Object.keys(JSON.parse(fs.readFileSync(file)).items).length,count);assert.ok(restored.snapshot(b).bag.some(i=>i.id===floor.id));assert.ok(!shouldUseCreative('equip sword2',{chaos:restored.snapshot(a)}));assert.ok(shouldUseCreative('make mask from cloth strip and wood splinter',{}));});
+test('material ownership, range, persistence and reconnect do not mint duplicates',t=>{const {a,b,engine,file}=fixture(t);engine.snapshot(a);engine.snapshot(b);const floor=engine.snapshot(a).ground[0];a.x=60;assert.equal(engine.execute(a,'take '+floor.id).blocked,true);a.x=40;assert.equal(engine.execute(a,'take '+floor.id).success,true);assert.equal(engine.execute(b,'take '+floor.id).blocked,true);assert.equal(engine.execute(a,'give '+floor.id+' to Bob').success,true);b.x=80;assert.equal(engine.execute(a,'give cloth strip to Bob').blocked,true);const count=Object.keys(JSON.parse(fs.readFileSync(file)).items).length;const restored=createChaosWorld({allowSyntheticFixtures:true,file});restored.snapshot({...a,id:999});assert.equal(Object.keys(JSON.parse(fs.readFileSync(file)).items).length,count);assert.ok(restored.snapshot(b).bag.some(i=>i.id===floor.id));assert.ok(!shouldUseCreative('equip sword2',{chaos:restored.snapshot(a)}));assert.ok(shouldUseCreative('make mask from cloth strip and wood splinter',{}));});
 test('failed persistence rolls back crafting and dice state',t=>{const {a,engine,file}=fixture(t);const initial=engine.snapshot(a).bag;const saved=fs.readFileSync(file,'utf8');fs.renameSync(file,file+'.backup');fs.mkdirSync(file);assert.throws(()=>engine.execute(a,'make blue hat from cloth strip and wood splinter'));assert.deepEqual(engine.snapshot(a).bag,initial);fs.rmdirSync(file);fs.renameSync(file+'.backup',file);assert.equal(fs.readFileSync(file,'utf8'),saved);});
 test('adjacent actors across a native grid boundary can exchange items',t=>{const {a,b,engine}=fixture(t);a.x=27;b.x=28;engine.snapshot(a);engine.snapshot(b);assert.equal(engine.execute(a,'give cloth strip to Bob').success,true);assert.equal(engine.snapshot(b).bag.filter(i=>i.name==='cloth strip').length,2);});
 
-test('failed first-character save can retry without losing starter objects',t=>{const {a,engine,file}=fixture(t);fs.mkdirSync(file);assert.throws(()=>engine.snapshot(a));fs.rmdirSync(file);assert.equal(engine.snapshot(a).bag.length,2);const loaded=createChaosWorld({file});assert.equal(loaded.snapshot(a).bag.length,2);});
+test('failed first-character save can retry without losing starter objects',t=>{const {a,engine,file}=fixture(t);fs.mkdirSync(file);assert.throws(()=>engine.snapshot(a));fs.rmdirSync(file);assert.equal(engine.snapshot(a).bag.length,2);const loaded=createChaosWorld({allowSyntheticFixtures:true,file});assert.equal(loaded.snapshot(a).bag.length,2);});
 
 test('auto-approach uses the resolved action item, not a duplicate floor name',t=>{const {a,b,engine}=fixture(t);engine.snapshot(a);engine.snapshot(b);engine.execute(a,'drop cloth strip');b.x=44;assert.equal(engine.approach(b,'drop cloth strip'),null);assert.equal(engine.approach(b,'inspect cloth strip'),null);const floor=engine.snapshot(b).ground.find(i=>i.name==='cloth strip');assert.deepEqual(engine.approach(b,'take '+floor.id),floor.tile);assert.equal(engine.execute(b,'drop cloth strip').success,true);});
 
 function npcFixture(t){const f=fixture(t);const guard={id:91,type:'npc',kind:55,name:'guard',x:41,y:210};f.world.entities={guard};return {...f,guard};}
 function succeed(engine,p,text){let r;for(let n=0;n<30;n++){r=engine.execute(p,text);if(r.success||r.blocked)break;}assert.ok(r.success,JSON.stringify(r));return r;}
-test('original fire, repair and movable blocking objects have durable native tiles',t=>{const {a,engine,file,world,tick}=fixture(t);let table=engine.snapshot(a).ground.find(i=>i.visual==='table');assert.ok(table);assert.equal(engine.isBlocked(a,table.tile.x,table.tile.y),true);const old={...table.tile};a.x=table.tile.x-1;a.y=table.tile.y;succeed(engine,a,'push camp table east');table=engine.snapshot(a).ground.find(i=>i.id===table.id);assert.equal(table.tile.x,old.x+1);assert.equal(engine.isBlocked(a,old.x,old.y),false);assert.equal(engine.isBlocked(a,table.tile.x,table.tile.y),true);a.x++;succeed(engine,a,'ignite camp table');tick();tick();tick();assert.equal(engine.isBlocked(a,table.tile.x,table.tile.y),false);assert.equal(engine.snapshot(a).ground.find(i=>i.id===table.id).condition,'broken');succeed(engine,a,'repair camp table');assert.equal(engine.isBlocked(a,table.tile.x,table.tile.y),true);succeed(engine,a,'ignite camp table');assert.equal(engine.execute(a,'extinguish camp table').success,true);const restored=createChaosWorld({file});assert.equal(restored.snapshot(a).ground.find(i=>i.id===table.id).condition,'intact');world.isValidPosition=(x,y)=>x!==table.tile.x+1;assert.equal(engine.execute(a,'push camp table east').blocked,true);});
+test('original fire, repair and movable blocking objects have durable native tiles',t=>{const {a,engine,file,world,tick}=fixture(t);let table=engine.snapshot(a).ground.find(i=>i.visual==='table');assert.ok(table);assert.equal(engine.isBlocked(a,table.tile.x,table.tile.y),true);const old={...table.tile};a.x=table.tile.x-1;a.y=table.tile.y;succeed(engine,a,'push camp table east');table=engine.snapshot(a).ground.find(i=>i.id===table.id);assert.equal(table.tile.x,old.x+1);assert.equal(engine.isBlocked(a,old.x,old.y),false);assert.equal(engine.isBlocked(a,table.tile.x,table.tile.y),true);a.x++;succeed(engine,a,'ignite camp table');tick();tick();tick();assert.equal(engine.isBlocked(a,table.tile.x,table.tile.y),false);assert.equal(engine.snapshot(a).ground.find(i=>i.id===table.id).condition,'broken');succeed(engine,a,'repair camp table');assert.equal(engine.isBlocked(a,table.tile.x,table.tile.y),true);succeed(engine,a,'ignite camp table');assert.equal(engine.execute(a,'extinguish camp table').success,true);const restored=createChaosWorld({allowSyntheticFixtures:true,file});assert.equal(restored.snapshot(a).ground.find(i=>i.id===table.id).condition,'intact');world.isValidPosition=(x,y)=>x!==table.tile.x+1;assert.equal(engine.execute(a,'push camp table east').blocked,true);});
 test('tile fire spreads one hop per tick, persists, and never ignites carried items',t=>{
  const {a,b,engine,file,tick}=fixture(t);
  const table=engine.snapshot(a).ground.find(i=>i.visual==='table');assert.ok(table);
@@ -29,7 +29,7 @@ test('tile fire spreads one hop per tick, persists, and never ignites carried it
  assert.equal(engine.snapshot(b).bag.find(i=>i.name==='cloth strip').condition,'intact','carried items are not floor fuel');
  tick();
  assert.equal(engine.snapshot(a).ground.find(i=>i.id===wood.id).condition,'burning');
- const restored=createChaosWorld({file,clock:()=>21000});
+ const restored=createChaosWorld({allowSyntheticFixtures:true,file,clock:()=>21000});
  assert.equal(restored.snapshot(a).ground.find(i=>i.id===wood.id).condition,'burning','fire state survives restart');
  assert.ok(restored.snapshot(a).story.some(e=>/Fire spreads/.test(e.fact||'')),'fire propagation is remembered as a real world event');
 });
@@ -63,14 +63,14 @@ test('a witnessed fire spreading to an NPC-owned rug changes durable personal tr
  assert.ok(npc.memory.some(m=>m.verb==='fire-spread'));
  // Reopen at the same simulated instant: a real later restart is allowed
  // to advance fire and record additional destruction, not rewind time.
- const restored=createChaosWorld({file,clock:()=>11000});
+ const restored=createChaosWorld({allowSyntheticFixtures:true,file,clock:()=>11000});
  assert.equal(restored.snapshot(a).npcs.find(n=>n.name==='guard').trust,npc.trust);
  assert.equal(restored.canQuest(a,guard),false);
 });
-test('theft, witnesses, personal trust, amends and DM memory survive reload',t=>{const {a,b,guard,engine,file}=npcFixture(t);const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');assert.ok(rug);a.x=rug.tile.x;a.y=rug.tile.y;const theft=engine.execute(a,'steal '+rug.id+' from guard');assert.equal(theft.blocked,false);assert.ok(engine.snapshot(a).npcs[0].trust<0);assert.equal(engine.canQuest(a,guard),false);assert.equal(engine.canQuest(b,guard),true);assert.match(engine.talk(a,guard),/remember/);const restored=createChaosWorld({file});assert.equal(restored.canQuest({...a,id:999},guard),false);assert.ok(restored.snapshot(a).story.some(e=>e.attempt.startsWith('steal')));assert.equal(restored.execute(a,'give cloth strip to guard').success,true);assert.equal(restored.canQuest(a,guard),true);assert.match(restored.talk(a,guard),/gift/);const data=JSON.parse(fs.readFileSync(file));assert.ok(data.dmMemory.people[restored.snapshot(a).npcs[0].id].encounters.length);});
+test('theft, witnesses, personal trust, amends and DM memory survive reload',t=>{const {a,b,guard,engine,file}=npcFixture(t);const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');assert.ok(rug);a.x=rug.tile.x;a.y=rug.tile.y;const theft=engine.execute(a,'steal '+rug.id+' from guard');assert.equal(theft.blocked,false);assert.ok(engine.snapshot(a).npcs[0].trust<0);assert.equal(engine.canQuest(a,guard),false);assert.equal(engine.canQuest(b,guard),true);assert.match(engine.talk(a,guard),/remember/);const restored=createChaosWorld({allowSyntheticFixtures:true,file});assert.equal(restored.canQuest({...a,id:999},guard),false);assert.ok(restored.snapshot(a).story.some(e=>e.attempt.startsWith('steal')));assert.equal(restored.execute(a,'give cloth strip to guard').success,true);assert.equal(restored.canQuest(a,guard),true);assert.match(restored.talk(a,guard),/gift/);const data=JSON.parse(fs.readFileSync(file));assert.ok(data.dmMemory.people[restored.snapshot(a).npcs[0].id].encounters.length);});
 test('unseen NPCs do not learn private actions; native bodies and other players stay protected',t=>{const {a,b,guard,engine,world}=npcFixture(t);engine.snapshot(a);world.isValidPosition=(x,y)=>x!==41;a.x=39;engine.execute(a,'drop cloth strip');assert.equal(engine.talk(a,guard),null);assert.equal(engine.execute(a,'ignite guard').blocked,true);world.isValidPosition=()=>true;engine.snapshot(b);assert.equal(engine.execute(a,'ignite '+engine.snapshot(b).bag[0].id).blocked,true);});
 
-test('NPC personal memories survive other players filling the recent event log',t=>{const {a,b,guard,engine,file}=npcFixture(t);const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');a.x=rug.tile.x;a.y=rug.tile.y;engine.execute(a,'steal '+rug.id);const wood=engine.snapshot(b).bag.find(i=>i.name==='wood splinter');for(let n=0;n<20;n++){assert.ok(engine.execute(b,'drop '+wood.id).success);assert.ok(engine.execute(b,'take '+wood.id).success);}const restored=createChaosWorld({file});assert.ok(restored.snapshot(a).npcs.find(n=>n.name==='guard').memory.some(h=>h.verb==='steal'));assert.match(restored.talk(a,guard),/remember/);assert.equal(restored.canQuest(a,guard),false);});
+test('NPC personal memories survive other players filling the recent event log',t=>{const {a,b,guard,engine,file}=npcFixture(t);const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');a.x=rug.tile.x;a.y=rug.tile.y;engine.execute(a,'steal '+rug.id);const wood=engine.snapshot(b).bag.find(i=>i.name==='wood splinter');for(let n=0;n<20;n++){assert.ok(engine.execute(b,'drop '+wood.id).success);assert.ok(engine.execute(b,'take '+wood.id).success);}const restored=createChaosWorld({allowSyntheticFixtures:true,file});assert.ok(restored.snapshot(a).npcs.find(n=>n.name==='guard').memory.some(h=>h.verb==='steal'));assert.match(restored.talk(a,guard),/remember/);assert.equal(restored.canQuest(a,guard),false);});
 
 test('nearby distinct phones can grant one original D20 advantage roll to a real craft',t=>{
  let clock=1000;const {a,b,engine,file}=fixture(t,()=>clock);
@@ -227,7 +227,7 @@ test('original NPC theft, failed-roll witness memory and durable trust use a rea
  const stored=JSON.parse(fs.readFileSync(file));
  assert.equal(stored.npcs[npc.id].attitude,'hostile');
  assert.ok(stored.npcs[npc.id].history.some(h=>h.verb==='theft'&&h.actorId===a.characterId));
- const restored=createChaosWorld({file});
+ const restored=createChaosWorld({allowSyntheticFixtures:true,file});
  assert.equal(restored.snapshot(a).npcs[0].trust,npc.trust,'memory survives independent restart');
  assert.equal(restored.snapshot(a).bag.some(i=>i.id===item.id),true,'item ownership survives restart');
 });
@@ -247,7 +247,7 @@ test('NPC ownership and proximity are checked by the original resolver before th
  assert.equal(engine.snapshot(a).npcs.find(n=>n.name==='Guard').items.some(i=>i.name==='cloth strip'),true);
 });
 
-test('legacy native-ID NPC saves migrate without losing trust, memories or owned objects',t=>{const {a,engine,file,world}=fixture(t);const bag=engine.snapshot(a).bag,guard={id:841210,name:'Guard',kind:42,type:'npc',x:41,y:210};world.npcs={[guard.id]:guard};const saved=JSON.parse(fs.readFileSync(file));saved.npcs={[guard.id]:{attitude:'hostile',trust:{[a.characterId]:-4},history:[{verb:'theft',actorId:a.characterId,success:false,round:1}]}};saved.items[bag[0].id].ownerId=String(guard.id);fs.writeFileSync(file,JSON.stringify(saved));const restored=createChaosWorld({file});const npc=restored.snapshot(a).npcs[0];assert.equal(npc.nativeId,String(guard.id));assert.equal(npc.trust,-4);assert.ok(npc.memory.some(m=>m.verb==='theft'));assert.ok(npc.items.some(i=>i.id===bag[0].id));assert.equal(restored.canQuest(a,guard),false);const durable=JSON.parse(fs.readFileSync(file));assert.equal(durable.items[bag[0].id].ownerId,npc.id);assert.equal(durable.npcs[npc.id].trust[a.characterId],-4);});
+test('legacy native-ID NPC saves migrate without losing trust, memories or owned objects',t=>{const {a,engine,file,world}=fixture(t);const bag=engine.snapshot(a).bag,guard={id:841210,name:'Guard',kind:42,type:'npc',x:41,y:210};world.npcs={[guard.id]:guard};const saved=JSON.parse(fs.readFileSync(file));saved.npcs={[guard.id]:{attitude:'hostile',trust:{[a.characterId]:-4},history:[{verb:'theft',actorId:a.characterId,success:false,round:1}]}};saved.items[bag[0].id].ownerId=String(guard.id);fs.writeFileSync(file,JSON.stringify(saved));const restored=createChaosWorld({allowSyntheticFixtures:true,file});const npc=restored.snapshot(a).npcs[0];assert.equal(npc.nativeId,String(guard.id));assert.equal(npc.trust,-4);assert.ok(npc.memory.some(m=>m.verb==='theft'));assert.ok(npc.items.some(i=>i.id===bag[0].id));assert.equal(restored.canQuest(a,guard),false);const durable=JSON.parse(fs.readFileSync(file));assert.equal(durable.items[bag[0].id].ownerId,npc.id);assert.equal(durable.npcs[npc.id].trust[a.characterId],-4);});
 
 test('native-confirmed mob defeat becomes durable canonical DM memory and witnessed NPC dialogue',t=>{
  const {a,b,guard,engine,file}=npcFixture(t);
@@ -268,7 +268,7 @@ test('native-confirmed mob defeat becomes durable canonical DM memory and witnes
  const saved=JSON.parse(fs.readFileSync(file));
  assert.equal(saved.dmMemory.entries.filter(e=>e.id===event.id).length,1);
  assert.equal(saved.dmMemory.entries.at(-1).targetId,'native-mob:441');
- const restored=createChaosWorld({file});
+ const restored=createChaosWorld({allowSyntheticFixtures:true,file});
  assert.match(restored.talk(a,guard),/rat fell/);
  assert.ok(restored.snapshot(a).story.some(e=>e.id===event.id&&e.outcome==='success'));
  assert.equal(restored.snapshot(a).npcs[0].trust,0,'native fighting is observed, not arbitrarily rewarded with trust');
@@ -324,7 +324,7 @@ test('social amends is a native-NPC-bound original D20 check; Bard bonus, trust 
  const trust=engine.snapshot(a).npcs[0].trust;
  const saved=JSON.parse(fs.readFileSync(file));
  assert.ok(saved.npcs[engine.snapshot(a).npcs[0].id].history.some(h=>h.verb==='appeal'&&h.actorId===a.characterId));
- const restarted=createChaosWorld({file});
+ const restarted=createChaosWorld({allowSyntheticFixtures:true,file});
  assert.equal(restarted.snapshot(a).npcs[0].trust,trust);
  assert.equal(restarted.execute(a,'apologize to guard').blocked,true,'cooldown survives a restart');
  assert.equal(restarted.canQuest(a,guard),trust>=0);
@@ -352,7 +352,7 @@ test('social apologies reject distant, ambiguous, cross-zone, non-grievance and 
 test('successful amends can restore quest access without gifts, but never farm positive trust',t=>{
  let time=100000;
  const {a,guard,file}=npcFixture(t);
- const engine=createChaosWorld({file,seed:1,now:()=>time,clock:()=>time});
+ const engine=createChaosWorld({allowSyntheticFixtures:true,file,seed:1,now:()=>time,clock:()=>time});
  const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');a.x=rug.tile.x;a.y=rug.tile.y;
  engine.execute(a,'steal '+rug.id);a.chaosRole='healer';
  assert.equal(engine.canQuest(a,guard),false);
@@ -366,7 +366,7 @@ test('successful amends can restore quest access without gifts, but never farm p
  assert.equal(engine.canQuest(a,guard),true,'real social success unlocks native quest gate');
  assert.equal(engine.snapshot(a).npcs[0].trust,0,'apology cannot create free positive trust');
  assert.equal(engine.execute(a,'persuade guard').blocked,true,'no trust farming at neutral attitude');
- const reloaded=createChaosWorld({file,now:()=>time,clock:()=>time});
+ const reloaded=createChaosWorld({allowSyntheticFixtures:true,file,now:()=>time,clock:()=>time});
  assert.equal(reloaded.canQuest(a,guard),true);
  assert.match(reloaded.talk(a,guard),/apology/);
 });
@@ -425,7 +425,7 @@ test('native NPC warns then saves a real burning rug and remembers its own actio
  const npc=engine.snapshot(a).npcs.find(n=>n.name==='guard');
  assert.ok(JSON.parse(fs.readFileSync(file)).npcs[npc.id].history.some(h=>h.verb==='extinguish'&&h.itemId===rug.id));
  assert.equal(npc.concern,null);
- const reloaded=createChaosWorld({file});
+ const reloaded=createChaosWorld({allowSyntheticFixtures:true,file});
  assert.equal(reloaded.snapshot(a).ground.find(i=>i.id===rug.id).condition,'intact');
  assert.doesNotMatch(reloaded.talk(a,guard)||'',/on fire|burned through/i);
 });
@@ -443,7 +443,7 @@ test('restorative aid only applies to NPC floor property; ownership never transf
  assert.equal(saved.items[rug.id].ownerId,engine.snapshot(a).npcs.find(n=>n.name==='guard').id);
  saved.items[rug.id].condition='broken';saved.items[rug.id].heat=3;delete saved.items[rug.id].tile;
  fs.writeFileSync(file,JSON.stringify(saved));
- const restored=createChaosWorld({file,clock:()=>11000});
+ const restored=createChaosWorld({allowSyntheticFixtures:true,file,clock:()=>11000});
  assert.equal(restored.execute(a,'repair '+rug.id).blocked,true,'NPC-carried property cannot be accessed as floor scenery');
  assert.equal(JSON.parse(fs.readFileSync(file)).items[rug.id].ownerId,saved.items[rug.id].ownerId);
 });
@@ -462,7 +462,7 @@ test('native NPC autonomously extinguishes adjacent owned fire after a warning t
  const saved=JSON.parse(fs.readFileSync(file));
  assert.equal(saved.items[rug.id].ownerId,engine.snapshot(a).npcs.find(n=>n.name==='guard').id);
  assert.ok(Object.values(saved.npcs).some(n=>n.history.some(h=>h.verb==='extinguish'&&h.itemId===rug.id)));
- const restored=createChaosWorld({file});
+ const restored=createChaosWorld({allowSyntheticFixtures:true,file});
  assert.equal(restored.snapshot(a).ground.find(i=>i.id===rug.id).condition,'intact');
 });
 
@@ -538,7 +538,7 @@ test('authored tree: phone action routes to persistent damage, TV snapshot, shar
  assert.equal(engine.isBlocked(a,tree.tile.x,tree.tile.y),false,'fallen tree releases sidecar movement');
  b.x=tree.tile.x+1;b.y=tree.tile.y; // second actor enters the same visibility radius
  assert.equal(engine.snapshot(b).scenery.find(o=>o.id===tree.id)?.condition,'broken','a nearby second player sees the same tree');
- const restored=createChaosWorld({file});
+ const restored=createChaosWorld({allowSyntheticFixtures:true,file});
  assert.equal(restored.snapshot(a).scenery.filter(o=>o.id===tree.id).length,1,'restart never duplicates the tree');
  assert.equal(restored.isBlocked(a,tree.tile.x,tree.tile.y),false);
  assert.equal(restored.execute(a,'attack tree').blocked,true,'a destroyed tree cannot be damaged again');
@@ -570,7 +570,7 @@ test('batched fire catch-up agrees with individual ticks for authored scenery',t
   const {a,engine,file,tick}=fixture(t);
   const tree=engine.snapshot(a).scenery[0];a.x=tree.tile.x-1;a.y=tree.tile.y;
   engine.execute(a,'drop cloth strip');succeed(engine,a,'ignite cloth strip');
-  if(batched)createChaosWorld({file,clock:()=>31000}).snapshot(a);
+  if(batched)createChaosWorld({allowSyntheticFixtures:true,file,clock:()=>31000}).snapshot(a);
   else {tick();tick();tick();}
   const saved=JSON.parse(fs.readFileSync(file));
   results.push({condition:saved.scenery[tree.id].condition,hp:saved.scenery[tree.id].hp});
@@ -591,7 +591,7 @@ test('players can douse authored fire through original rules and canonical recei
  assert.equal(engine.isBlocked(a,tree.tile.x,tree.tile.y),true);
  b.x=a.x;b.y=a.y;
  assert.equal(engine.snapshot(b).scenery[0].condition,'intact');
- assert.equal(createChaosWorld({file,clock:()=>21000}).snapshot(a).scenery[0].condition,'intact');
+ assert.equal(createChaosWorld({allowSyntheticFixtures:true,file,clock:()=>21000}).snapshot(a).scenery[0].condition,'intact');
  assert.ok(engine.snapshot(a).story.some(e=>/extinguish/i.test(e.fact)));
  assert.equal(engine.execute(a,'push camp tree east').blocked,true,'rooted scenery cannot be pushed');
 });
@@ -618,7 +618,7 @@ test('authored and ordinary objects conduct fire one hop per tick in both direct
 test('stable NPC identities bind to the current native body after reconnect',t=>{
  const {a,guard,engine,file}=npcFixture(t);const original=engine.snapshot(a).npcs.find(n=>n.nativeId==='91');
  assert.ok(original);guard.id=912;
- const restored=createChaosWorld({file});const current=restored.snapshot(a).npcs.find(n=>n.id===original.id);
+ const restored=createChaosWorld({allowSyntheticFixtures:true,file});const current=restored.snapshot(a).npcs.find(n=>n.id===original.id);
  assert.equal(current.nativeId,'912');assert.equal(current.id,original.id);assert.deepEqual(current.items.map(i=>i.id),original.items.map(i=>i.id));
 });
 
