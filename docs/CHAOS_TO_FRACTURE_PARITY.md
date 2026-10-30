@@ -1,5 +1,10 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Native actor polling backpressure — October 30 (focused test passed; CI queued)
+
+For 12–20 independent controllers, the bridge previously sent a fresh `chaos:state` query every second even if the previous query was still outstanding. A late reply could overwrite newer state after a retry/reconnect. Added a reusable one-in-flight-per-session refresh gate (`actor-refresh.mjs`) with a bounded 2-second retry deadline, monotonic ticket identity and epoch/parked/disconnected validation; the native bridge now ignores stale callbacks. Three isolated Node 22.16 regression tests **passed locally (3/3)** for overlapping polls, lost callbacks, reconnect, and benched actors. Offline GitHub Actions for test commit `463c34b9` was **queued** as run [41104100838](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41104100838) when checked; no full pinned Fracture CI or browser/Intel Mac validation has been established for this change. This is a reliability improvement, **not** new original campaign or 20-player capacity parity.
+
+
 ## Scenery identity / collision save safety — October 30 (focused local verification only)
 
 Commits `95587caa` and `0b6916b4` harden the reusable authored-environment constructor: caller overrides can no longer replace the validated scenery ID, kind or tile; invalid durability, wetness and fire conditions are rejected before they enter a sidecar save. Two regressions were added to `environment-rules.test.mjs`. A reconstructed copy of the changed pure module passed three local Node 22.16 checks (identity, invalid states, and existing fire/damage behavior). **Full repository tests, pinned native CI, browser rehearsal and Mac packaging were not rerun for these new commits.** Earlier native/browser evidence remains valid only for the source revisions documented above.
