@@ -59,7 +59,12 @@ export function voteRally(rally,token,yes,now){
  return settleRally(rally,now);
 }
 export function rallyView(rally,token,now){
- if(!rally||(rally.status!=='pending'&&now-(rally.resolvedAt||0)>8000))return null;
+ if(!rally)return null;
+ const travelling=rally.kind==='expedition'&&rally.status==='approved';
+ const allArrived=travelling&&(rally.arrivals||[]).length===rally.electorate.length;
+ const retention=travelling&&!allArrived?45000:8000;
+ const since=allArrived?(rally.lastArrivalAt||rally.resolvedAt):rally.resolvedAt;
+ if(rally.status!=='pending'&&now-(since||0)>retention)return null;
  return {id:rally.id,x:rally.x,y:rally.y,zone:rally.zone,kind:rally.kind||'rally',
   destination:rally.kind==='expedition'?rally.arrivalZone:undefined,
   arrived:rally.kind==='expedition'?(rally.arrivals||[]).length:undefined,
