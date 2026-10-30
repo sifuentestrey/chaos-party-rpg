@@ -1,5 +1,13 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Cooperative D20 reactions across world actions — October 30
+
+- [x] Reused the original Chaos `selectD20` advantage rule in one shared, authoritative roll path. A **second nearby, living, connected character** may now help with the next valid **Chaos world D20** action: crafting, attaching, object checks (including NPC theft) and social reconciliation. Previously, help only affected craft/attach. This is one 15-second, one-use bonus, not free items, guaranteed success or native Fracture combat advantage.
+- [x] The actual outcome and canonical narration include both dice, the selected higher roll, the helper's identity and any role/Lucky-ish modifier. An invalid object, unavailable NPC, already resolved grievance or social cooldown cannot consume assistance. A dead/disconnected/out-of-zone/out-of-reach helper is not eligible; one helper cannot stack multiple advantages.
+- [x] New isolated regressions check a real NPC theft roll, Bard social reconciliation, persistence of witnessed social memory, one-use consumption and preservation on blocked attempts. Native-server CI now explicitly pairs **two distinct real Fracture actors** and requires the first actor's craft receipt to contain the second actor's two-die advantage; this is stronger than mocked phone tests.
+- [ ] **Pinned Fracture integration CI and Mac source kit for this exact change are pending verification.** The new native two-actor assertion may expose an integration defect. Do not treat passing offline checks as proof of a passing pinned build.
+- [ ] Full original reaction timing/choices, campaign and group-travel parity, a browser/TV social-assistance journey, 12–20 actual phones and physical Mac performance remain unaccepted. No original save or branch was modified.
+
 ## NPC reconciliation / social class check — October 30
 
 - [x] A character who has actually lost trust with a real native Fracture NPC can attempt `apologize to guard`, `make amends with guard`, `make peace with guard` or `persuade guard`. The original Chaos D20 rules and Bard/Healer **+3 social skill** apply; a success restores up to two trust points (never positive), and the existing real native quest gate reads that durable trust. Failure does not fabricate forgiveness, XP or a quest.
