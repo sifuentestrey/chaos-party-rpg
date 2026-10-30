@@ -27,4 +27,4 @@ PartyFrame RNG — Saleh Yusefnejad (2026), MIT.
 Full notice: vendor/partyframe/LICENSE
 Dungeonz dependency — Johnathan "Arcan" Fisher (2021), MIT.
 Full notice: public/vendor/Dungeonz-LICENSE.txt
-These modules do not start the original game's network or read its saves.
+D&D5e BasicDie advantage selection — adapted from Foundry code by Andrew Clayton (2021), MIT.\nSource: public/vendor/dnd5e-advantage.js (copyright header preserved).\nThese modules do not start the original game's network or read its saves.
