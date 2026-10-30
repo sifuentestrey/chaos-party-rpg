@@ -23,7 +23,13 @@ const adjacent=(a,b)=>a&&b&&Math.abs(a.x-b.x)+Math.abs(a.y-b.y)===1;
 export function environmentObject(id,kind,tile,overrides={}){
  const base=ENVIRONMENT_KINDS[kind];
  if(!base||!id||!Number.isInteger(tile?.x)||!Number.isInteger(tile?.y))throw Error('Invalid environmental object');
- return {id,kind,tile:{x:tile.x,y:tile.y},...base,condition:'intact',wet:0,...overrides};
+ // Caller-supplied options may tune condition/HP, but never rewrite the
+ // validated authoritative identity or tile after registration.
+ const object={...base,condition:'intact',wet:0,...overrides,id,kind,tile:{x:tile.x,y:tile.y}};
+ if(!['intact','burning','broken'].includes(object.condition)||
+    !Number.isInteger(object.wet)||object.wet<0||object.wet>3||
+    (object.hp!==null&&(!Number.isFinite(object.hp)||object.hp<0)))throw Error('Invalid environmental object state');
+ return object;
 }
 export function environmentStep(objects,{rain=0,wind={x:0,y:0},lightningTile=null,canSpread=()=>true}={}){
  if(!Number.isFinite(rain)||rain<0||rain>1||![wind.x,wind.y].every(Number.isFinite))throw Error('Invalid weather');
