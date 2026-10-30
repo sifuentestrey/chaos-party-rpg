@@ -15,19 +15,48 @@ function nativeFixture(t){const map=mapFixture(),nativeTrees=discoverNativeTrees
  const world={id:'test',map:{grid},entities:{},players:{},zoneManager:{getZoneAt:()=>({name:'The Refuge'})},isValidPosition:(x,y)=>x>0&&x<172&&y>0&&y<314&&grid[y][x]===0};
  const p={id:1,characterId:'alice',name:'Alice',chaosControlled:true,hasEnteredGame:true,isDead:false,x:30,y:204,hitPoints:100,maxHitPoints:100,getWorld:()=>world};world.players.alice=p;let now=1000;
  const engine=createChaosWorld({file,nativeTrees,seed:1,clock:()=>now});return {p,engine,file,world,nativeTrees,tick:()=>{now+=10000;return engine.snapshot(p)}};}
-test('real map trees use original damage, give wood once, clear only trunk cells, and retain destruction after restart',t=>{
- const {p,engine,file,world,nativeTrees}=nativeFixture(t);const tree=engine.snapshot(p).scenery.find(o=>o.nativeOrigin);assert.ok(tree,'native solid trunk is visible and interactable');assert.equal(shouldUseCreative('please cut down the tree!',{chaos:engine.snapshot(p)}),true);
+test('existing native oak takes one D20 check per chop, never displays HP, and clears only its real trunk',t=>{
+ const {p,engine,file,world,nativeTrees}=nativeFixture(t);
+ const tree=engine.snapshot(p).scenery.find(o=>o.nativeOrigin);
+ assert.ok(tree);assert.equal(Object.hasOwn(tree,'hp'),false);
+ assert.equal(shouldUseCreative('please cut down the tree!',{chaos:engine.snapshot(p)}),true);
  assert.equal(shouldUseCreative('kick the tree',{chaos:engine.snapshot(p)}),true);
- assert.equal(shouldUseCreative('smash tree',{chaos:engine.snapshot(p)}),true);
- for(let i=0;i<4;i++){const result=engine.execute(p,['kick the tree','smash tree','hack tree','hit tree'][i]);assert.equal(result.success,true);assert.equal(result.object.after,9-i*3);}
- for(const tile of nativeTrees[0].footprint)assert.equal(world.isValidPosition(tile.x,tile.y),true);assert.equal(world.isValidPosition(35,210),false,'unrelated native obstacle remains');assert.equal(engine.snapshot(p).bag.filter(i=>i.originId===tree.id).length,0,'public bag does not expose internal origin metadata');
- assert.equal(Object.values(JSON.parse(fs.readFileSync(file)).items).filter(i=>i.originId===tree.id).length,1);assert.equal(engine.execute(p,'chop tree').blocked,true);assert.equal(engine.snapshot(p).nativeChanges.length,1);
+ let result;
+ for(let n=0;n<40;n++){
+  const before=JSON.parse(fs.readFileSync(file)).scenery[tree.id].hp;
+  result=engine.execute(p,'chop tree');
+  assert.equal(result.blocked,false);assert.equal(result.dc,14);
+  assert.ok(Number.isInteger(result.roll));assert.doesNotMatch(result.text,/\\bHP\\b/i);
+  assert.equal(result.object?.after,null,'native durability is never displayed');
+  if(!result.success)assert.equal(JSON.parse(fs.readFileSync(file)).scenery[tree.id].hp,before,'a failed check does not chip durability');
+  else break;
+ }
+ assert.equal(result.success,true);
+ for(const tile of nativeTrees[0].footprint)assert.equal(world.isValidPosition(tile.x,tile.y),true);
+ assert.equal(world.isValidPosition(35,210),false,'unrelated native obstacle remains');
+ assert.equal(Object.keys(JSON.parse(fs.readFileSync(file)).items).length,0,'no new wood props or fake loot');
+ assert.equal(engine.snapshot(p).nativeChanges.length,1);
+ assert.equal(engine.execute(p,'chop tree').blocked,true);
  for(const tile of nativeTrees[0].footprint)world.map.grid[tile.y][tile.x]=1;
- const restored=createChaosWorld({file,nativeTrees});assert.equal(restored.snapshot(p).nativeChanges.length,1);assert.equal(world.isValidPosition(tree.tile.x,tree.tile.y),true);
+ const restored=createChaosWorld({file,nativeTrees});
+ assert.equal(restored.snapshot(p).nativeChanges.length,1);
+ assert.equal(world.isValidPosition(tree.tile.x,tree.tile.y),true,'saved collision release survives restart');
+});
+test('live native Fracture mode never seeds imaginary props, trees, rugs or camp tables',t=>{
+ const {p,engine,file,world}=nativeFixture(t);
+ world.entities.guard={id:80,type:'npc',kind:40,name:'guard',x:29,y:200};
+ const view=engine.snapshot(p);
+ assert.equal(view.bag.length,0);assert.equal(view.ground.length,0);
+ assert.equal(view.scenery.length,1);assert.ok(view.scenery[0].nativeOrigin);
+ assert.equal(Object.keys(JSON.parse(fs.readFileSync(file)).items).length,0);
+ assert.equal(engine.execute(p,'push boulder').blocked,true,'unmapped native assets are not fake movable objects');
+ assert.equal(engine.execute(p,'make mask from cloth strip and wood splinter').blocked,true);
+ assert.throws(()=>engine.registerScenery('fracture:test','imaginary','tree',{x:30,y:202}),/validated native/);
+ assert.equal(engine.snapshot(p).scenery.length,1);
 });
 test('native tree fire and player extinguishing obey original checks without unlocking unbroken trunks',t=>{
- const {p,engine,tick,world}=nativeFixture(t);let outcome;for(let n=0;n<20;n++){outcome=engine.execute(p,'ignite tree');if(outcome.success)break;assert.equal(outcome.blocked,false);}assert.equal(outcome.success,true);tick();
- assert.equal(engine.execute(p,'put out tree').success,true);const tree=engine.snapshot(p).scenery[0],hp=tree.hp;tick();assert.equal(engine.snapshot(p).scenery[0].hp,hp);assert.equal(world.isValidPosition(tree.tile.x,tree.tile.y),false);
+ const {p,engine,tick,world,file}=nativeFixture(t);let outcome;for(let n=0;n<20;n++){outcome=engine.execute(p,'ignite tree');if(outcome.success)break;assert.equal(outcome.blocked,false);}assert.equal(outcome.success,true);tick();
+ assert.equal(engine.execute(p,'put out tree').success,true);const tree=engine.snapshot(p).scenery[0],hp=JSON.parse(fs.readFileSync(file)).scenery[tree.id].hp;tick();assert.equal(JSON.parse(fs.readFileSync(file)).scenery[tree.id].hp,hp);assert.equal(world.isValidPosition(tree.tile.x,tree.tile.y),false);
 });
 test('native NPC witnesses a registered map tree burning down without imaginary ownership or native HP damage',t=>{
  const {p,engine,world,tick,file}=nativeFixture(t);world.entities.guard={id:80,type:'npc',kind:40,name:'guard',x:29,y:200};
@@ -48,19 +77,19 @@ test('felling an existing native tree is a single D20 action with persistent wor
  p.x=30;
  let result;
  for(let i=0;i<40;i++){
-  const prior=engine.snapshot(p).scenery.find(o=>o.id===tree.id).hp;
+  const prior=JSON.parse(fs.readFileSync(file)).scenery[tree.id].hp;
   result=engine.execute(p,'fell the tree');
   assert.equal(result.blocked,false);
   assert.ok(Number.isInteger(result.roll));
   assert.equal(result.dc,14);
   assert.doesNotMatch(result.text,/\bHP\b/i,'do not expose object health bar');
-  if(!result.success)assert.equal(engine.snapshot(p).scenery.find(o=>o.id===tree.id).hp,prior,'failed ability check cannot chip durability');
+  if(!result.success)assert.equal(JSON.parse(fs.readFileSync(file)).scenery[tree.id].hp,prior,'failed ability check cannot chip durability');
   else break;
  }
  assert.equal(result.success,true,'an eventual successful D20 check fells the tree');
  assert.equal(engine.snapshot(p).nativeChanges.length,1);
  assert.equal(world.isValidPosition(tree.tile.x,tree.tile.y),true,'only the original tree trunk collision is cleared');
- assert.equal(Object.values(JSON.parse(fs.readFileSync(file)).items).filter(i=>i.originId===tree.id).length,1,'loot appears once');
+ assert.equal(Object.values(JSON.parse(fs.readFileSync(file)).items).filter(i=>i.originId===tree.id).length,0,'no new prop or invented loot is spawned');
  assert.equal(engine.execute(p,'fell the tree').blocked,true,'cannot fell already cleared native tree again');
 });
 
