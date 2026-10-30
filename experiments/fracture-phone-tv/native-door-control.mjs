@@ -67,5 +67,6 @@ export function createNativeDoorControl(doors,{clock=Date.now,ttlMs=15000}={}){
   const point=entry.sources.slice().sort((a,b)=>distance(p,a)-distance(p,b))[0];
   return distance(p,point)<=8?[{x:point.x,y:point.y,heldBy:hold.name}]:[];
  });
- return {find,use,isBlocked,view};
+ const releaseActor=p=>{let count=0;for(const [key,hold] of holds)if(hold.actorId===actorId(p)){holds.delete(key);count++;}return count;};
+ return {find,use,isBlocked,view,releaseActor};
 }
