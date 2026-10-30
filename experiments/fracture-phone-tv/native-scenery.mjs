@@ -5,6 +5,8 @@
 export function discoverNativeTrees(map,solidTileIds){
  if(map?.width!==172||map?.height!==314||map?.tilesize!==16||!Array.isArray(solidTileIds))throw Error('Unsupported native scenery map');
  const solid=new Set(solidTileIds),blocked=new Set(map.blocking||[]),collision=new Set(map.collisions||[]);
+ // Native layers, doors and manual blockers all remain authoritative. A tree
+ // is interactive only if every required art and trunk collision cell matches.
  const layers=v=>Array.isArray(v)?v:[v],trees=[];
  for(let y=0;y<map.height-4;y++)for(let x=0;x<map.width-3;x++){
   if(!layers(map.data[y*map.width+x]).includes(213))continue;
@@ -14,6 +16,8 @@ export function discoverNativeTrees(map,solidTileIds){
   for(const dy of [3,4])for(const dx of [1,2]){
    const index=(y+dy)*map.width+x+dx,gid=213+dy*20+dx;
    if(blocked.has(index)||!collision.has(index)||layers(map.data[index]).some(id=>id!==gid&&solid.has(id)))safe=false;
+   // A separate native tree may overlap the trunk. Do not remove its art or collision.
+   if(layers(map.data[index]).some(id=>id!==gid&&id>=213&&id<=296))safe=false;
    if((map.doors||[]).some(d=>d.x===x+dx&&d.y===y+dy))safe=false;
    footprint.push({x:x+dx,y:y+dy});
   }
