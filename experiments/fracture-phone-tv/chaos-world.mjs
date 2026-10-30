@@ -276,6 +276,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   Object.assign(state.items,s.items);state.nextId=s.nextId;state.rng=rng.snapshot();state.round++;
   if(result.success&&destination)item.tile=destination;
   if(result.success&&plan.verb==='ignite'&&item){item.ignitedBy=actor.id;item.ignitionOriginId=item.id;}
+  if(result.success&&plan.verb==='extinguish'&&item?.ownerId&&state.npcs[item.ownerId])delete state.npcs[item.ownerId].fireAlert;
   if(result.success&&attempt.verb==='drop'&&item)item.tile={x:p.x,y:p.y};
   if(result.success&&['take','give','steal'].includes(attempt.verb)&&item)delete item.tile;
   const witnesses=npcViews(p).filter(n=>visible(p,n.tile,6)&&(!item?.tile||visible({...p,x:n.tile.x,y:n.tile.y,getWorld:()=>p.getWorld()},item.tile,6)));
