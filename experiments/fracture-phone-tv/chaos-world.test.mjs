@@ -410,27 +410,23 @@ test('interference expires, cannot target an absent actor, and never changes nat
  assert.equal(other.engine.execute(other.b,'hinder Nobody').blocked,true);
 });
 
-test('native NPC reacts to a real burning rug, remembers destruction, and stops alarming after repair',t=>{
+test('native NPC warns then saves a real burning rug and remembers its own action',t=>{
  const {a,guard,engine,file,tick}=npcFixture(t);
  const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');assert.ok(rug);
  a.x=rug.tile.x+1;a.y=rug.tile.y;
  assert.equal(engine.execute(a,'drop cloth strip').success,true);
  const cloth=engine.snapshot(a).ground.find(i=>i.name==='cloth strip');assert.ok(cloth);
  succeed(engine,a,'ignite '+cloth.id);
- tick(); // Actual spread, not a player-supplied claim.
+ tick();
  assert.equal(engine.snapshot(a).ground.find(i=>i.id===rug.id).condition,'burning');
  assert.match(engine.talk(a,guard),/on fire.*extinguish/i);
- assert.match(engine.snapshot(a).npcs.find(n=>n.name==='guard').concern,/on fire/i);
- tick();tick();tick(); // Original Chaos burn-through rule.
- assert.equal(engine.snapshot(a).ground.find(i=>i.id===rug.id).condition,'broken');
+ tick(); // Native guard physically adjacent; resolves an actual extinguish.
+ assert.equal(engine.snapshot(a).ground.find(i=>i.id===rug.id).condition,'intact');
  const npc=engine.snapshot(a).npcs.find(n=>n.name==='guard');
- assert.ok(npc.memory.some(m=>m.verb==='fire-destruction'&&m.itemId===rug.id));
- assert.match(engine.talk(a,guard),/burned through.*repair/i);
+ assert.ok(JSON.parse(fs.readFileSync(file)).npcs[npc.id].history.some(h=>h.verb==='extinguish'&&h.itemId===rug.id));
+ assert.equal(npc.concern,null);
  const reloaded=createChaosWorld({file});
- assert.match(reloaded.talk(a,guard),/repair/i,'actual damage survives restart');
- succeed(reloaded,a,'repair '+rug.id);
- assert.equal(JSON.parse(fs.readFileSync(file)).items[rug.id].ownerId,npc.id,'repair cannot steal or transfer NPC property');
- assert.equal(reloaded.snapshot(a).npcs.find(n=>n.name==='guard').concern,null);
+ assert.equal(reloaded.snapshot(a).ground.find(i=>i.id===rug.id).condition,'intact');
  assert.doesNotMatch(reloaded.talk(a,guard)||'',/on fire|burned through/i);
 });
 
@@ -450,4 +446,56 @@ test('restorative aid only applies to NPC floor property; ownership never transf
  const restored=createChaosWorld({file,clock:()=>11000});
  assert.equal(restored.execute(a,'repair '+rug.id).blocked,true,'NPC-carried property cannot be accessed as floor scenery');
  assert.equal(JSON.parse(fs.readFileSync(file)).items[rug.id].ownerId,saved.items[rug.id].ownerId);
+});
+
+test('native NPC autonomously extinguishes adjacent owned fire after a warning tick, with durable history',t=>{
+ const {a,guard,engine,file,tick}=npcFixture(t);
+ const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');
+ a.x=rug.tile.x+1;a.y=rug.tile.y;
+ assert.equal(engine.execute(a,'drop cloth strip').success,true);
+ const cloth=engine.snapshot(a).ground.find(i=>i.name==='cloth strip');
+ succeed(engine,a,'ignite '+cloth.id);
+ tick(); // Fire spreads to the rug; first warning tick.
+ assert.equal(engine.snapshot(a).ground.find(i=>i.id===rug.id).condition,'burning');
+ tick(); // Real nearby native NPC responds after a full warning tick.
+ assert.equal(engine.snapshot(a).ground.find(i=>i.id===rug.id).condition,'intact');
+ const saved=JSON.parse(fs.readFileSync(file));
+ assert.equal(saved.items[rug.id].ownerId,engine.snapshot(a).npcs.find(n=>n.name==='guard').id);
+ assert.ok(Object.values(saved.npcs).some(n=>n.history.some(h=>h.verb==='extinguish'&&h.itemId===rug.id)));
+ const restored=createChaosWorld({file});
+ assert.equal(restored.snapshot(a).ground.find(i=>i.id===rug.id).condition,'intact');
+});
+
+test('NPC cannot auto-extinguish when native body has left the scene',t=>{
+ const {a,guard,engine,tick}=npcFixture(t);
+ const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');
+ a.x=rug.tile.x+1;a.y=rug.tile.y;
+ assert.equal(engine.execute(a,'drop cloth strip').success,true);
+ const cloth=engine.snapshot(a).ground.find(i=>i.name==='cloth strip');
+ succeed(engine,a,'ignite '+cloth.id);
+ tick();guard.x+=4;
+ tick();
+ assert.equal(engine.snapshot(a).ground.find(i=>i.id===rug.id).condition,'burning');
+});
+
+test('unattended NPC property burns through; returning owner sees damage without invented witness',t=>{
+ const {a,guard,engine,world,file,tick}=npcFixture(t);
+ const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');
+ a.x=rug.tile.x+1;a.y=rug.tile.y;
+ assert.equal(engine.execute(a,'drop cloth strip').success,true);
+ const cloth=engine.snapshot(a).ground.find(i=>i.name==='cloth strip');
+ succeed(engine,a,'ignite '+cloth.id);
+ tick(); // Rug catches fire; NPC has time to warn.
+ assert.equal(engine.snapshot(a).ground.find(i=>i.id===rug.id).condition,'burning');
+ world.entities={}; // The native NPC has actually left the scene.
+ tick();tick();tick();
+ assert.equal(engine.snapshot(a).ground.find(i=>i.id===rug.id).condition,'broken');
+ world.entities={guard};
+ const npc=engine.snapshot(a).npcs.find(n=>n.name==='guard');
+ assert.match(npc.concern,/repair/);
+ assert.equal(npc.memory.some(h=>h.verb==='fire-destruction'),false,'no remote eyewitness record');
+ const saved=JSON.parse(fs.readFileSync(file));
+ assert.equal(saved.items[rug.id].condition,'broken');
+ succeed(engine,a,'repair '+rug.id);
+ assert.equal(engine.snapshot(a).npcs.find(n=>n.name==='guard').concern,null);
 });
