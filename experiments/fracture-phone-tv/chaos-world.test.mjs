@@ -59,10 +59,11 @@ test('a witnessed fire spreading to an NPC-owned rug changes durable personal tr
  tick();
  assert.equal(engine.snapshot(a).ground.find(i=>i.id===rug.id).condition,'burning');
  const npc=engine.snapshot(a).npcs.find(n=>n.name==='guard');
- console.error('TEMP FIRE DEBUG',JSON.stringify({before,after:npc.trust,memory:npc.memory,history:JSON.parse(fs.readFileSync(file)).npcs[npc.id].history}));
  assert.equal(npc.trust,before-1);
  assert.ok(npc.memory.some(m=>m.verb==='fire-spread'));
- const restored=createChaosWorld({file});
+ // Reopen at the same simulated instant: a real later restart is allowed
+ // to advance fire and record additional destruction, not rewind time.
+ const restored=createChaosWorld({file,clock:()=>11000});
  assert.equal(restored.snapshot(a).npcs.find(n=>n.name==='guard').trust,npc.trust);
  assert.equal(restored.canQuest(a,guard),false);
 });
