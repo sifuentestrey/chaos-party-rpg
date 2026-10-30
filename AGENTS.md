@@ -1,3 +1,11 @@
+# CURRENT OWNER STRICT ART GATE — NATIVE FRACTURE ONLY (October 30, 2026)
+
+On `spike/fracture-phone-tv`, **never create, draw, import, seed, or invent visual assets, scenery, props, trees, furniture, buildings, maps, tiles or placeholder objects.** Reuse only verified existing Fracture map art, native objects, sprites, collision and animation. Existing synthetic fixture logic is opt-in for isolated legacy tests only (`allowSyntheticFixtures:true`), never for the live Fracture bridge. Preserve all existing saves, including older synthetic records; do not silently delete them. Unsupported native rock, bush, grass, furniture, water or structure assets must remain honestly unsupported until their authoritative identity, collision and rendering are mapped.
+
+Environmental gameplay is D&D-like, **not visible HP grinding**: a validated existing oak can be felled/chopped with one original D20 check and persisted real trunk-collision consequence, with hidden durability. No new wood prop drops. Do not bypass the authoritative mutation boundary or report fake success. Fresh Refuge Trial craft voting is disabled because native-art-only mode cannot create unverified crafted props; older saved craft choices need an explicit recovery path. No public release, package, or merge until latest-head pinned native build/browser and physical Mac/phone/TV gates are met. See `docs/FRACTURE_GAME_NIGHT_RELEASE.md` and `docs/CHAOS_TO_FRACTURE_PARITY.md`.
+
+---
+
 # HARD RELEASE GATE — CHAOS-TO-FRACTURE PARITY NOT ACHIEVED (owner correction, October 29)
 
 **Read [docs/CHAOS_TO_FRACTURE_PARITY.md](docs/CHAOS_TO_FRACTURE_PARITY.md) before work or release claims.** The owner correctly challenged previous descriptions of the Fracture beta as the game being finished. Current Fracture work is a *separate engine/integration playtest*, NOT a migration of the original Chaos Party's Crown Job, seventeen-scene Dawn Bell adventure, customizable characters, dice/advantage, table/rug/fire/ownership/crafting mechanics, NPC trust/witness memory, majority travel voting, campaign maps/saves, or creative DM. The canonical original `luna/visual-game-night-release` contains much more implemented gameplay and must remain protected.
