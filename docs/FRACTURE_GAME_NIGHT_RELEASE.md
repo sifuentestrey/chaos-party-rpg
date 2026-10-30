@@ -1,5 +1,13 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Partial original Chaos character class and D20 checks — October 30
+
+- [x] New phone characters choose one of the six original Chaos class identifiers. Their choice is saved in the separate private room identity and supplied only to their authenticated native actor. Existing room saves without a class are still accepted as unassigned and receive no silent class bonuses. Phones cannot override class through action text or payload.
+- [x] Original Chaos object-check dice now use **+3 on matching supported class skills** (Rogue theft, Knight break), **Lucky-ish reroll on 1–3**, and original natural 1 failure / natural 20 success. Actual native Fracture combat/HP/loot/quests are untouched. Nearby-player crafting advantage continues to use the original D20 helper.
+- [x] Locally verified **83 passing focused Node tests, one skipped, zero failed** using Node 22.16 with experimental TypeScript stripping; tests include identity binding, spoof rejection, NPC theft resolution, original dice and persistence. This is not a pinned Fracture production build result.
+- [ ] **Pinned Fracture TypeScript client/server builds, browser integration and Mac source packaging for this commit:** pending CI verification. Do not distribute or claim a new verified Mac ZIP until they pass.
+- [ ] Full original sprite/portrait/outfit creator, other class skills, Tough/Charming perks, native class effects, Crown Job/Dawn Bell and physical 12–20-phone Mac testing remain unported/unaccepted. This is **partial class/dice parity only**, not complete character customization.
+
 ## Repeatable cooperative trial — October 30
 
 - [x] **The Refuge Trial can now be replayed** only after a supported run is completed, using an explicit host-only **Start another trial** action with confirmation. A second request cannot erase an active run, and unknown-version saves are protected.
