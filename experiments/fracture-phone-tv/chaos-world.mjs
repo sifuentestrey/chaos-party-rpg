@@ -408,6 +408,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    Object.assign(state.scenery[updated.id],{condition:updated.condition,hp:updated.hp,heat:updated.heat});
    delete s.items[updated.id];
   }
+  if(!allowSyntheticFixtures&&Object.keys(s.items).some(id=>!Object.hasOwn(state.items,id)))return {blocked:true,success:false,text:'That action would create an unverified new prop. Use an existing Fracture object instead.'};
   Object.assign(state.items,s.items);state.nextId=s.nextId;state.rng=rng.snapshot();state.round++;
   if(result.success&&destination)item.tile=destination;
   if(result.success&&plan.verb==='ignite'&&item){item.ignitedBy=actor.id;item.ignitionOriginId=item.id;if(sceneryAction)Object.assign(state.scenery[item.id],{ignitedBy:item.ignitedBy,ignitionOriginId:item.id});}
@@ -451,6 +452,8 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   if(!allowSyntheticFixtures&&!obj.nativeOrigin)return {changed:false,error:'Only validated native scenery is interactive.'};
    if(fell&&(!obj.nativeOrigin||obj.kind!=='tree'))return {changed:false,error:'Only a real nearby tree can be felled.'};
   if(obj.condition==='broken')return {changed:false,error:'That tree is already down.'};
+  // Native trees always use one D20, including direct calls outside the parser.
+  if(obj.nativeOrigin&&!allowSyntheticFixtures)fell=true;
   const previous=state;state=structuredClone(state);try{
    let check=null;
    if(fell){
