@@ -86,7 +86,7 @@ const reachable=(p,q)=>{
 };
 const identity=p=>String(p.characterId||'');
 const name=p=>p.chaosName||p.name;
-export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.now,kindName=()=> 'villager',now=clock,npcName=n=>n.chaosName||n.name||kindName(n.kind),nativeTrees=[],nativeDoors=[]}={}){
+export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.now,kindName=()=> 'villager',now=clock,npcName=n=>n.chaosName||n.name||kindName(n.kind),nativeTrees=[],nativeDoors=[],allowSyntheticFixtures=false}={}){
  if(!file)throw Error('Separate Fracture object save path required');
  fs.mkdirSync(path.dirname(file),{recursive:true,mode:0o700});
  let state=fs.existsSync(file)?JSON.parse(fs.readFileSync(file,'utf8')):{version:1,seed,rng:seed,nextId:1,round:0,items:{},actors:{},camp:null};
@@ -124,11 +124,13 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   if(!state.actors[id]){
    const previous=state;state=structuredClone(state);try{
    state.actors[id]={name:name(p)};
+   if(allowSyntheticFixtures){
    for(const [label,material,type] of [['cloth strip','cloth','fragment'],['wood splinter','wood','tool']])add(null,{name:label,material,type,ownerId:id,appearance:{shape:ITEM_TYPES[type].shape,color:MATERIALS[material].color}});
    if(!state.camp){
     state.camp={x:p.x,y:p.y,scene:scene(p)};const world=p.getWorld();
     const spots=[];for(let r=1;r<=3;r++)for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++)if(Math.max(Math.abs(dx),Math.abs(dy))===r&&world.isValidPosition(p.x+dx,p.y+dy)&&sameZone(p,{x:p.x+dx,y:p.y+dy}))spots.push({x:p.x+dx,y:p.y+dy});
     for(const [i,[label,material,type]] of [['smooth stone','stone','fragment'],['blue bottle','glass','container'],['cloth scrap','cloth','fragment'],['wood offcut','wood','tool']].entries())if(spots[i])add(scene(p),{name:label,material,type,tile:spots[i],appearance:{shape:ITEM_TYPES[type].shape,color:MATERIALS[material].color}});
+   }
    }
    persist();
    }catch(error){state=previous;throw error;}
@@ -151,11 +153,12 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
     state.npcs[id]={id,nativeId:String(n.id),name:label,kind:'person',location:scene(p),tile:{x:n.x,y:n.y},position:[n.x*16,n.y*16],hp:1,maxHp:1,attitude:legacy.attitude||'wary',trust:legacy.trust||{},history:legacy.history||[],memories:legacy.memories||{}};
     if(state.npcs[String(n.id)]&&String(n.id)!==id){for(const item of Object.values(state.items))if(item.ownerId===String(n.id))item.ownerId=id;delete state.npcs[String(n.id)];}
     const tile=[[0,1],[1,0],[-1,0],[0,-1]].map(([dx,dy])=>({x:n.x+dx,y:n.y+dy})).find(t=>p.getWorld().isValidPosition(t.x,t.y)&&sameZone(p,t)&&!Object.values(state.items).some(i=>i.tile&&distance(i.tile,t)===0));
-    if(tile)add(null,{name:label+"'s rug",type:'fragment',material:'cloth',ownerId:id,tile,visual:'rug',hp:4,maxHp:4,appearance:{shape:'rug',color:'#bd88cf'}});
+    if(allowSyntheticFixtures&&tile)add(null,{name:label+"'s rug",type:'fragment',material:'cloth',ownerId:id,tile,visual:'rug',hp:4,maxHp:4,appearance:{shape:'rug',color:'#bd88cf'}});
    }persist();
   }catch(error){state=previous;throw error;}
  }
  function surroundings(p){seedNative(p);seedPlayer(p);seedNPCs(p);
+   if(!allowSyntheticFixtures)return;
   // Seed a bounded authored tree near each *distinct spawn area*, not only
   // the first camp: native Fracture may spawn new actors far from that camp.
   // Persist the per-actor decision to avoid creating trees on every poll.
@@ -295,14 +298,15 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const story=state.dmMemory.entries.filter(e=>e.location===scene(p)&&(e.actorId===id||e.tile&&visible(p,e.tile))).slice(-3);
   const aid=state.assists[id],helper=aid?.until>now()?Object.values(p.getWorld().players||{}).find(q=>identity(q)===aid.helperId&&q.hasEnteredGame&&!q.isDead&&q.chaosControlled&&!q.chaosSpectator&&scene(q)===scene(p)&&reachable(p,q)):null;
   const assistedBy=helper&&aid.mode!==-1?name(helper):null,hinderedBy=helper&&aid.mode===-1?name(helper):null;
-  return {doors:doorControl.view(p),nativeChanges:nativeTrees.filter(t=>state.scenery[scene(p)+':'+t.id]?.condition==='broken').map(t=>t.id),bag:bag.map(plain),ground:ground.map(plain),scenery:visibleScenery(state,scene(p)).filter(o=>visible(p,o.tile,o.nativeOrigin?18:8,o.nativeOrigin?o.footprint:false)).sort((a,b)=>distance(p,a.tile)-distance(p,b.tile)),npcs,story,wearables:bag.filter(i=>i.equipped).map(plain),camp:state.camp,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})};
+  return {doors:doorControl.view(p),nativeChanges:nativeTrees.filter(t=>state.scenery[scene(p)+':'+t.id]?.condition==='broken').map(t=>t.id),bag:bag.map(plain),ground:ground.map(plain),scenery:visibleScenery(state,scene(p)).filter(o=>visible(p,o.tile,o.nativeOrigin?18:8,o.nativeOrigin?o.footprint:false)).sort((a,b)=>distance(p,a.tile)-distance(p,b.tile)).map(o=>{if(!o.nativeOrigin)return o;const {hp,maxHp,heat,...publicObject}=o;return publicObject;}),npcs,story,wearables:bag.filter(i=>i.equipped).map(plain),camp:state.camp,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})};
  }
  function apply(p,text){
   if(!identity(p))return {blocked:true,success:false,text:'Your character is still connecting.'};
   if(p.isDead)return {blocked:true,success:false,text:'Respawn before handling objects.'};
   const sceneryAction=sceneryObjectAttempt(text,visibleScenery(state,scene(p)).filter(o=>visible(p,o.tile,o.nativeOrigin?18:8,o.nativeOrigin?o.footprint:false)).sort((a,b)=>distance(p,a.tile)-distance(p,b.tile)));
   const attempt=sceneryAction?.attempt||creativeAttempt(text);if(!attempt)return {blocked:true,success:false,text:'That object action is not available yet.'};
-  const {room,actor,s}=projection(p);if(!actor)return {blocked:true,success:false,text:'Your character is still connecting.'};
+  if(!allowSyntheticFixtures&&['craft','attach'].includes(attempt.verb))return {blocked:true,success:false,text:'Crafting new props is disabled until an existing native visual and inventory object are verified.'};
+   const {room,actor,s}=projection(p);if(!actor)return {blocked:true,success:false,text:'Your character is still connecting.'};
   if(sceneryAction){
    const o=sceneryAction.object;
    if(attempt.verb==='repair'&&o.kind==='tree')return {blocked:true,success:false,text:'A felled tree cannot be repaired. The cleared tile remains passable.'};
@@ -433,6 +437,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   return {...result,...(result.success&&item?.tile?{object:{id:item.id,name:item.name,tile:item.tile,before:null,after:item.hp,condition:item.condition,actorId:p.id,verb:attempt.verb}}:{}),...(roll!==null?{roll,dc:plan.dc,bonus:check.bonus,...(check.rerolled!==null?{rerolled:check.rerolled}:{}),...(rolls?{rolls,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})}:{}),text:canonical}:{text:canonical}),witnesses:witnesses.map(n=>n.name),event:entry};
  }
  function registerScenery(sceneId,id,kind,tile){
+   if(!allowSyntheticFixtures)throw Error('Cannot register new scenery without a validated native Fracture asset');
   const existing=state.scenery?.[sceneId+':'+id];
   if(existing)return existing;
   const previous=state;state=structuredClone(state);try{
@@ -443,7 +448,8 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   if(!identity(p)||p.isDead||!p.chaosControlled)return {changed:false,error:'Active living actor required'};
   const obj=state.scenery[scene(p)+':'+id];
   if(!obj||!sameZone(p,obj.tile)||distance(p,obj.tile)>1)return {changed:false,error:'Scenery out of reach'};
-  if(fell&&(!obj.nativeOrigin||obj.kind!=='tree'))return {changed:false,error:'Only a real nearby tree can be felled.'};
+  if(!allowSyntheticFixtures&&!obj.nativeOrigin)return {changed:false,error:'Only validated native scenery is interactive.'};
+   if(fell&&(!obj.nativeOrigin||obj.kind!=='tree'))return {changed:false,error:'Only a real nearby tree can be felled.'};
   if(obj.condition==='broken')return {changed:false,error:'That tree is already down.'};
   const previous=state;state=structuredClone(state);try{
    let check=null;
@@ -461,7 +467,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    const before=obj.hp;
    const result=damageAuthoredScenery(state,{scene:scene(p),id,damage:fell?obj.hp:damage});
    if(result.changed){
-    if(result.object.condition==='broken'&&obj.nativeOrigin)add(null,{name:'wood offcut',material:'wood',type:'tool',ownerId:identity(p),originId:obj.id});
+    if(allowSyntheticFixtures&&result.object.condition==='broken'&&obj.nativeOrigin)add(null,{name:'wood offcut',material:'wood',type:'tool',ownerId:identity(p),originId:obj.id});
     state.round++;
     const fact=fell?`${name(p)} brings down the existing ${obj.name} after a D20 check. Its original trunk is no longer blocking the path.`:`${name(p)} chops ${obj.name}. ${before} → ${result.object.hp} HP.${result.object.condition==='broken'?' The tree falls and its trunk tiles are cleared.':''}`;
     const room={round:state.round,world:{expedition:{current:scene(p),creatures:state.npcs}},dmMemory:state.dmMemory,result:{id:'chaos-'+state.round,playerId:identity(p),name:name(p),action:(fell?'fell ':'chop ')+obj.name,target:{entityId:obj.id},success:true,blocked:false,narration:fact,changes:[fact],sceneEvents:[]}};
@@ -494,7 +500,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   }
   const scenery=sceneryAttempt(text,visibleScenery(state,scene(p)).filter(o=>visible(p,o.tile,o.nativeOrigin?18:8,o.nativeOrigin?o.footprint:false)).sort((a,b)=>distance(p,a.tile)-distance(p,b.tile)));
   if(scenery){
-   const fell=/^(?:(?:chop|cut) down|fell|uproot)\s+(?:the\s+)?/i.test(String(text).trim().replace(/^(?:please |I (?:want to |try to )?)+/i,''));
+   const fell=!!scenery.nativeOrigin||/^(?:(?:chop|cut) down|fell|uproot)\s+(?:the\s+)?/i.test(String(text).trim().replace(/^(?:please |I (?:want to |try to )?)+/i,''));
    const result=strikeScenery(p,scenery.id.slice(scene(p).length+1),3,{fell});
    const description=scenery.name||scenery.kind;
    return {blocked:!result.changed&&!result.attempted,success:result.changed,event:result.event,object:result.feedback,
