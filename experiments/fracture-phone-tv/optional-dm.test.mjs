@@ -42,3 +42,29 @@ test('AI may propose an action on a visible authored object, never an invented s
  target='extinguish fracture:world:invented-tree';
  assert.equal(await dm.interpret('save that burning tree',scene),null);
 });
+
+test('open-ended AI DM proposes only verified adjacent native scenery, never an outcome',async t=>{
+ const oak={id:'fracture:test:native-tree-30-200',nativeOrigin:{x:30,y:200},kind:'tree',scene:'fracture:test',tile:{x:10,y:10},condition:'intact',wet:0};
+ const actor={ready:true,dead:false,x:10,y:11,chaos:{scenery:[oak]}};
+ let proposal={action:'break',targetId:oak.id,ability:'strength',dc:14,description:'Try to topple the existing oak.'};
+ let calls=0;
+ const {dm}=dmFixture(t,async(_url,init)=>{
+  calls++;const body=JSON.parse(init.body);
+  assert.equal(body.response_format.json_schema.name,'native_environment');
+  assert.ok(body.messages[1].content.includes(oak.id));
+  return {ok:true,json:async()=>({choices:[{message:{content:JSON.stringify(proposal)}}]})};
+ });
+ assert.deepEqual(await dm.interpretEnvironment('Could I topple that oak?',actor),proposal);
+ assert.equal(Object.hasOwn(proposal,'success'),false);
+ proposal={...proposal,targetId:'fracture:test:invented-rock'};
+ assert.equal(await dm.interpretEnvironment('Move the rock',actor),null);
+ proposal={...proposal,targetId:oak.id,dc:1};
+ assert.equal(await dm.interpretEnvironment('Topple the oak',actor),null);
+ proposal={...proposal,dc:14,action:'ignite',ability:'wisdom',description:'Try lighting the oak.'};
+ assert.deepEqual(await dm.interpretEnvironment('Set that tree alight',actor),proposal);
+ assert.equal(await dm.interpretEnvironment('Set that wet tree alight',{...actor,chaos:{scenery:[{...oak,wet:1}]}}),null);
+ const before=calls;
+ assert.equal(await dm.interpretEnvironment('Topple a distant tree',{...actor,x:40}),null);
+ assert.equal(await dm.interpretEnvironment('Topple an imaginary tree',{...actor,chaos:{scenery:[{...oak,nativeOrigin:null}]}}),null);
+ assert.equal(calls,before,'no provider call when no verified adjacent native object exists');
+});
