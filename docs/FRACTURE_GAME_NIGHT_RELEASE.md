@@ -1,5 +1,10 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Independent Mac source-kit audit — October 30 (no gameplay source changes)
+
+Downloaded GitHub Actions artifact **13004383518** from the successful [pinned run 41114555545](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41114555545) and verified both ZIP layers have valid CRCs. The inner `Chaos_Party_Fracture_Beta.zip` SHA-256 is `197e418938bd2306f5effc5c462887639f6be258f791ec45407d4abde124b9cf`, matching its bundled checksum. The extracted kit contains 150 entries, an executable (`0755`) Mac launcher, `SOURCE.txt` identifying code commit `6b66dc080edb2e557083b40f6e22b6a526e75407`, and no obvious secret/account/database/dependency paths. An independent Node **22.16.0** run against the extracted source kit yielded **178 passed, 1 skipped, 0 failed** out of 179; the skipped overlay-refresh integration requires the pinned native checkout and is not evidence of a failure. The previous pinned CI and Node 22.23.4 evidence remain the authoritative full-gate verification. **No physical Mac, phone or TV run was performed.** The GitHub artifact expires November 6, 2026.
+
+
 ## Release sign-off — family beta software checks complete (October 30)
 
 **The playable Refuge Trial family build is ready for local game night.** The pinned Fracture pipeline passed all jobs at code commit `6b66dc080edb2e557083b40f6e22b6a526e75407`: [native integration and Mac kit, run 41114555545](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41114555545). It compiled client/server, passed **3,331 native tests**, ran actual independent-actor rally/woods round-trip travel and existing-map tree interaction, and produced the credential-free source kit. Both offline workflows also passed. The combined local and extracted-kit **Node 22.23.4 suites passed all 179 checks with no skips**. These release-note updates do not change the experiment source tree from the tested code commit.
