@@ -172,7 +172,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
  function pulse(p){
   const current=scene(p),now=clock();if(!state.fireClock[current])state.fireClock[current]=now;
   const burning=Object.values(state.items).filter(i=>i.condition==='burning'&&(i.location===current||state.npcs[i.ownerId]?.location===current||state.actors[i.ownerId]?.scene===current));
-  if(!burning.length){state.fireClock[current]=now;return;}
+  if(!burning.length&&!visibleScenery(state,current).some(o=>o.condition==='burning')){state.fireClock[current]=now;return;}
   const {steps,next}=fireCatchup(state.fireClock[current],now);if(steps<1)return;
   const previous=state;state=structuredClone(state);try{
    const owned=[...Object.values(state.npcs).filter(n=>n.location===current).map(n=>({id:n.id})),...Object.entries(state.actors).filter(([,a])=>a.scene===current).map(([id])=>({id}))];
@@ -230,7 +230,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
     for(const change of sceneryChanges)changes.push(change.kind+' '+change.after);
    }
    state.fireClock[current]=next; // Preserve unprocessed elapsed ticks across bounded catch-up.
-   if(changes.length){const room={round:++state.round,world:{expedition:{current,creatures:state.npcs}},dmMemory:state.dmMemory,result:{id:'chaos-'+state.round,playerId:'fire',name:'Fire',action:'fire progresses',target:{entityId:burning[0].id},blocked:false,success:true,narration:changes.join('. ')+'.',changes,sceneEvents:[]}};recordDMMemory(room);state.dmMemory.entries.at(-1).tile=eventTile||burning[0].tile||{x:p.x,y:p.y};}
+   if(changes.length){const room={round:++state.round,world:{expedition:{current,creatures:state.npcs}},dmMemory:state.dmMemory,result:{id:'chaos-'+state.round,playerId:'fire',name:'Fire',action:'fire progresses',target:{entityId:burning[0]?.id||'authored-scenery'},blocked:false,success:true,narration:changes.join('. ')+'.',changes,sceneEvents:[]}};recordDMMemory(room);state.dmMemory.entries.at(-1).tile=eventTile||burning[0]?.tile||{x:p.x,y:p.y};}
    persist();
   }catch(error){state=previous;throw error;}
  }
