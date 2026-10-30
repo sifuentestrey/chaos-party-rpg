@@ -6,6 +6,8 @@ test('complete native trees register; incomplete art and independent solid layer
  map.data[200*172+30]=155;assert.deepEqual(discoverNativeTrees(map,[274,275,294,295]),[]);
  const wall=mapFixture();wall.data[203*172+31]=[999,274];assert.deepEqual(discoverNativeTrees(wall,[999,274,275,294,295]),[]);
  const blocked=mapFixture();blocked.blocking.push(203*172+31);assert.deepEqual(discoverNativeTrees(blocked,[274,275,294,295]),[]);
+ const rockUnderCanopy=mapFixture();rockUnderCanopy.data[201*172+30]=[155,233,999];
+ assert.deepEqual(discoverNativeTrees(rockUnderCanopy,[274,275,294,295,999]),[],'solid rock under existing canopy cannot be erased');
  const overlapped=mapFixture();overlapped.data[203*172+31]=[155,274,275];
  assert.deepEqual(discoverNativeTrees(overlapped,[274,275,294,295]),[],'overlapping native tree artwork cannot lose another tree collision');
 });
