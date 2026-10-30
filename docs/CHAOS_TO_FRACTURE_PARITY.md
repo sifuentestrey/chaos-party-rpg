@@ -1,5 +1,9 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Existing-Fracture-art overlap guard — October 30 (committed, not verified)
+
+Commits `8a83a7c` and `b405533` update existing native oak discovery to refuse destructive registration when another oak atlas tile overlaps any trunk collision cell. Added a synthetic overlapping-tile regression to `native-scenery.test.mjs`. This change uses **no new art, scenery or props**; it is limited to permission to change existing art/collision. **The new test, pinned native CI, browser proof and physical Mac acceptance have not been run for these commits.** This is a collision safety fix, not evidence of door/furniture/structure interactivity or expanded Chaos feature parity.
+
 ## Independent Mac source-kit audit — October 30 (no gameplay source changes)
 
 Downloaded GitHub Actions artifact **13004383518** from the successful [pinned run 41114555545](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41114555545) and verified both ZIP layers have valid CRCs. The inner `Chaos_Party_Fracture_Beta.zip` SHA-256 is `197e418938bd2306f5effc5c462887639f6be258f791ec45407d4abde124b9cf`, matching its bundled checksum. The extracted kit contains 150 entries, an executable (`0755`) Mac launcher, `SOURCE.txt` identifying code commit `6b66dc080edb2e557083b40f6e22b6a526e75407`, and no obvious secret/account/database/dependency paths. An independent Node **22.16.0** run against the extracted source kit yielded **178 passed, 1 skipped, 0 failed** out of 179; the skipped overlay-refresh integration requires the pinned native checkout and is not evidence of a failure. The previous pinned CI and Node 22.23.4 evidence remain the authoritative full-gate verification. **No physical Mac, phone or TV run was performed.** The GitHub artifact expires November 6, 2026.
