@@ -492,8 +492,6 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
     return {...result,roll:check.roll,dc:12,bonus:check.bonus,rerolled:check.rerolled,text:`D20 ${check.roll}${check.bonus?' +'+check.bonus+' Knight':''} / 12: ${result.text}`};
    }catch(error){state=previous;throw error;}
   }
-  const unsupported=unsupportedNativeEnvironment(text,snapshot(p));
-  if(unsupported)return unsupported;
   const scenery=sceneryAttempt(text,visibleScenery(state,scene(p)).filter(o=>visible(p,o.tile,o.nativeOrigin?18:8,o.nativeOrigin?o.footprint:false)).sort((a,b)=>distance(p,a.tile)-distance(p,b.tile)));
   if(scenery){
    const fell=/^(?:(?:chop|cut) down|fell|uproot)\s+(?:the\s+)?/i.test(String(text).trim().replace(/^(?:please |I (?:want to |try to )?)+/i,''));
@@ -506,6 +504,8 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
      'You strike the '+description+'. '+result.object.hp+' HP remains.'):
     (result.error||'That object is already destroyed.')};
   }
+  const unsupported=unsupportedNativeEnvironment(text,snapshot(p));
+  if(unsupported)return unsupported;
   const previous=state;state=structuredClone(state);try{const result=apply(p,text);if(result.blocked)state=previous;return result;}catch(error){state=previous;throw error;}}
  function approach(p,text){
   surroundings(p);
