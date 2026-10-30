@@ -53,7 +53,7 @@ test('felling an existing native tree is a single D20 action with persistent wor
   assert.equal(result.blocked,false);
   assert.ok(Number.isInteger(result.roll));
   assert.equal(result.dc,14);
-  assert.doesNotMatch(result.text,/\\bHP\\b/i,'do not expose object health bar');
+  assert.doesNotMatch(result.text,/\bHP\b/i,'do not expose object health bar');
   if(!result.success)assert.equal(engine.snapshot(p).scenery.find(o=>o.id===tree.id).hp,prior,'failed ability check cannot chip durability');
   else break;
  }
