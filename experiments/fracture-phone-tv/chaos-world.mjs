@@ -110,12 +110,20 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   // Never convert or destroy Fracture's painted scenery or collision geometry.
   if(state.camp?.scene===scene(p)&&!state.camp.treeId){
    const c=state.camp,world=p.getWorld();
-   const offsets=[[4,0],[-4,0],[0,4],[0,-4],[4,1],[-4,1],[1,4],[-1,-4]];
-   const tile=offsets.map(([dx,dy])=>({x:c.x+dx,y:c.y+dy})).find(t=>
-    world.isValidPosition(t.x,t.y)&&sameZone(p,t)&&visible(p,t)&&
-    !Object.values(world.entities||{}).concat(Object.values(world.players||{}),Object.values(world.npcs||{})).some(e=>e.x===t.x&&e.y===t.y)&&
+   const radii=[4,5,3,6,2,7,8];
+   const candidates=[];
+   for(const radius of radii)for(let dx=-radius;dx<=radius;dx++)for(let dy=-radius;dy<=radius;dy++)
+    if(Math.max(Math.abs(dx),Math.abs(dy))===radius)candidates.push({x:c.x+dx,y:c.y+dy});
+   const occupied=Object.values(world.entities||{}).concat(Object.values(world.players||{}),Object.values(world.npcs||{}));
+   const suitable=t=>world.isValidPosition(t.x,t.y)&&sameZone(p,t)&&visible(p,t)&&
+    !occupied.some(e=>e.x===t.x&&e.y===t.y)&&
     !Object.values(state.items).some(i=>i.tile?.x===t.x&&i.tile?.y===t.y)&&
-    !Object.values(state.scenery).some(i=>i.scene===scene(p)&&i.tile?.x===t.x&&i.tile?.y===t.y));
+    !Object.values(state.scenery).some(i=>i.scene===scene(p)&&i.tile?.x===t.x&&i.tile?.y===t.y);
+   const openNeighbors=t=>[[1,0],[-1,0],[0,1],[0,-1]].filter(([dx,dy])=>
+    world.isValidPosition(t.x+dx,t.y+dy)&&sameZone(p,{x:t.x+dx,y:t.y+dy})).length;
+   // Prefer open native terrain, not a one-tile chokepoint or an existing map prop.
+   const tile=candidates.find(t=>suitable(t)&&openNeighbors(t)>=3)||
+    candidates.find(t=>suitable(t)&&openNeighbors(t)>=2);
    if(tile){
     const previous=state;state=structuredClone(state);
     try{
