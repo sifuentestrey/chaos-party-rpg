@@ -27,7 +27,7 @@ test('existing native oak takes one D20 check per chop, never displays HP, and c
   result=engine.execute(p,'chop tree');
   assert.equal(result.blocked,false);assert.equal(result.dc,14);
   assert.ok(Number.isInteger(result.roll));assert.doesNotMatch(result.text,/\\bHP\\b/i);
-  assert.equal(result.object?.after,null,'native durability is never displayed');
+  assert.ok(result.object===undefined||result.object.after===null,'native durability is never displayed, including failed rolls');
   if(!result.success)assert.equal(JSON.parse(fs.readFileSync(file)).scenery[tree.id].hp,before,'a failed check does not chip durability');
   else break;
  }
