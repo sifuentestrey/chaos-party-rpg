@@ -95,6 +95,7 @@ jobs:
               names=z.namelist()
               assert any(n.endswith('/Start_Chaos_Party.command') for n in names)
               assert any(n.endswith('/SOURCE.txt') for n in names)
+              assert any(n.endswith('/docs/CHAOS_TO_FRACTURE_PARITY.md') for n in names), 'The release warning must ship with the experimental kit'
               assert not any(n.endswith(('.db','.sqlite','.env')) or '/node_modules/' in n or '/data/' in n for n in names)
               print('Confirmed: launcher + source identity; no databases, credentials or installed dependencies')
           PY
