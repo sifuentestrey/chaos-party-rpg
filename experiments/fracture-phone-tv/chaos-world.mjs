@@ -512,7 +512,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   }
   // Existing original-Chaos ignite path performs a real roll, changes the
   // persistent tree state, starts its fire clock, and updates witnesses.
-  return apply(p,'ignite '+target.id);
+  return execute(p,'ignite '+target.id);
  }
  function execute(p,text){
   surroundings(p);pulse(p);
