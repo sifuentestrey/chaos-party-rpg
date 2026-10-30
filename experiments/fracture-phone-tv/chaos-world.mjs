@@ -38,7 +38,7 @@ export function creativeAttempt(text){
  * Native mobs and unregistered map art always retain their own engine rules. */
 export function sceneryAttempt(text,scenery=[]){
  const clean=String(text||'').trim().replace(/^(?:please |I (?:want to |try to )?)+/i,'').replace(/[.!?]+$/,'');
- const m=/^(?:attack|hit|strike|chop(?: down)?|cut down|fell|break|kick|smash|hack|push over|topple)\s+(?:the\s+)?(.+)$/i.exec(clean);
+ const m=/^(?:attack|hit|strike|chop(?: down)?|cut down|fell|break|kick|smash|hack)\s+(?:the\s+)?(.+)$/i.exec(clean);
  if(!m)return null;
  const target=norm(m[1]);
  const matches=scenery.filter(o=>o&&o.scene&&o.tile&&
