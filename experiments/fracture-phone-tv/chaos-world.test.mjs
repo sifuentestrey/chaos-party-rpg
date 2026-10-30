@@ -56,3 +56,34 @@ test('invalid craft cannot consume help and a dead helper cannot grant advantage
  const result=engine.execute(a,'make blue hat from cloth strip and wood splinter');
  assert.equal(result.rolls,undefined,'dead helpers cannot grant advantage');
 });
+
+test('native zone boundary blocks cross-zone gifts, pickup, inspection and approach even on adjacent tiles',t=>{
+ const {a,b,engine,world}=fixture(t);
+ world.zoneManager.getZoneAt=(x,y)=>({id:x<42?'village':'forest',name:x<42?'The Refuge':'Glitch Woods'});
+ a.x=41;b.x=42;
+ engine.snapshot(a);engine.snapshot(b);
+ assert.equal(engine.execute(a,'give wood splinter to Bob').blocked,true,'adjacent is not sufficient across native zones');
+ assert.equal(engine.execute(a,'drop cloth strip').success,true);
+ const floor=engine.snapshot(a).ground.find(i=>i.name==='cloth strip');
+ assert.ok(floor,'a real floor item must exist on the origin tile');
+ assert.equal(engine.snapshot(b).ground.some(i=>i.id===floor.id),false,'do not reveal a floor item across zones');
+ assert.equal(engine.approach(b,'take '+floor.id),null,'cannot auto-approach an object in another zone');
+ assert.equal(engine.execute(b,'take '+floor.id).blocked,true,'cannot acquire an item across zones');
+ assert.equal(engine.execute(b,'inspect '+floor.id).blocked,true,'cannot inspect it from another zone');
+ b.x=41;
+ assert.equal(engine.execute(b,'take '+floor.id).success,true,'the item is collectible once actually in its zone');
+ assert.ok(engine.snapshot(b).bag.some(i=>i.id===floor.id));
+});
+test('native collision tiles block two-step gifts through walls, but a clear route works',t=>{
+ const {a,b,engine,world}=fixture(t);
+ a.x=40;b.x=42;
+ const original=world.isValidPosition;
+ world.isValidPosition=(x,y)=>original(x,y)&&x!==41;
+ engine.snapshot(a);engine.snapshot(b);
+ const rejected=engine.execute(a,'give cloth strip to Bob');
+ assert.equal(rejected.blocked,true,'distance two across a solid tile is not reachability');
+ assert.equal(engine.snapshot(a).bag.some(i=>i.name==='cloth strip'),true,'blocked gifts retain ownership');
+ world.isValidPosition=original;
+ assert.equal(engine.execute(a,'give cloth strip to Bob').success,true,'clear two-step path allows a gift');
+ assert.equal(engine.snapshot(b).bag.filter(i=>i.name==='cloth strip').length,2);
+});
