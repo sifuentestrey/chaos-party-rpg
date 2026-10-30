@@ -15,11 +15,12 @@ export function creativeAttempt(text){
  const direction=clean.match(/ (north|south|east|west)$/i),core=direction?clean.slice(0,-direction[0].length):clean;
  const appeal=clean.match(/^(?:apologize to|make amends with|make peace with|reconcile with|persuade)\s+(?:the\s+)?(.+)$/i);if(appeal)return {verb:'appeal',recipient:appeal[1].trim()};
  const help=clean.match(/^(?:help|assist|aid)\s+(.+?)(?:\s+(?:craft|make|build|with crafting))?$/i);if(help)return {verb:'assist',recipient:help[1].trim()};
+ const hinder=clean.match(/^(?:hinder|interfere with|sabotage)\s+(.+?)(?:\s+(?:with|on)\s+(?:their|the)\s+(?:roll|check|action))?$/i);if(hinder)return {verb:'hinder',recipient:hinder[1].trim()};
  const entity=parseEntityAttempt(core);
  if(entity&&environmental.has(entity.verb))return {...entity,...(direction?{direction:direction[1].toLowerCase()}:{}),entityAction:true};
  const attempt=parseItemAttempt(clean);return attempt&&verbs.has(attempt.verb)?attempt:null;
 }
-export function shouldUseCreative(text,actor){const a=creativeAttempt(text);if(!a)return false;if(['craft','attach','give','separate','steal','assist','appeal'].includes(a.verb))return true;const items=[...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[]),...(actor?.chaos?.npcs||[]).flatMap(n=>n.items||[])];const reference=a.item||a.target;return items.some(i=>i.id===reference||norm(i.name)===norm(reference));}
+export function shouldUseCreative(text,actor){const a=creativeAttempt(text);if(!a)return false;if(['craft','attach','give','separate','steal','assist','hinder','appeal'].includes(a.verb))return true;const items=[...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[]),...(actor?.chaos?.npcs||[]).flatMap(n=>n.items||[])];const reference=a.item||a.target;return items.some(i=>i.id===reference||norm(i.name)===norm(reference));}
 
 const distance=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
 const scene=p=>`fracture:${p.getWorld?.().id||'world'}`;
@@ -125,8 +126,9 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const ground=Object.values(state.items).filter(i=>(!i.ownerId&&i.location===scene(p)||state.npcs[i.ownerId]?.location===scene(p))&&!i.parentId&&i.tile&&visible(p,i.tile)&&i.condition!=='disassembled');
   const npcs=npcViews(p).map(n=>({id:n.id,nativeId:n.nativeId,name:n.name,tile:n.tile,attitude:(n.trust[identity(p)]||0)<0?'hostile':(n.trust[identity(p)]||0)>0?'friendly':'neutral',trust:n.trust[identity(p)]||0,memory:(n.memories?.[identity(p)]||n.history.filter(h=>h.actorId===identity(p))).slice(-3),items:Object.values(state.items).filter(i=>i.ownerId===n.id&&!i.parentId).map(plain)}));
   const story=state.dmMemory.entries.filter(e=>e.location===scene(p)&&(e.actorId===id||e.tile&&visible(p,e.tile))).slice(-3);
-  const aid=state.assists[id],helper=aid?.until>now()?Object.values(p.getWorld().players||{}).find(q=>identity(q)===aid.helperId&&q.hasEnteredGame&&!q.isDead&&q.chaosControlled&&!q.chaosSpectator&&scene(q)===scene(p)&&reachable(p,q)):null,assistedBy=helper?name(helper):null;
-  return {bag:bag.map(plain),ground:ground.map(plain),npcs,story,wearables:bag.filter(i=>i.equipped).map(plain),camp:state.camp,...(assistedBy?{assistedBy}:{})};
+  const aid=state.assists[id],helper=aid?.until>now()?Object.values(p.getWorld().players||{}).find(q=>identity(q)===aid.helperId&&q.hasEnteredGame&&!q.isDead&&q.chaosControlled&&!q.chaosSpectator&&scene(q)===scene(p)&&reachable(p,q)):null;
+  const assistedBy=helper&&aid.mode!==-1?name(helper):null,hinderedBy=helper&&aid.mode===-1?name(helper):null;
+  return {bag:bag.map(plain),ground:ground.map(plain),npcs,story,wearables:bag.filter(i=>i.equipped).map(plain),camp:state.camp,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})};
  }
  function apply(p,text){
   if(!identity(p))return {blocked:true,success:false,text:'Your character is still connecting.'};
@@ -141,9 +143,10 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    const helper=aid?.until>now()?room.players.find(q=>q.id===aid.helperId&&q.id!==actor.id):null;
    if(aid)delete state.assists[actor.id];
    const rolls=helper?[rng.int(1,20),rng.int(1,20)]:null;
+   const mode=helper&&aid.mode===-1?-1:1;
    const check=resolveObjectRoll({role:p.chaosRole,perk:p.chaosPerk,verb,dc,
-    roll:rolls?selectD20(rolls,1):rng.int(1,20),rng});
-   return {check,rolls,assistedBy:helper?.name||null};
+    roll:rolls?selectD20(rolls,mode):rng.int(1,20),rng});
+   return {check,rolls,assistedBy:helper&&mode===1?helper.name:null,hinderedBy:helper&&mode===-1?helper.name:null};
   };
   if(attempt.verb==='appeal'){
    // A social check repairs a real, previously damaged NPC relationship. The
@@ -159,7 +162,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    if(Number.isFinite(last)&&at-last<30000)return {blocked:true,success:false,text:`Give ${npc.name} time before trying to make amends again.`};
    const rng=new Rng(state.seed);rng.restore(state.rng);
    const dc=12+Math.min(6,Math.abs(prior));
-   const {check,rolls,assistedBy}=assistedCheck('social',dc,rng);
+   const {check,rolls,assistedBy,hinderedBy}=assistedCheck('social',dc,rng);
    state.rng=rng.snapshot();state.appeals[key]=at;state.round++;
    if(check.success)npc.trust[actor.id]=Math.min(0,prior+2);
    const observation={verb:'appeal',actorId:actor.id,round:state.round,success:check.success};
@@ -168,24 +171,25 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    const bonus=check.bonus?` +${check.bonus} class`:'';
    const lucky=check.rerolled!==null?` · Lucky-ish ${check.rerolled} → ${check.roll}`:'';
    const resultText=check.success?`${npc.name} accepts your apology. Trust ${prior} → ${npc.trust[actor.id]}.${npc.trust[actor.id]<0?' More amends are needed before asking for a job.':' You may ask for a job again.'}`:`${npc.name} is not persuaded. Trust stays ${prior}.`;
-   const outcomeText=(rolls?`D20 advantage ${rolls.join(' / ')} → ${check.roll}${bonus} / ${dc} (helped by ${assistedBy})${lucky}`:`D20 ${check.roll}${bonus} / ${dc}${lucky}`)+': '+resultText;
+   const outcomeText=(rolls?`D20 ${hinderedBy?'disadvantage':'advantage'} ${rolls.join(' / ')} → ${check.roll}${bonus} / ${dc} (${hinderedBy?'hindered by '+hinderedBy:'helped by '+assistedBy})${lucky}`:`D20 ${check.roll}${bonus} / ${dc}${lucky}`)+': '+resultText;
    room.dmMemory=state.dmMemory;
    room.result={id:'chaos-'+state.round,playerId:actor.id,name:actor.name,action:text,target:{entityId:npc.id},blocked:false,success:check.success,narration:outcomeText,changes:check.success?[`Trust ${prior} → ${npc.trust[actor.id]}`]:[],sceneEvents:[{type:'witness',entityId:npc.id}]};
    recordDMMemory(room);const entry=state.dmMemory.entries.at(-1);if(entry)entry.tile={x:p.x,y:p.y};
    persist();
-   return {blocked:false,success:check.success,text:outcomeText,roll:check.roll,dc,bonus:check.bonus,rerolled:check.rerolled,...(rolls?{rolls,assistedBy}:{}),event:entry};
+   return {blocked:false,success:check.success,text:outcomeText,roll:check.roll,dc,bonus:check.bonus,rerolled:check.rerolled,...(rolls?{rolls,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})}:{}),event:entry};
   }
-  if(attempt.verb==='assist'){
+  if(attempt.verb==='assist'||attempt.verb==='hinder'){
    // A second real character must be nearby, alive and connected. No phone can
    // grant itself advantage or grant it to an absent/off-map character.
    const matches=room.players.filter(q=>q.id!==actor.id&&(q.id===attempt.recipient||norm(q.name)===norm(attempt.recipient)));
    if(matches.length!==1)return {blocked:true,success:false,text:'Help a single nearby player by their exact character name.'};
    const recipient=matches[0],existing=state.assists[recipient.id];
-   if(existing?.until>now())return {blocked:true,success:false,text:`${recipient.name} already has help for the next world D20 check.`};
+   if(existing?.until>now())return {blocked:true,success:false,text:`${recipient.name} already has a reaction for the next world D20 check. No stacking.`};
    for(const [id,aid] of Object.entries(state.assists))if(aid.helperId===actor.id)delete state.assists[id];
-   state.assists[recipient.id]={helperId:actor.id,until:now()+15000};
+   const hostile=attempt.verb==='hinder';
+   state.assists[recipient.id]={helperId:actor.id,until:now()+15000,mode:hostile?-1:1};
    state.round++;persist();
-   return {blocked:false,success:true,text:`${actor.name} helps ${recipient.name}. Their next valid Chaos world D20 check (craft, objects or NPC amends) gets advantage for 15 seconds while you stay nearby.`};
+   return {blocked:false,success:true,text:`${actor.name} ${hostile?'hinders':'helps'} ${recipient.name}. Their next valid Chaos world D20 check gets ${hostile?'disadvantage':'advantage'} for 15 seconds while you stay nearby.`};
   }
   if(attempt.entityAction&&!targetItem(s,room,attempt.target))return {blocked:true,success:false,text:'Choose a visible Chaos object for that interaction; native scenery and characters are not movable objects.'};
   const plan=attempt.entityAction?planEntity(room,s,actor,attempt,(_s,r,ref)=>targetItem(s,r,ref)):planItemAttempt(room,actor,attempt);
@@ -206,9 +210,9 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    if(!sameZone(p,destination)||!p.getWorld().isValidPosition(destination.x,destination.y)||blocked(p,destination.x,destination.y)||Object.values(p.getWorld().entities||{}).concat(Object.values(p.getWorld().players||{})).some(e=>e.x===destination.x&&e.y===destination.y))return {blocked:true,success:false,text:'That object cannot move into a wall, another object or a character.'};
   }
   const rng=new Rng(state.seed);rng.restore(state.rng);
-  let roll=null,rolls=null,assistedBy=null,check=null;
+  let roll=null,rolls=null,assistedBy=null,hinderedBy=null,check=null;
   if(!plan.automatic){
-   ({check,rolls,assistedBy}=assistedCheck(attempt.verb,plan.dc,rng));
+   ({check,rolls,assistedBy,hinderedBy}=assistedCheck(attempt.verb,plan.dc,rng));
    roll=check.roll;
   }
   const success=plan.automatic||check.success;
@@ -233,11 +237,11 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const changes=[];
   const modifier=check?.bonus?` +${check.bonus} class`:'';
   const lucky=check?.rerolled!==null&&check?.rerolled!==undefined?` · Lucky-ish ${check.rerolled} → ${roll}`:'';
-  const canonical=(rolls?`D20 advantage ${rolls.join(' / ')} → ${roll}${modifier} / ${plan.dc} (helped by ${assistedBy}${lucky}): `:roll!==null?`D20 ${roll}${modifier} / ${plan.dc}${lucky}: `:'')+result.text+(changes.length?' '+changes.join('. ')+'.':'');
+  const canonical=(rolls?`D20 ${hinderedBy?'disadvantage':'advantage'} ${rolls.join(' / ')} → ${roll}${modifier} / ${plan.dc} (${hinderedBy?'hindered by '+hinderedBy:'helped by '+assistedBy}${lucky}): `:roll!==null?`D20 ${roll}${modifier} / ${plan.dc}${lucky}: `:'')+result.text+(changes.length?' '+changes.join('. ')+'.':'');
   room.dmMemory=state.dmMemory;room.result={id:'chaos-'+state.round,playerId:actor.id,name:actor.name,action:text,target:{entityId:item?.id},blocked:false,success:result.success,narration:canonical,changes:[result.change,...changes].filter(Boolean),sceneEvents:witnesses.map(n=>({type:'witness',entityId:n.id}))};
   recordDMMemory(room);const entry=state.dmMemory.entries.at(-1);if(entry)entry.tile={x:p.x,y:p.y};
   persist();
-  return {...result,...(roll!==null?{roll,dc:plan.dc,bonus:check.bonus,...(check.rerolled!==null?{rerolled:check.rerolled}:{}),...(rolls?{rolls,assistedBy}:{}),text:canonical}:{text:canonical}),witnesses:witnesses.map(n=>n.name),event:entry};
+  return {...result,...(roll!==null?{roll,dc:plan.dc,bonus:check.bonus,...(check.rerolled!==null?{rerolled:check.rerolled}:{}),...(rolls?{rolls,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})}:{}),text:canonical}:{text:canonical}),witnesses:witnesses.map(n=>n.name),event:entry};
  }
  function execute(p,text){surroundings(p);pulse(p);const previous=state;state=structuredClone(state);try{const result=apply(p,text);if(result.blocked)state=previous;return result;}catch(error){state=previous;throw error;}}
  function approach(p,text){
