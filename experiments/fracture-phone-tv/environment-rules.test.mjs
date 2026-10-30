@@ -65,3 +65,18 @@ test('reject invalid authored scenery durability and fire state before persisten
   assert.throws(()=>environmentObject('woods:tree','tree',{x:2,y:3},overrides),/Invalid environmental object state/);
  }
 });
+
+test('water, rocks, cliffs and nonflammable scenery never burn or acquire damage during weather ticks',()=>{
+ const objects={
+  river:environmentObject('river','river',{x:0,y:0}),
+  rock:environmentObject('rock','rock',{x:1,y:0}),
+  cliff:environmentObject('cliff','cliff',{x:2,y:0}),
+  tree:environmentObject('tree','tree',{x:3,y:0},{condition:'burning'})
+ };
+ const result=environmentStep(objects,{lightningTile:{x:1,y:0}});
+ for(const kind of ['rock','cliff','river']){
+  assert.equal(result.objects[kind].condition,'intact');
+  assert.equal(result.objects[kind].hp,objects[kind].hp);
+ }
+ assert.equal(result.objects.tree.hp,11,'nearby wood still burns');
+});
