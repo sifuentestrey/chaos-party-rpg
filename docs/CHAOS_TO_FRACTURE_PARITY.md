@@ -1,5 +1,10 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Scenery identity / collision save safety — October 30 (focused local verification only)
+
+Commits `95587caa` and `0b6916b4` harden the reusable authored-environment constructor: caller overrides can no longer replace the validated scenery ID, kind or tile; invalid durability, wetness and fire conditions are rejected before they enter a sidecar save. Two regressions were added to `environment-rules.test.mjs`. A reconstructed copy of the changed pure module passed three local Node 22.16 checks (identity, invalid states, and existing fire/damage behavior). **Full repository tests, pinned native CI, browser rehearsal and Mac packaging were not rerun for these new commits.** Earlier native/browser evidence remains valid only for the source revisions documented above.
+
+
 ## Independent reactive-world review and gameplay verification — October 30
 
 The other ChatGPT session's work through `7a5f4cd` was present on the experimental remote branch and was fast-forwarded into this checkout, preserving its classes, declarations, trial/travel, SSE synchronization, NPC fire response and authored scenery. Review found real integration defects despite its passing tests: authored fire ignored native zone boundaries; batch catch-up lost the chronological relationship between ordinary and authored fires; players could not extinguish authored fire; failed authored-scenery saves did not roll back in-memory damage. These are fixed using the existing Chaos planner/resolver, native tile/zone validation and atomic sidecar transactions. Fire conducts in both directions, one hop per tick; a newly lit tree cannot instantly ignite a second tree. Displayed scenery IDs and live native NPC identities are grounded, with exact identities taking priority over similar names. Optional AI proposals may reference visible authored scenery, never invented IDs.
