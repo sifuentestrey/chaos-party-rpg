@@ -272,9 +272,10 @@ test('host-only Refuge Trial persists real multi-phone evidence, not phone text 
  assert.equal(app.room.adventure.npc,null);
  assert.equal((await post(base,'/host/adventure',{key:app.room.host,action:'replay'})).status,409,
   'an active trial cannot be erased by another replay');
+ // Finish the old reaction window and respect the per-player action throttle.
+ if(app.room.turn)app.room.turn.deadline=Date.now()-1;
+ await new Promise(r=>setTimeout(r,220));
  const newTalk=await post(base,'/action',{token:ada,text:'talk to guard'});
- // The old declaration window may still be open. Move the clock past it
- // before submitting if necessary.
  assert.equal(newTalk.status,202);
  const {id:newTalkId}=await newTalk.json();
  sockets[0].emit('chaos:receipt',{id:newTalkId,status:'succeeded',message:'New guard response.'});
