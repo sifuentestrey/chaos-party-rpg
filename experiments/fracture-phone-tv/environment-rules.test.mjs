@@ -49,3 +49,19 @@ test('fire-destroyed blocking tree releases collision just like physical destruc
  assert.equal(next.hp,0);
  assert.equal(tree.condition,'burning','input is not mutated');
 });
+
+test('authoritative scenery identity and collision tile cannot be overwritten by state options',()=>{
+ const tree=environmentObject('woods:tree','tree',{x:2,y:3},{
+  id:'town:fake',kind:'river',tile:{x:999,y:999},hp:7,condition:'burning'
+ });
+ assert.equal(tree.id,'woods:tree');
+ assert.equal(tree.kind,'tree');
+ assert.deepEqual(tree.tile,{x:2,y:3});
+ assert.equal(tree.hp,7);
+ assert.equal(tree.condition,'burning');
+});
+test('reject invalid authored scenery durability and fire state before persistence',()=>{
+ for(const overrides of [{hp:NaN},{hp:Infinity},{hp:-1},{wet:-1},{wet:4},{wet:0.5},{condition:'teleported'}]){
+  assert.throws(()=>environmentObject('woods:tree','tree',{x:2,y:3},overrides),/Invalid environmental object state/);
+ }
+});
