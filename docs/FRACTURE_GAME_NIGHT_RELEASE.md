@@ -1,5 +1,11 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Shared object capability foundation — October 30 (CI pending)
+
+- [x] Introduced a pure, sidecar-only capability descriptor derived from real item material, condition, location and physical properties; reused for snapshot presentation, physical collision and flammability selection. Four regression scenarios added. Existing original Chaos action resolution remains authoritative.
+- [ ] Tests have been authored but **not executed in this pass**; pinned Fracture CI, real native scenery conversion, live multi-client event delivery and physical Mac acceptance remain pending. Do not label all native scenery destructible or claim full world simulation.
+
+
 ## Native-NPC delayed firefighting — October 30 (isolated local tests; CI pending)
 
 - [x] Added a reversible, sidecar-only **NPC decision** rather than another scripted warning. An actual native NPC already standing adjacent to its own burning floor property, on a valid tile in the same native zone, observes the fire for a full ten-second simulation tick and then extinguishes it through the **original Chaos `resolveEntity` rule**. No native NPC movement, water/bucket animation, native character damage or quest reward is invented. Absent, dead, distant and other-zone NPCs cannot intervene. The decision and resulting object/NPC history persist in the isolated JSON save, and TV/phone snapshots display the actual changed condition.
