@@ -73,3 +73,13 @@ test('return trip is separate from local rally, with native movement and real zo
  assert.equal(voteRally(vote,'bryn',false,1001),'declined');
  assert.equal(vote.arrivals,undefined,'a rejected vote never fabricates an arrival');
 });
+
+test('20-person expedition requires eleven approvals and cannot bypass an expired quorum',()=>{
+ const actors=Array.from({length:20},(_,i)=>({token:'member'+i,ready:true,dead:false,zone:'The Refuge',x:41+i%3,y:195}));
+ const vote=proposeExpedition(actors,'member0','woods',1000,'large-party');
+ assert.equal(vote.required,11);
+ for(let i=1;i<10;i++)assert.equal(voteRally(vote,'member'+i,true,1000+i),'pending');
+ assert.equal(settleRally(vote,11000),'declined');
+ assert.equal(vote.arrivals,undefined);
+ assert.throws(()=>voteRally(vote,'member10',true,11001),/no open/);
+});
