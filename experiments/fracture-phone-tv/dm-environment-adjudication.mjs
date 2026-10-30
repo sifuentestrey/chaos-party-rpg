@@ -27,6 +27,10 @@ export function validateEnvironmentJudgment(judgment,context={}){
   if(!Array.isArray(context.freeTiles)||!context.freeTiles.some(t=>t.x===destination.x&&t.y===destination.y))return {accepted:false,reason:'Destination is not verified clear'};
   if(Math.abs(destination.x-object.tile.x)+Math.abs(destination.y-object.tile.y)!==1)return {accepted:false,reason:'Object can only move one adjacent tile'};
  }
+ // The engine has not implemented native movement, pickup, concealment, or
+ // climbing adapters. Capability metadata alone cannot authorize fake effects.
+ // Native break and ignition have confirmed persistent Fracture tree adapters.
+ if(!['break','ignite'].includes(action))return {accepted:false,reason:'No authoritative native execution adapter for this environmental action'};
  if(action==='take'&&object.mass==='heavy')return {accepted:false,reason:'Object is too heavy to pick up'};
  if(action==='ignite'&&object.wet===true)return {accepted:false,reason:'Object is too wet to ignite'};
  if(context.actor?.active!==true)return {accepted:false,reason:'Actor is not active'};
