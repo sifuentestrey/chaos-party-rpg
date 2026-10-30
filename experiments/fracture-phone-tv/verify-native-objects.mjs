@@ -93,8 +93,16 @@ try{
   do{const current=await get(actorToken);moved=current.results.find(r=>r.id===request.id);if(moved&&['succeeded','blocked','failed'].includes(moved.status))break;await sleep(150);}while(Date.now()<deadline);
   assert.equal(moved?.status,'succeeded','actual native walk to the tree');
  }
- state=await get(token);
- const tree=state.actor.chaos?.scenery?.find(o=>o.nativeOrigin&&o.tile.x===30&&o.tile.y===197);
+ // The action receipt can arrive before the bridge's next authoritative
+ // actor-state poll. Wait for the actual native position/scenery snapshot;
+ // never mistake a stale /state response for a missing map object.
+ let tree;deadline=Date.now()+8000;
+ do{
+  state=await get(token);
+  tree=state.actor?.chaos?.scenery?.find(o=>o.nativeOrigin&&o.tile.x===30&&o.tile.y===197);
+  if(tree?.nativeOrigin)break;
+  await sleep(150);
+ }while(Date.now()<deadline);
  if(!tree?.nativeOrigin){
   const debug=JSON.parse(fs.readFileSync(path.join(process.env.FRACTURE_ROOT,'server/data/chaos-party/objects.json'),'utf8'));
   assert.fail('Native map tree not visible to native actor: '+JSON.stringify({
