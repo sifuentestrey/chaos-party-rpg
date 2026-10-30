@@ -1,5 +1,10 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## NPC-owned physical fixture collision — October 30
+
+The shared Chaos sidecar collision rule now recognizes an intact blocking NPC-owned floor fixture in its NPC's current scene, rather than excluding every owned object. Carried player items and absent NPCs do not become collision geometry; destroyed fixtures stop blocking. Added focused regression; CI and physical playtest pending. Native Fracture scenery still requires an explicit safe capability adapter and cannot be assumed destructible.
+
+
 ## Shared physical-object capability foundation — October 30
 
 The Fracture sidecar now exposes derived movable, flammable, breakable, repairable, blocking and extinguishable flags for **Chaos-owned objects**. The same descriptor is used for sidecar collision and fire eligibility, avoiding per-object name special cases. Four focused regression scenarios were added; they have not been executed or validated by pinned CI in this pass. Native Fracture scenery is still authoritative and is not generally destructible or movable. NPC autonomy, hazards, weather, water, and instant multiplayer event broadcasting remain incomplete.
