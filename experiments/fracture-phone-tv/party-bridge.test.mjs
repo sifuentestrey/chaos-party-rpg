@@ -151,3 +151,37 @@ test('rally proposal is rejected for distant, disconnected, dead or single activ
  sockets[1].disconnect();
  assert.equal((await post(base,'/rally/propose',{token:a})).status,409);
 });
+
+test('failed quorum and expired vote never issue native movement',async t=>{
+ const {app,base,sockets}=await setup(t);
+ const tokens=[];
+ for(const name of ['Ari','Bex','Cal']){
+  tokens.push((await(await post(base,'/pair',{key:app.room.join,name})).json()).token);
+ }
+ await new Promise(r=>setTimeout(r,30));
+ const a=await(await post(base,'/rally/propose',{token:tokens[0]})).json();
+ assert.equal((await post(base,'/rally/vote',{token:tokens[1],id:a.rally.id,yes:false})).status,200);
+ const denied=await post(base,'/rally/vote',{token:tokens[2],id:a.rally.id,yes:false});
+ assert.equal((await denied.json()).rally.status,'declined');
+ assert.ok(sockets.every(s=>!s.lastAction),'a rejected rally never moves anyone');
+ const b=await(await post(base,'/rally/propose',{token:tokens[0]})).json();
+ app.room.rally.deadline=Date.now()-1;
+ assert.equal((await post(base,'/rally/vote',{token:tokens[1],id:b.rally.id,yes:true})).status,409);
+ assert.equal(app.room.rally.status,'declined');
+ assert.ok(sockets.every(s=>!s.lastAction),'an expired rally never moves anyone');
+});
+test('benched players remain in frozen vote electorate but are never commanded after approval',async t=>{
+ const {app,base,sockets}=await setup(t);
+ const tokens=[];
+ for(const name of ['Ari','Bex','Cal']){
+  tokens.push((await(await post(base,'/pair',{key:app.room.join,name})).json()).token);
+ }
+ await new Promise(r=>setTimeout(r,30));
+ const rally=(await(await post(base,'/rally/propose',{token:tokens[0]})).json()).rally;
+ const bench=await post(base,'/host/player',{key:app.room.host,token:tokens[1],parked:true});
+ assert.equal(bench.status,200);
+ assert.equal((await(await post(base,'/rally/vote',{token:tokens[2],id:rally.id,yes:true})).json()).rally.status,'approved');
+ assert.equal(sockets[1].lastAction,undefined,'host bench blocks forced movement');
+ assert.equal(sockets[2].lastAction.intent.verb,'go');
+ assert.equal((await post(base,'/rally/vote',{token:tokens[1],id:rally.id,yes:true})).status,403);
+});
