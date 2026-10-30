@@ -133,6 +133,18 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   if(p.isDead)return {blocked:true,success:false,text:'Respawn before handling objects.'};
   const attempt=creativeAttempt(text);if(!attempt)return {blocked:true,success:false,text:'That object action is not available yet.'};
   const {room,actor,s}=projection(p);if(!actor)return {blocked:true,success:false,text:'Your character is still connecting.'};
+  // One reusable original Chaos advantage check for any legitimate world D20
+  // action, including social checks. Only an actual roll consumes assistance.
+  // Projection includes ONLY living, nearby, connected actors in this zone.
+  const assistedCheck=(verb,dc,rng)=>{
+   const aid=state.assists[actor.id];
+   const helper=aid?.until>now()?room.players.find(q=>q.id===aid.helperId&&q.id!==actor.id):null;
+   if(aid)delete state.assists[actor.id];
+   const rolls=helper?[rng.int(1,20),rng.int(1,20)]:null;
+   const check=resolveObjectRoll({role:p.chaosRole,perk:p.chaosPerk,verb,dc,
+    roll:rolls?selectD20(rolls,1):rng.int(1,20),rng});
+   return {check,rolls,assistedBy:helper?.name||null};
+  };
   if(attempt.verb==='appeal'){
    // A social check repairs a real, previously damaged NPC relationship. The
    // same native quest gate consults this trust; no native NPC quest or reward
@@ -146,7 +158,8 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    const key=npc.id+'|'+actor.id,at=now(),last=state.appeals[key];
    if(Number.isFinite(last)&&at-last<30000)return {blocked:true,success:false,text:`Give ${npc.name} time before trying to make amends again.`};
    const rng=new Rng(state.seed);rng.restore(state.rng);
-   const dc=12+Math.min(6,Math.abs(prior)),check=resolveObjectRoll({role:p.chaosRole,perk:p.chaosPerk,verb:'social',dc,roll:rng.int(1,20),rng});
+   const dc=12+Math.min(6,Math.abs(prior));
+   const {check,rolls,assistedBy}=assistedCheck('social',dc,rng);
    state.rng=rng.snapshot();state.appeals[key]=at;state.round++;
    if(check.success)npc.trust[actor.id]=Math.min(0,prior+2);
    const observation={verb:'appeal',actorId:actor.id,round:state.round,success:check.success};
@@ -155,12 +168,12 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    const bonus=check.bonus?` +${check.bonus} class`:'';
    const lucky=check.rerolled!==null?` · Lucky-ish ${check.rerolled} → ${check.roll}`:'';
    const resultText=check.success?`${npc.name} accepts your apology. Trust ${prior} → ${npc.trust[actor.id]}.${npc.trust[actor.id]<0?' More amends are needed before asking for a job.':' You may ask for a job again.'}`:`${npc.name} is not persuaded. Trust stays ${prior}.`;
-   const outcomeText=`D20 ${check.roll}${bonus} / ${dc}${lucky}: ${resultText}`;
+   const outcomeText=(rolls?`D20 advantage ${rolls.join(' / ')} → ${check.roll}${bonus} / ${dc} (helped by ${assistedBy})${lucky}`:`D20 ${check.roll}${bonus} / ${dc}${lucky}`)+': '+resultText;
    room.dmMemory=state.dmMemory;
    room.result={id:'chaos-'+state.round,playerId:actor.id,name:actor.name,action:text,target:{entityId:npc.id},blocked:false,success:check.success,narration:outcomeText,changes:check.success?[`Trust ${prior} → ${npc.trust[actor.id]}`]:[],sceneEvents:[{type:'witness',entityId:npc.id}]};
    recordDMMemory(room);const entry=state.dmMemory.entries.at(-1);if(entry)entry.tile={x:p.x,y:p.y};
    persist();
-   return {blocked:false,success:check.success,text:outcomeText,roll:check.roll,dc,bonus:check.bonus,rerolled:check.rerolled,event:entry};
+   return {blocked:false,success:check.success,text:outcomeText,roll:check.roll,dc,bonus:check.bonus,rerolled:check.rerolled,...(rolls?{rolls,assistedBy}:{}),event:entry};
   }
   if(attempt.verb==='assist'){
    // A second real character must be nearby, alive and connected. No phone can
@@ -168,11 +181,11 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    const matches=room.players.filter(q=>q.id!==actor.id&&(q.id===attempt.recipient||norm(q.name)===norm(attempt.recipient)));
    if(matches.length!==1)return {blocked:true,success:false,text:'Help a single nearby player by their exact character name.'};
    const recipient=matches[0],existing=state.assists[recipient.id];
-   if(existing?.until>now())return {blocked:true,success:false,text:`${recipient.name} already has help for the next craft attempt.`};
+   if(existing?.until>now())return {blocked:true,success:false,text:`${recipient.name} already has help for the next world D20 check.`};
    for(const [id,aid] of Object.entries(state.assists))if(aid.helperId===actor.id)delete state.assists[id];
    state.assists[recipient.id]={helperId:actor.id,until:now()+15000};
    state.round++;persist();
-   return {blocked:false,success:true,text:`${actor.name} helps ${recipient.name}. Their next valid craft or attachment roll gets D20 advantage for 15 seconds while you stay nearby.`};
+   return {blocked:false,success:true,text:`${actor.name} helps ${recipient.name}. Their next valid Chaos world D20 check (craft, objects or NPC amends) gets advantage for 15 seconds while you stay nearby.`};
   }
   if(attempt.entityAction&&!targetItem(s,room,attempt.target))return {blocked:true,success:false,text:'Choose a visible Chaos object for that interaction; native scenery and characters are not movable objects.'};
   const plan=attempt.entityAction?planEntity(room,s,actor,attempt,(_s,r,ref)=>targetItem(s,r,ref)):planItemAttempt(room,actor,attempt);
@@ -195,12 +208,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const rng=new Rng(state.seed);rng.restore(state.rng);
   let roll=null,rolls=null,assistedBy=null,check=null;
   if(!plan.automatic){
-   const aid=['craft','attach'].includes(attempt.verb)?state.assists[actor.id]:null;
-   const helper=aid?.until>now()?room.players.find(q=>q.id===aid.helperId&&q.id!==actor.id):null;
-   if(aid)delete state.assists[actor.id]; // Consume on a real attempt, even a failed roll.
-   if(helper){rolls=[rng.int(1,20),rng.int(1,20)];roll=selectD20(rolls,1);assistedBy=helper.name;}
-   else roll=rng.int(1,20);
-   check=resolveObjectRoll({role:p.chaosRole,perk:p.chaosPerk,verb:attempt.verb,dc:plan.dc,roll,rolls,rng});
+   ({check,rolls,assistedBy}=assistedCheck(attempt.verb,plan.dc,rng));
    roll=check.roll;
   }
   const success=plan.automatic||check.success;
