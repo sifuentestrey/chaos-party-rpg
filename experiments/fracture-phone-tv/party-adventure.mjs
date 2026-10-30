@@ -77,18 +77,18 @@ export function advanceAdventure(adventure,evidence,now=Date.now()){
  if(evidence.id)adventure.seen=[...seen,evidence.id].slice(-32);
  return {change,completed:adventure.status==='completed'};
 }
-export function adventureView(a){
+export function adventureView(a,{allowCraft=true}={}){
  if(!a)return null;
  if(a.id!==ADVENTURE_ID||a.version!==1)return {title:'Unknown adventure save',status:'unsupported',steps:[],summary:'Existing adventure data was preserved; this version cannot interpret it.'};
  const steps=[
   {label:'Talk to a real NPC',done:!!a.npc,by:a.npc?.player||null},
-  {label:a.choice?.route==='combat'?'Defeat a real monster (party choice)':a.choice?.route==='craft'?'Craft an item (party choice)':'Defeat a monster OR craft an item',done:!!a.proof,by:a.proof?.player||null},
+  {label:a.choice?.route==='combat'?'Defeat a real monster (party choice)':a.choice?.route==='craft'?(allowCraft?'Craft an item (party choice)':'Legacy craft choice unavailable in native-only mode'):allowCraft?'Defeat a monster OR craft an item':'Defeat a real monster',done:!!a.proof,by:a.proof?.player||null},
   {label:'Enter Glitch Woods',done:!!a.woods,by:a.woods?.player||null},
   {label:'Return to The Refuge',done:!!a.returned,by:a.returned?.player||null}
  ];
  return {title:'The Refuge Trial',status:a.status,run:a.run||1,route:a.proof?.route||null,choice:a.choice?.route||null,steps,
   summary:a.status==='completed'?'Home again! The party has completed the trial. Keep exploring, or start another adventure.':
-  'Work together: meet a local, '+(a.choice?.route==='combat'?'defeat a monster':a.choice?.route==='craft'?'craft an item':'fight OR craft')+', visit the woods, and return. Everyone can help, explore, or cause a little trouble along the way.'};
+  'Work together: meet a local, '+(a.choice?.route==='combat'?'defeat a monster':a.choice?.route==='craft'?(allowCraft?'craft an item':'legacy craft vote is unavailable in native-only mode'):allowCraft?'fight OR craft':'defeat a monster')+', visit the woods, and return. Everyone can help, explore, or cause a little trouble along the way.'};
 }
 
 /** Optional, durable majority story decision. Reuses the same frozen-electorate
