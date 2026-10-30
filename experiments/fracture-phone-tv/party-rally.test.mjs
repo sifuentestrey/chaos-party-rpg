@@ -41,3 +41,35 @@ test('rally is bounded to distinct ready characters in the same area and within 
  const duplicate=party();duplicate[1].token='p0';
  assert.throws(()=>proposeRally(duplicate,'p0',0,'a'),/distinct/);
 });
+
+
+import {proposeExpedition,expeditionEligible,EXPEDITION_WAYPOINTS} from './party-rally.mjs';
+test('major travel votes use only pinned map destinations, never client-supplied coordinates',()=>{
+ const actors=[{token:'ada',ready:true,dead:false,zone:'The Refuge',x:41,y:195},{token:'bryn',ready:true,dead:false,zone:'The Refuge',x:43,y:195}];
+ const vote=proposeExpedition(actors,'ada','woods',1000,'travel1');
+ assert.equal(vote.kind,'expedition');
+ assert.equal(vote.arrivalZone,'Glitch Woods');
+ assert.deepEqual(vote.waypoint,{x:34,y:188});
+ assert.equal(vote.required,2);
+ assert.equal(settleRally(vote,1001),'pending');
+ assert.equal(voteRally(vote,'bryn',true,1002),'approved');
+ assert.equal(rallyView(vote,'bryn',1003).destination,'Glitch Woods');
+ assert.equal(expeditionEligible(vote,actors[1]),true);
+ assert.equal(expeditionEligible(vote,{...actors[1],zone:'Glitch Woods'}),false);
+ assert.equal(expeditionEligible(vote,{...actors[1],x:900}),false);
+ assert.equal(expeditionEligible(vote,{...actors[1],dead:true}),false);
+ assert.equal(EXPEDITION_WAYPOINTS.woods.end.x,34);
+ assert.throws(()=>proposeExpedition(actors,'ada','999,999',1000,'bad'),/known Fracture/);
+ assert.throws(()=>proposeExpedition(actors,'ada','__proto__',1000,'bad'),/known Fracture/);
+ assert.throws(()=>proposeExpedition(actors.map(a=>({...a,zone:'Glitch Woods'})),'ada','woods',1000,'bad'),/start in The Refuge/);
+ assert.throws(()=>proposeExpedition(actors.map(a=>({...a,x:a.x+70})),'ada','woods',1000,'bad'),/departure area/);
+});
+test('return trip is separate from local rally, with native movement and real zone still required',()=>{
+ const actors=[{token:'ada',ready:true,dead:false,zone:'Glitch Woods',x:34,y:188},{token:'bryn',ready:true,dead:false,zone:'Glitch Woods',x:35,y:188}];
+ const vote=proposeExpedition(actors,'ada','refuge',1000,'return1');
+ assert.deepEqual(vote.waypoint,{x:41,y:195});
+ assert.equal(vote.arrivalZone,'The Refuge');
+ assert.equal(vote.status,'pending');
+ assert.equal(voteRally(vote,'bryn',false,1001),'declined');
+ assert.equal(vote.arrivals,undefined,'a rejected vote never fabricates an arrival');
+});
