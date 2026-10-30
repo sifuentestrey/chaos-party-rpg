@@ -1,5 +1,15 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Release sign-off — family beta software checks complete (October 30)
+
+**The playable Refuge Trial family build is ready for local game night.** The pinned Fracture pipeline passed all jobs at code commit `6b66dc080edb2e557083b40f6e22b6a526e75407`: [native integration and Mac kit, run 41114555545](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41114555545). It compiled client/server, passed **3,331 native tests**, ran actual independent-actor rally/woods round-trip travel and existing-map tree interaction, and produced the credential-free source kit. Both offline workflows also passed. The combined local and extracted-kit **Node 22.23.4 suites passed all 179 checks with no skips**. These release-note updates do not change the experiment source tree from the tested code commit.
+
+The full two-browser adventure, native canopy/trunk destruction, NPC consequences and ordered restart are recorded above. Supplemental load used **20 distinct native actors for 90 seconds**, all retained, with observed batches 26–63 ms and bridge RSS 101–118 MiB. Final phone checks selected Bard + Charming through the real join form, retained them after recovery, and rendered grounded actions. The final live GPT-OSS check used the existing approved free Groq connection: an unexpected crafting request reached the actual D20 resolver (7/DC10); the game retained both ingredients, and AI narration correctly described the failure on phone and TV. AI was turned off afterward. No provider key is included in the kit; offline gameplay remains available.
+
+Delivery includes a normal-speed **3m46s full adventure** and approximately **100s of labeled edited highlights**. The successful source kit has an executable Mac launcher, matching checksum and source identity, valid ZIP CRC, and no native saves, accounts, credentials or installed dependencies. Original Chaos branches/saves were preserved; only the experimental branch was updated.
+
+The remaining owner acceptance is the physical 2015 Intel Mac with real phones/TV; synthetic cloud capacity is not a physical-device claim. This build plays the new Refuge Trial and free exploration. Crown Job/Dawn Bell are still preserved in the original game rather than silently claimed as migrated.
+
 ## Final supplemental checks — October 30
 
 The new map/guide/refresh build passed **20 distinct authenticated native actors for 90 seconds**: 18 moved concurrently, scoped STOP and real reconnect passed, all observation batches retained 20 connected actors; observed request batches were 29–63 ms and bridge RSS 101–117 MiB in this cloud run. Main test characters were temporarily benched and their saves retained. This is synthetic Linux evidence, not a physical 2015 Mac or 20-phone certification. See `evidence/family-load.json`.
