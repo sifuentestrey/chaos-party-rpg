@@ -9,6 +9,7 @@ export function worldFingerprint(actor){
   zone:actor.zone??null,
   ground:world.ground??[],
   scenery:world.scenery??[],
+  doors:world.doors??[],
   npcs:world.npcs??[],
   story:world.story??[],
   camp:world.camp??null
