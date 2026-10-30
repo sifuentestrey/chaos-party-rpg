@@ -192,3 +192,14 @@ test('native combat memory never credits off-zone, distant, dead or unauthentica
  assert.equal(valid.witnesses.length,0,'NPC behind a solid tile must not witness combat');
  assert.equal(engine.talk(a,guard),null);
 });
+
+test('original class +3 modifies actual theft D20, but never native combat or legacy actor checks',t=>{
+ const {a,engine,guard}=npcFixture(t);a.chaosRole='rogue';a.chaosPerk='lucky';
+ const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');
+ a.x=rug.tile.x;a.y=rug.tile.y;
+ const result=engine.execute(a,'steal '+rug.id+' from guard');
+ assert.equal(result.blocked,false);assert.equal(result.bonus,3);
+ assert.match(result.text,/\+3 class/);
+ assert.equal(result.success,result.roll===20||(result.roll!==1&&result.roll+3>=result.dc));
+ assert.equal(engine.snapshot(a).npcs[0].trust<0,true,'NPC still remembers an attempted theft');
+});
