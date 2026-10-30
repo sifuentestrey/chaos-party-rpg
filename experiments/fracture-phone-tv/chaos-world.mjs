@@ -108,7 +108,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
  function syncNative(p){
   const world=p.getWorld();if(!nativeTrees.length||!world.map?.grid)return;
   const catalog=nativeTrees.filter(t=>t.cells);
-  if(catalog.length)reconcileNativeMap(world.map,catalog,catalog.map(t=>state.scenery[scene(p)+':'+t.id]).filter(Boolean).map(o=>({id:o.id.slice(scene(p).length+1),tile:o.tile,condition:o.condition})));
+  if(catalog.length)reconcileNativeMap(world.map,catalog,catalog.map(t=>state.scenery[scene(p)+':'+t.id]).filter(Boolean).map(o=>({id:o.id.slice(scene(p).length+1),tile:o.tile,condition:o.condition,carriedBy:o.carriedBy||null})));
   let cleared=clearedWorlds.get(world);if(!cleared){cleared=new Set();clearedWorlds.set(world,cleared);}
   for(const tree of nativeTrees){
    if(tree.cells||cleared.has(tree.id)||state.scenery[scene(p)+':'+tree.id]?.condition!=='broken')continue;
@@ -328,22 +328,25 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   return sceneScenery(scene(p)).filter(o=>{
    if(!allowSyntheticFixtures&&!o.nativeOrigin)return false;
    const contact=o.cells?nativeContact(p,o):o.tile;
-   return visible(p,contact,o.nativeOrigin?18:8,o.nativeOrigin?nativeSightCells(o):false);
+   return !o.carriedBy&&visible(p,contact,o.nativeOrigin?18:8,o.nativeOrigin?nativeSightCells(o):false);
   }).sort((a,b)=>distance(p,a.cells?nativeContact(p,a):a.tile)-distance(p,b.cells?nativeContact(p,b):b.tile));
  }
  function executeNative(p,object,attempt,text){
   const fail=message=>({blocked:true,success:false,text:message});
   if(!identity(p)||!p.chaosControlled||!p.hasEnteredGame||p.isDead)return fail('An active living character must attempt the action.');
   const contact=nativeContact(p,object),verb=attempt.verb,caps=nativeCapabilities(object);
-  if(!sameZone(p,contact)||!visible(p,contact,18,nativeSightCells(object)))return fail('That map object is not visible from here.');
+  const carrying=verb==='drop'&&object.carriedBy===identity(p);
+  if(!carrying&&(!sameZone(p,contact)||!visible(p,contact,18,nativeSightCells(object))))return fail('That map object is not visible from here.');
   if(verb==='inspect')return {blocked:false,success:true,text:`The existing ${object.name} is ${object.condition}, made of ${object.material}. `+
    (caps.movable?'It can be shifted one clear tile. ':'It is fixed in place. ')+
    (object.protected?'Its native structure is protected. ':caps.breakable?'A D20 check can alter it. ':'')+
    (object.flammable?'It can burn; extinguishing or water stops the fire. ':'It does not burn. ')+
    (object.kind==='roof'?'The stone walls and entrance remain in place if the upper roof is destroyed. ':'')+
    (object.waterSource?'You can drink here or splash a nearby object.':'')};
-  if(distance(p,contact)>1)return fail('Stand beside that existing map object first.');
-  if(verb==='take')return fail('That map object cannot go into your pockets.'+(object.movable?' Push or pull it instead.':''));
+  if(!carrying&&distance(p,contact)>1)return fail('Stand beside that existing map object first.');
+  if(verb==='take'&&!caps.portable)return fail('Only a verified, loose, one-tile native pebble can be picked up. Larger rocks must be pushed.');
+  if(verb==='take'&&Object.values(state.scenery).some(o=>o.carriedBy===identity(p)))return fail('You are already carrying a native rock. Drop it before picking up another.');
+  if(verb==='drop'&&!carrying)return fail('You can only drop an existing native rock carried by your character.');
   if(verb==='move'&&!caps.movable)return fail(`The ${object.name} is fixed in place.`);
   if(verb==='break'&&!caps.breakable)return fail(`The ${object.name} cannot be broken by that action.`);
   if(verb==='ignite'&&!caps.flammable)return fail(object.condition==='burning'?'It is already burning.':`The ${object.name} does not have dry, intact fuel to ignite.`);
@@ -355,6 +358,19 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   // world.entities. Those invisible records must never block map interactions.
   const occupied=t=>Object.values(world.entities||{}).concat(p).some(e=>e.type!=='item'&&!e.chaosSpectator&&!e.isDead&&e.hasEnteredGame!==false&&e.x===t.x&&e.y===t.y);
   let destination=null;
+  if(verb==='drop'){
+   // Never conjure a rock: relocate the one original, saved atlas stamp.
+   // A carried native pebble is one cell. The destination must be empty,
+   // reachable, in-zone and clear of doors, real bodies and other props.
+   if(!object.portable||object.cells?.length!==1)return fail('This native object has no verified one-tile drop adapter.');
+   const near=[[1,0],[0,1],[-1,0],[0,-1]].map(([dx,dy])=>({x:p.x+dx,y:p.y+dy}));
+   const blockedByObject=t=>current.some(q=>q.id!==object.id&&!q.carriedBy&&q.condition!=='broken'&&
+    (q.footprint?.length||q.movable||q.fireSource||q.protected||q.waterSource)&&
+    nativeCells(q).some(cell=>cell.x===t.x&&cell.y===t.y));
+   const blockedByDoor=t=>nativeDoors.some(d=>d.x===t.x&&d.y===t.y||d.tx===t.x&&d.ty===t.y);
+   destination=near.find(t=>sameZone(p,t)&&world.isValidPosition(t.x,t.y)&&!occupied(t)&&!blockedByObject(t)&&!blockedByDoor(t))||null;
+   if(!destination)return fail('No clear adjacent native tile is available to put the rock down.');
+  }
   if(verb==='move'){
    if(object.condition==='burning')return fail('Put the fire out before moving it.');
    let obstruction='';
@@ -386,6 +402,8 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    }
    const success=!check||check.success;let fact;
    if(!success)fact=`The attempt fails. The ${o.name} stays ${o.condition} in its current position.`;
+   else if(verb==='take'){o.carriedBy=identity(p);fact=`You pick up the existing ${o.name}. Its original painted rock and collision leave the map until you drop it.`;}
+   else if(verb==='drop'){o.tile=destination;delete o.carriedBy;fact=`You put down the same existing ${o.name} at ${o.tile.x},${o.tile.y}. Its original art and collision return.`;}
    else if(verb==='move'){o.tile=destination;fact=`The existing ${o.name} shifts one tile to ${o.tile.x},${o.tile.y}. Its collision moves with it.`;}
    else if(verb==='break'){o.condition='broken';o.hp=0;fact=o.kind==='roof'?'The upper wooden roof gives way. The original stone walls and doorway remain.':o.kind==='grass'?'The existing grass is cleared, exposing native soil.':`The existing ${o.name} comes down. Its own blocking tiles are cleared.`;}
    else if(verb==='ignite'){o.condition='burning';o.ignitedBy=identity(p);o.ignitionOriginId=o.id;fact=`The existing ${o.name} catches fire.`;}
@@ -401,9 +419,9 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    }
    const canonical=(check?`D20 ${rolls?rolls.join(' / ')+' → ':''}${check.roll}${check.bonus?' +'+check.bonus:''} / ${dc}: `:'')+fact;
    const room={round,world:{expedition:{current:scene(p),creatures:state.npcs}},dmMemory:state.dmMemory,result:{id:'chaos-'+round,playerId:identity(p),name:name(p),action:text,target:{entityId:o.id},blocked:false,success,narration:canonical,changes:success?[fact]:[],sceneEvents:witnessed.map(n=>({type:'witness',entityId:n.id}))}};
-   recordDMMemory(room);const event=state.dmMemory.entries.at(-1);if(event)event.tile={...contact};
+   recordDMMemory(room);const event=state.dmMemory.entries.at(-1);if(event)event.tile={...(verb==='take'?{x:p.x,y:p.y}:verb==='drop'?destination:contact)};
    persist();syncNative(p);
-   result={blocked:false,success,text:canonical,event,...(check?{roll:check.roll,dc,bonus:check.bonus,rerolled:check.rerolled,rolls,assistedBy,hinderedBy}:{}),...(success?{object:{id:o.id,name:o.name,tile:{...nativeContact(p,o)},before:null,after:null,condition:o.condition,actorId:p.id,verb}}:{})};
+   result={blocked:false,success,text:canonical,event,...(check?{roll:check.roll,dc,bonus:check.bonus,rerolled:check.rerolled,rolls,assistedBy,hinderedBy}:{}),...(success?{object:{id:o.id,name:o.name,tile:{...(verb==='take'?{x:p.x,y:p.y}:nativeContact(p,o))},before:null,after:null,condition:o.condition,actorId:p.id,verb}}:{})};
   }catch(error){p.hitPoints=priorHP;state=previous;throw error;}
   if(verb==='drink'&&result.success){try{world.pushToPlayer(p,p.health());}catch{/* The next authenticated state poll also carries native health. */}}
   return result;
@@ -416,8 +434,8 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const story=state.dmMemory.entries.filter(e=>e.location===scene(p)&&(e.actorId===id||e.tile&&visible(p,e.tile))).slice(-3);
   const aid=state.assists[id],helper=aid?.until>now()?Object.values(p.getWorld().players||{}).find(q=>identity(q)===aid.helperId&&q.hasEnteredGame&&!q.isDead&&q.chaosControlled&&!q.chaosSpectator&&scene(q)===scene(p)&&reachable(p,q)):null;
   const assistedBy=helper&&aid.mode!==-1?name(helper):null,hinderedBy=helper&&aid.mode===-1?name(helper):null;
-  const updates=nativeTrees.filter(t=>t.cells).flatMap(t=>{const o=state.scenery[scene(p)+':'+t.id];return o&&(o.condition!==(t.fireSource?'burning':'intact')||distance(o.tile,t.tile)>0)?[{id:t.id,tile:o.tile,condition:o.condition}]:[];});
-  return {doors:doorControl.view(p),nativeChanges:nativeTrees.filter(t=>state.scenery[scene(p)+':'+t.id]?.condition==='broken').map(t=>t.id),nativeUpdates:updates,bag:allowSyntheticFixtures?bag.map(plain):[],ground:allowSyntheticFixtures?ground.map(plain):[],scenery:nearbyScenery(p).map(o=>{if(!o.nativeOrigin)return o;return {id:o.id,scene:o.scene,name:o.name,kind:o.kind,material:o.material,condition:o.condition,tile:o.tile,interactionTile:nativeContact(p,o),nativeOrigin:o.nativeOrigin,aliases:o.aliases,capabilities:nativeCapabilities(o),nativeAdapter:!!o.cells?.length,dc:o.dc,wet:o.wet>0};}),npcs,story,wearables:allowSyntheticFixtures?bag.filter(i=>i.equipped).map(plain):[],camp:allowSyntheticFixtures?state.camp:null,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})};
+  const updates=nativeTrees.filter(t=>t.cells).flatMap(t=>{const o=state.scenery[scene(p)+':'+t.id];return o&&(o.condition!==(t.fireSource?'burning':'intact')||distance(o.tile,t.tile)>0)?[{id:t.id,tile:o.tile,condition:o.condition,carriedBy:o.carriedBy||null}]:[];});
+  return {doors:doorControl.view(p),nativeChanges:nativeTrees.filter(t=>state.scenery[scene(p)+':'+t.id]?.condition==='broken').map(t=>t.id),nativeUpdates:updates,bag:[...(allowSyntheticFixtures?bag.map(plain):[]),...sceneScenery(scene(p)).filter(o=>o.carriedBy===id&&o.portable).map(o=>({id:o.id,name:o.name,kind:o.kind,material:o.material,condition:o.condition,scene:o.scene,tile:{x:p.x,y:p.y},nativeOrigin:o.nativeOrigin,nativeAdapter:true,capabilities:nativeCapabilities(o),carried:true}))],ground:allowSyntheticFixtures?ground.map(plain):[],scenery:nearbyScenery(p).map(o=>{if(!o.nativeOrigin)return o;return {id:o.id,scene:o.scene,name:o.name,kind:o.kind,material:o.material,condition:o.condition,tile:o.tile,interactionTile:nativeContact(p,o),nativeOrigin:o.nativeOrigin,aliases:o.aliases,capabilities:nativeCapabilities(o),nativeAdapter:!!o.cells?.length,dc:o.dc,wet:o.wet>0};}),npcs,story,wearables:allowSyntheticFixtures?bag.filter(i=>i.equipped).map(plain):[],camp:allowSyntheticFixtures?state.camp:null,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})};
  }
  function apply(p,text){
   if(!identity(p))return {blocked:true,success:false,text:'Your character is still connecting.'};
@@ -609,9 +627,9 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   surroundings(p);pulse(p);
   if(!p?.chaosControlled||!p.hasEnteredGame||p.isDead||!identity(p))
    return {blocked:true,success:false,text:'An active character must attempt the action.'};
-  const objects=sceneScenery(scene(p)).filter(o=>o.nativeOrigin).map(o=>({
+  const objects=sceneScenery(scene(p)).filter(o=>o.nativeOrigin&&(!o.carriedBy||o.carriedBy===identity(p))).map(o=>({
    id:o.id,verifiedNative:true,nativeAdapter:!!o.cells?.length,scene:o.scene,
-   tile:o.cells?.length?nativeContact(p,o):o.tile,condition:o.condition,
+   tile:o.carriedBy?{x:p.x,y:p.y}:o.cells?.length?nativeContact(p,o):o.tile,condition:o.condition,
    wet:o.wet>0,dc:o.dc,capabilities:o.cells?.length?nativeCapabilities(o):
     {breakable:o.condition!=='broken',flammable:o.condition!=='broken'&&o.condition!=='burning'}
   }));
@@ -620,8 +638,8 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   // A DM suggestion never grants line of sight through walls or across a zone.
   const validatedObject=state.scenery[decision.targetId];
   const contact=validatedObject?.cells?.length?nativeContact(p,validatedObject):validatedObject?.tile;
-  if(!validatedObject||!contact||!sameZone(p,contact)||
-   !visible(p,contact,2,validatedObject.cells?.length?nativeSightCells(validatedObject):validatedObject.footprint||true))
+  if(!validatedObject||!contact||decision.action!=='drop'&&(!sameZone(p,contact)||
+   !visible(p,contact,2,validatedObject.cells?.length?nativeSightCells(validatedObject):validatedObject.footprint||true)))
    return {blocked:true,success:false,text:'That existing scenery is not reachable or visible from here.'};
   const target=state.scenery[decision.targetId];
   if(!target||!target.nativeOrigin)return {blocked:true,success:false,text:'The native object is no longer available.'};
@@ -645,7 +663,9 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
  }
  function execute(p,text){
   surroundings(p);pulse(p);
-  const nativeAttempt=nativeObjectAttempt(text),nativeTarget=findNativeObject(nativeAttempt,nearbyScenery(p),p);
+  const nativeAttempt=nativeObjectAttempt(text);
+  const carried=nativeAttempt?.verb==='drop'?sceneScenery(scene(p)).filter(o=>o.carriedBy===identity(p)):[];
+  const nativeTarget=findNativeObject(nativeAttempt,carried.length?carried:nearbyScenery(p),p);
   if(nativeTarget){
    if(nativeTarget.ambiguous)return {blocked:true,success:false,text:'Two matching map objects are equally close. Use the displayed object ID.'};
    return executeNative(p,nativeTarget,nativeAttempt,text);
