@@ -322,7 +322,18 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   if(result.changed)persist();
   return result;
  }
- function execute(p,text){surroundings(p);pulse(p);const previous=state;state=structuredClone(state);try{const result=apply(p,text);if(result.blocked)state=previous;return result;}catch(error){state=previous;throw error;}}
+ function execute(p,text){
+  // Authored sidecar scenery only; never damage native map objects by guessing.
+  const strike=/^(?:attack|hit|chop|break) (?:the )?(.+)$/i.exec(String(text).trim());
+  if(strike){
+   const matches=visibleScenery(state,scene(p)).filter(o=>o.id.split(':').slice(1).join(':')===strike[1]||o.kind===strike[1]);
+   if(matches.length===1){
+    const id=matches[0].id.slice(scene(p).length+1);
+    const result=strikeScenery(p,id,1);
+    return {blocked:!result.changed,success:result.changed,text:result.changed?(result.object.condition==='broken'?'The '+result.object.kind+' falls and no longer blocks the way.':'You damage the '+result.object.kind+'.'):result.error};
+   }
+  }
+  surroundings(p);pulse(p);const previous=state;state=structuredClone(state);try{const result=apply(p,text);if(result.blocked)state=previous;return result;}catch(error){state=previous;throw error;}}
  function approach(p,text){
   const attempt=creativeAttempt(text);if(!attempt)return null;
   const {room,actor,s}=projection(p);if(!actor||attempt.entityAction&&!targetItem(s,room,attempt.target))return null;
