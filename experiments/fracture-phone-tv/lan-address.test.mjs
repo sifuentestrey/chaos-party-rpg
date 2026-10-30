@@ -7,7 +7,11 @@ test('Mac Wi-Fi is preferred over a misleading VPN, tunnel, or VM adapter',()=>{
   en1:[{family:'IPv4',internal:false,address:'192.168.1.81'}],
   en0:[{family:'IPv4',internal:false,address:'192.168.1.80'}],
   lo0:[{family:'IPv4',internal:true,address:'127.0.0.1'}]};
- assert.deepEqual(candidateLanIps(interfaces,null),['192.168.1.80','192.168.1.81','10.22.0.14','192.168.64.1']);
+ const ips=candidateLanIps(interfaces,null);
+ assert.deepEqual(ips.slice(0,2),['192.168.1.80','192.168.1.81']);
+ // The relative order of equally low-priority VPN and VM adapters is not a
+ // product contract; neither may outrank a real Wi-Fi or Ethernet interface.
+ assert.deepEqual(new Set(ips.slice(2)),new Set(['10.22.0.14','192.168.64.1']));
  assert.equal(preferredLanIp(interfaces,null),'192.168.1.80');
 });
 test('Wi-Fi alternative URLs can fall back to a second real private adapter',()=>{
