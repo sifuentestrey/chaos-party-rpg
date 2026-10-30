@@ -407,3 +407,26 @@ test('interference expires, cannot target an absent actor, and never changes nat
  assert.equal(other.a.hitPoints,100);
  assert.equal(other.engine.execute(other.b,'hinder Nobody').blocked,true);
 });
+
+test('native NPC reacts to a real burning rug, remembers destruction, and stops alarming after repair',t=>{
+ const {a,guard,engine,file,tick}=npcFixture(t);
+ const rug=engine.snapshot(a).ground.find(i=>i.owner==='guard');assert.ok(rug);
+ a.x=rug.tile.x+1;a.y=rug.tile.y;
+ assert.equal(engine.execute(a,'drop cloth strip').success,true);
+ const cloth=engine.snapshot(a).ground.find(i=>i.name==='cloth strip');assert.ok(cloth);
+ succeed(engine,a,'ignite '+cloth.id);
+ tick(); // Actual spread, not a player-supplied claim.
+ assert.equal(engine.snapshot(a).ground.find(i=>i.id===rug.id).condition,'burning');
+ assert.match(engine.talk(a,guard),/on fire.*extinguish/i);
+ assert.match(engine.snapshot(a).npcs.find(n=>n.name==='guard').concern,/on fire/i);
+ tick();tick();tick(); // Original Chaos burn-through rule.
+ assert.equal(engine.snapshot(a).ground.find(i=>i.id===rug.id).condition,'broken');
+ const npc=engine.snapshot(a).npcs.find(n=>n.name==='guard');
+ assert.ok(npc.memory.some(m=>m.verb==='fire-destruction'&&m.itemId===rug.id));
+ assert.match(engine.talk(a,guard),/burned through.*repair/i);
+ const reloaded=createChaosWorld({file});
+ assert.match(reloaded.talk(a,guard),/repair/i,'actual damage survives restart');
+ succeed(reloaded,a,'repair '+rug.id);
+ assert.equal(reloaded.snapshot(a).npcs.find(n=>n.name==='guard').concern,null);
+ assert.doesNotMatch(reloaded.talk(a,guard)||'',/on fire|burned through/i);
+});
