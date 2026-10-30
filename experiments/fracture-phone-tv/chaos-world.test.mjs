@@ -147,3 +147,48 @@ test('NPC ownership and proximity are checked by the original resolver before th
 });
 
 test('legacy native-ID NPC saves migrate without losing trust, memories or owned objects',t=>{const {a,engine,file,world}=fixture(t);const bag=engine.snapshot(a).bag,guard={id:841210,name:'Guard',kind:42,type:'npc',x:41,y:210};world.npcs={[guard.id]:guard};const saved=JSON.parse(fs.readFileSync(file));saved.npcs={[guard.id]:{attitude:'hostile',trust:{[a.characterId]:-4},history:[{verb:'theft',actorId:a.characterId,success:false,round:1}]}};saved.items[bag[0].id].ownerId=String(guard.id);fs.writeFileSync(file,JSON.stringify(saved));const restored=createChaosWorld({file});const npc=restored.snapshot(a).npcs[0];assert.equal(npc.nativeId,String(guard.id));assert.equal(npc.trust,-4);assert.ok(npc.memory.some(m=>m.verb==='theft'));assert.ok(npc.items.some(i=>i.id===bag[0].id));assert.equal(restored.canQuest(a,guard),false);const durable=JSON.parse(fs.readFileSync(file));assert.equal(durable.items[bag[0].id].ownerId,npc.id);assert.equal(durable.npcs[npc.id].trust[a.characterId],-4);});
+
+test('native-confirmed mob defeat becomes durable canonical DM memory and witnessed NPC dialogue',t=>{
+ const {a,b,guard,engine,file}=npcFixture(t);
+ engine.snapshot(a);
+ const mob={id:441,kind:4,type:'mob',name:'rat',x:40,y:211,isDead:false};
+ const original=fs.readFileSync(file,'utf8');
+ assert.equal(engine.recordNativeDefeat(a,mob,{before:8,after:0,tile:{x:40,y:211}}),null,'unconfirmed death cannot enter story');
+ assert.equal(engine.recordNativeDefeat(a,{...mob,isDead:true},{before:8,after:8,tile:{x:40,y:211}}),null,'zero native damage cannot enter story');
+ assert.equal(fs.readFileSync(file,'utf8'),original,'rejected combat must not alter save');
+ mob.isDead=true;
+ const event=engine.recordNativeDefeat(a,mob,{before:8,after:0,tile:{x:40,y:211}});
+ assert.ok(event?.id.startsWith('native-defeat-'));
+ assert.match(event.fact,/8 → 0 HP/);
+ assert.ok(event.witnesses.includes('guard'));
+ assert.equal(engine.recordNativeDefeat(a,mob,{before:8,after:0,tile:{x:40,y:211}}),null,'same native entity instance cannot record duplicate defeat');
+ assert.match(engine.talk(a,guard),/saw you fighting when rat fell/);
+ assert.equal(engine.talk(b,guard),null,'an innocent player is not credited with the fight');
+ const saved=JSON.parse(fs.readFileSync(file));
+ assert.equal(saved.dmMemory.entries.filter(e=>e.id===event.id).length,1);
+ assert.equal(saved.dmMemory.entries.at(-1).targetId,'native-mob:441');
+ const restored=createChaosWorld({file});
+ assert.match(restored.talk(a,guard),/rat fell/);
+ assert.ok(restored.snapshot(a).story.some(e=>e.id===event.id&&e.outcome==='success'));
+ assert.equal(restored.snapshot(a).npcs[0].trust,0,'native fighting is observed, not arbitrarily rewarded with trust');
+});
+test('native combat memory never credits off-zone, distant, dead or unauthenticated characters',t=>{
+ const {a,guard,engine,file,world}=npcFixture(t);
+ engine.snapshot(a);
+ const mob={id:511,kind:4,type:'mob',name:'rat',x:41,y:210,isDead:true};
+ const saved=fs.readFileSync(file,'utf8');
+ const death={before:4,after:0,tile:{x:41,y:210}};
+ assert.equal(engine.recordNativeDefeat({...a,chaosControlled:false},mob,death),null);
+ assert.equal(engine.recordNativeDefeat({...a,isDead:true},mob,death),null);
+ assert.equal(engine.recordNativeDefeat({...a,hasEnteredGame:false},mob,death),null);
+ assert.equal(engine.recordNativeDefeat(a,mob,{...death,tile:{x:90,y:210}}),null);
+ world.zoneManager.getZoneAt=(x)=>({id:x<41?'refuge':'woods'});
+ assert.equal(engine.recordNativeDefeat(a,mob,death),null,'native zone boundary prevents cross-zone witness memory');
+ assert.equal(fs.readFileSync(file,'utf8'),saved);
+ world.zoneManager.getZoneAt=()=>({name:'The Refuge'});
+ world.isValidPosition=(x,y)=>x!==41;
+ const valid=engine.recordNativeDefeat(a,mob,death);
+ assert.ok(valid,'actual adjacent combat may still be recorded even if a map tile becomes blocked');
+ assert.equal(valid.witnesses.length,0,'NPC behind a solid tile must not witness combat');
+ assert.equal(engine.talk(a,guard),null);
+});
