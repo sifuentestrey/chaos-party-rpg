@@ -23,3 +23,13 @@ test('no native world snapshot means no fabricated world-change signal',()=>{
  assert.equal(worldFingerprint(null),null);
  assert.equal(worldFingerprint({zone:'Town'}),null);
 });
+
+
+test('authored scenery damage and fall trigger cross-phone refresh without private data',()=>{
+ const tree={id:'fracture:world:camp-tree',kind:'tree',hp:12,condition:'intact',tile:{x:8,y:7}};
+ const withTree={...actor,chaos:{...actor.chaos,scenery:[tree]}};
+ const original=worldFingerprint(withTree);
+ assert.notEqual(worldFingerprint({...withTree,chaos:{...withTree.chaos,scenery:[{...tree,hp:9}]} }),original);
+ assert.notEqual(worldFingerprint({...withTree,chaos:{...withTree.chaos,scenery:[{...tree,hp:0,condition:'broken',blocking:false}]} }),original);
+ assert.equal(worldFingerprint({...withTree,chaos:{...withTree.chaos,bag:[{id:'private'}]}}),original);
+});
