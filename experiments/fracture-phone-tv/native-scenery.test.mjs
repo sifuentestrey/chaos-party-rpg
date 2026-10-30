@@ -17,7 +17,9 @@ function nativeFixture(t){const map=mapFixture(),nativeTrees=discoverNativeTrees
  const engine=createChaosWorld({file,nativeTrees,seed:1,clock:()=>now});return {p,engine,file,world,nativeTrees,tick:()=>{now+=10000;return engine.snapshot(p)}};}
 test('real map trees use original damage, give wood once, clear only trunk cells, and retain destruction after restart',t=>{
  const {p,engine,file,world,nativeTrees}=nativeFixture(t);const tree=engine.snapshot(p).scenery.find(o=>o.nativeOrigin);assert.ok(tree,'native solid trunk is visible and interactable');assert.equal(shouldUseCreative('please cut down the tree!',{chaos:engine.snapshot(p)}),true);
- for(let i=0;i<4;i++){const result=engine.execute(p,'cut down tree');assert.equal(result.success,true);assert.equal(result.object.after,9-i*3);}
+ assert.equal(shouldUseCreative('kick the tree',{chaos:engine.snapshot(p)}),true);
+ assert.equal(shouldUseCreative('smash tree',{chaos:engine.snapshot(p)}),true);
+ for(let i=0;i<4;i++){const result=engine.execute(p,['kick the tree','smash tree','hack tree','cut down tree'][i]);assert.equal(result.success,true);assert.equal(result.object.after,9-i*3);}
  for(const tile of nativeTrees[0].footprint)assert.equal(world.isValidPosition(tile.x,tile.y),true);assert.equal(world.isValidPosition(35,210),false,'unrelated native obstacle remains');assert.equal(engine.snapshot(p).bag.filter(i=>i.originId===tree.id).length,0,'public bag does not expose internal origin metadata');
  assert.equal(Object.values(JSON.parse(fs.readFileSync(file)).items).filter(i=>i.originId===tree.id).length,1);assert.equal(engine.execute(p,'chop tree').blocked,true);assert.equal(engine.snapshot(p).nativeChanges.length,1);
  for(const tile of nativeTrees[0].footprint)world.map.grid[tile.y][tile.x]=1;
