@@ -92,6 +92,22 @@ export function installChaosActor(player:any, connection:any): void {
       const used=(inventory.getSlot(index)?.count||0)<count;receipt(id,used?'succeeded':'blocked',used?`Used ${intent.target}. HP ${hp} → ${player.hitPoints}.`:'You are already at full health. The item was kept.');return ack({ok:true});
     }
     if(active)return ack({error:'Finish your action or stop it first.'});
+     if(intent.verb==='environment'){
+      // The model supplies only a proposal. Recheck the live native world,
+      // active actor, zone, reach, collision and D20 at the mutation boundary.
+      try{
+        if(!chaosObjects?.adjudicateEnvironment)return ack({error:'Native scenery execution is not installed.'});
+        const result=chaosObjects.adjudicateEnvironment(player,intent.judgment);
+        receipt(id,result.blocked?'blocked':result.success?'succeeded':'failed',result.text,{
+          roll:result.roll,dc:result.dc,bonus:result.bonus,rerolled:result.rerolled,
+          event:result.event,object:result.object
+        });
+        return ack({ok:true});
+      }catch{
+        receipt(id,'failed','The native object action could not be saved. No world change is claimed.');
+        return ack({ok:true});
+      }
+     }
     if(intent.verb==='creative'){
       try{if(!chaosObjects)return ack({error:'Object rules are not installed on this host.'});const destination=chaosObjects.approach(player,intent.target);if(destination){cancel();active={id,intent,target:null,destination:[destination.x,destination.y],nearDestination:true,deadline:Date.now()+60000};receipt(id,'started','Walking to the object.');return ack({ok:true});}const result=chaosObjects.execute(player,intent.target);receipt(id,result.blocked?'blocked':result.success?'succeeded':'failed',result.text,{roll:result.roll,rolls:result.rolls,assistedBy:result.assistedBy,hinderedBy:result.hinderedBy,bonus:result.bonus,rerolled:result.rerolled,dc:result.dc,event:result.event,object:result.object});return ack({ok:true});}catch{receipt(id,'failed','Object action could not be saved; no success is claimed.');return ack({ok:true});}
     }
@@ -200,22 +216,6 @@ export function installChaosActor(player:any, connection:any): void {
         player.zoneCallback?.();player.checkZoneChange(player.x,player.y);
         socket.emit('chaos:position',state());finish('succeeded','Travelled through the door into another area.',{},action);return;
       }
-      if(intent.verb==='environment'){
-       // The model supplies only a proposal. Recheck the live native world,
-       // active actor, zone, reach, collision and D20 at the mutation boundary.
-       try{
-         if(!chaosObjects?.adjudicateEnvironment)return ack({error:'Native scenery execution is not installed.'});
-         const result=chaosObjects.adjudicateEnvironment(player,intent.judgment);
-         receipt(id,result.blocked?'blocked':result.success?'succeeded':'failed',result.text,{
-           roll:result.roll,dc:result.dc,bonus:result.bonus,rerolled:result.rerolled,
-           event:result.event,object:result.object
-         });
-         return ack({ok:true});
-       }catch{
-         receipt(id,'failed','The native object action could not be saved. No world change is claimed.');
-         return ack({ok:true});
-       }
-     }
      if(intent.verb==='creative'){const result=chaosObjects.execute(player,intent.target);finish(result.blocked?'blocked':result.success?'succeeded':'failed',result.text,{roll:result.roll,rolls:result.rolls,assistedBy:result.assistedBy,hinderedBy:result.hinderedBy,bonus:result.bonus,rerolled:result.rerolled,dc:result.dc,event:result.event,object:result.object},action);return;}
       if(!target||intent.verb==='go'){finish('succeeded',intent.verb==='move'?`Walked ${action.stepsMoved||intent.steps} tile${(action.stepsMoved||intent.steps)===1?'':'s'}.`:'Reached your destination.',{},action);return;}
       if(intent.verb==='attack'){
