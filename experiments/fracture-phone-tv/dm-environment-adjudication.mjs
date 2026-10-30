@@ -3,10 +3,10 @@
  * fabricate art, collision, objects, locations or successful state changes.
  * Deterministic, side-effect-free; authoritative world executor owns commits.
  */
-const ACTIONS=new Set(['push','pull','take','hide','ignite','extinguish','break','repair','move','climb','inspect','drink','move_north','move_south','move_east','move_west']);
+const ACTIONS=new Set(['push','pull','take','drop','hide','ignite','extinguish','break','repair','move','climb','inspect','drink','move_north','move_south','move_east','move_west']);
 const ABILITIES=new Set(['strength','dexterity','wisdom','none']);
-const CAPABILITY={push:'movable',pull:'movable',move:'movable',take:'portable',hide:'concealment',ignite:'flammable',extinguish:'extinguishable',break:'breakable',repair:'repairable',climb:'climbable',drink:'drinkable'};
-const NATIVE_ABILITIES={move:'strength',break:'strength',ignite:'wisdom',repair:'dexterity',extinguish:'none',inspect:'none',drink:'none'};
+const CAPABILITY={push:'movable',pull:'movable',move:'movable',take:'portable',drop:'droppable',hide:'concealment',ignite:'flammable',extinguish:'extinguishable',break:'breakable',repair:'repairable',climb:'climbable',drink:'drinkable'};
+const NATIVE_ABILITIES={move:'strength',break:'strength',ignite:'wisdom',repair:'dexterity',extinguish:'none',inspect:'none',drink:'none',take:'none',drop:'none'};
 const DIRECTIONAL=/^move_(north|south|east|west)$/;
 const integer=(n,min,max)=>Number.isInteger(n)&&n>=min&&n<=max;
 export function validateEnvironmentJudgment(judgment,context={}){
