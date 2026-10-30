@@ -243,6 +243,8 @@ test('host-only Refuge Trial persists real multi-phone evidence, not phone text 
  sockets[0].emit('chaos:position',{ready:true,dead:false,zone:'Glitch Woods'});
  assert.equal(app.room.adventure.woods.player,'Ada');
  sockets[1].emit('chaos:position',{ready:true,dead:false,zone:'The Refuge'});
+ assert.equal(app.room.adventure.status,'active','a teammate waiting in town cannot complete the return');
+ sockets[0].emit('chaos:position',{ready:true,dead:false,zone:'The Refuge'});
  assert.equal(app.room.adventure.status,'completed');
  const phone=await(await fetch(base+'/state?token='+bryn)).json();
  const tv=await(await fetch(base+'/tv-state?key=tv-key')).json();
