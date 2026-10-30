@@ -618,6 +618,9 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    return {blocked:true,success:false,text:'That existing scenery is not reachable or visible from here.'};
   const target=state.scenery[decision.targetId];
   if(!target||!target.nativeOrigin)return {blocked:true,success:false,text:'The native object is no longer available.'};
+  // Both structured model proposals and ordinary phone commands enter the
+  // same capability executor, including teammate dice and native map updates.
+  if(target.cells?.length)return executeNative(p,target,{verb:decision.action,target:target.id},decision.action+' '+target.id);
   // The DM can choose narrative framing, but never substitute invented damage,
   // a fabricated roll, or self-reported world state. Original native execution
   // remains the sole source of truth.

@@ -18,6 +18,8 @@ async function action(i,text,{allowBlocked=false}={}){
 async function success(i,text){for(let n=0;n<10;n++){const r=await action(i,text);if(r.r.status==='succeeded')return r;}throw Error('Ten real failed checks: '+text);}
 async function shot(name){await sleep(1200);await tv.screenshot({path:path.join(out,name+'.png')});}
 try{
+ const readyBy=Date.now()+20000;let ready=false;
+ while(Date.now()<readyBy){try{ready=(await fetch(base+'/health')).ok;}catch{}if(ready)break;await sleep(250);}assert.ok(ready,'Disposable bridge did not start');
  browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
  for(const [i,name] of ['Ash','Bram'].entries()){
   let p=room.players.find(p=>p.name===name);if(!p){const r=await post('/pair',{key:room.join,name,color:i?'Rose':'Blue',role:i?'healer':'knight',perk:'lucky'});assert.equal(r.status,201);p=await r.json();p.name=name;}players.push(p);
@@ -42,9 +44,9 @@ try{
  await success(0,'walk to 11, 220');await shot('native-roof-before');await success(0,'break house roof');await shot('native-roof-after');await success(0,'repair house roof');await shot('native-roof-repaired');
  await success(0,'walk to 35, 236');await success(1,'walk to 34, 236');await shot('native-boulder-before');
  const immunity=await action(0,'ignite boulder',{allowBlocked:true});assert.equal(immunity.r.status,'blocked');
- const ash=(await state(0)).actor;await success(1,`walk to ${ash.x-1}, ${ash.y}`);await success(1,'help Ash');await success(0,'push boulder east');await shot('native-boulder-after');
+ await success(1,'walk to Ash');await success(1,'help Ash');await success(0,'push boulder east');await shot('native-boulder-after');
  const saved=JSON.parse(fs.readFileSync(path.join(path.dirname(process.env.CHAOS_TEST_ROOM_FILE),'objects.json')));assert.equal(Object.keys(saved.items).length,0,'No synthetic props or new loot');assert.ok(Object.values(saved.scenery).every(o=>o.nativeOrigin),'Every scenery record comes from existing map art');assert.deepEqual(errors,[]);await phones[0].screenshot({path:path.join(out,'native-phone.png'),fullPage:true});report('passed');
-}catch(error){report('failed',error.message);console.error(error);process.exitCode=1;}
+}catch(error){const message=error.message.replace(/https?:\/\/\S+/g,'<private test URL>');report('failed',message);console.error(message);process.exitCode=1;}
 finally{
  await post('/dm',{key:room.host,enabled:false}).catch(()=>{});if(cdp)await cdp.send('Page.stopScreencast').catch(()=>{});
  if(frames.length){let list='';for(let n=0;n<frames.length;n++)list+="file 'frames/"+frames[n].file+"'\nduration "+(n+1<frames.length?Math.max(.02,frames[n+1].at-frames[n].at):.5)+'\n';fs.writeFileSync(path.join(out,'recording.ffconcat'),list);fs.writeFileSync(path.join(out,'frames.json'),JSON.stringify(frames));}await browser?.close();

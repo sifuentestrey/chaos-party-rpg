@@ -1,10 +1,26 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Existing-world reactions and compact live DM — October 30
+
+The owner’s latest direction is implemented on the experimental branch: **use the art and architecture already in Fracture; create no substitute props**. A pinned-map catalog binds 492 existing objects/terrain patches: 71 oaks/dead trees, 9 tents, 9 rocks/boulders, 10 log piles, all 13 town roofs, 40 bushes/plants, 2 wells, 9 original campfires, 310 visible-grass patches and 19 water patches. Partial/unsafe movable stamps stay protected. Other layers and independently owned collision survive removal; repair and movement reconcile the original layers reversibly. Roof destruction retains the facade and authored doorway. Earlier synthetic save records are preserved but excluded from native-only visibility, collision and fire execution.
+
+Player commands and grounded AI proposals share the capability executor. It checks active identity, zone, line of sight, physical reach, complete destination footprint, obstacles, characters and portals before committing an original Chaos D20 result. Knight/Lucky/helper/hinder rules apply; invalid actions consume no roll. Material constraints matter: stone does not ignite, fixed architecture cannot be pushed, and repair cannot grow a tree. Grass/wood/cloth fire spreads one hop per server tick; actual nearby water protects vegetation; original campfires stay contained until deliberately changed. Present native NPCs warn, remember witnessed actions, and can extinguish a fire already beside them. Wells use the native health API with a saved cooldown. No native HP loss or NPC movement is invented.
+
+**Real AI defect fixed:** sending per-tile atlas geometry to Groq caused HTTP 413 and silently left unexpected actions unsupported. Native snapshots and model context now carry compact semantic facts and capabilities; the engine retains full geometry. A real phone request, “Could you shove the canvas shelter a little farther to the right for me?”, produced a grounded original-tent move, an actual D20 18 +3 / DC 10, matching native collision and live narration. AI is disabled after tests. No paid provider, new service or credential import was used.
+
+**Integration and checks:** the other chat’s incoming typed native-DM contract, scoped STOP tests and native CI proof were preserved, alongside the broader object verifier. Both proposal routes reach the same capability executor. Fixed incoming phone JavaScript syntax and an incorrectly positioned cross-zone fixture. Added save-failure rollback, whole-footprint obstruction, independent-layer preservation, reversible repair/restart, native grass/water fire boundaries, NPC reaction, and bounded model-input checks. **215 combined checks passed with no skips**, native production client/server compiled, 3,331 native tests passed during this session, and original `npm run verify` passed. Current-head native CI and final combined gameplay evidence are recorded below when complete.
+
+Older unfinished craft-route trials now have an explicit majority-vote recovery to combat; the previous choice is retained in history. No silent save conversion, branch merge, public deployment or new release ZIP was performed.
+
+**Remaining boundaries:** this is a bounded material/capability simulation, not a fully editable world or full original Chaos campaign migration. Stone foundations, cliffs, unsupported furnishings, climbing/concealment and water-flow simulation remain protected/unsupported. Physical 2015 Intel Mac + phones/TV and current 12–20-device performance are not established by browser or historical synthetic tests.
+
+
 ## Native environment AI wiring — October 30, 2026 (partial parity; pinned CI pass)
 
 On experimental `spike/fracture-phone-tv`, unexpected free-form player text can now reach the optional DM's structured, grounded native-environment proposal, cross the phone/bridge action contract and execute through the existing authenticated native Fracture oak mutation boundary. The engine revalidates reach, zone, line of sight and DC 14 before committing a real D20 tree fall and original-map collision change; model descriptions are not state truth. No new art or objects. The live Groq model itself has **not** been verified with a physical phone/TV; native integration CI uses a clearly labeled model stub.
 
 [Pinned CI 41136693795](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41136693795) at `8c1088ac5904e9b6ea418b56025c935ec579d5ae` passed **3,331 upstream Fracture tests**, client/server build, native server boot, two distinct actors, a three-roll authored-oak fall with persistent shared collision and walk-through, and majority travel to and back from Glitch Woods. This confirms only the bounded existing-oak vertical slice. The original Chaos adventure/character feature parity, generalized native furniture/vegetation/rocks, true model-driven creative adjudication acceptance, physical Mac/iPhone/TV, and full release remain **open**. CI Mac packaging is held until owner physical acceptance.
+
 
 
 ## Native-art-only environmental gate — October 30, 2026 (code committed; pinned native acceptance pending)
