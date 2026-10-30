@@ -4,12 +4,13 @@ export function registerScenery(state,{scene,id,kind,tile}){
  if(!scene||!id||!kind)throw Error('Scenery needs scene, id and kind');
  state.scenery||={};
  const key=scene+':'+id;
- if(!state.scenery[key])state.scenery[key]={...environmentObject(key,kind,tile),scene};
+ if(!state.scenery[key])state.scenery[key]={...environmentObject(key,kind,tile),scene,name:kind==='tree'?'camp tree':kind,visual:kind};
  return state.scenery[key];
 }
 export function strikeScenery(state,{scene,id,damage=1}){
  const key=scene+':'+id,old=state.scenery?.[key];
  if(!old)return {changed:false,error:'Unknown authored scenery'};
+ if(old.condition==='broken')return {changed:false,error:'That scenery is already destroyed.',object:old};
  const result=environmentDamage(state.scenery,key,damage);
  if(result.changed)state.scenery=result.objects;
  return {changed:result.changed,object:state.scenery[key]};
