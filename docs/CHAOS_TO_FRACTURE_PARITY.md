@@ -1,5 +1,10 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Live native NPC presence for physical collision — October 30
+
+Sidecar collision now filters saved NPC owners against the native NPCs actually present in the world. This prevents a stale NPC save record from keeping an owned object as a phantom obstacle after the native NPC leaves. Regression authored; not yet executed or native-CI verified. This does not affect native map terrain collision.
+
+
 ## NPC-owned physical fixture collision — October 30
 
 The shared Chaos sidecar collision rule now recognizes an intact blocking NPC-owned floor fixture in its NPC's current scene, rather than excluding every owned object. Carried player items and absent NPCs do not become collision geometry; destroyed fixtures stop blocking. Added focused regression; CI and physical playtest pending. Native Fracture scenery still requires an explicit safe capability adapter and cannot be assumed destructible.
