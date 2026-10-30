@@ -3,6 +3,7 @@ import fs from 'node:fs';import path from 'node:path';import {randomInt} from 'n
 import {parseItemAttempt,planItemAttempt,resolveItem,ITEM_TYPES,MATERIALS} from '../../public/world-items.js';
 import {parseEntityAttempt,planEntity,resolveEntity,advanceEntities,MATERIAL_RULES} from '../../public/entity-rules.js';
 import {recordDMMemory} from '../../public/dm-memory.js';
+import {recordEnvironmentalIncident,propertyConcern} from './reactive-witness.mjs';
 import {spawnItem} from '../../public/campaign.js';
 import {Rng} from '../../public/vendor/partyframe-rng.js';
 import {selectD20} from '../../public/vendor/dnd5e-advantage.js';
@@ -116,6 +117,11 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const previous=state;state=structuredClone(state);try{
    const owned=[...Object.values(state.npcs).filter(n=>n.location===current).map(n=>({id:n.id})),...Object.entries(state.actors).filter(([,a])=>a.scene===current).map(([id])=>({id}))];
    const changes=[];let eventTile=null;
+   const present=new Set(nativeNPCs(p).map(n=>npcKey(p,n)));
+   const witnessed=(kind,item,actorId)=>recordEnvironmentalIncident(state.npcs,{
+    kind,item,actorId,round:state.round+1,location:current,
+    canWitness:(npc,tile)=>present.has(npc.id)&&visible({...p,x:npc.tile.x,y:npc.tile.y,getWorld:()=>p.getWorld()},tile,6)
+   });
    // Only physical ground objects can conduct fire. Carried inventory, distant
    // objects and objects in another native zone are never affected. Capture the
    // sources BEFORE each tick so a newly lit object cannot ignite a whole room
@@ -125,6 +131,10 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    for(let i=0;i<steps;i++){
     const sources=Object.values(state.items).filter(item=>onFloor(item)&&item.condition==='burning');
     changes.push(...advanceEntities({round:state.round,players:owned},{current,items:state.items,creatures:{}}));
+    for(const source of sources)if(onFloor(source)&&source.condition==='broken'){
+     witnessed('fire-destruction',source,source.ignitedBy);
+     eventTile||={...source.tile};
+    }
     for(const item of Object.values(state.items)){
      if(!onFloor(item)||item.condition!=='intact'||!MATERIAL_RULES[item.material]?.burns)continue;
      const itemZone=zone(item.tile);if(!itemZone)continue;
@@ -133,13 +143,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
      item.condition='burning';item.heat=0;
      if(source.ignitedBy)item.ignitedBy=source.ignitedBy;
      changes.push(`Fire spreads to ${item.name}`);eventTile||={...item.tile};
-     const npc=state.npcs[item.ownerId];
-     if(npc&&item.ignitedBy&&npc.location===current&&distance(npc.tile,item.tile)<=6){
-      npc.trust[item.ignitedBy]=Math.max(-10,(npc.trust[item.ignitedBy]||0)-1);
-      const observation={verb:'fire-spread',actorId:item.ignitedBy,itemId:item.id,round:state.round+1,success:true};
-      npc.memories||={};npc.memories[item.ignitedBy]=[...(npc.memories[item.ignitedBy]||[]),observation].slice(-4);
-      npc.history.push(observation);npc.history=npc.history.slice(-12);
-     }
+     witnessed('fire-spread',item,item.ignitedBy);
     }
    }
    state.fireClock[current]=next; // Preserve unprocessed elapsed ticks across bounded catch-up.
@@ -151,7 +155,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   if(!identity(p))return {bag:[],ground:[],wearables:[]};surroundings(p);pulse(p);const id=identity(p);
   const bag=Object.values(state.items).filter(i=>i.ownerId===id&&!i.parentId&&i.condition!=='disassembled');
   const ground=Object.values(state.items).filter(i=>(!i.ownerId&&i.location===scene(p)||state.npcs[i.ownerId]?.location===scene(p))&&!i.parentId&&i.tile&&visible(p,i.tile)&&i.condition!=='disassembled');
-  const npcs=npcViews(p).map(n=>({id:n.id,nativeId:n.nativeId,name:n.name,tile:n.tile,attitude:(n.trust[identity(p)]||0)<0?'hostile':(n.trust[identity(p)]||0)>0?'friendly':'neutral',trust:n.trust[identity(p)]||0,memory:(n.memories?.[identity(p)]||n.history.filter(h=>h.actorId===identity(p))).slice(-3),items:Object.values(state.items).filter(i=>i.ownerId===n.id&&!i.parentId).map(plain)}));
+  const npcs=npcViews(p).map(n=>({id:n.id,nativeId:n.nativeId,name:n.name,tile:n.tile,attitude:(n.trust[identity(p)]||0)<0?'hostile':(n.trust[identity(p)]||0)>0?'friendly':'neutral',trust:n.trust[identity(p)]||0,memory:(n.memories?.[identity(p)]||n.history.filter(h=>h.actorId===identity(p))).slice(-3),concern:propertyConcern(state.items,n,(npc,tile)=>visible({...p,x:npc.tile.x,y:npc.tile.y,getWorld:()=>p.getWorld()},tile,6)),items:Object.values(state.items).filter(i=>i.ownerId===n.id&&!i.parentId).map(plain)}));
   const story=state.dmMemory.entries.filter(e=>e.location===scene(p)&&(e.actorId===id||e.tile&&visible(p,e.tile))).slice(-3);
   const aid=state.assists[id],helper=aid?.until>now()?Object.values(p.getWorld().players||{}).find(q=>identity(q)===aid.helperId&&q.hasEnteredGame&&!q.isDead&&q.chaosControlled&&!q.chaosSpectator&&scene(q)===scene(p)&&reachable(p,q)):null;
   const assistedBy=helper&&aid.mode!==-1?name(helper):null,hinderedBy=helper&&aid.mode===-1?name(helper):null;
@@ -280,7 +284,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const tile=item?.tile||state.npcs[item?.ownerId]?.tile;
   return item&&(!item.ownerId||state.npcs[item.ownerId])&&tile&&!reachable(p,tile)?{...tile}:null;
  }
- function talk(p,native){surroundings(p);const n=state.npcs[npcKey(p,native)];if(!n)return null;const history=n.memories?.[identity(p)]||n.history.filter(h=>h.actorId===identity(p));const trust=n.trust[identity(p)]||0;if(!history.length&&trust===0)return null;const last=history.at(-1)||{verb:'theft',success:false};return `${n.name}: “${trust<0?'I remember what you did. Make amends before asking for a job.':last.verb==='give'?'Thank you for the gift. I remember your kindness.':last.verb==='appeal'?'I remember your apology. We can talk again.':last.verb==='defend'?`I saw you fighting when ${last.targetName||'that creature'} fell.`:`I remember your ${last.success?'':'attempt at '}${last.verb}${last.itemId?' involving '+(state.items[last.itemId]?.name||'that object'):''}.`}” (trust ${trust})`;}
+ function talk(p,native){surroundings(p);const n=state.npcs[npcKey(p,native)];if(!n)return null;const history=n.memories?.[identity(p)]||n.history.filter(h=>h.actorId===identity(p));const trust=n.trust[identity(p)]||0;const concern=propertyConcern(state.items,n,(npc,tile)=>visible({...p,x:npc.tile.x,y:npc.tile.y,getWorld:()=>p.getWorld()},tile,6));if(concern)return `${n.name}: “${concern}” (trust ${trust})`;if(!history.length&&trust===0)return null;const last=history.at(-1)||{verb:'theft',success:false};return `${n.name}: “${trust<0?'I remember what you did. Make amends before asking for a job.':last.verb==='give'?'Thank you for the gift. I remember your kindness.':last.verb==='appeal'?'I remember your apology. We can talk again.':last.verb==='defend'?`I saw you fighting when ${last.targetName||'that creature'} fell.`:`I remember your ${last.success?'':'attempt at '}${last.verb}${last.itemId?' involving '+(state.items[last.itemId]?.name||'that object'):''}.`}” (trust ${trust})`;}
  function canQuest(p,native){surroundings(p);const n=state.npcs[npcKey(p,native)];return !n||(n.trust[identity(p)]||0)>=0;}
  // Bridge only: the authenticated native actor calls this AFTER its real HIT
  // has reduced a mob to zero HP. No phone-supplied damage, XP or kill credit.
