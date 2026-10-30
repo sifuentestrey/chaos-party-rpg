@@ -497,6 +497,10 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   }));
   const decision=validateEnvironmentJudgment(judgment,{scene:scene(p),actor:{active:true,tile:{x:p.x,y:p.y}},objects,maxReach:1});
   if(!decision.accepted)return {blocked:true,success:false,text:decision.reason};
+  // A DM suggestion never grants line of sight through walls or across a zone.
+  const validatedTree=state.scenery[decision.targetId];
+  if(!validatedTree||!sameZone(p,validatedTree.tile)||!visible(p,validatedTree.tile,2,validatedTree.footprint||true))
+   return {blocked:true,success:false,text:'That existing scenery is not reachable or visible from here.'};
   const target=state.scenery[decision.targetId];
   if(!target||!target.nativeOrigin)return {blocked:true,success:false,text:'The native object is no longer available.'};
   // The DM can choose narrative framing, but never substitute invented damage,
