@@ -39,3 +39,12 @@ test('invalid geometry and ambiguous door positions cannot be used as new props'
  assert.equal(control.use(a,control.find(a,2),'hold').blocked,true);
  assert.equal(control.isBlocked(a,99,99),false);
 });
+
+test('one-way map teleport destinations are not invented as interactive doorways',()=>{
+ const world={players:{}},a={characterId:'a',name:'a',x:10,y:9,chaosControlled:true,hasEnteredGame:true,isDead:false,getWorld:()=>world},b={characterId:'b',name:'b',x:20,y:21,chaosControlled:true,hasEnteredGame:true,isDead:false,getWorld:()=>world};world.players={a,b};
+ const control=createNativeDoorControl([{x:10,y:10,tx:20,ty:20}]);
+ assert.equal(control.use(a,control.find(a,1),'hold').success,true);
+ assert.equal(control.find(b,1),null);
+ assert.equal(control.isBlocked(b,10,10),true);
+ assert.equal(control.isBlocked(b,20,20),false);
+});
