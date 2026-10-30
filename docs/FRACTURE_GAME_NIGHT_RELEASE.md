@@ -64,7 +64,7 @@ Crafted Chaos wearables currently add colored bands to the native sprites; they 
 ## Checks completed
 
 - [x] Pinned Fracture `642c00a8a2d3a95979e85bbfa3f62deee611a4a6`, pnpm `10.34.9`, production client/server builds.
-- [x] **71 Vitest files / 3,329 tests**, **54 focused Node checks**, original Chaos offline verification.
+- [x] **71 Vitest files / 3,329 tests**, **59 focused Node checks**, original Chaos offline verification.
 - [x] Actual browser phone/TV flow, recovered phones, real quest completion/reward, screenshots, no browser errors.
 - [x] Real-server rejection of wrong keys, cross-actor identity, expired/replayed actions, invented damage and arbitrary teleport.
 - [x] **New native majority-rally integration:** in disposable pinned Fracture, two distinct authenticated actors, one real tile movement, rejected outsider vote, strict two-person quorum, and separate native group `go` action **succeeded and reached the proposer**. [GitHub Actions integration run 40977145132](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/40977145132), October 29 local / October 30 UTC. This is cloud/Linux real-server proof, not a physical Mac playtest.
