@@ -101,8 +101,15 @@ try{
  assert.equal(tree.condition,'intact');
  for(let n=0;n<4;n++){
   await sleep(250);
-  const chop=await post('/action',{token,text:'attack tree'});
-  assert.equal(chop.status,202);
+  let chop;const unlockedBy=Date.now()+16000;
+  do{
+   chop=await post('/action',{token,text:'attack tree'});
+   if(chop.status===202)break;
+   assert.equal(chop.status,409,'only the real party reaction lock may delay the next strike: '+JSON.stringify(chop));
+   assert.match(chop.error||'',/locked|waiting for reactions/i);
+   await sleep(400);
+  }while(Date.now()<unlockedBy);
+  assert.equal(chop.status,202,'the real 10-second reaction window must eventually release the next strike');
   let outcome;deadline=Date.now()+25000;
   do{
    state=await get(token);
