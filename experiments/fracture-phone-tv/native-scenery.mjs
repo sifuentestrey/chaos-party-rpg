@@ -38,7 +38,7 @@ const STAMPS=[
  {key:'tent',kind:'tent',name:'tent',first:141,w:2,h:3,material:'cloth',movable:true,repairable:true,dc:10},
  {key:'boulder',kind:'rock',name:'boulder',first:18,w:3,h:4,material:'stone',movable:true,dc:18},
  {key:'stone',kind:'rock',name:'small rock',aliases:['stone','rock'],first:98,w:2,h:1,material:'stone',movable:true,dc:10},
- {key:'pebble',kind:'rock',name:'small rock',aliases:['stone','rock'],first:218,w:1,h:1,material:'stone',movable:true,dc:10},
+ {key:'pebble',kind:'rock',name:'small rock',aliases:['stone','rock'],first:218,w:1,h:1,material:'stone',movable:true,portable:true,dc:10},
  {key:'round-rock',kind:'rock',name:'rock',aliases:['stone','boulder'],first:258,w:2,h:2,material:'stone',movable:true,dc:14},
  {key:'logs',kind:'woodpile',name:'log pile',aliases:['logs','woodpile'],first:25,w:1,h:1,material:'wood',movable:true,dc:8},
  {key:'house',kind:'roof',name:'house roof',aliases:['house','building','roof','cottage'],first:45,w:7,h:8,material:'wood',removeRows:5,repairable:true,dc:16},
