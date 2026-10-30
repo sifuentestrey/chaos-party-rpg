@@ -100,7 +100,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   }
  }
  function npcViews(p){const present=new Set(nativeNPCs(p).map(n=>npcKey(p,n)));return Object.values(state.npcs).filter(n=>present.has(n.id)&&n.location===scene(p)&&visible(p,n));}
- function blocked(p,x,y){return objectBlocksTile(state.items,scene(p),x,y);}
+ function blocked(p,x,y){return objectBlocksTile(state.items,scene(p),x,y,state.npcs);}
  function targetItem(s,room,reference){const matches=Object.values(s.items).filter(i=>!i.parentId&&i.condition!=='disassembled'&&(i.id===reference||norm(i.name)===norm(reference))&&(i.location===s.current||room.players.some(p=>p.id===i.ownerId)||Object.hasOwn(s.creatures,i.ownerId)));return matches.length===1?matches[0]:null;}
  function projection(p){
   surroundings(p);const current=scene(p),id=identity(p),world=p.getWorld();
