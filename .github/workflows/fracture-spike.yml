@@ -78,6 +78,7 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           CHAOS_BETA_TEST=1 FRACTURE_ROOT="$RUNNER_TEMP/Fracture" node experiments/fracture-phone-tv/verify-native-dm.mjs
           CHAOS_BETA_TEST=1 FRACTURE_ROOT="$RUNNER_TEMP/Fracture" node experiments/fracture-phone-tv/verify-native-objects.mjs
+          CHAOS_BETA_TEST=1 FRACTURE_ROOT="$RUNNER_TEMP/Fracture" node experiments/fracture-phone-tv/verify-native-portable.mjs
           CHAOS_BETA_TEST=1 FRACTURE_ROOT="$RUNNER_TEMP/Fracture" node experiments/fracture-phone-tv/verify-rally.mjs
 
   mac-source-kit:
