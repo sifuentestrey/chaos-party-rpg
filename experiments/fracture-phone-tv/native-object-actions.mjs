@@ -33,7 +33,7 @@ export function nativeDestination(p,o,attempt,{valid,sameZone,occupied,objects,d
  let vector=directions[attempt.direction];
  if(!vector){const dx=contact.x-p.x,dy=contact.y-p.y;vector=Math.abs(dx)>=Math.abs(dy)?[Math.sign(dx)||1,0]:[0,Math.sign(dy)||1];if(attempt.pull)vector=vector.map(n=>-n);}
  const [dx,dy]=vector;
- const other=objects.filter(q=>q.id!==o.id&&q.condition!=='broken'&&(q.footprint?.length||q.movable)).flatMap(q=>nativeCells(q));
+ const other=objects.filter(q=>q.id!==o.id&&!q.carriedBy&&q.condition!=='broken'&&(q.footprint?.length||q.movable)).flatMap(q=>nativeCells(q));
  for(const t of own){
   const next={x:t.x+dx,y:t.y+dy},inOwn=own.some(q=>q.x===next.x&&q.y===next.y);
   const reason=!sameZone(next)?'another area':!inOwn&&!valid(next)?'solid terrain':occupied(next)?'a character':other.some(q=>q.x===next.x&&q.y===next.y)?'another map object':doors.some(q=>q.x===next.x&&q.y===next.y||q.tx===next.x&&q.ty===next.y)?'an entrance':null;
