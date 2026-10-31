@@ -22,7 +22,7 @@ async function action(i,text,{allowBlocked=false}={}){
  }throw Error('No native result: '+text);
 }
 async function succeed(i,text){for(let n=0;n<12;n++){const value=await action(i,text);if(value.result.status==='succeeded')return value;}throw Error('Twelve real D20 failures: '+text);}
-async function waitFor(predicate,ms=20000){const until=Date.now()+ms;while(Date.now()<until){const s=await get(0);if(predicate(s))return s;await sleep(400);}throw Error('World transition timed out');}
+async function waitFor(predicate,ms=20000,player=0){const until=Date.now()+ms;while(Date.now()<until){const s=await get(player);if(predicate(s))return s;await sleep(400);}throw Error('World transition timed out');}
 try{
  browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
  for(const p of players){const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true}),phone=await context.newPage();phone.on('pageerror',e=>errors.push(e.message));await phone.goto(base+'/join?key='+room.join+'#recover='+p.token);await phone.waitForFunction(()=>document.querySelector('#stats').textContent.startsWith('HP'));phones.push(phone);}
@@ -42,7 +42,7 @@ try{
  if(material.condition==='broken')await succeed(0,'repair '+material.id);
  await succeed(0,'ignite '+material.id);
  let s=await waitFor(s=>s.actor.chaos.scenery.find(o=>o.id===tree.id)?.condition==='burning');
- await phones[1].waitForFunction(id=>document.querySelector('#world').textContent.includes(id+'] · burning'),tree.id);
+ await waitFor(s=>s.actor.chaos.scenery.find(o=>o.id===tree.id)?.condition==='burning',20000,1);
  await sleep(1200);await tv.screenshot({path:path.join(out,'reactive-tree-fire-tv.png')});
  events.push({check:'ground fire spreads to tree and second phone updates',hp:s.actor.chaos.scenery.find(o=>o.id===tree.id).hp});
  // Separate players can put out adjacent sources together before they relight each other.
@@ -51,8 +51,8 @@ try{
  await sleep(11500);assert.equal((await get(0)).actor.chaos.scenery.find(o=>o.id===tree.id).hp,rescued.hp,'Dousing halts damage without resetting HP');
  await succeed(0,'ignite '+tree.id);
  s=await waitFor(s=>s.actor.chaos.scenery.find(o=>o.id===tree.id)?.condition==='broken',140000);
- await phones[1].waitForFunction(id=>document.querySelector('#world').textContent.includes(id+'] · broken · HP 0'),tree.id);
- await phones[1].getByText('World and people',{exact:true}).click();await phones[1].screenshot({path:path.join(out,'reactive-second-phone.png'),fullPage:true});
+ await waitFor(s=>{const o=s.actor.chaos.scenery.find(o=>o.id===tree.id);return o?.condition==='broken'&&o.hp===0;},20000,1);
+ await phones[1].screenshot({path:path.join(out,'reactive-second-phone.png'),fullPage:true});
  await sleep(1200);await tv.screenshot({path:path.join(out,'reactive-tree-stump-tv.png')});
  const walk=await action(0,`walk to ${tree.tile.x}, ${tree.tile.y}`);assert.equal(walk.result.status,'succeeded');assert.deepEqual([walk.state.actor.x,walk.state.actor.y],[tree.tile.x,tree.tile.y]);
  const saved=JSON.parse(fs.readFileSync(path.join(path.dirname(process.env.CHAOS_TEST_ROOM_FILE),'objects.json'),'utf8'));

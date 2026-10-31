@@ -1,5 +1,7 @@
 # Chaos Party — local Fracture beta acceptance
 
+**Phone follow-up (October 31):** removed World & people and Help & movement panels and their unused display handlers, per owner request. Action, Abilities, Gear, party travel, AI status and STOP remain.
+
 ## Phone controller polish — October 31, 2026
 
 **Owner request:** make the controller less basic and reduce scrolling, keeping Action → Abilities → Gear. Implemented a compact animated portrait/name/class/location/health header, shorter action and ability sections, native-icon equipment cards, grouped native bag quantities and separate exact-ID carried-object cards. Equip/Use/Inspect/Drop buttons call the existing authenticated action executor only where supported. Cosmetic outfits never become equipment. A bottom Action/Abilities/Gear/Stop bar hides during typing and wardrobe editing; party/world/help remain collapsed. Successful HTTP acceptance clears the submitted draft; request failure preserves it. AI status reflects the existing provider state without making extra AI requests.
