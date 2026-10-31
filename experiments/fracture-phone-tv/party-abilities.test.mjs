@@ -10,3 +10,9 @@ test('invalid healing consumes neither health nor a cooldown',t=>{const {p,world
 test('dead, unentered, unauthenticated and legacy actors cannot execute a starter skill',t=>{const {p,abilities,calls}=setup(t);for(const [key,value] of [['isDead',true],['hasEnteredGame',false],['chaosControlled',false],['chaosSpectator',true],['chaosRole','bard']]){const old=p[key];p[key]=value;assert.equal(abilities.use(p).blocked,true);p[key]=old;}assert.deepEqual(calls,[]);});
 test('ability save failure happens before any native effect or healing',t=>{const {p,file,abilities,calls}=setup(t);fs.mkdirSync(file);assert.throws(()=>abilities.use(p));assert.deepEqual(calls,[]);assert.equal(abilities.snapshot(p).readyAt,0);assert.equal(p.hitPoints,50);});
 test('Mend rollback restores health and deadline when the native save fails',t=>{const {p,abilities}=setup(t);p.chaosRole='healer';p.getWorld().getStorageService=()=>({});p.saveToStorage=()=>{throw Error('native storage failed');};assert.throws(()=>abilities.use(p));assert.equal(p.hitPoints,50);assert.equal(abilities.snapshot(p).readyAt,0);});
+test('ability receipts describe confirmed effects rather than treating tooltip possibilities as actual events',t=>{
+ const f=setup(t);f.p.chaosRole='rogue';const phase=f.abilities.use(f.p);assert.match(phase.text,/became phased/);assert.ok(!phase.text.includes('slip past enemies'));
+ f.p.chaosRole='wizard';const empty=f.abilities.use(f.p);assert.match(empty.text,/0 nearby enemies/);assert.deepEqual(empty.abilityEffect.stunnedTargets,[]);
+ f.advance(21000);const mob={id:90,type:'mob',stunUntil:0};f.world.entities[90]=mob;
+ const abilities=createPartyAbilities({...f.options,useNativeSkill:(p,id)=>{f.options.useNativeSkill(p,id);mob.stunUntil=f.options.clock()+3000;}});const stunned=abilities.use(f.p);assert.match(stunned.text,/1 nearby enemies/);assert.deepEqual(stunned.abilityEffect.stunnedTargets,[90]);
+});

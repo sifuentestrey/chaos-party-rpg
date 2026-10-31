@@ -29,9 +29,9 @@ patches.push(
     if (!characterExists) {
       const leader = (Object.values(world.players) as any[]).find(p => p.chaosControlled && p.hasEnteredGame && !p.isDead);
       if (leader) {
-        const offsets: number[][] = [];for(let r=1;r<=5;r++)for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++)if(Math.max(Math.abs(dx),Math.abs(dy))===r)offsets.push([dx,dy]);
+        const activeArea = (world as any).chaosPacing?.enabled ? (world as any).chaosPacing.area : null;\n        const offsets: number[][] = [];for(let r=1;r<=(activeArea?Math.max(activeArea.width,activeArea.height):5);r++)for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++)if(Math.max(Math.abs(dx),Math.abs(dy))===r)offsets.push([dx,dy]);
         const occupied = new Set((Object.values(world.entities) as any[]).filter(e=>e.type!=='item').map(e=>e.x+','+e.y));
-        const spot = offsets.map(([dx,dy])=>({x:leader.x+dx,y:leader.y+dy})).find(p=>world.isValidPosition(p.x,p.y)&&!occupied.has(p.x+','+p.y));
+        const spot = offsets.map(([dx,dy])=>({x:leader.x+dx,y:leader.y+dy})).find(p=>world.isValidPosition(p.x,p.y)&&!occupied.has(p.x+','+p.y)&&(!activeArea||(p.x>=activeArea.x&&p.x<activeArea.x+activeArea.width&&p.y>=activeArea.y&&p.y<activeArea.y+activeArea.height&&world.zoneManager.getZoneAt(p.x,p.y)?.name===activeArea.zone)));
         if (spot) player.setPosition(spot.x,spot.y);
       }
     }
@@ -52,13 +52,55 @@ patches.push(
 // Upstream sword1 points at platearmor and paints a helmet over every outfit.
 patches.push(['client/ts/sprites.ts',"const sword1 = require('../sprites/platearmor.json');","const sword1 = require('../sprites/sword1.json');",'  sword1,','  sword1,']);
 patches.push(['server/ts/player/skill.handler.ts','if (!hasUnlockedSkill(skillId as SkillId, ctx.level)) {','if (!hasUnlockedSkill(skillId as SkillId, ctx.level) && !((ctx as any).chaosControlled && (ctx as any).chaosSignatureSkill === skillId)) {','const success = executeSkill(ctx, skill);','const success = executeSkill(ctx, skill);']);
+// Experimental pacing hooks. No hook is active in an ordinary Fracture world.
+const pacingEdits={
+ 'server/ts/player/auth.handler.ts':[['  player.hasEnteredGame = true;', '  player.hasEnteredGame = true;\n  (player as any).chaosStartPacing?.();']],
+ 'server/ts/entity.ts':[['  setPosition(x: number, y: number): void {', '  setPosition(x: number, y: number): void {\n    const entity = this as any, world = entity.getWorld?.() || entity.chaosWorld;\n    if (world?.chaosPacing?.paused && !entity.chaosSpectator && (entity.type === \'mob\' || entity.type === \'player\' && entity.hasEnteredGame)) return;']],
+ 'server/ts/player/message-router.ts':[
+  ['const action = parseInt(message[0]);', "const action = parseInt(message[0]);\n    const pacing = (player.getWorld?.() as any)?.chaosPacing;\n    if (pacing?.enabled && !pacing.allowMessage(player, message)) return false;"]],
+ 'server/ts/world/game-loop.ts':[
+  ['  private ups = 50;', '  chaosCanSimulate?: () => boolean;\n  private ups = 50;'],
+  ['    // Regeneration timer', '    if (this.chaosCanSimulate?.() === false) return;\n\n    // Regeneration timer']],
+ 'server/ts/world.ts':[
+  ['  addMob(mob: Mob) {','  addMob(mob: Mob) {\n    (mob as any).chaosWorld = this;'],
+  ['  addItem(item: Item) {','  addItem(item: Item) {\n    (item as any).chaosWorld = this;'],
+  ['this.gameLoop = new GameLoop(this.ups);', 'this.gameLoop = new GameLoop(this.ups);\n      this.gameLoop.chaosCanSimulate = () => !(this as any).chaosPacing?.paused;'],
+  ['this.riftSpawnInterval = setInterval(() => {', 'this.riftSpawnInterval = setInterval(() => {\n        if ((this as any).chaosPacing?.paused) return;']],
+ 'server/ts/player/skill.handler.ts':[],
+ 'server/ts/player/combat.handler.ts':[],
+ 'server/ts/combat/combat-system.ts':[],
+ 'server/ts/mob.ts':[], 'server/ts/mobarea.ts':[], 'server/ts/item.ts':[],
+ 'server/ts/player.ts':[], 'server/ts/player/inventory.handler.ts':[], 'server/ts/player/loot.handler.ts':[]
+};
+for(const file of Object.keys(pacingEdits))if(!patches.some(p=>p[0]===file)){
+ const anchor=execFileSync('git',['show',`HEAD:${file}`],{cwd:root,encoding:'utf8'}).split('\n')[0];
+ patches.push([file,anchor,anchor,anchor,anchor]);
+}
+function paceSource(file,source){
+ for(const [before,after] of pacingEdits[file]||[]){if(!source.includes(before))throw Error('Pacing anchor missing: '+file);source=source.replace(before,after);}
+ const imports={
+  'server/ts/player/skill.handler.ts': ["import {gameNow} from '../chaos-clock';\n",s=>s.replaceAll('Date.now()', 'gameNow(ctx)')],
+  'server/ts/player/combat.handler.ts': ["import {gameNow} from '../chaos-clock';\n",s=>s.replaceAll('Date.now()', 'gameNow(player)')],
+  'server/ts/combat/combat-system.ts': ["import {gameNow} from '../chaos-clock';\n",s=>s.replaceAll('Date.now()', 'gameNow(mob)')],
+  'server/ts/mob.ts': ["import {gameNow,gameTimeout} from './chaos-clock';\n",s=>s.replaceAll('Date.now()', 'gameNow(this)').replaceAll('setTimeout(() => {','gameTimeout(this, () => {')],
+  'server/ts/mobarea.ts': ["import {gameTimeout} from './chaos-clock';\n",s=>s.replace('    mob.onMove(this.world.onMobMoveCallback.bind(this.world));','    (mob as any).chaosWorld = this.world;\n    mob.onMove(this.world.onMobMoveCallback.bind(this.world));').replaceAll('setTimeout(() => {','gameTimeout(mob, () => {')],
+  'server/ts/item.ts': ["import {gameTimeout} from './chaos-clock';\n",s=>s.replaceAll('setTimeout(() => {','gameTimeout(this, () => {').replace('setTimeout(params.despawnCallback, params.blinkingDuration)','gameTimeout(this, params.despawnCallback, params.blinkingDuration)')],
+  'server/ts/player.ts': ["import {gameNow} from './chaos-clock';\n",s=>s.replace('Date.now() < this.skillState.phaseShiftExpires','gameNow(this) < this.skillState.phaseShiftExpires')],
+  'server/ts/player/inventory.handler.ts': ["import {gameTimeout} from '../chaos-clock';\n",s=>s.replaceAll('setTimeout(() => {','gameTimeout(ctx, () => {')],
+  'server/ts/player/loot.handler.ts': ["import {gameTimeout} from '../chaos-clock';\n",s=>s.replaceAll('setTimeout(() => {','gameTimeout(player, () => {')]
+ };
+ if(file==='server/ts/player/combat.handler.ts')source=source.replace('export function handleHit(player: Player, msg: any[]): void {', 'export function handleHit(player: Player, msg: any[]): void {\n  if ((player.getWorld() as any).chaosPacing?.paused) return;').replace('export function handleHurt(player: Player, msg: any[]): void {', 'export function handleHurt(player: Player, msg: any[]): void {\n  if ((player.getWorld() as any).chaosPacing?.paused) return;');
+ if(file==='server/ts/player/message-router.ts')source=source.replace('    // Skip tracing for high-frequency messages', '    if (pacing?.enabled && !pacing.allowMessage(player, message)) return false;\n\n    // Skip tracing for high-frequency messages');
+ if(imports[file]){const [header,transform]=imports[file];source=header+transform(source);}
+ return source;
+}
 // Preflight all files before writing any source. Accept only pristine or exactly our patch.
 const writes=[];
 for(const [file,a,b,c,d] of patches){
  const upstream=execFileSync('git',['show',`HEAD:${file}`],{cwd:root,encoding:'utf8'});
  if(!upstream.includes(a)||!upstream.includes(c))throw Error(`Anchor missing: ${file}`);
- let patched=upstream.replace(a,b).replace(c,d);
- if(file==='client/ts/game.ts')patched=patched.replace('  resize() {','  resize() {\n    const sharedCameraOwned = this.camera.chaosSharedOwned;');
+ let patched=paceSource(file,upstream.replace(a,b).replace(c,d));
+ if(file==='client/ts/game.ts')patched=patched.replace('  resize() {','  resize() {\n    const sharedCameraOwned = this.camera.chaosSharedOwned;').replace('      this.updater.update();','      if (!(this as any).__chaosPaused) this.updater.update();');
  if(file==='client/ts/world/zoning-manager.ts')patched=patched.replace('  onViewportResize(): void {','  onViewportResize(camera?: Camera): void {\n    if (camera && this.context) this.context.camera = camera;').replace('  enqueueZoningFrom(x: number, y: number): void {','  enqueueZoningFrom(x: number, y: number): void {\n    if (this.context?.camera.chaosSharedOwned) return;');
  if(file==='client/ts/renderer/camera.ts'){patched=patched.replace('  setGridPosition(x, y) {','  setGridPosition(x, y) {\n    if (this.chaosSharedOwned) return;').replace('  setZoneViewport(width: number, height: number, isFixed: boolean): void {','  setZoneViewport(width: number, height: number, isFixed: boolean): void {\n    if (this.chaosSharedOwned) return;');}
  if(file==='client/ts/utils/storage.ts')patched=patched.replaceAll('localStorage.data','localStorage[this.storageKey]');
@@ -70,7 +112,7 @@ for(const [file,a,b,c,d] of patches){
  if(current!==upstream&&current!==patched&&current!==legacy&&previous[file]!==digest(current))throw Error(`Local source edits in ${file}; refusing overwrite`);
  writes.push([file,patched]);
 }
-for(const [source,dest] of [['chaos-camera.test.ts','client/ts/__tests__/chaos-camera.test.ts'],['chaos-abilities.test.ts','server/ts/__tests__/chaos-abilities.test.ts'],['chaos-actor.test.ts','server/ts/__tests__/chaos-actor.test.ts'],['chaos-actor.ts','server/ts/chaos-actor.ts'],['action-contract.ts','server/ts/chaos-action-contract.ts'],['chaos-tv.ts','client/ts/chaos-tv.ts'],['native-map-state.ts','client/ts/chaos-native-map-state.ts']]){
+for(const [source,dest] of [['chaos-pacing.test.ts','server/ts/__tests__/chaos-pacing.test.ts'],['chaos-clock.ts','server/ts/chaos-clock.ts'],['chaos-camera.test.ts','client/ts/__tests__/chaos-camera.test.ts'],['chaos-abilities.test.ts','server/ts/__tests__/chaos-abilities.test.ts'],['chaos-actor.test.ts','server/ts/__tests__/chaos-actor.test.ts'],['chaos-actor.ts','server/ts/chaos-actor.ts'],['action-contract.ts','server/ts/chaos-action-contract.ts'],['chaos-tv.ts','client/ts/chaos-tv.ts'],['native-map-state.ts','client/ts/chaos-native-map-state.ts']]){
  const p=path.join(root,dest);
  const canonical=fs.readFileSync(path.join(dir,source),'utf8');
  if(fs.existsSync(p)){const current=fs.readFileSync(p,'utf8');if(!current.startsWith('/** Chaos-owned')||(current!==canonical&&previous[dest]!==digest(current)))throw Error(`Local or unrecognized edits in ${dest}; refusing overwrite`);}
@@ -81,6 +123,9 @@ for(const name of ['character-profile.mjs','character-appearance.mjs','scene-vie
  if(fs.existsSync(file)&&fs.readFileSync(file,'utf8')!==content&&previous[dest]!==digest(fs.readFileSync(file,'utf8')))throw Error('Local wardrobe edits; refusing overwrite: '+dest);
  writes.push([dest,content]);
 }
+const serverPacing='server/ts/party-pacing.ts',pacingContent=fs.readFileSync(path.join(dir,'party-pacing.mjs'),'utf8');
+if(fs.existsSync(path.join(root,serverPacing))&&previous[serverPacing]!==digest(fs.readFileSync(path.join(root,serverPacing),'utf8'))&&fs.readFileSync(path.join(root,serverPacing),'utf8')!==pacingContent)throw Error('Local pacing edits preserved');
+writes.push([serverPacing,pacingContent]);
 const serverScene='server/ts/scene-view.ts',sceneContent=fs.readFileSync(path.join(dir,'scene-view.mjs'),'utf8');
 if(fs.existsSync(path.join(root,serverScene))&&previous[serverScene]!==digest(fs.readFileSync(path.join(root,serverScene),'utf8'))&&fs.readFileSync(path.join(root,serverScene),'utf8')!==sceneContent)throw Error('Local scene edits preserved');
 writes.push([serverScene,sceneContent]);

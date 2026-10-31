@@ -2,7 +2,7 @@
 
 ## Four-area playtest overhaul — October 31, 2026
 
-The experimental branch adds a majority-selected shared camera, lighter movement synchronization, grounded native building entry/exit with live Groq interpretation/narration, a simplified phone controller, and the expanded six-heritage wardrobe described in `FRACTURE_GAME_NIGHT_RELEASE.md`. These are implemented software improvements, not proof of full campaign parity or physical Mac/20-device acceptance. Group containment and automatic departure restrictions remain paused. Existing native environment, combat and saves are retained.
+The experimental branch adds a majority-selected shared camera, lighter movement synchronization, grounded native building entry/exit with live Groq interpretation/narration, a simplified phone controller, and the expanded six-heritage wardrobe described in `FRACTURE_GAME_NIGHT_RELEASE.md`. These are implemented software improvements, not proof of full campaign parity or physical Mac/20-device acceptance. The later shared Hybrid pacing milestone now bounds the active scene, pauses native simulation for simultaneous planning, and requires majority-approved departures; see the release tracker for current evidence. Existing native environment, combat and saves are retained.
 
 ## Character creation slice — October 31, 2026
 

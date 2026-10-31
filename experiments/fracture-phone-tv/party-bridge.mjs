@@ -36,7 +36,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
  const save=path.join(dataDir,'room.json');
  const existingRoom=fs.existsSync(save);
  let room=existingRoom?JSON.parse(fs.readFileSync(save,'utf8')):{host:token(),join:token(),players:[]};
- room.phase||=existingRoom?'playing':'creation';room.id||=randomUUID();
+ room.phase||=existingRoom?'playing':'creation';room.pacingMode||=existingRoom?'live':'hybrid';room.id||=randomUUID();
  const persist=()=>{const tmp=save+'.tmp';fs.writeFileSync(tmp,JSON.stringify({...room,turn:undefined,rally:undefined,choiceVote:undefined}),{mode:0o600});fs.renameSync(tmp,save);};persist();
  // Combat/notification events are not credentials or character saves. Write their
  // room log at most twice per second; identity and host slot changes stay durable
@@ -96,11 +96,11 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
   return id;
  }
  function connect(player){
-  const socket=io(`http://127.0.0.1:${fracturePort}`,{transports:['websocket'],reconnection:true,autoConnect:false,auth:{chaosActorKey:actorKey,chaosPartyId:room.id,chaosName:player.name,chaosRole:validRole(player.role)?player.role:null,chaosPerk:validPerk(player.perk)?player.perk:null}});
+  const socket=io(`http://127.0.0.1:${fracturePort}`,{transports:['websocket'],reconnection:true,autoConnect:false,auth:{chaosActorKey:actorKey,chaosPartyId:room.id,chaosHybrid:room.pacingMode==='hybrid',chaosName:player.name,chaosRole:validRole(player.role)?player.role:null,chaosPerk:validPerk(player.perk)?player.perk:null}});
   const session={player,socket,actor:null,worldFingerprint:null,results:new Map(),declarations:new Map(),attempts:new Map(),lastAction:0,epoch:0,lastSeen:0,suspending:false};sessions.set(player.token,session);
   socket.on('connect_error',()=>{session.error='Fracture is unavailable. The host should check its launcher.';});
   socket.on('connect',()=>{session.error=null;session.actor=null;socket.emit('message',[0,player.account,21,60,0,player.password]);});
-  socket.on('disconnect',()=>{invalidateActorRefresh(session);session.worldFingerprint=null;cancelPending(session,'Announced action cancelled: character disconnected.');session.actor=null;session.epoch++;session.storyController?.abort();session.declarations.clear();session.attempts.clear();for(const [id,result] of session.results)if(['received','started'].includes(result.status))session.results.set(id,{...result,status:'failed',message:'Game connection lost. Reconnect and try again.'});});
+  socket.on('disconnect',()=>{invalidateActorRefresh(session);session.worldFingerprint=null;cancelPending(session,'Announced action cancelled: character disconnected.');session.actor=null;session.epoch++;session.storyController?.abort();session.declarations.clear();session.attempts.clear();for(const [id,result] of session.results)if(['received','started','queued'].includes(result.status))session.results.set(id,{...result,status:'failed',message:'Game connection lost. Reconnect and try again.'});});
   socket.on('message',data=>{const messages=Array.isArray(data?.[0])?data:[data];for(const msg of messages){
    if(!Array.isArray(msg))continue;
    if(msg[0]===1){session.actor={id:msg[1],name:player.name,x:msg[3],y:msg[4],hp:msg[5],ready:true};refresh(session);}
@@ -111,8 +111,8 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
    if(msg[0]===86)session.error='Character authentication failed.';
   }});
   socket.on('chaos:receipt',r=>{
-   if(!session.results.has(r.id))return;
-   const {actor,...outcome}=r;session.results.set(r.id,outcome);if(actor)session.actor=actor;if(['succeeded','failed'].includes(r.status))for(const peer of sessions.values())if(peer!==session&&!peer.player.parked)refresh(peer);
+   if(!session.results.has(r.id)){if(!/^(travel|rejoin)-/.test(String(r.id)))return;session.results.set(r.id,{status:'received'});}
+   const {actor,...outcome}=r;session.results.set(r.id,outcome);if(actor){session.actor=actor;watchPacing(session);}if(['succeeded','failed'].includes(r.status))for(const peer of sessions.values())if(peer!==session&&!peer.player.parked)refresh(peer);
    // The native engine, not merely receipt of phone text, authorizes the
    // first-valid-action declaration. Rejections never waste a reaction turn.
    const declaration=session.declarations.get(r.id);
@@ -128,7 +128,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
    const attempt=session.attempts.get(r.id);
    progressAdventure(receiptEvidence(r,attempt,actor||session.actor,player.name,room.adventure?.instanceId));
    const storyEvent=r.event||(attempt&&(meaningful.has(attempt.verb)||['ability','enter','exit'].includes(attempt.verb))?{attempt:attempt.text}:null);
-   if(storyEvent&&['succeeded','failed','blocked'].includes(r.status)){
+   if(storyEvent&&['succeeded','failed','blocked'].includes(r.status)&&!(actor?.pacing?.enabled&&actor.pacing.phase!=='exploration')){
     session.storyController?.abort();const storyController=new AbortController();session.storyController=storyController;session.story={id:r.id,text:r.message,mode:'offline'};const epoch=session.epoch;
     void dm.narrate({...r,event:storyEvent,actor:{...(actor||session.actor),partyScene:partyScene()},player:player.name},{signal:storyController.signal}).then(story=>{
      if(!story||session.epoch!==epoch||session.story?.id!==r.id)return;
@@ -138,6 +138,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
    }
    record({player:player.name,...r,actor:undefined});
   });
+  socket.on('chaos:pacing-state',update=>{if(update.actor)session.actor=update.actor;if(!session.actor)return;session.actor.pacing=update.pacing||update;watchPacing(session);});
   socket.on('chaos:position',s=>{session.actor={...session.actor,...s};if(!session.player.parked)progressAdventure(zoneEvidence(session.actor,session.player.name,session.player.token));});
   return session;
  }
@@ -146,11 +147,11 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
  function dispatch(s,intent,text,id=randomUUID(),announced=false){
   s.results.set(id,{status:'received',message:text});s.attempts.set(id,{text,verb:intent.verb,adventureInstance:room.adventure?.instanceId||null});if(s.attempts.size>80)s.attempts.delete(s.attempts.keys().next().value);
   if(s.results.size>80)s.results.delete(s.results.keys().next().value);
-  if(meaningful.has(intent.verb)&&!isReaction(text)&&!announced){
+  if(meaningful.has(intent.verb)&&!isReaction(text)&&!announced&&!nativePacing?.enabled){
    s.declarations.set(id,{text});
    if(s.declarations.size>80)s.declarations.delete(s.declarations.keys().next().value);
   }
-  s.socket.timeout(2000).emit('chaos:action',{key:actorKey,id,intent,actorId:s.actor.id,issuedAt:Date.now()},(error,r)=>{
+  s.socket.timeout(2000).emit('chaos:action',{key:actorKey,id,intent,text,roundId:nativePacing?.roundId??s.actor.pacing?.roundId,actorId:s.actor.id,issuedAt:Date.now()},(error,r)=>{
    if(error||r?.error){
     s.declarations.delete(id);
     if(s.results.get(id)?.status==='received'){
@@ -160,6 +161,42 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
    }
   });
   return id;
+ }
+ let nativePacing=null,sharedRecap=null,preparingKey=null,recapKey=null;
+ const pacingCall=(s,data)=>new Promise((resolve,reject)=>{if(!s?.socket.connected)return reject(Error('Character is reconnecting.'));s.socket.timeout(1800).emit('chaos:pacing',{key:actorKey,...data},(error,result)=>{if(error||result?.error)return reject(Error(result?.error||'Pacing connection unavailable.'));if(result.pacing&&s.actor){s.actor.pacing=result.pacing;watchPacing(s);}resolve(result);});});
+ const publicPacing=s=>{
+  const own=s?.actor?.pacing,base=nativePacing&&(!own||nativePacing.instanceId===own.instanceId&&nativePacing.revision>=own.revision)?nativePacing:own;
+  if(!base?.enabled)return {enabled:false,mode:room.pacingMode};
+  const id=s?.actor&&String(s.actor.id),a=base.area,p={...base,eligible:!!id&&(base.members||[]).includes(id),draft:own?.roundId===base.roundId?own.draft:null,returning:!!own?.returning,outside:!!s?.actor&&!!a&&(s.actor.zone!==a.zone||s.actor.x<a.x||s.actor.y<a.y||s.actor.x>=a.x+a.width||s.actor.y>=a.y+a.height)};
+  if(base.travel)p.travel={...base.travel,eligible:!!id&&base.travel.voterIds?.includes(id),voted:!!id&&base.travel.votedIds?.includes(id)};
+  if(p.recap&&sharedRecap?.instanceId===p.instanceId&&sharedRecap.roundId===p.recap.roundId)p.recap={...p.recap,text:sharedRecap.text,mode:'optional AI'};
+  return p;
+ };
+
+ function watchPacing(s){
+  const p=s.actor?.pacing;if(!p?.enabled)return;
+  if(nativePacing?.instanceId===p.instanceId&&nativePacing.revision>p.revision)return;
+  const changed=nativePacing?.instanceId!==p.instanceId||nativePacing.revision!==p.revision;nativePacing=p;if(changed)scheduleWorldNotification();
+  const key=p.instanceId+':'+p.roundId;
+  if(p.phase==='preparation'&&preparingKey!==key){preparingKey=key;void preparePacing(s,p,key);}
+  if(p.phase==='recap'&&p.recap&&recapKey!==key){recapKey=key;
+   void dm.recapRound?.(p.recap,{signal:AbortSignal.timeout(3000)}).then(story=>{
+    if(!story||nativePacing?.instanceId!==p.instanceId||nativePacing.roundId!==p.roundId||nativePacing.phase!=='recap')return;
+    sharedRecap={instanceId:p.instanceId,roundId:p.roundId,text:story.text};record({player:'DM',status:'story',message:story.text});
+   }).catch(()=>{});
+  }
+ }
+ async function preparePacing(s,p,key){
+  try{
+   const response=await pacingCall(s,{command:'prepare',instanceId:p.instanceId});if(response.roundId!==p.roundId)return;
+   const plans=response.plans||[],unknown=plans.filter(d=>!d.continuation&&d.intent.verb==='unknown');
+   const batches=[];for(let i=0;i<unknown.length&&i<20;i+=10)batches.push(unknown.slice(i,i+10));
+   const replies=await Promise.all(batches.map(batch=>dm.interpretBatch?.(batch,{signal:AbortSignal.timeout(6000)})||null));
+   if(preparingKey!==key||nativePacing?.instanceId!==p.instanceId)return;
+   const interpreted=new Map(replies.flatMap(r=>r||[]).map(r=>[r.id,r.intent]));
+   await pacingCall(s,{command:'commit',instanceId:p.instanceId,roundId:p.roundId,plans:plans.map(d=>({id:d.id,actorId:d.actorId,revision:d.revision,intent:interpreted.get(d.id)||d.intent}))});
+   for(const peer of sessions.values())if(peer.socket.connected)refresh(peer);
+  }catch{/* Native preparation has its own deadline and executes only validated fallback intentions. */}
  }
  const publicChoice=(token=null)=>{const view=trialChoiceView(room.choiceVote,token,Date.now());if(view)view.proposer=sessions.get(view.proposer)?.player.name||'Party member';return view;};
  function finishChoice(){
@@ -205,7 +242,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
   }
  }
  function refresh(s){const ticket=beginActorRefresh(s);if(!ticket)return;s.socket.timeout(1500).emit('chaos:state',{key:actorKey},(err,r)=>{if(!finishActorRefresh(s,ticket))return;if(!err&&r?.ok){
-  s.actor=r.actor;
+  s.actor=r.actor;watchPacing(s);
   if(!s.player.parked){
    const nextWorld=worldFingerprint(r.actor);
    if(nextWorld!==null){
@@ -227,7 +264,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
    else refresh(s);
   }},1000);
  let sharedScene=null;
- const partyScene=()=>{const view=chooseScene([...sessions.values()].filter(s=>!s.player.parked&&s.socket.connected&&s.actor?.ready).map(s=>s.actor),sharedScene);if(!view)return null;const {id,zone,x,y,width,height}=view;sharedScene={id,zone,x,y,width,height};return sharedScene;};
+ const partyScene=()=>{if(nativePacing?.enabled&&nativePacing.area)return nativePacing.area;const view=chooseScene([...sessions.values()].filter(s=>!s.player.parked&&s.socket.connected&&s.actor?.ready).map(s=>s.actor),sharedScene);if(!view)return null;const {id,zone,x,y,width,height}=view;sharedScene={id,zone,x,y,width,height};return sharedScene;};
  const publicDM=()=>{const status=dm.status?.();return {enabled:dm.enabled===true,state:status?.state||'offline',message:status?.message||'Offline rules are available.'};};
  const publicPlayer=s=>({looks:s.player.looks||[],appearance:s.player.appearance||null,profileReady:true,name:s.player.name,color:s.player.color,role:validRole(s.player.role)?s.player.role:null,perk:validPerk(s.player.perk)?s.player.perk:null,actor:s.actor,error:s.error,story:s.story});
  const roster=()=>[...sessions.values()].filter(s=>!s.player.parked).map(publicPlayer);
@@ -259,7 +296,11 @@ document.getElementById('dm').onclick=()=>{const enabled=document.getElementById
 document.getElementById('dm-test').onclick=()=>updateDM('/dm/test',{},'Checking AI connection…');
 document.getElementById('dm-save').onclick=()=>{const field=document.getElementById('dm-key'),apiKey=field.value.trim();field.value='';return updateDM('/dm/configure',{apiKey,connect:true},'Saving and connecting AI DM…');};
 refreshDM();setInterval(refreshDM,3000);
-</script><p>Keep this host link private. Each phone gets its own character.</p></div><div class="card"><h2>The party</h2><p id="creator-roster"></p><button type="button" id="begin-adventure">Begin adventure</button></div><script>
+</script><p>Keep this host link private. Each phone gets its own character.</p></div><div class="card"><h2>Adventure rhythm</h2><p id="pacing-host-status">Checking the party…</p><button id="pacing-enable" type="button">Start Hybrid after regrouping</button><button id="pacing-attention" type="button" hidden>Gather attention</button><button id="pacing-extend" type="button" hidden>Add 15 seconds</button><script>
+let hostPacing=null;const pacingKey=${JSON.stringify(room.host)};
+async function refreshPacing(){try{const r=await fetch('/host/pacing-state?key='+encodeURIComponent(pacingKey));if(!r.ok)return;hostPacing=await r.json();document.getElementById('pacing-host-status').textContent=hostPacing.enabled?'Hybrid · '+hostPacing.phase+' · '+hostPacing.ready+'/'+hostPacing.total+' ready':'Live exploration. Gather in one scene to switch to Hybrid.';document.getElementById('pacing-enable').hidden=hostPacing.enabled;document.getElementById('pacing-attention').hidden=!hostPacing.enabled||hostPacing.phase!=='exploration';document.getElementById('pacing-extend').hidden=!hostPacing.enabled||hostPacing.phase!=='planning';}catch{}}
+for(const [id,command] of [['pacing-enable','enable'],['pacing-attention','attention'],['pacing-extend','extend']])document.getElementById(id).onclick=async()=>{const r=await fetch('/host/pacing',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key:pacingKey,command,instanceId:hostPacing?.instanceId,roundId:hostPacing?.roundId})});if(!r.ok)document.getElementById('pacing-host-status').textContent=(await r.json()).error;else await refreshPacing();};void refreshPacing();setInterval(refreshPacing,1000);
+</script></div><div class="card"><h2>The party</h2><p id="creator-roster"></p><button type="button" id="begin-adventure">Begin adventure</button></div><script>
 const beginKey=${JSON.stringify(room.host)};async function refreshLobby(){const r=await fetch('/host/lobby?key='+encodeURIComponent(beginKey));if(!r.ok)return;const v=await r.json();document.getElementById('creator-roster').textContent=v.players.length+' ready: '+v.players.map(p=>p.name).join(', ');document.getElementById('begin-adventure').hidden=v.phase==='playing';document.getElementById('begin-adventure').disabled=!v.players.length;}document.getElementById('begin-adventure').onclick=async()=>{const r=await fetch('/host/begin',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key:beginKey})});if(!r.ok)alert((await r.json()).error);await refreshLobby();};void refreshLobby();setInterval(refreshLobby,1500);
 </script><p>Adventure: meet a villager, defeat a rat, collect loot, then explore north together. Use “look around” to discover real targets.</p><div class="card"><h2>Recover a character</h2>${room.players.map(p=>`<p>${esc(p.name)} (${p.parked?'benched':'playing'}): <a href="${esc(join)}#recover=${p.token}">personal reconnect link</a> <button type="button" data-roster="${p.token}" data-park="${!p.parked}">${p.parked?'Restore player':'Bench player'}</button></p>`).join('')}<small>Share each personal link only with its player. It never contains the Fracture password.</small><script>document.querySelectorAll('[data-roster]').forEach(button=>button.onclick=async()=>{if(button.dataset.park==='true'&&!confirm('Bench this player? Their character will be saved and can be restored.'))return;const r=await fetch('/host/player',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key:${JSON.stringify(room.host)},token:button.dataset.roster,parked:button.dataset.park==='true'})});const v=await r.json();if(r.ok)location.reload();else alert(v.error);});</script></div><div class="card"><h2>Optional party adventure</h2><p>Start The Refuge Trial after a player joins in The Refuge. Talk to an NPC, defeat a monster OR craft, visit Glitch Woods, and return. Group progress persists; no invented loot, XP, or original campaign migration.</p><button id="adventure-start" type="button">${room.adventure?.status==='completed'?'Start another trial':'Start The Refuge Trial'}</button><p id="adventure-status">${esc(adventureView(room.adventure,{allowCraft:false})?.summary||"Not started.")}</p><script>document.getElementById("adventure-start").onclick=async()=>{const replay=${room.adventure?.status==='completed'};if(replay&&!confirm("Start a NEW Refuge Trial? Your completed run will be archived; native characters, gear, saves and world objects are not reset."))return;const r=await fetch("/host/adventure",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({key:${JSON.stringify(room.host)},action:replay?"replay":"start"})});const v=await r.json();document.getElementById("adventure-status").textContent=r.ok?v.adventure.summary:v.error;};</script></div><p>12–20-player performance and physical Mac acceptance remain unverified.</p>`));
    }
@@ -352,7 +393,7 @@ const el=id=>document.getElementById(id),log=s=>el('log').textContent=s;el('form
 async function api(path,data){const r=await fetch(path,{method:data?'POST':'GET',headers:data?{'content-type':'application/json'}:{},body:data?JSON.stringify(data):undefined});const v=await r.json();if(!r.ok)throw Error(v.error);return v;}
 window.chaosController={room,api,act,poll,editing:false,get token(){return auth;},async joined(t){auth=t;localStorage.setItem(storage,auth);connectChanges();await poll();}};import('/creation/creator-controller.mjs').then(m=>m.bootCreator(window.chaosController)).catch(()=>log('Character creation could not load. Reload this page.'));
 async function act(text){try{const r=await api('/action',{token:auth,text});pending=r.id;log('RECEIVED: '+text);return true;}catch(e){log(e.message);return false;}}
-el('form').onsubmit=async e=>{e.preventDefault();if(el('send-action').disabled)return;const text=el('text').value.trim();if(!text)return;el('send-action').disabled=true;try{if(await act(text)&&el('text').value.trim()===text)el('text').value='';}finally{el('send-action').disabled=false;}};el('stop').onclick=()=>act('stop');el('revive').onclick=()=>act('respawn');
+el('form').onsubmit=async e=>{e.preventDefault();if(el('send-action').disabled)return;const text=el('text').value.trim();if(!text)return;el('send-action').disabled=true;el('send-action').dataset.sending='true';try{if(await act(text)&&el('text').value.trim()===text)el('text').value='';}finally{delete el('send-action').dataset.sending;el('send-action').disabled=false;}};el('stop').onclick=()=>act('stop');el('revive').onclick=()=>act('respawn');
 el('propose-rally').onclick=async()=>{try{const r=await api('/rally/propose',{token:auth});activeRally=r.rally;log('Party vote opened.');await poll();}catch(e){log(e.message);}};
 for(const [id,destination] of [['travel-woods','woods'],['travel-refuge','refuge']])el(id).onclick=async()=>{try{const r=await api('/expedition/propose',{token:auth,destination});activeRally=r.rally;log('Travel vote opened.');await poll();}catch(e){log(e.message);}};
 async function castRally(yes){if(!activeRally)return;try{const r=await api('/rally/vote',{token:auth,id:activeRally.id,yes});activeRally=r.rally;log('Vote locked.');await poll();}catch(e){log(e.message);}}
@@ -367,8 +408,8 @@ el('trial-fight').hidden=!adventure||adventure.status!=='active'||!adventure.ste
 el('trial-yes').hidden=el('trial-no').hidden=!v.choiceVote||v.choiceVote.status!=='pending'||!v.choiceVote.eligible||v.choiceVote.voted;
 activeRally=v.rally;
 el('rally').textContent=v.rally? v.rally.proposer+' proposes '+(v.rally.kind==='expedition'?'travel to '+v.rally.destination:'gathering at '+v.rally.x+', '+v.rally.y)+' ('+v.rally.yes+'/'+v.rally.required+' yes needed, '+v.rally.status+(v.rally.status==='pending'?' · '+Math.max(0,Math.ceil((v.rally.deadline-Date.now())/1000))+'s left':'')+')':'No group vote proposed.';
-el('propose-rally').hidden=v.rally?.status==='pending';
-el('travel-woods').hidden=v.actor?.zone!=='The Refuge'||v.rally?.status==='pending';el('travel-refuge').hidden=v.actor?.zone!=='Glitch Woods'||v.rally?.status==='pending';
+el('propose-rally').hidden=v.pacing?.enabled||v.rally?.status==='pending';
+el('travel-woods').hidden=v.pacing?.enabled||v.actor?.zone!=='The Refuge'||v.rally?.status==='pending';el('travel-refuge').hidden=v.pacing?.enabled||v.actor?.zone!=='Glitch Woods'||v.rally?.status==='pending';
 el('rally-yes').hidden=el('rally-no').hidden=!v.rally||v.rally.status!=='pending'||!v.rally.eligible||v.rally.voted;
 const r=v.results.find(r=>r.id===pending)||v.results.at(-1);if(!r&&v.actor?.ready)log('Ready — what do you want to do?');if(r)log(r.status.toUpperCase()+': '+r.message+(v.dialogue?'\\nNPC: '+v.dialogue:''));}catch(e){log(e.message);}}
 let changes=null;function connectChanges(){if(changes){changes.close();changes=null;}if(!auth||typeof EventSource==='undefined')return;changes=new EventSource('/changes?token='+encodeURIComponent(auth));changes.addEventListener('change',()=>{if(!document.hidden)void poll();});}connectChanges();setInterval(poll,750);poll();
@@ -417,6 +458,7 @@ let changes=null;function connectChanges(){if(changes){changes.close();changes=n
    if((p==='/rally/propose'||p==='/expedition/propose')&&req.method==='POST'){
     const b=await body(req),s=sessions.get(b.token);
     if(!s||s.player.parked)return json(res,403,{error:'Invalid personal controller'});
+    if(nativePacing?.enabled)return json(res,409,{error:'Use the current Hybrid travel vote.'});
     if(room.rally?.status==='pending'){finishRally();if(room.rally.status==='pending')return json(res,409,{error:'A party vote is already open.'});}
     if(room.rally?.kind==='expedition'&&room.rally.status==='approved'&&Date.now()-(room.rally.resolvedAt||0)<45000&&(room.rally.arrivals||[]).length<room.rally.electorate.length)
      return json(res,409,{error:'Approved group travel is still underway. Wait for native arrivals or the 45-second travel window before opening another vote.'});
@@ -432,6 +474,7 @@ let changes=null;function connectChanges(){if(changes){changes.close();changes=n
    if(p==='/rally/vote'&&req.method==='POST'){
     const b=await body(req),s=sessions.get(b.token);
     if(!s||s.player.parked)return json(res,403,{error:'Invalid personal controller'});
+    if(nativePacing?.enabled)return json(res,409,{error:'Use the current Hybrid travel vote.'});
     if(!room.rally||b.id!==room.rally.id)return json(res,409,{error:'This rally is no longer open.'});
     try{voteRally(room.rally,s.player.token,b.yes,Date.now());}
     catch(e){finishRally();return json(res,409,{error:e.message});}
@@ -442,13 +485,28 @@ let changes=null;function connectChanges(){if(changes){changes.close();changes=n
     const s=sessions.get(url.searchParams.get('token'));if(!s)return json(res,403,{error:'Reconnect using your original phone and room link.'});
     if(s.player.parked)return json(res,409,{error:'Your character is benched. Ask the host to restore your slot; your progress is saved.'});
     s.lastSeen=Date.now();if(room.phase==='playing'&&!s.socket.connected&&!s.socket.active)s.socket.connect();
-    return json(res,200,{partyScene:partyScene(),dm:publicDM(),phase:room.phase,readyCount:liveCount(),...publicPlayer(s),guide:familyGuide(s.actor,adventureView(room.adventure,{allowCraft:false})),dialogue:s.dialogue,quest:s.quest,adventure:adventureView(room.adventure,{allowCraft:false}),choiceVote:publicChoice(s.player.token),rally:publicRally(s.player.token),declarations:publicDeclarations(pending),turn:room.turn&&room.turn.deadline>Date.now()?{actor:room.turn.actor,text:room.turn.text,deadline:room.turn.deadline}:null,results:[...s.results.entries()].slice(-12).map(([id,r])=>({id,...r}))});
+    return json(res,200,{pacing:publicPacing(s),partyScene:partyScene(),dm:publicDM(),phase:room.phase,readyCount:liveCount(),...publicPlayer(s),guide:familyGuide(s.actor,adventureView(room.adventure,{allowCraft:false})),dialogue:s.dialogue,quest:s.quest,adventure:adventureView(room.adventure,{allowCraft:false}),choiceVote:publicChoice(s.player.token),rally:publicRally(s.player.token),declarations:publicDeclarations(pending),turn:room.turn&&room.turn.deadline>Date.now()?{actor:room.turn.actor,text:room.turn.text,deadline:room.turn.deadline}:null,results:[...s.results.entries()].slice(-12).map(([id,r])=>({id,...r}))});
    }
    if(p==='/tv-state'&&req.method==='GET'){
     if(url.searchParams.get('key')!==tvKey)return json(res,403,{error:'Private TV link required'});
     const origin=req.headers.origin;
     if(origin){const u=new URL(origin);if(u.protocol!=='http:'||Number(u.port)!==fracturePort||u.hostname!==(req.headers.host||'').split(':')[0])return json(res,403,{error:'Invalid TV origin'});res.setHeader('access-control-allow-origin',origin);}
-    return json(res,200,{scene:partyScene(),phase:room.phase,players:roster(),adventure:adventureView(room.adventure,{allowCraft:false}),choiceVote:publicChoice(),rally:publicRally(),declarations:publicDeclarations(pending),events:events.slice(-8),lobby:{join:`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`,qr:qrSvg(`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`)},turn:room.turn&&room.turn.deadline>Date.now()?{actor:room.turn.actor,text:room.turn.text,deadline:room.turn.deadline}:null});
+    return json(res,200,{pacing:publicPacing(),scene:partyScene(),phase:room.phase,players:roster(),adventure:adventureView(room.adventure,{allowCraft:false}),choiceVote:publicChoice(),rally:publicRally(),declarations:publicDeclarations(pending),events:events.slice(-8),lobby:{join:`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`,qr:qrSvg(`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`)},turn:room.turn&&room.turn.deadline>Date.now()?{actor:room.turn.actor,text:room.turn.text,deadline:room.turn.deadline}:null});
+   }
+   if(p==='/host/pacing-state'&&req.method==='GET'){if(url.searchParams.get('key')!==room.host)return json(res,403,{error:'Private host required'});return json(res,200,publicPacing());}
+   if(p==='/pacing'&&req.method==='POST'){
+    const b=await body(req),s=sessions.get(b.token);
+    if(!s||s.player.parked)return json(res,403,{error:'Use your personal controller.'});
+    if(!['ready','vote','travel','rejoin'].includes(b.command))return json(res,400,{error:'Unknown player pacing action'});
+    if(b.command==='ready'&&(typeof b.ready!=='boolean'||!Number.isSafeInteger(b.roundId)))return json(res,400,{error:'Choose Ready for the current round.'});
+    if(b.command==='vote'&&(typeof b.yes!=='boolean'||typeof b.voteId!=='string'))return json(res,400,{error:'Choose yes or no for the current vote.'});
+    s.lastSeen=Date.now();try{const result=await pacingCall(s,{command:b.command,instanceId:b.instanceId,roundId:b.roundId,ready:b.ready,voteId:b.voteId,yes:b.yes,direction:b.direction});refresh(s);return json(res,200,result);}catch(error){return json(res,409,{error:error.message});}
+   }
+   if(p==='/host/pacing'&&req.method==='POST'){
+    const b=await body(req);if(b.key!==room.host)return json(res,403,{error:'Private host required'});
+    if(!['enable','attention','extend'].includes(b.command))return json(res,400,{error:'Unknown host pacing action'});
+    const s=[...sessions.values()].find(s=>!s.player.parked&&s.socket.connected&&s.actor?.ready&&!s.actor.dead);if(!s)return json(res,409,{error:'Connect a living character first.'});
+    try{const result=await pacingCall(s,{command:b.command,instanceId:b.instanceId,roundId:b.roundId});if(b.command==='enable'){room.pacingMode='hybrid';for(const peer of sessions.values())peer.socket.auth.chaosHybrid=true;persist();}for(const peer of sessions.values())if(peer.socket.connected)refresh(peer);return json(res,200,result);}catch(error){return json(res,409,{error:error.message});}
    }
    if(p==='/action'&&req.method==='POST'){
     const b=await body(req),s=sessions.get(b.token);if(!s)return json(res,403,{error:'Invalid personal controller'});
@@ -457,6 +515,11 @@ let changes=null;function connectChanges(){if(changes){changes.close();changes=n
     if(typeof b.text!=='string'||b.text.trim().length<2||b.text.length>180)return json(res,400,{error:'Action must contain 2–180 characters'});
     s.lastSeen=Date.now();
     if(!s.actor?.ready)return json(res,503,{error:'Your character is connecting. Try again shortly.'});
+    if(nativePacing?.enabled&&nativePacing.phase!=='exploration'&&nativePacing.phase!=='travel'){
+     let intent=parseIntent(b.text);if(!['enter','exit','cancel','ability'].includes(intent.verb)&&shouldUseCreative(b.text,s.actor))intent={verb:'creative',target:b.text};
+     if(intent.verb==='cancel'){s.epoch++;cancelPending(s,'Your action was cancelled.');s.storyController?.abort();}
+     s.lastAction=Date.now();return json(res,202,{id:dispatch(s,intent,b.text.trim())});
+    }
     const staged=stagedAction(b.text);
     if(staged?.error)return json(res,400,{error:staged.error});
     if(staged){

@@ -24,6 +24,23 @@ function interpretationScene(text,actor,entities){
   npcs:(actor?.chaos?.npcs||[]).slice(0,8).map(n=>({id:n.id,name:n.name,trust:n.trust,items:(n.items||[]).map(item)}))
  }};
 }
+function groundedIntent(intent,actor){
+ const entities=(actor?.nearby||[]).map(e=>({id:String(e.id??e.name),name:e.name,type:e.type,x:e.x,y:e.y}));
+    if(intent.verb==='ability'&&intent.target==='')intent={verb:'ability'};
+    if(!validIntent(intent)||!verbs.includes(intent.verb))return null;
+    if(['enter','exit'].includes(intent.verb)){const ref=intent.target?.toLowerCase();const doors=actor?.entrances||[];if(!ref||/^(?:house|building|door|entrance|inside|outside)$/.test(ref))return {verb:intent.verb};const door=doors.find(d=>d.id===ref||d.name.toLowerCase()===ref);return door?{verb:intent.verb,target:door.id}:null;}
+    if(intent.verb==='creative'){
+     const native=nativeObjectAttempt(intent.target),object=native&&(actor?.chaos?.scenery||[]).find(o=>(o.nativeOrigin||o.cells?.length)&&o.id===native.target);
+     if(object){const capability={move:'movable',take:'portable',break:'breakable',ignite:'flammable',extinguish:'extinguishable',repair:'repairable',drink:'drinkable'}[native.verb];return native.verb==='inspect'||native.verb==='splash'||object.capabilities?.[capability]===true?intent:null;}
+     const attempt=creativeAttempt(intent.target);if(!attempt)return null;if(['assist','hinder'].includes(attempt.verb))return entities.filter(e=>e.type==='player'&&String(e.name).toLowerCase()===attempt.recipient.toLowerCase()).length===1?intent:null;const ids=new Set([...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[]),...(actor?.chaos?.scenery||[]),...(actor?.chaos?.npcs||[]).flatMap(n=>n.items||[])].map(i=>i.id));return (attempt.sources||[attempt.item||attempt.target]).every(id=>ids.has(id))?intent:null;
+    }
+    if(intent.verb==='ability'){const a=actor?.ability;if(!a)return null;return !intent.target||a.id==='mend'&&a.targets?.some(t=>t.id===intent.target)?intent:null;}
+    if(intent.verb==='unknown')return intent;
+    const candidates=['equip','use_item'].includes(intent.verb)?(actor?.inventory||[]):entities;
+    const matches=candidates.filter(e=>String(e.id)===intent.target||String(e.name).toLowerCase()===intent.target.toLowerCase());const grounded=matches.sort((a,b)=>(Math.abs(a.x-actor.x)+Math.abs(a.y-actor.y))-(Math.abs(b.x-actor.x)+Math.abs(b.y-actor.y)))[0];
+    return grounded?{...intent,target:grounded.id===undefined?grounded.name:String(grounded.id)}:null;
+
+}
 export function createOptionalDM({dataDir,key,model=process.env.CHAOS_DM_MODEL||'openai/gpt-oss-120b',fetchImpl=fetch,enabled,timeoutMs=7000}={}){
  if(!models.has(model))throw Error('Choose an approved Groq GPT-OSS model for the DM.');
  const budget=createFreeAIBudget(dataDir),file=path.join(dataDir,'dm-config.json');let secret=key??process.env.GROQ_API_KEY??'',problem=null;
@@ -53,7 +70,7 @@ export function createOptionalDM({dataDir,key,model=process.env.CHAOS_DM_MODEL||
   try{
    if(closed||(!on&&kind!=='check')||signal?.aborted||requestGeneration!==generation||Date.now()<cooldownUntil)return null;
    budget.reserve();
-   const response=await fetchImpl('https://api.groq.com/openai/v1/chat/completions',{method:'POST',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(timeoutMs),...(signal?[signal]:[])]),headers:{authorization:'Bearer '+secret,'content-type':'application/json'},body:JSON.stringify({model,temperature:['interpret','environment'].includes(kind)?0:0.6,stream:false,reasoning_effort:'low',include_reasoning:false,max_completion_tokens:1024,messages,response_format:{type:'json_schema',json_schema:{name:kind==='interpret'?'game_intent':kind==='environment'?'native_environment':'resolved_story',strict:true,schema}}})});
+   const response=await fetchImpl('https://api.groq.com/openai/v1/chat/completions',{method:'POST',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(timeoutMs),...(signal?[signal]:[])]),headers:{authorization:'Bearer '+secret,'content-type':'application/json'},body:JSON.stringify({model,temperature:['interpret','environment','batch'].includes(kind)?0:0.6,stream:false,reasoning_effort:'low',include_reasoning:false,max_completion_tokens:1024,messages,response_format:{type:'json_schema',json_schema:{name:kind==='interpret'?'game_intent':kind==='environment'?'native_environment':kind==='batch'?'party_intentions':kind==='recap'?'party_recap':'resolved_story',strict:true,schema}}})});
    if(!response.ok){
     const status=response.status;
     if(status===429){const retry=Number(response.headers?.get('retry-after'));cooldownUntil=Date.now()+Math.max(1000,Math.min(300000,(Number.isFinite(retry)&&retry>0?retry:30)*1000));return fail('quota','Groq is rate limited. The game stays offline until the cooldown ends.');}
@@ -93,20 +110,28 @@ export function createOptionalDM({dataDir,key,model=process.env.CHAOS_DM_MODEL||
   interpret(text,actor,options={}){
    const entities=(actor?.nearby||[]).map(e=>({id:String(e.id??e.name),name:e.name,type:e.type,x:e.x,y:e.y}));
    const schema={type:'object',properties:{verb:{type:'string',enum:verbs},target:{type:'string'}},required:['verb','target'],additionalProperties:false};
-   return request('interpret',[{role:'system',content:INTERPRET_SYSTEM},{role:'user',content:JSON.stringify(interpretationScene(text,actor,entities))}],schema,intent=>{
-    if(intent.verb==='ability'&&intent.target==='')intent={verb:'ability'};
-    if(!validIntent(intent)||!verbs.includes(intent.verb))return null;
-    if(['enter','exit'].includes(intent.verb)){const ref=intent.target?.toLowerCase();const doors=actor?.entrances||[];if(!ref||/^(?:house|building|door|entrance|inside|outside)$/.test(ref))return {verb:intent.verb};const door=doors.find(d=>d.id===ref||d.name.toLowerCase()===ref);return door?{verb:intent.verb,target:door.id}:null;}
-    if(intent.verb==='creative'){
-     const native=nativeObjectAttempt(intent.target),object=native&&(actor?.chaos?.scenery||[]).find(o=>(o.nativeOrigin||o.cells?.length)&&o.id===native.target);
-     if(object){const capability={move:'movable',take:'portable',break:'breakable',ignite:'flammable',extinguish:'extinguishable',repair:'repairable',drink:'drinkable'}[native.verb];return native.verb==='inspect'||native.verb==='splash'||object.capabilities?.[capability]===true?intent:null;}
-     const attempt=creativeAttempt(intent.target);if(!attempt)return null;if(['assist','hinder'].includes(attempt.verb))return entities.filter(e=>e.type==='player'&&String(e.name).toLowerCase()===attempt.recipient.toLowerCase()).length===1?intent:null;const ids=new Set([...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[]),...(actor?.chaos?.scenery||[]),...(actor?.chaos?.npcs||[]).flatMap(n=>n.items||[])].map(i=>i.id));return (attempt.sources||[attempt.item||attempt.target]).every(id=>ids.has(id))?intent:null;
-    }
-    if(intent.verb==='ability'){const a=actor?.ability;if(!a)return null;return !intent.target||a.id==='mend'&&a.targets?.some(t=>t.id===intent.target)?intent:null;}
-    if(intent.verb==='unknown')return intent;
-    const candidates=['equip','use_item'].includes(intent.verb)?(actor?.inventory||[]):entities;
-    const matches=candidates.filter(e=>String(e.id)===intent.target||String(e.name).toLowerCase()===intent.target.toLowerCase());const grounded=matches.sort((a,b)=>(Math.abs(a.x-actor.x)+Math.abs(a.y-actor.y))-(Math.abs(b.x-actor.x)+Math.abs(b.y-actor.y)))[0];
-    return grounded?{...intent,target:grounded.id===undefined?grounded.name:String(grounded.id)}:null;
+   return request('interpret',[{role:'system',content:INTERPRET_SYSTEM},{role:'user',content:JSON.stringify(interpretationScene(text,actor,entities))}],schema,intent=>groundedIntent(intent,actor),options);
+  },
+  interpretBatch(plans,options={}){
+   if(!Array.isArray(plans)||!plans.length||plans.length>10)return Promise.resolve(null);
+   const ids=plans.map(p=>p.id);if(new Set(ids).size!==ids.length)return Promise.resolve(null);
+   const entries=plans.map(p=>{const a=p.actor||{},entities=(a.nearby||[]).map(e=>({id:String(e.id??e.name),name:e.name,type:e.type,x:e.x,y:e.y}));
+    const scene=interpretationScene(p.text,a,entities);scene.entities=scene.entities.slice(0,6);scene.inventory=scene.inventory.slice(0,6);scene.entrances=scene.entrances.slice(0,2);scene.chaos.scenery=scene.chaos.scenery.slice(0,6);scene.chaos.bag=scene.chaos.bag.slice(0,4);scene.chaos.ground=scene.chaos.ground.slice(0,3);scene.chaos.npcs=scene.chaos.npcs.slice(0,2);if(scene.actor.ability)scene.actor.ability={id:a.ability.id,targets:a.ability.targets?.slice(0,3)};return {id:p.id,...scene};});
+   let content=JSON.stringify(entries);
+   while(content.length>12000){let reduced=false;for(const e of entries)for(const list of [e.chaos.scenery,e.entities,e.inventory,e.chaos.bag,e.chaos.ground,e.chaos.npcs,e.entrances])if(list.length>1){list.pop();reduced=true;}if(!reduced)return Promise.resolve(null);content=JSON.stringify(entries);}
+   const schema={type:'object',properties:{actions:{type:'array',maxItems:plans.length,items:{type:'object',properties:{id:{type:'string',enum:ids},verb:{type:'string',enum:verbs},target:{type:'string'}},required:['id','verb','target'],additionalProperties:false}}},required:['actions'],additionalProperties:false};
+   return request('batch',[{role:'system',content:INTERPRET_SYSTEM+' Interpret each supplied player separately. Return actions with the original request id. Never transfer targets, possessions or abilities between players.'},{role:'user',content}],schema,answer=>{
+    if(!Array.isArray(answer.actions))return null;const seen=new Set(),results=[];
+    for(const row of answer.actions){const p=plans.find(p=>p.id===row.id);if(!p||seen.has(row.id))return null;seen.add(row.id);const intent=groundedIntent({verb:row.verb,target:row.target},p.actor);if(intent)results.push({id:row.id,intent});}return results;
+   },options);
+  },
+  recapRound(recap,options={}){
+   const records=(recap?.outcomes||[]).filter(r=>['succeeded','failed','blocked'].includes(r.status)).slice(-20);if(!records.length)return Promise.resolve(null);
+   const schema={type:'object',properties:{highlights:{type:'array',maxItems:3,items:{type:'object',properties:{turnId:{type:'string',enum:records.map(r=>r.id)},outcome:{type:'string',enum:['success','failure','blocked']},text:{type:'string',maxLength:220}},required:['turnId','outcome','text'],additionalProperties:false}}},required:['highlights'],additionalProperties:false};
+   return request('recap',[{role:'system',content:NARRATION_SYSTEM+' These are several confirmed actions from one party moment. Choose up to three highlights, each tied to its actual turnId and outcome. Use short past-tense text and no dialogue; timed buffs may already have ended, so do not claim they remain active. Do not turn a failed or blocked action into success.'},{role:'user',content:JSON.stringify(records)}],schema,answer=>{
+    if(!Array.isArray(answer.highlights)||!answer.highlights.length)return null;const seen=new Set(),texts=[];
+    for(const row of answer.highlights){const r=records.find(r=>r.id===row.turnId);if(!r||seen.has(r.id))return null;seen.add(r.id);const context={turnId:r.id,outcome:{status:r.status==='succeeded'?'success':r.status==='blocked'?'blocked':'failure',canonical:r.message},speakers:[]};const result=validateNarration({...row,dialogue:[]},context);if(!result)return null;texts.push(result.text);}
+    return {text:texts.join(' ')};
    },options);
   },
   interpretEnvironment(text,actor,options={}){

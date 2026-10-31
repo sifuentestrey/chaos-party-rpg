@@ -107,3 +107,14 @@ test('turning AI off while startup is checking fences even a late successful res
  assert.equal(await checking,false);assert.equal(dm.enabled,false);
  assert.equal(JSON.parse(fs.readFileSync(path.join(dir,'dm-preferences.json'))).enabled,false);
 });
+
+test('twenty AI-needed choices use two bounded batches and remain grounded per owner',async t=>{
+ let calls=0;const {dm}=dmFixture(t,async(_u,init)=>{calls++;const body=JSON.parse(init.body),entries=JSON.parse(body.messages[1].content);assert.equal(body.response_format.json_schema.name,'party_intentions');assert.ok(body.messages[1].content.length<=12000);return {ok:true,json:async()=>({choices:[{message:{content:JSON.stringify({actions:entries.map(e=>({id:e.id,verb:'attack',target:'rat'}))})}}]})};});
+ const plans=Array.from({length:20},(_,i)=>({id:'p'+i,text:'bonk the rodent',actor:{x:i,y:2,nearby:[{id:100+i,name:'rat',type:'mob',x:i,y:3}]}}));
+ const results=(await Promise.all([dm.interpretBatch(plans.slice(0,10)),dm.interpretBatch(plans.slice(10))])).flat();assert.equal(calls,2);assert.equal(results.length,20);for(let i=0;i<20;i++)assert.deepEqual(results[i],{id:'p'+i,intent:{verb:'attack',target:String(100+i)}});
+});
+test('a shared recap cannot turn another player’s blocked action into a success',async t=>{
+ const recap={outcomes:[{id:'a',player:'Ada',status:'blocked',message:'The wall blocked the route.'}]};let outcome='success';
+ const {dm}=dmFixture(t,async()=>({ok:true,json:async()=>({choices:[{message:{content:JSON.stringify({highlights:[{turnId:'a',outcome,text:'The wall blocked Ada’s route.'}]})}}]})}));
+ assert.equal(await dm.recapRound(recap),null);outcome='blocked';assert.ok(await dm.recapRound(recap));
+});

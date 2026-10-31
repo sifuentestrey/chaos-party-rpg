@@ -32,6 +32,7 @@ export function startChaosTV(game:any):void {
   const select=document.createElement('select');select.setAttribute('aria-label','Follow player');settings.append(select);const mode=document.createElement('select');mode.setAttribute('aria-label','Camera mode');mode.innerHTML='<option value="group">Shared scene</option><option value="follow">Follow player</option>';settings.insertBefore(mode,select);select.hidden=true;select.disabled=true;const offscreen=document.createElement('div');offscreen.id='chaos-offscreen';offscreen.style.cssText='position:fixed;top:58px;right:12px;z-index:19001;color:white;background:#15202cdd;padding:6px;border-radius:6px;font:14px system-ui;max-width:280px';document.body.append(offscreen);let sharedView:any=null;mode.onchange=()=>{const shared=mode.value==='group';select.hidden=shared;select.disabled=shared;if(shared)owner.hold();else owner.release();cameraKey='';lastWatch='';};select.onchange=()=>{if(mode.value==='follow'){cameraKey='';lastWatch='';}};
   const fullscreen=document.createElement('button');fullscreen.textContent='Full screen';fullscreen.onclick=()=>{void document.documentElement.requestFullscreen?.();};controls.append(fullscreen);document.body.append(controls);
   const lobby=document.createElement('div');Object.assign(lobby.style,{position:'fixed',inset:'0',background:'#121922ed',color:'#f4eddc',zIndex:'19000',display:'grid',placeContent:'center',textAlign:'center',font:'24px system-ui'});document.body.append(lobby);
+  const pacingPanel=document.createElement('div');pacingPanel.id='chaos-pacing-screen';pacingPanel.style.cssText='position:fixed;top:18px;left:50%;transform:translateX(-50%);max-width:760px;width:calc(100% - 260px);padding:12px 20px;border-radius:12px;background:#132231df;color:#f4eddc;text-align:center;font:18px system-ui;z-index:18999;pointer-events:none;white-space:pre-line;max-height:160px;overflow:hidden';pacingPanel.hidden=true;document.body.append(pacingPanel);
   const log=document.createElement('div');log.id='chaos-tv-log';document.body.append(log);
   // Spectator does not issue HURT for party actors; their server driver owns cadence.
   let cameraKey='';let observerIds=new Set<string>();
@@ -124,6 +125,12 @@ export function startChaosTV(game:any):void {
   const poll=async()=>{try{
     const u=new URL('/tv-state',config.base);u.searchParams.set('key',config.key);
     const r=await fetch(u.toString());if(!r.ok){log.textContent='TV pairing expired. Reopen the TV from the current host page.';return;}const data=await r.json();
+    const pacing=data.pacing,phase=pacing?.phase,seconds=Math.max(0,Math.ceil(((pacing?.travel?.status==='pending'?pacing.travel.deadline:pacing?.deadline)||0)-Date.now())/1000);
+    game.__chaosPaused=!!pacing?.enabled&&['planning','preparation','recap'].includes(phase);
+    pacingPanel.hidden=!pacing?.enabled;controls.dataset.pacing=phase||'live';
+    const nextObjective=data.adventure?.steps.find((step:any)=>!step.done)?.label||'Explore and experiment together';
+    pacingPanel.textContent=pacing?.travel?.status==='pending'?'Travel '+pacing.travel.name+'? · '+pacing.travel.yes+'/'+pacing.travel.required+' yes · '+Math.ceil(seconds)+'s':phase==='planning'?'CHOOSE TOGETHER · '+Math.ceil(seconds)+'s · '+pacing.ready+'/'+pacing.total+' ready\n'+nextObjective:phase==='preparation'?'DM reviewing the party’s chosen actions…':phase==='action'?'ACTION · '+Math.ceil(seconds)+'s':phase==='recap'?'WHAT HAPPENED\n'+(pacing.recap?.text||'No confirmed changes.'):phase==='travel'?'TRAVELLING TOGETHER · '+(pacing.travel?.arrived||0)+'/'+(pacing.travel?.total||0)+' arrived':'EXPLORE TOGETHER · '+nextObjective;
+
     const connected=data.players.filter((p:any)=>p.actor?.ready);
     const players=connected.filter((p:any)=>!p.actor.dead);
     // Roster changes may leave stale IDs in the browser's renderer state.
@@ -156,7 +163,7 @@ export function startChaosTV(game:any):void {
     if(shownCombat.size>200)shownCombat.clear();
     if(!players.some((p:any)=>String(p.actor.id)===select.value))selected=String(players[0]?.actor.id||'');else selected=select.value;
     select.textContent='';for(const p of players){const option=document.createElement('option');option.value=String(p.actor.id);option.textContent=`${p.name}${p.role?' · '+(STARTERS[p.role]?.name||p.role):''} · HP ${p.actor.hp}/${p.actor.maxHp}`;select.append(option);}select.value=selected;
-    if(mode.value==='group'){sharedView=chooseScene(players.map((p:any)=>p.actor),data.scene||sharedView);if(sharedView){selected=String(sharedView.anchor.id);select.value=selected;}}
+    if(mode.value==='group'){sharedView=data.pacing?.enabled&&data.scene?{...data.scene,anchor:players.find((p:any)=>p.actor.zone===data.scene.zone&&p.actor.x>=data.scene.x&&p.actor.x<data.scene.x+data.scene.width&&p.actor.y>=data.scene.y&&p.actor.y<data.scene.y+data.scene.height)?.actor||players[0]?.actor}:chooseScene(players.map((p:any)=>p.actor),data.scene||sharedView);if(sharedView?.anchor){selected=String(sharedView.anchor.id);select.value=selected;}}
     const outside=sharedView&&mode.value==='group'?players.filter((p:any)=>p.actor.zone!==sharedView.zone||p.actor.x<sharedView.x||p.actor.x>=sharedView.x+game.camera.fullGridW||p.actor.y<sharedView.y||p.actor.y>=sharedView.y+game.camera.fullGridH):[];offscreen.textContent=outside.length?'Off screen: '+outside.map((p:any)=>p.name+' '+(p.actor.y<sharedView.y?'↑':p.actor.y>=sharedView.y+game.camera.fullGridH?'↓':p.actor.x<sharedView.x?'←':'→')).join(' · '):'';offscreen.hidden=!outside.length;
     followed=players.find((p:any)=>String(p.actor.id)===selected)?.actor;
     const watchKey=selected+':'+(mode.value==='group'?sharedView?.id:'follow');if(watchKey!==lastWatch||Date.now()-lastWatchAt>=15000){lastWatch=watchKey;lastWatchAt=Date.now();game.client.connection.emit('chaos:watch',{key:config.key,actorId:selected||null},()=>{});}

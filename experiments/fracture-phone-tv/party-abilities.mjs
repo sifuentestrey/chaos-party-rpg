@@ -5,14 +5,14 @@ const actorId=p=>String(p.characterId||''),label=p=>p.chaosName||p.name;
 const alive=p=>p?.chaosControlled&&!p.chaosSpectator&&p.hasEnteredGame&&!p.isDead;
 function sameArea(a,b){if(a.getWorld()!==b.getWorld())return false;const z=a.getWorld().zoneManager;const x=z?.getZoneAt(a.x,a.y),y=z?.getZoneAt(b.x,b.y);return !!x&&!!y&&(x.id??x.name)===(y.id??y.name);}
 function reachable(a,b){if(!sameArea(a,b))return false;const d=Math.abs(a.x-b.x)+Math.abs(a.y-b.y),w=a.getWorld();if(d>2)return false;if(d<=1)return true;return [[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>w.isValidPosition(a.x+dx,a.y+dy)&&Math.abs(a.x+dx-b.x)+Math.abs(a.y+dy-b.y)===1);}
-export function createPartyAbilities({file,useNativeSkill,clock=Date.now}){
+export function createPartyAbilities({file,useNativeSkill,clock=Date.now,displayClock=clock}){
  let ledger=fs.existsSync(file)?JSON.parse(fs.readFileSync(file,'utf8')):{version:1,actors:{}};
  if(ledger.version!==1||!ledger.actors)throw Error('Unsupported ability save; original file preserved.');
  const save=()=>{fs.mkdirSync(path.dirname(file),{recursive:true,mode:0o700});fs.writeFileSync(file+'.tmp',JSON.stringify(ledger),{mode:0o600});fs.renameSync(file+'.tmp',file);};
  function readyAt(p,def){return Math.max(ledger.actors[actorId(p)]?.[def.skill]||0,p.getSkillState?.()?.cooldowns?.[def.skill]||0);}
  function snapshot(p){const def=STARTERS[p.chaosRole];if(!def)return null;const at=readyAt(p,def),skills=p.getSkillState?.();if(skills&&def.skill!=='mend')skills.cooldowns[def.skill]=at;
   const targets=[p,...Object.values(p.getWorld().entities||{}).filter(q=>q!==p&&q.type==='player'&&p.chaosPartyId&&q.chaosPartyId===p.chaosPartyId&&alive(q)&&reachable(p,q))];
-  return {id:def.skill,name:def.ability,description:def.description,readyAt:at,phased:!!p.isPhased?.(),phaseUntil:skills?.phaseShiftExpires||0,empowered:!!(skills?.powerStrikeActive&&skills.powerStrikeExpires>clock()),...(def.skill==='mend'?{targets:targets.filter(alive).map(q=>({id:String(q.id),name:q===p?'Yourself':label(q),hp:q.hitPoints,maxHp:q.maxHitPoints}))}:{})};
+  return {id:def.skill,name:def.ability,description:def.description,readyAt:at?displayClock()+Math.max(0,at-clock()):0,remainingMs:Math.max(0,at-clock()),phased:!!p.isPhased?.(),phaseUntil:skills?.phaseShiftExpires?displayClock()+Math.max(0,skills.phaseShiftExpires-clock()):0,empowered:!!(skills?.powerStrikeActive&&skills.powerStrikeExpires>clock()),...(def.skill==='mend'?{targets:targets.filter(alive).map(q=>({id:String(q.id),name:q===p?'Yourself':label(q),hp:q.hitPoints,maxHp:q.maxHitPoints}))}:{})};
  }
  function use(p,reference='',requestedSkill=null){
   const blocked=text=>({blocked:true,success:false,text});const def=STARTERS[p?.chaosRole];
@@ -38,13 +38,14 @@ export function createPartyAbilities({file,useNativeSkill,clock=Date.now}){
     effect={id:'mend',actorId:p.id,targetId:target.id,before,after:target.hitPoints};
    }else{
     if(typeof useNativeSkill!=='function'||!nativeState)throw Error('Native skill adapter unavailable');
+    const stuns=def.skill==='war_cry'?new Map(Object.values(p.getWorld().entities||{}).filter(e=>e.type==='mob').map(e=>[e,e.stunUntil||0])):null;
     p.chaosSignatureSkill=def.skill;useNativeSkill(p,def.skill);
     if(!(nativeState.cooldowns[def.skill]>clock()))throw Error('Native engine rejected the skill');
-    effect={id:def.skill,actorId:p.id,x:p.x,y:p.y,orientation:p.orientation};
+    effect={id:def.skill,actorId:p.id,x:p.x,y:p.y,orientation:p.orientation,...(stuns?{stunnedTargets:[...stuns].filter(([mob,before])=>mob.stunUntil>before&&mob.stunUntil>clock()).map(([mob])=>mob.id)}:{})};
    }
   }catch(error){if(def.skill==='mend')target.hitPoints=before;ledger=old;try{save();}catch{}throw error;}
   if(def.skill==='mend'){try{target.getWorld().pushToPlayer(target,target.health());}catch{/* Native state polls also report actual health. */}}
-  return {blocked:false,success:true,text:def.skill==='mend'?`${def.ability}: ${label(target)} recovers ${target.hitPoints-before} health (${target.hitPoints}/${target.maxHitPoints}).`:`${def.ability}! ${def.description}`,abilityEffect:effect};
+  return {blocked:false,success:true,text:def.skill==='mend'?`${def.ability}: ${label(target)} recovers ${target.hitPoints-before} health (${target.hitPoints}/${target.maxHitPoints}).`:def.skill==='phase_shift'?`${def.ability}: became phased for two seconds.`:def.skill==='power_strike'?`${def.ability}: readied the next melee hit for up to five seconds.`:`${def.ability}: ${effect.stunnedTargets?.length||0} nearby enemies were stunned by the native skill.`,abilityEffect:effect};
  }
  return {snapshot,use};
 }
