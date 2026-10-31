@@ -149,7 +149,7 @@ test('one existing native small rock can be picked up, carried, dropped and rest
  assert.equal(engine.execute(p,'take '+pebble.id).success,false,'cannot duplicate the same native rock');
  const second={...p,id:2,characterId:'other',name:'Other',x:52,y:200};
  world.players.other=second;
- assert.equal(engine.execute(second,'drop '+pebble.id).success,false,'another actor cannot drop the owner's rock');
+ assert.equal(engine.execute(second,'drop '+pebble.id).success,false,"another actor cannot drop the owner's rock");
  p.x=52;p.y=200;
  const before=fs.readFileSync(file,'utf8');
  for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]])world.map.grid[p.y+dy][p.x+dx]=1;
