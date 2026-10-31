@@ -77,3 +77,33 @@ test('open-ended AI DM proposes only verified adjacent native scenery, never an 
 });
 
 test('enabled preference survives restart without copying an environment key to disk',t=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'dm-preference-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));const dm=createOptionalDM({dataDir:dir,key:'runtime-test-key'});dm.enabled=true;const next=createOptionalDM({dataDir:dir,key:'runtime-test-key'});assert.equal(next.enabled,true);assert.equal(fs.existsSync(path.join(dir,'dm-config.json')),false);next.enabled=false;assert.equal(createOptionalDM({dataDir:dir,key:'runtime-test-key'}).enabled,false);dm.close();next.close();});
+
+test('startup validates an existing connection once, remembers ON, and respects a later OFF',async t=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'dm-auto-'));let calls=0;
+ const options={dataDir:dir,key:'runtime-test-key',fetchImpl:async(_u,init)=>{calls++;return reply(init);}};
+ const dm=createOptionalDM(options);t.after(()=>{dm.close();fs.rmSync(dir,{recursive:true,force:true});});
+ assert.equal(await dm.initialize(),true);assert.equal(dm.enabled,true);assert.equal(calls,1);
+ assert.equal(fs.existsSync(path.join(dir,'dm-config.json')),false);
+ const next=createOptionalDM(options);t.after(()=>next.close());
+ assert.equal(await next.initialize(),true);assert.equal(calls,2);
+ next.enabled=false;
+ const off=createOptionalDM(options);t.after(()=>off.close());
+ assert.equal(await off.initialize(),false);assert.equal(off.enabled,false);assert.equal(calls,2);
+});
+test('missing or rejected startup connections do not enable live AI',async t=>{
+ for(const key of ['', 'rejected-test-key']){
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'dm-auto-error-'));let calls=0;
+  const dm=createOptionalDM({dataDir:dir,key,fetchImpl:async()=>{calls++;return {ok:false,status:401};}});
+  t.after(()=>{dm.close();fs.rmSync(dir,{recursive:true,force:true});});
+  assert.equal(await dm.initialize(),false);assert.equal(dm.enabled,false);assert.equal(calls,key?1:0);
+  if(key)assert.equal(dm.status().lastError,'authentication');
+ }
+});
+test('turning AI off while startup is checking fences even a late successful response',async t=>{
+ let release,started;
+ const waiting=new Promise(r=>started=r);
+ const {dm,dir}=dmFixture(t,async(_u,init)=>{started();await new Promise(r=>release=r);return reply(init);});
+ const checking=dm.initialize();await waiting;dm.enabled=false;release();
+ assert.equal(await checking,false);assert.equal(dm.enabled,false);
+ assert.equal(JSON.parse(fs.readFileSync(path.join(dir,'dm-preferences.json'))).enabled,false);
+});

@@ -212,6 +212,28 @@ test('host can configure, test and enable isolated AI without revealing credenti
  const phone=await(await fetch(base+'/join?key='+app.room.join)).text();assert.ok(!phone.includes(secret));
 });
 
+test('one host connect saves, validates and enables once; a rejected key remains offline',async t=>{
+ for(const accepted of [true,false]){
+  let calls=0;
+  const {app,base,dir}=await setup(t,{dmFactory:({dataDir})=>createOptionalDM({dataDir,key:'',fetchImpl:async(_u,init)=>{
+   calls++;if(!accepted)return {ok:false,status:401};
+   const context=JSON.parse(JSON.parse(init.body).messages[1].content);
+   return {ok:true,json:async()=>({choices:[{message:{content:JSON.stringify({turnId:context.turnId,outcome:context.outcome.status,text:context.outcome.canonical,dialogue:[]})}}]})};
+  }})});
+  const secret='host-only-one-click-groq-key';
+  assert.equal((await post(base,'/dm/configure',{key:app.room.join,apiKey:secret,connect:true})).status,403);
+  assert.equal(calls,0);
+  const r=await post(base,'/dm/configure',{key:app.room.host,apiKey:' '+secret+' ',connect:true});
+  assert.equal(r.status,accepted?200:502);assert.equal(calls,1);
+  const status=await(await fetch(base+'/dm/status?key='+app.room.host)).json();
+  assert.equal(status.enabled,accepted);assert.ok(!JSON.stringify(status).includes(secret));
+  assert.equal(JSON.parse(fs.readFileSync(path.join(dir,'dm-preferences.json'))).enabled,accepted);
+  const html=await(await fetch(base+'/host?key='+app.room.host)).text();
+  for(const script of html.matchAll(/<script>([\s\S]*?)<\/script>/g))assert.doesNotThrow(()=>new Function(script[1]));
+  assert.ok(!html.includes(secret));assert.ok(html.includes('Connect AI DM'));
+ }
+});
+
 test('host-only Refuge Trial persists real multi-phone evidence, not phone text or AI claims',async t=>{
  const {app,base,sockets,dir}=await setup(t,{zone:'The Refuge'});
  assert.equal((await post(base,'/host/adventure',{key:'wrong',action:'start'})).status,403);

@@ -1,5 +1,14 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Easier live Groq DM — October 31, 2026
+
+**Owner request:** verify the AI DM and make it easier to connect. The existing approved Groq GPT-OSS path works; this is Groq, not an xAI Grok integration. **Connect AI DM** now saves the private host key, validates a real response and enables the DM in one step. A missing connection opens setup automatically, with the free-key page linked. The normal launcher checks a previously enabled connection at startup, and can validate/enable an inherited or saved connection when no OFF preference exists. An explicit OFF survives restart without a provider request. Checks run in the background, so unavailable AI never blocks the local game. No credential is bundled or transferred from this cloud environment to the Mac.
+
+- [x] **Real live phone/native/TV:** fresh disposable settings used the existing managed Groq connection at startup. “Would you get me indoors through the closest entrance?” received live interpretation, Fracture actually entered an existing door from **The Refuge → The Underdepths**, and a second provider request narrated that confirmed result on phone and TV. Startup enablement and the saved ON preference were observed. [Sanitized live report](../experiments/fracture-phone-tv/evidence/dm-setup/live-dm.json), [actual connected host card](../experiments/fracture-phone-tv/evidence/dm-setup/connected-host-card.png). Four live requests total this milestone: initial diagnosis, startup check, and gameplay interpretation/narration. Local phone/TV screenshots are under `/workspace/shared/easy-dm`.
+- [x] Browser UI with an explicitly mocked provider: missing-key setup → one Connect click → cleared password field → saved-ON restart check → explicit OFF restart with no request → rejected key shown accurately while AI stays off. These UI failure/setup checks are separate from the genuine live gameplay proof above.
+- [x] **257 experimental tests passed, no skips/failures**, including pinned overlay preservation, automatic connection, missing/rejected key, OFF during an in-flight startup check, one-step host authorization/enablement and secret exclusion. The existing bounded live verifier now uses an existing native door rather than legacy synthetic craft materials. No native source/build change was needed.
+- [ ] The Mac still needs its own saved key or `GROQ_API_KEY`; cloud configuration cannot preconfigure a different computer. Physical Mac/phone/Wi-Fi and broad creative-storytelling/group-scale qualification remain open. No paid service, key-in-download, release ZIP, original-project change, public deployment or merge.
+
 **Phone follow-up (October 31):** removed World & people and Help & movement panels and their unused display handlers, per owner request. Action, Abilities, Gear, party travel, AI status and STOP remain.
 
 ## Phone controller polish — October 31, 2026

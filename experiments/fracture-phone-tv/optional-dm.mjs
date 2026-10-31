@@ -79,8 +79,14 @@ export function createOptionalDM({dataDir,key,model=process.env.CHAOS_DM_MODEL||
   return request(kind,[{role:'system',content:NARRATION_SYSTEM},{role:'user',content:JSON.stringify(context)}],schema,answer=>validateNarration(answer,context),options);
  }
  return {
-  get available(){return !!secret;},get enabled(){return on;},set enabled(value){persistEnabled(value===true);on=value===true;if(!on){for(const c of controllers)c.abort();for(const entry of [...queued])entry.reject();}},
-  status(){const quota=budget.status();return {available:!!secret,enabled:on,model,state:!secret?'missing_key':!on?'off':Date.now()<cooldownUntil?'cooldown':active?'busy':problem?'error':lastSuccessAt?'connected':'ready',message:problem?.message||(!secret?'Add your existing Groq key to enable live AI.':!on?(lastSuccessAt?'AI connection verified. Live AI is off; enable it when ready.':'Live AI is off. Offline narration is active.'):lastSuccessAt?'Live AI has returned a validated reply.':'Connection configured; test it before playing.'),lastError:problem?.code||null,lastSuccessAt,active,queued:queued.length,cooldownUntil,quota};},
+  get available(){return !!secret;},get enabled(){return on;},set enabled(value){persistEnabled(value===true);on=value===true;if(!on){generation++;for(const c of controllers)c.abort();for(const entry of [...queued])entry.reject();}},
+  status(){const quota=budget.status();return {available:!!secret,enabled:on,model,state:!secret?'missing_key':!on?(active?'checking':'off'):Date.now()<cooldownUntil?'cooldown':active?'busy':problem?'error':lastSuccessAt?'connected':'ready',message:problem?.message||(!secret?'Connect a Groq key once on this Mac to use the AI DM.':!on?(active?'Checking the saved AI connection…':lastSuccessAt?'AI connection verified. Turn it on when you want to play with AI.':'AI DM is off. Offline play is available.'):lastSuccessAt?'AI DM connected. Type actions normally on your phone.':'AI connection saved. Checking it before play.'),lastError:problem?.code||null,lastSuccessAt,active,queued:queued.length,cooldownUntil,quota};},
+  async initialize(){
+   if(!secret||enabled===false||fs.existsSync(preferences)&&!on)return false;
+   const version=generation,checked=await this.check();
+   if(!checked||version!==generation||closed)return false;
+   this.enabled=true;return true;
+  },
   configureKey(value){if(typeof value!=='string'||!/^\S{16,512}$/.test(value))throw Error('Enter a valid Groq API key.');fs.mkdirSync(dataDir,{recursive:true,mode:0o700});const temp=file+'.tmp';fs.writeFileSync(temp,JSON.stringify({version:1,key:value}),{mode:0o600});fs.renameSync(temp,file);persistEnabled(false);on=false;generation++;for(const c of controllers)c.abort();for(const entry of [...queued])entry.reject();secret=value;problem=null;cooldownUntil=0;lastSuccessAt=null;return {available:true};},
   check(){if(problem?.code!=='quota')cooldownUntil=0;return narration({id:'connection-check',status:'succeeded',player:'Host',message:'This is only an AI connection check. No game action occurred.',event:{attempt:'Check the AI connection'},actor:{chaos:{npcs:[],story:[]}}},{},'check');},
   narrate:narration,
