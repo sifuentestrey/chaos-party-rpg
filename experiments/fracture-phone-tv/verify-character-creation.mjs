@@ -30,7 +30,7 @@ try{
  const host=await browser.newPage();await host.goto(base+'/host?key='+room.host);await host.locator('#begin-adventure').click();
  for(let i=0;i<4;i++)await phones[i].waitForFunction(()=>document.getElementById('stats').textContent.startsWith('HP'));
  const started=await Promise.all(players.map((_,i)=>state(i)));assert.equal(new Set(started.map(s=>s.actor.id)).size,4);assert.ok(started.every(s=>s.actor.level===1));events.push({started:true,actors:started.map(s=>({name:s.name,id:s.actor.id,x:s.actor.x,y:s.actor.y,level:s.actor.level,armor:s.actor.armor,ability:s.actor.ability.id}))});
- await tv.getByRole('combobox',{name:'Follow player'}).selectOption(String(started[0].actor.id));await sleep(1200);await tv.screenshot({path:path.join(out,'tv-party.png')});
+ await tv.locator('#chaos-camera-options').evaluate(e=>e.open=true);await tv.getByRole('combobox',{name:'Camera mode'}).selectOption('follow');await tv.getByRole('combobox',{name:'Follow player'}).selectOption(String(started[0].actor.id));await sleep(1200);await tv.screenshot({path:path.join(out,'tv-party.png')});
  for(let i=0;i<3;i++){
   await phones[i].locator('#ability-use').click();await until(async()=>{const s=await state(i);return s.actor.ability.readyAt>Date.now()?s:null;},'Signature did not execute');
   const s=await state(i);assert.ok(s.actor.ability.readyAt>Date.now());if(i===0)assert.ok(s.actor.ability.empowered);if(i===1)assert.ok(s.actor.ability.phased);events.push({nativeAbility:s.actor.ability.id,confirmed:true});

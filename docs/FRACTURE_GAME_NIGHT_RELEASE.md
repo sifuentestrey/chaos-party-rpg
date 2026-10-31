@@ -1,5 +1,17 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Shared camera ownership correction — October 31, 2026
+
+**Owner correction accepted:** the previous gameplay preview explicitly switched to Follow player for combat. The earlier “1 → 1 adapter updates” check did not observe Fracture's own camera writes, and outdoor Shared mode still left the native viewport unfixed. That preview and counter alone were insufficient acceptance evidence. The old preview was also encoded at 12 FPS, which can exaggerate apparent stutter.
+
+**System fix:** the experimental shared TV now owns its camera position and fixed viewport. Native follow/focus, off-screen recentering, queued zoning and direct camera setters cannot override it. Claiming the shared camera cancels existing native camera animations without changing human actors. Native renderer resizing creates a new Camera; ownership, scene bounds, map bounds and the zoning context are now transferred to that replacement before native recentering can run. Normal Fracture cameras default to unowned and retain their behavior. Follow remains an explicit option under Camera options; choosing a character cannot enable it automatically.
+
+**Actual acceptance:** six real browser phone controllers regrouped using native walking. Three independent actors moved, a real rat was defeated, STOP executed, and one actor walked outside the shared view. Actual native camera coordinates stayed **x=0, y=3456**; background pixel hashes and native terrain draw counts remained unchanged. Test-only browser instrumentation also attempted conflicting native camera calls and temporarily moved only the invisible client observer outside its viewport; the camera held without redrawing terrain. No human position, HP, server world state or map art was fabricated.
+
+A majority moving to the next scene changed the camera to **x=512, y=3456**. Resizing from 1280×720 to 1024×768 retained Shared ownership at the same scene position with the appropriate new viewport dimensions. Explicit Follow and return-to-Shared were checked only after recording stopped. Every recorded frame remains in Shared mode. The replacement capture and playback use 30 FPS; camera position is sampled independently on animation frames. These headless browser results do not establish physical Intel Mac/Wi-Fi performance or eliminate every possible source of character stutter.
+
+**Checks:** pinned native production client/server compile; all **3,341 native tests**, including six actual Camera/ZoningManager ownership regressions; **249 experimental tests**; repeated overlay/config/save preservation checks. Sanitized camera coordinates, background hashes/draw counts, action receipts and frame samples are in `experiments/fracture-phone-tv/evidence/shared-camera/actual-camera.json`. Reproduce with `verify-shared-camera.mjs` against six disposable characters and browser tools. Raw footage/screenshots are under `/workspace/shared/stationary-camera-30fps`; the encoded replacement is `/workspace/shared/Chaos-Shared-Scene-Gameplay.mp4`. No Groq calls, new art, original-save changes, release ZIP, public deployment or merge were needed.
+
 ## Four-area playtest overhaul — October 31, 2026
 
 **Implemented:** grounded AI/building actions, shared camera, simplified phone controller, and expanded character creation. Host intervention, new group-containment/travel rules, combat redesign and a separate TV-event redesign remain outside this milestone.

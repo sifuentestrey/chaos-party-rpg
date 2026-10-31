@@ -1,5 +1,6 @@
 /** Chaos-owned shared TV adapter. Ordinary Fracture is unchanged without chaosTV. */
 import {appearanceSheet,drawPreview} from './character-appearance.mjs';
+import {createSharedCamera} from './shared-camera.mjs';
 import {chooseScene} from './scene-view.mjs';
 import {STARTERS,DEFAULT_APPEARANCE,bodyScale} from './character-profile.mjs';
 import {nativeTrees} from './chaos-native-scenery';
@@ -25,13 +26,17 @@ export function startChaosTV(game:any):void {
   document.documentElement.classList.add('chaos-tv');
   const style=document.createElement('style');style.textContent=`html.chaos-tv #intro,html.chaos-tv #instructions,html.chaos-tv #status,html.chaos-tv #statusbar,html.chaos-tv #skill-bar,html.chaos-tv #minimap-container,html.chaos-tv #ai-retired-note,html.chaos-tv #hire-button,html.chaos-tv #credits-link,html.chaos-tv #chatbox,html.chaos-tv #notifications,html.chaos-tv #achievements,html.chaos-tv #population,html.chaos-tv #credits,html.chaos-tv #about{display:none!important}body{overflow:hidden}#chaos-tv-controls{position:fixed;right:12px;top:10px;z-index:20000;background:#15202ce8;color:white;padding:8px;border-radius:8px;font:14px system-ui}#chaos-tv-log{position:fixed;left:12px;bottom:12px;max-width:400px;max-height:120px;overflow:hidden;z-index:20000;background:#15202cd9;color:#fff4da;border-radius:8px;padding:8px;font:14px system-ui;pointer-events:none}`;document.head.append(style);
   const controls=document.createElement('div');controls.id='chaos-tv-controls';
-  const select=document.createElement('select');select.setAttribute('aria-label','Follow player');controls.append(select);const mode=document.createElement('select');mode.setAttribute('aria-label','Camera mode');mode.innerHTML='<option value="group">Shared scene</option><option value="follow">Follow player</option>';controls.prepend(mode);const offscreen=document.createElement('div');offscreen.id='chaos-offscreen';offscreen.style.cssText='position:fixed;top:58px;right:12px;z-index:19001;color:white;background:#15202cdd;padding:6px;border-radius:6px;font:14px system-ui;max-width:280px';document.body.append(offscreen);let sharedView:any=null;mode.onchange=()=>{cameraKey='';lastWatch='';};select.onchange=()=>{mode.value='follow';cameraKey='';lastWatch='';};
+  const owner=createSharedCamera(game);game.__chaosSceneCamera=owner;
+  Object.defineProperty(controls,'cameraState',{get:()=>({...owner.snapshot(),mode:mode.value})});
+  const settings=document.createElement('details');settings.id='chaos-camera-options';const summary=document.createElement('summary');summary.textContent='Camera options';settings.append(summary);controls.append(settings);
+  const select=document.createElement('select');select.setAttribute('aria-label','Follow player');settings.append(select);const mode=document.createElement('select');mode.setAttribute('aria-label','Camera mode');mode.innerHTML='<option value="group">Shared scene</option><option value="follow">Follow player</option>';settings.insertBefore(mode,select);select.hidden=true;select.disabled=true;const offscreen=document.createElement('div');offscreen.id='chaos-offscreen';offscreen.style.cssText='position:fixed;top:58px;right:12px;z-index:19001;color:white;background:#15202cdd;padding:6px;border-radius:6px;font:14px system-ui;max-width:280px';document.body.append(offscreen);let sharedView:any=null;mode.onchange=()=>{const shared=mode.value==='group';select.hidden=shared;select.disabled=shared;if(shared)owner.hold();else owner.release();cameraKey='';lastWatch='';};select.onchange=()=>{if(mode.value==='follow'){cameraKey='';lastWatch='';}};
   const fullscreen=document.createElement('button');fullscreen.textContent='Full screen';fullscreen.onclick=()=>{void document.documentElement.requestFullscreen?.();};controls.append(fullscreen);document.body.append(controls);
   const lobby=document.createElement('div');Object.assign(lobby.style,{position:'fixed',inset:'0',background:'#121922ed',color:'#f4eddc',zIndex:'19000',display:'grid',placeContent:'center',textAlign:'center',font:'24px system-ui'});document.body.append(lobby);
   const log=document.createElement('div');log.id='chaos-tv-log';document.body.append(log);
   // Spectator does not issue HURT for party actors; their server driver owns cadence.
   let cameraKey='';let observerIds=new Set<string>();
   game.client.connection.on('chaos:camera',(p:any)=>{
+    if(mode.value==='group'&&sharedView&&String(p.id)!==String(sharedView.anchor.id))return;
     observerIds=new Set((p.observers||[]).map(String));
     const zone=Object.values(INTERIOR_ZONES).find((z:any)=>z.areas.some((a:any)=>p.x>=a.x&&p.x<a.x+a.w&&p.y>=a.y&&p.y<a.y+a.h))||getZoneAtPosition(p.x,p.y);
     const view=mode.value==='group'?sharedView:null;
@@ -40,9 +45,9 @@ export function startChaosTV(game:any):void {
     game.player.disengage();game.player.stop();
     // Native entity packets provide movement. Relocate only the invisible observer.
     game.player.setGridPosition?.(p.x,p.y);
-    if(zone?.viewport){const v=zone.viewport;game.camera.setZoneViewport(v.width,v.height,true);game.camera.setGridPosition(v.cameraX,v.cameraY);}
-    else{game.camera.setZoneViewport(game.camera.fullGridW,game.camera.fullGridH,false);game.camera.setPosition(view?view.x*16:Math.floor((p.x-game.camera.gridW/2)*16),view?view.y*16:Math.floor((p.y-game.camera.gridH/2)*16));}
-    game.renderer.renderStaticCanvases();
+    if(mode.value==='group'){if(!view)return;const v=zone?.viewport;owner.apply(v?{key:view.id+':'+zone.id,x:v.cameraX,y:v.cameraY,width:v.width,height:v.height}:{key:view.id,x:view.x,y:view.y});}
+    else{owner.release();if(zone?.viewport){const v=zone.viewport;game.camera.setZoneViewport(v.width,v.height,true);game.camera.setGridPosition(v.cameraX,v.cameraY);}else{game.camera.setZoneViewport(game.camera.fullGridW,game.camera.fullGridH,false);game.camera.setPosition(Math.floor((p.x-game.camera.gridW/2)*16),Math.floor((p.y-game.camera.gridH/2)*16));}}
+    game.initAnimatedTiles();game.renderer.renderStaticCanvases();
     // Hide the disposable observer sprite while preserving native entity/camera lifecycle.
     // Observer sprite is omitted by the renderer wrapper below.
   });

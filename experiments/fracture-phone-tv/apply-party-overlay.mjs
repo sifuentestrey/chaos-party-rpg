@@ -43,6 +43,12 @@ patches.push(
  ['client/index.html','<script\n    src="https://code.jquery.com/jquery-2.2.4.min.js"\n    integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="\n    crossorigin="anonymous"></script>','<script src="lib/jquery.min.js"></script>','<script src="lib/anime.umd.min.js"></script>','<script src="lib/anime.umd.min.js"></script>'],
  ['webpack.config.js',"{ from: 'client/lib/anime.umd.min.js', to: 'lib/anime.umd.min.js' },","{ from: 'client/lib/anime.umd.min.js', to: 'lib/anime.umd.min.js' },\n          { from: 'node_modules/jquery/dist/jquery.min.js', to: 'lib/jquery.min.js' },", "title: 'Fate of the Four'", "title: 'Chaos Party — Fracture beta'"]
 );
+// Shared TV camera owns its viewport; all ordinary camera instances default off.
+patches.push(
+ ['client/ts/renderer/camera.ts','  private viewportFixed: boolean = false;','  chaosSharedOwned = false;\n  private viewportFixed: boolean = false;','  setPosition(x, y) {','  setPosition(x, y) {\n    if (this.chaosSharedOwned) return;'],
+ ['client/ts/world/zoning-manager.ts','  startZoningFrom(x: number, y: number): void {','  startZoningFrom(x: number, y: number): void {\n    if (this.context?.camera.chaosSharedOwned) return;','  isZoning(): boolean {','  cancelForSharedCamera(): void {\n    this.zoningMachine.cancel();\n    this.zoningQueue = [];\n    this.zoningOrientation = null;\n  }\n\n  isZoning(): boolean {'],
+ ['client/ts/game.ts','if (this.player && !this.isZoning() && !this.camera.isVisible(this.player)) {','if (!this.camera.chaosSharedOwned && this.player && !this.isZoning() && !this.camera.isVisible(this.player)) {','    this.zoningManager?.onViewportResize();','    this.zoningManager?.onViewportResize((this as any).__chaosTV ? this.camera : undefined);\n    if (sharedCameraOwned) (this as any).__chaosSceneCamera?.resize();']
+);
 // Upstream sword1 points at platearmor and paints a helmet over every outfit.
 patches.push(['client/ts/sprites.ts',"const sword1 = require('../sprites/platearmor.json');","const sword1 = require('../sprites/sword1.json');",'  sword1,','  sword1,']);
 patches.push(['server/ts/player/skill.handler.ts','if (!hasUnlockedSkill(skillId as SkillId, ctx.level)) {','if (!hasUnlockedSkill(skillId as SkillId, ctx.level) && !((ctx as any).chaosControlled && (ctx as any).chaosSignatureSkill === skillId)) {','const success = executeSkill(ctx, skill);','const success = executeSkill(ctx, skill);']);
@@ -52,6 +58,9 @@ for(const [file,a,b,c,d] of patches){
  const upstream=execFileSync('git',['show',`HEAD:${file}`],{cwd:root,encoding:'utf8'});
  if(!upstream.includes(a)||!upstream.includes(c))throw Error(`Anchor missing: ${file}`);
  let patched=upstream.replace(a,b).replace(c,d);
+ if(file==='client/ts/game.ts')patched=patched.replace('  resize() {','  resize() {\n    const sharedCameraOwned = this.camera.chaosSharedOwned;');
+ if(file==='client/ts/world/zoning-manager.ts')patched=patched.replace('  onViewportResize(): void {','  onViewportResize(camera?: Camera): void {\n    if (camera && this.context) this.context.camera = camera;').replace('  enqueueZoningFrom(x: number, y: number): void {','  enqueueZoningFrom(x: number, y: number): void {\n    if (this.context?.camera.chaosSharedOwned) return;');
+ if(file==='client/ts/renderer/camera.ts'){patched=patched.replace('  setGridPosition(x, y) {','  setGridPosition(x, y) {\n    if (this.chaosSharedOwned) return;').replace('  setZoneViewport(width: number, height: number, isFixed: boolean): void {','  setZoneViewport(width: number, height: number, isFixed: boolean): void {\n    if (this.chaosSharedOwned) return;');}
  if(file==='client/ts/utils/storage.ts')patched=patched.replaceAll('localStorage.data','localStorage[this.storageKey]');
  if(file==='client/ts/audio.ts')patched=patched.replace('music.sound.play();','void music.sound.play().catch(() => {});');
  if(file==='client/ts/main.ts')patched=patched.replace('    app = new App();','    app = new App();\n    bootChaosTV(app);');
@@ -61,13 +70,13 @@ for(const [file,a,b,c,d] of patches){
  if(current!==upstream&&current!==patched&&current!==legacy&&previous[file]!==digest(current))throw Error(`Local source edits in ${file}; refusing overwrite`);
  writes.push([file,patched]);
 }
-for(const [source,dest] of [['chaos-abilities.test.ts','server/ts/__tests__/chaos-abilities.test.ts'],['chaos-actor.test.ts','server/ts/__tests__/chaos-actor.test.ts'],['chaos-actor.ts','server/ts/chaos-actor.ts'],['action-contract.ts','server/ts/chaos-action-contract.ts'],['chaos-tv.ts','client/ts/chaos-tv.ts'],['native-map-state.ts','client/ts/chaos-native-map-state.ts']]){
+for(const [source,dest] of [['chaos-camera.test.ts','client/ts/__tests__/chaos-camera.test.ts'],['chaos-abilities.test.ts','server/ts/__tests__/chaos-abilities.test.ts'],['chaos-actor.test.ts','server/ts/__tests__/chaos-actor.test.ts'],['chaos-actor.ts','server/ts/chaos-actor.ts'],['action-contract.ts','server/ts/chaos-action-contract.ts'],['chaos-tv.ts','client/ts/chaos-tv.ts'],['native-map-state.ts','client/ts/chaos-native-map-state.ts']]){
  const p=path.join(root,dest);
  const canonical=fs.readFileSync(path.join(dir,source),'utf8');
  if(fs.existsSync(p)){const current=fs.readFileSync(p,'utf8');if(!current.startsWith('/** Chaos-owned')||(current!==canonical&&previous[dest]!==digest(current)))throw Error(`Local or unrecognized edits in ${dest}; refusing overwrite`);}
  writes.push([dest,canonical]);
 }
-for(const name of ['character-profile.mjs','character-appearance.mjs','scene-view.mjs']){
+for(const name of ['character-profile.mjs','character-appearance.mjs','scene-view.mjs','shared-camera.mjs']){
  const dest='client/ts/'+name,content=fs.readFileSync(path.join(dir,name),'utf8'),file=path.join(root,dest);
  if(fs.existsSync(file)&&fs.readFileSync(file,'utf8')!==content&&previous[dest]!==digest(fs.readFileSync(file,'utf8')))throw Error('Local wardrobe edits; refusing overwrite: '+dest);
  writes.push([dest,content]);

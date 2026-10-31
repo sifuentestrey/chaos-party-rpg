@@ -1,0 +1,314 @@
+{
+  "status": "passed",
+  "events": [
+    {
+      "player": "Aria",
+      "text": "walk to 20, 224",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "ackMs": 78,
+      "totalMs": 6080,
+      "x": 20,
+      "y": 224
+    },
+    {
+      "player": "Elin",
+      "text": "walk to 24, 224",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "ackMs": 62,
+      "totalMs": 2340,
+      "x": 24,
+      "y": 224
+    },
+    {
+      "player": "Orin",
+      "text": "walk to 25, 224",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "ackMs": 76,
+      "totalMs": 2349,
+      "x": 25,
+      "y": 224
+    },
+    {
+      "player": "Dori",
+      "text": "walk to 26, 224",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "ackMs": 64,
+      "totalMs": 2336,
+      "x": 26,
+      "y": 224
+    },
+    {
+      "player": "Oren",
+      "text": "walk to 20, 225",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "ackMs": 64,
+      "totalMs": 582,
+      "x": 20,
+      "y": 225
+    },
+    {
+      "player": "Faye",
+      "text": "walk to 24, 225",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "ackMs": 73,
+      "totalMs": 2962,
+      "x": 24,
+      "y": 225
+    },
+    {
+      "player": "Elin",
+      "text": "walk south 3",
+      "status": "succeeded",
+      "message": "Walked 1 tile before an obstacle stopped you.",
+      "ackMs": 378,
+      "totalMs": 607,
+      "x": 24,
+      "y": 225
+    },
+    {
+      "player": "Aria",
+      "text": "walk east 3",
+      "status": "succeeded",
+      "message": "Walked 3 tiles.",
+      "ackMs": 353,
+      "totalMs": 876,
+      "x": 23,
+      "y": 224
+    },
+    {
+      "player": "Orin",
+      "text": "walk west 3",
+      "status": "succeeded",
+      "message": "Walked 3 tiles.",
+      "ackMs": 378,
+      "totalMs": 875,
+      "x": 22,
+      "y": 224
+    },
+    {
+      "player": "Oren",
+      "text": "attack rat",
+      "status": "succeeded",
+      "message": "rat defeated. Check nearby loot.",
+      "ackMs": 105,
+      "totalMs": 4773,
+      "x": 19,
+      "y": 224
+    },
+    {
+      "player": "Oren",
+      "text": "stop",
+      "status": "cancelled",
+      "message": "Holding still. Your attacks and path are cancelled.",
+      "ackMs": 312,
+      "totalMs": 423,
+      "x": 19,
+      "y": 224
+    },
+    {
+      "player": "Aria",
+      "text": "walk to 51, 206",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "ackMs": 302,
+      "totalMs": 6680,
+      "x": 51,
+      "y": 206
+    },
+    {
+      "nativeOverrideProtection": {
+        "before": {
+          "x": 0,
+          "y": 3456
+        },
+        "after": {
+          "x": 0,
+          "y": 3456
+        },
+        "fixed": true,
+        "owned": true
+      }
+    },
+    {
+      "player": "Elin",
+      "text": "walk to 41, 225",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "ackMs": 188,
+      "totalMs": 2650,
+      "x": 41,
+      "y": 225
+    },
+    {
+      "player": "Orin",
+      "text": "walk to 42, 225",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "ackMs": 228,
+      "totalMs": 2945,
+      "x": 42,
+      "y": 225
+    },
+    {
+      "player": "Dori",
+      "text": "walk to 43, 225",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "ackMs": 105,
+      "totalMs": 2489,
+      "x": 43,
+      "y": 225
+    },
+    {
+      "player": "Faye",
+      "text": "walk to 45, 225",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "ackMs": 126,
+      "totalMs": 3028,
+      "x": 45,
+      "y": 225
+    },
+    {
+      "actualCamera": {
+        "initial": {
+          "owned": true,
+          "x": 0,
+          "y": 3456,
+          "gridX": 0,
+          "gridY": 216,
+          "width": 40,
+          "height": 20,
+          "fixed": true,
+          "scene": "The Refuge:0,216:32,18",
+          "mode": "group",
+          "backgroundDraws": 4682,
+          "backgroundHash": "1ea973b84c282db27da50ba817592b0cbec80394430455acda6b407abc8b139f",
+          "nativeX": 0,
+          "nativeY": 3456
+        },
+        "afterMovementAndCombat": {
+          "owned": true,
+          "x": 0,
+          "y": 3456,
+          "gridX": 0,
+          "gridY": 216,
+          "width": 40,
+          "height": 20,
+          "fixed": true,
+          "scene": "The Refuge:0,216:32,18",
+          "mode": "group",
+          "backgroundDraws": 4682,
+          "backgroundHash": "1ea973b84c282db27da50ba817592b0cbec80394430455acda6b407abc8b139f",
+          "nativeX": 0,
+          "nativeY": 3456
+        },
+        "afterMajority": {
+          "owned": true,
+          "x": 512,
+          "y": 3456,
+          "gridX": 32,
+          "gridY": 216,
+          "width": 40,
+          "height": 20,
+          "fixed": true,
+          "scene": "The Refuge:32,216:32,18",
+          "mode": "group",
+          "backgroundDraws": 6151,
+          "backgroundHash": "accad7d3532457f8cd23278f0868d9d91f7f3c2eadfdc201b3d3fdc79089e0db",
+          "nativeX": 512,
+          "nativeY": 3456
+        },
+        "afterResize": {
+          "owned": true,
+          "x": 512,
+          "y": 3456,
+          "gridX": 32,
+          "gridY": 216,
+          "width": 32,
+          "height": 22,
+          "fixed": true,
+          "scene": "The Refuge:32,216:32,18",
+          "mode": "group",
+          "backgroundDraws": 7523,
+          "backgroundHash": "8b6eece0873d9a73e5245b2e071d92f7a11ab24e9ff804051cfb739230de84b9",
+          "nativeX": 512,
+          "nativeY": 3456
+        }
+      },
+      "traces": {
+        "poses": [
+          {
+            "owned": true,
+            "x": 0,
+            "y": 3456,
+            "gridX": 0,
+            "gridY": 216,
+            "width": 40,
+            "height": 20,
+            "fixed": true,
+            "scene": "The Refuge:0,216:32,18",
+            "mode": "group",
+            "phase": "stable"
+          },
+          {
+            "owned": true,
+            "x": 0,
+            "y": 3456,
+            "gridX": 0,
+            "gridY": 216,
+            "width": 40,
+            "height": 20,
+            "fixed": true,
+            "scene": "The Refuge:0,216:32,18",
+            "mode": "group",
+            "phase": "transition"
+          },
+          {
+            "owned": true,
+            "x": 512,
+            "y": 3456,
+            "gridX": 32,
+            "gridY": 216,
+            "width": 40,
+            "height": 20,
+            "fixed": true,
+            "scene": "The Refuge:32,216:32,18",
+            "mode": "group",
+            "phase": "transition"
+          },
+          {
+            "owned": true,
+            "x": 512,
+            "y": 3456,
+            "gridX": 32,
+            "gridY": 216,
+            "width": 32,
+            "height": 22,
+            "fixed": true,
+            "scene": "The Refuge:32,216:32,18",
+            "mode": "group",
+            "phase": "resizing"
+          }
+        ],
+        "frameIntervals": {
+          "medianMs": 16.699999999999818,
+          "p95Ms": 33.399999999999636,
+          "samples": 1613
+        }
+      },
+      "recording": {
+        "captureFPS": 30,
+        "playbackFPS": 30
+      },
+      "environment": "Headless Chromium; no physical Mac performance claim"
+    }
+  ],
+  "errors": []
+}

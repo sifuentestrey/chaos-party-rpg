@@ -33,7 +33,7 @@ try{
  for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]){const tile={x:tree.tile.x+dx,y:tree.tile.y+dy};const move=await action(0,`walk to ${tile.x}, ${tile.y}`,{allowBlocked:true});if(move.result.status==='succeeded'){near=tile;break;}}
  assert.ok(near,'Tree must have an approachable native tile');await action(1,`walk to ${near.x}, ${near.y}`);
  const tv=await browser.newPage({viewport:{width:1280,height:720}});tv.on('pageerror',e=>errors.push(e.message));await tv.goto('http://localhost:8000/?chaosTV='+encodeURIComponent(base)+'&tvKey='+process.env.CHAOS_TV_KEY);await tv.locator('#chaos-tv-controls').waitFor();
- await tv.getByRole('combobox',{name:'Follow player'}).selectOption(String((await get(0)).actor.id));
+ await tv.locator('#chaos-camera-options').evaluate(e=>e.open=true);await tv.getByRole('combobox',{name:'Camera mode'}).selectOption('follow');await tv.getByRole('combobox',{name:'Follow player'}).selectOption(String((await get(0)).actor.id));
  const intact=await action(0,`walk to ${tree.tile.x}, ${tree.tile.y}`,{allowBlocked:true});assert.equal(intact.result.status,'blocked','Standing tree blocks real native movement');
  const fixed=await action(0,'push camp tree east',{allowBlocked:true});assert.equal(fixed.result.status,'blocked');assert.match(fixed.result.message,/fixed/);
  const starting=(await get(0)).actor.chaos;
