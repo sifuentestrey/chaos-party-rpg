@@ -6,7 +6,7 @@ import {createOptionalDM} from './optional-dm.mjs';
 function fixture(t,{grass=false}={}){
  const map={width:172,height:314,tilesize:16,data:Array(172*314).fill(592),blocking:[],collisions:[],doors:[{x:21,y:203,tx:100,ty:200}]};const solid=[];
  function stamp(first,w,h,x,y){for(let dy=0;dy<h;dy++)for(let dx=0;dx<w;dx++){const gid=first+dy*20+dx,index=(y+dy)*172+x+dx;map.data[index]=[592,gid];if(dy>0||h===1){solid.push(gid);map.collisions.push(index);}}}
- stamp(141,2,3,10,200);stamp(45,7,8,18,196);stamp(18,3,4,32,200);stamp(301,3,4,42,200);stamp(218,1,1,50,200);stamp(241,1,1,16,204);
+ stamp(141,2,3,10,200);stamp(45,7,8,18,196);stamp(18,3,4,32,200);stamp(301,3,4,42,200);stamp(98,2,1,50,200);stamp(241,1,1,16,204);
  // A campfire is not a collision in the native atlas.
  map.collisions=map.collisions.filter(i=>i!==204*172+16);solid.splice(solid.indexOf(241),1);
  if(grass){for(const x of [10,11,12,13])map.data[199*172+x]=155;map.data[199*172+14]=425;map.collisions.push(199*172+14);}
@@ -127,17 +127,19 @@ test('optional AI environment proposal can select an existing movable tent witho
  assert.equal(await dm.interpretEnvironment('Could you shift it?',{...actor,chaos:{scenery:[]}}),null);
 });
 
-test('one existing native pebble can be picked up, carried, dropped and restored with original art and collision',t=>{
+test('one existing native small rock can be picked up, carried, dropped and restored with original art and collision',t=>{
  const {engine,p,world,file,nativeTrees,worldFromMap}=fixture(t);
  p.x=49;p.y=200;
  const pebble=engine.snapshot(p).scenery.find(o=>o.nativeOrigin?.x===50&&o.nativeOrigin?.y===200);
- assert.ok(pebble?.capabilities.portable,'only the verified 1x1 native rock stamp is portable');
+ assert.ok(pebble?.capabilities.portable,'only the verified existing small-rock stamp is portable');
  assert.equal(world.isValidPosition(50,200),false);
  const picked=engine.execute(p,'pick up '+pebble.id);
  assert.equal(picked.success,true,picked.text);
  assert.equal(picked.roll,undefined,'a small loose rock does not require a strength roll');
  assert.equal(world.isValidPosition(50,200),true,'original collision is removed when held');
+ assert.equal(world.isValidPosition(51,200),true,'the entire original small-rock footprint is released');
  assert.deepEqual(world.map.data[200*172+50],[592],'the original atlas layer disappears while held');
+ assert.deepEqual(world.map.data[200*172+51],[592],'the second original atlas cell also disappears');
  assert.equal(engine.snapshot(p).scenery.some(o=>o.id===pebble.id),false,'held rock is not painted on the ground');
  assert.equal(engine.snapshot(p).bag.filter(o=>o.id===pebble.id&&o.carried).length,1);
  assert.equal(engine.execute(p,'take '+pebble.id).success,false,'cannot duplicate the same native rock');
@@ -155,17 +157,19 @@ test('one existing native pebble can be picked up, carried, dropped and restored
  assert.deepEqual(dropped.object.tile,{x:53,y:200});
  assert.equal(world.isValidPosition(53,200),false,'same original rock collision follows its new tile');
  assert.equal(world.isValidPosition(50,200),true);
- assert.ok(world.map.data[200*172+53].includes(218),'the actual original Fracture tile is repainted');
+ assert.ok(world.map.data[200*172+53].includes(98),'the actual first original Fracture tile is repainted');
+ assert.ok(world.map.data[200*172+54].includes(99),'the actual second original Fracture tile is repainted');
  assert.equal(engine.snapshot(p).bag.some(o=>o.id===pebble.id),false);
  assert.equal(Object.keys(JSON.parse(fs.readFileSync(file)).items).length,0,'no synthetic inventory prop or art is created');
  const next=worldFromMap(),restored=createChaosWorld({file,nativeTrees});
  restored.prepareWorld(next);
  assert.equal(next.isValidPosition(50,200),true);
  assert.equal(next.isValidPosition(53,200),false);
- assert.ok(next.map.data[200*172+53].includes(218),'restart keeps the exact existing atlas rock');
+ assert.ok(next.map.data[200*172+53].includes(98),'restart keeps the exact existing atlas rock');
+ assert.ok(next.map.data[200*172+54].includes(99));
 });
 
-test('typed AI DM proposes a genuine native pebble pickup and owner-only drop without fabricated loot',async t=>{
+test('typed AI DM proposes a genuine native small-rock pickup and owner-only drop without fabricated loot',async t=>{
  const {engine,p,file,world}=fixture(t);p.x=49;p.y=200;
  const pebble=engine.snapshot(p).scenery.find(o=>o.nativeOrigin?.x===50&&o.nativeOrigin?.y===200);
  const pickup={action:'take',targetId:pebble.id,ability:'none',dc:0,description:'Pick up this verified loose pebble.'};
