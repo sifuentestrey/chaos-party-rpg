@@ -2,6 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import fs f
 import {discoverNativeObjects} from './native-scenery.mjs';
 import {createChaosWorld,shouldUseCreative} from './chaos-world.mjs';
 import {reconcileNativeMap} from './native-map-state.ts';
+import {nativeDestination} from './native-object-actions.mjs';
 import {createOptionalDM} from './optional-dm.mjs';
 function fixture(t,{grass=false}={}){
  const map={width:172,height:314,tilesize:16,data:Array(172*314).fill(592),blocking:[],collisions:[],doors:[{x:21,y:203,tx:100,ty:200}]};const solid=[];
@@ -209,4 +210,20 @@ test('native small-rock drop validates both original art cells, not just the cho
  assert.equal(world.isValidPosition(54,200),false,'independent obstacle survives');
  assert.ok(world.map.data[201*172+52].includes(98));
  assert.ok(world.map.data[201*172+53].includes(99));
+});
+
+test('carried native rock no longer acts as an invisible blocker to another real map object',t=>{
+ const {nativeTrees}=fixture(t);
+ const tent=nativeTrees.find(o=>o.kind==='tent');
+ const stone=nativeTrees.find(o=>o.portable&&o.kind==='rock');
+ assert.ok(tent&&stone);
+ // Reposition only metadata in this isolated planner test; no map art is created.
+ const overlapping={...stone,tile:{x:tent.tile.x+1,y:tent.tile.y},nativeTile:stone.tile,carriedBy:'other'};
+ const p={x:tent.tile.x-1,y:tent.tile.y};
+ const attempt={verb:'move',direction:'east'};
+ const options={valid:()=>true,sameZone:()=>true,occupied:()=>false,objects:[tent,overlapping]};
+ assert.deepEqual(nativeDestination(p,tent,attempt,options),{x:tent.tile.x+1,y:tent.tile.y},
+  'a carried original rock has no physical footprint');
+ assert.equal(nativeDestination(p,tent,attempt,{...options,objects:[tent,{...overlapping,carriedBy:null}]}),null,
+  'the same native rock must obstruct once actually placed on the map');
 });
