@@ -142,6 +142,10 @@ test('one existing native small rock can be picked up, carried, dropped and rest
  assert.deepEqual(world.map.data[200*172+51],[592],'the second original atlas cell also disappears');
  assert.equal(engine.snapshot(p).scenery.some(o=>o.id===pebble.id),false,'held rock is not painted on the ground');
  assert.equal(engine.snapshot(p).bag.filter(o=>o.id===pebble.id&&o.carried).length,1);
+ const heldWorld=worldFromMap(),heldEngine=createChaosWorld({file,nativeTrees});
+ heldEngine.prepareWorld(heldWorld);
+ assert.equal(heldWorld.isValidPosition(50,200),true,'carried rock stays off the map after a fresh engine restart');
+ assert.deepEqual(heldWorld.map.data[200*172+51],[592]);
  assert.equal(engine.execute(p,'take '+pebble.id).success,false,'cannot duplicate the same native rock');
  const second={...p,id:2,characterId:'other',name:'Other',x:52,y:200};
  world.players.other=second;
@@ -183,9 +187,26 @@ test('typed AI DM proposes a genuine native small-rock pickup and owner-only dro
  assert.equal(engine.adjudicateEnvironment(p,{...pickup,dc:1}).blocked,true);
  assert.equal(engine.adjudicateEnvironment(p,pickup).success,true);
  assert.equal(world.isValidPosition(50,200),true);
+ const other={...p,id:2,characterId:'other',name:'Other',x:52,y:200};
+ world.players.other=other;
+ assert.equal(engine.adjudicateEnvironment(other,{...pickup,action:'drop'}).blocked,true,'AI cannot drop another player\'s carried rock');
  p.x=52;p.y=200;
  proposal={action:'drop',targetId:pebble.id,ability:'none',dc:0,description:'Put down the same carried rock.'};
  assert.deepEqual(await dm.interpretEnvironment('Put the rock down here',actor()),proposal);
  assert.equal(engine.adjudicateEnvironment(p,proposal).success,true);
  assert.equal(world.isValidPosition(53,200),false);
+});
+
+test('native small-rock drop validates both original art cells, not just the chosen anchor',t=>{
+ const {engine,p,world}=fixture(t);p.x=49;p.y=200;
+ const rock=engine.snapshot(p).scenery.find(o=>o.nativeOrigin?.x===50&&o.nativeOrigin?.y===200);
+ assert.equal(engine.execute(p,'take '+rock.id).success,true);
+ p.x=52;p.y=200;
+ world.map.grid[200][54]=1; // The east anchor (53,200) is open; its far tile is not.
+ const result=engine.execute(p,'drop '+rock.id);
+ assert.equal(result.success,true,result.text);
+ assert.deepEqual(result.object.tile,{x:52,y:201},'choose another clear placement rather than overlap the far collision');
+ assert.equal(world.isValidPosition(54,200),false,'independent obstacle survives');
+ assert.ok(world.map.data[201*172+52].includes(98));
+ assert.ok(world.map.data[201*172+53].includes(99));
 });
