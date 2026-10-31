@@ -6,8 +6,10 @@ export function parseIntent(raw: string): Intent {
   if (/^(?:stop|halt|cancel|quit|cease)(?:\s+(?:(?:running|walking|moving|attacking|fighting)(?:\s+.+)?|everything|that|my action))?$/.test(text) || /^(?:hold still|hold position|stand still|stay put|wait)$/.test(text)) return {verb:'cancel'};
   if (/^(?:respawn|revive|rejoin|stand back up)$/.test(text)) return {verb:'respawn'};
   if (/^(?:look(?: around)?|survey|inspect surroundings)$/.test(text)) return {verb:'look'};
-  if (/^(?:leave|exit)(?: the)?(?: building|house|tavern)?$/.test(text)) return {verb:'exit'};
-  if (/^(?:enter|use)(?: the)?(?: door|building|house|tavern)$/.test(text)) return {verb:'enter'};
+  const departure=text.match(/^(?:leave|exit|go outside|walk outside|get out)(?: (?:the )?(.+))?$/);
+  if(departure)return {verb:'exit',...(departure[1]?{target:departure[1]}:{})};
+  const entry=text.match(/^(?:enter|(?:go|walk|head|step|get) (?:in|inside|into|through)|use)(?: (?:the |a |an )?(.+))?$/);
+  if(entry&&(!text.startsWith('use')||/door|entrance|building|house|tavern/.test(entry[1]||'')))return {verb:'enter',...(entry[1]?{target:entry[1]}:{})};
   if(/^(?:don't|do not|no more) (?:run|walk|move|attack|fight|keep running|keep moving|keep attacking)(?:\s+.*)?$/.test(text))return {verb:'cancel'};
   const ability=text.match(/^(?:use (?:my )?(?:class )?ability|power strike|phase shift|arcane shock|mend)(?: (?:on|to) (.+))?$/);
   if(ability){const skill=text.startsWith('power strike')?'power_strike':text.startsWith('phase shift')?'phase_shift':text.startsWith('arcane shock')?'war_cry':text.startsWith('mend')?'mend':null;return {verb:'ability',...(skill?{skill}:{}),...(ability[1]?{target:ability[1]}:{})};}

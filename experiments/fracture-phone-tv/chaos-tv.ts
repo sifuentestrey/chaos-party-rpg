@@ -1,6 +1,7 @@
 /** Chaos-owned shared TV adapter. Ordinary Fracture is unchanged without chaosTV. */
 import {appearanceSheet,drawPreview} from './character-appearance.mjs';
-import {STARTERS,DEFAULT_APPEARANCE} from './character-profile.mjs';
+import {chooseScene} from './scene-view.mjs';
+import {STARTERS,DEFAULT_APPEARANCE,bodyScale} from './character-profile.mjs';
 import {nativeTrees} from './chaos-native-scenery';
 import {reconcileNativeMap} from './chaos-native-map-state';
 import {Types} from '../../shared/ts/gametypes';
@@ -24,7 +25,7 @@ export function startChaosTV(game:any):void {
   document.documentElement.classList.add('chaos-tv');
   const style=document.createElement('style');style.textContent=`html.chaos-tv #intro,html.chaos-tv #instructions,html.chaos-tv #status,html.chaos-tv #statusbar,html.chaos-tv #skill-bar,html.chaos-tv #minimap-container,html.chaos-tv #ai-retired-note,html.chaos-tv #hire-button,html.chaos-tv #credits-link,html.chaos-tv #chatbox,html.chaos-tv #notifications,html.chaos-tv #achievements,html.chaos-tv #population,html.chaos-tv #credits,html.chaos-tv #about{display:none!important}body{overflow:hidden}#chaos-tv-controls{position:fixed;right:12px;top:10px;z-index:20000;background:#15202ce8;color:white;padding:8px;border-radius:8px;font:14px system-ui}#chaos-tv-log{position:fixed;left:12px;bottom:12px;max-width:400px;max-height:120px;overflow:hidden;z-index:20000;background:#15202cd9;color:#fff4da;border-radius:8px;padding:8px;font:14px system-ui;pointer-events:none}`;document.head.append(style);
   const controls=document.createElement('div');controls.id='chaos-tv-controls';
-  const select=document.createElement('select');select.setAttribute('aria-label','Follow player');controls.append(select);
+  const select=document.createElement('select');select.setAttribute('aria-label','Follow player');controls.append(select);const mode=document.createElement('select');mode.setAttribute('aria-label','Camera mode');mode.innerHTML='<option value="group">Shared scene</option><option value="follow">Follow player</option>';controls.prepend(mode);const offscreen=document.createElement('div');offscreen.id='chaos-offscreen';offscreen.style.cssText='position:fixed;top:58px;right:12px;z-index:19001;color:white;background:#15202cdd;padding:6px;border-radius:6px;font:14px system-ui;max-width:280px';document.body.append(offscreen);let sharedView:any=null;mode.onchange=()=>{cameraKey='';lastWatch='';};select.onchange=()=>{mode.value='follow';cameraKey='';lastWatch='';};
   const fullscreen=document.createElement('button');fullscreen.textContent='Full screen';fullscreen.onclick=()=>{void document.documentElement.requestFullscreen?.();};controls.append(fullscreen);document.body.append(controls);
   const lobby=document.createElement('div');Object.assign(lobby.style,{position:'fixed',inset:'0',background:'#121922ed',color:'#f4eddc',zIndex:'19000',display:'grid',placeContent:'center',textAlign:'center',font:'24px system-ui'});document.body.append(lobby);
   const log=document.createElement('div');log.id='chaos-tv-log';document.body.append(log);
@@ -32,11 +33,15 @@ export function startChaosTV(game:any):void {
   let cameraKey='';let observerIds=new Set<string>();
   game.client.connection.on('chaos:camera',(p:any)=>{
     observerIds=new Set((p.observers||[]).map(String));
-    const nextKey=`${p.id}:${p.x},${p.y}:${window.innerWidth},${window.innerHeight}`;if(nextKey===cameraKey)return;cameraKey=nextKey;
-    game.player.disengage();game.player.stop();
-    game.makeCharacterTeleportTo(game.player,p.x,p.y);game.player.idle();
     const zone=Object.values(INTERIOR_ZONES).find((z:any)=>z.areas.some((a:any)=>p.x>=a.x&&p.x<a.x+a.w&&p.y>=a.y&&p.y<a.y+a.h))||getZoneAtPosition(p.x,p.y);
-    if(zone?.viewport){const v=zone.viewport;game.camera.setZoneViewport(v.width,v.height,true);game.camera.setGridPosition(v.cameraX,v.cameraY);}else{game.camera.setZoneViewport(game.camera.fullGridW,game.camera.fullGridH,false);game.camera.setPosition(Math.floor((p.x-game.camera.gridW/2)*16),Math.floor((p.y-game.camera.gridH/2)*16));}
+    const view=mode.value==='group'?sharedView:null;
+    const nextKey=(zone?.viewport?'interior:'+zone.id:view?.id||`follow:${p.id}:${p.x},${p.y}`)+':'+window.innerWidth+','+window.innerHeight;
+    if(nextKey===cameraKey)return;cameraKey=nextKey;controls.dataset.scene=nextKey;controls.dataset.cameraUpdates=String(Number(controls.dataset.cameraUpdates||0)+1);
+    game.player.disengage();game.player.stop();
+    // Native entity packets provide movement. Relocate only the invisible observer.
+    game.player.setGridPosition?.(p.x,p.y);
+    if(zone?.viewport){const v=zone.viewport;game.camera.setZoneViewport(v.width,v.height,true);game.camera.setGridPosition(v.cameraX,v.cameraY);}
+    else{game.camera.setZoneViewport(game.camera.fullGridW,game.camera.fullGridH,false);game.camera.setPosition(view?view.x*16:Math.floor((p.x-game.camera.gridW/2)*16),view?view.y*16:Math.floor((p.y-game.camera.gridH/2)*16));}
     game.renderer.renderStaticCanvases();
     // Hide the disposable observer sprite while preserving native entity/camera lifecycle.
     // Observer sprite is omitted by the renderer wrapper below.
@@ -97,12 +102,12 @@ export function startChaosTV(game:any):void {
     if(entity.id===game.playerId||observerIds.has(String(entity.id)))return;
     const appearance=appearances.get(String(entity.id));
     if(!appearance){originalDraw(entity);return;}
-    const context=game.renderer.context;context.save();context.strokeStyle=colors[appearance.color];context.lineWidth=2;context.beginPath();context.ellipse((entity.x+8)*game.renderer.scale,(entity.y+14)*game.renderer.scale,8*game.renderer.scale,3*game.renderer.scale,0,0,Math.PI*2);context.stroke();
+    const context=game.renderer.context;context.save();context.imageSmoothingEnabled=false;context.strokeStyle=colors[appearance.color];context.lineWidth=2;context.beginPath();context.ellipse((entity.x+8)*game.renderer.scale,(entity.y+14)*game.renderer.scale,8*game.renderer.scale,3*game.renderer.scale,0,0,Math.PI*2);context.stroke();
     entity.isPhased=(appearance.phaseUntil||0)>Date.now();
     const originalSprite=entity.sprite;
     const cosmetic=appearance.profile&&originalSprite?.id&&originalSprite.width===32&&originalSprite.height===32?outfit(appearance.profile,originalSprite.image.width/160):null;
     context.filter=appearance.profile?'none':hues[appearance.color]||'none';
-    try{if(cosmetic?.sheet)entity.sprite={...originalSprite,image:cosmetic.sheet};originalDraw(entity);}finally{entity.sprite=originalSprite;context.restore();}
+    try{if(appearance.profile){const [sx,sy]=bodyScale(appearance.profile.body),ax=(entity.x+8)*game.renderer.scale,ay=(entity.y+16)*game.renderer.scale;context.translate(ax,ay);context.scale(sx,sy);context.translate(-ax,-ay);}if(cosmetic?.sheet)entity.sprite={...originalSprite,image:cosmetic.sheet};originalDraw(entity);}finally{entity.sprite=originalSprite;context.restore();}
 
   };
   const originalName=game.renderer.drawEntityName.bind(game.renderer);
@@ -110,7 +115,7 @@ export function startChaosTV(game:any):void {
   document.addEventListener('click',e=>{if(!controls.contains(e.target as Node)){e.stopImmediatePropagation();e.preventDefault();}},true);
   document.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d'].includes(e.key)){e.stopImmediatePropagation();e.preventDefault();}},true);
   const shownCombat=new Set();
-  let selected='';
+  let selected='',lastWatch='';
   const poll=async()=>{try{
     const u=new URL('/tv-state',config.base);u.searchParams.set('key',config.key);
     const r=await fetch(u.toString());if(!r.ok){log.textContent='TV pairing expired. Reopen the TV from the current host page.';return;}const data=await r.json();
@@ -146,8 +151,10 @@ export function startChaosTV(game:any):void {
     if(shownCombat.size>200)shownCombat.clear();
     if(!players.some((p:any)=>String(p.actor.id)===select.value))selected=String(players[0]?.actor.id||'');else selected=select.value;
     select.textContent='';for(const p of players){const option=document.createElement('option');option.value=String(p.actor.id);option.textContent=`${p.name}${p.role?' · '+(STARTERS[p.role]?.name||p.role):''} · HP ${p.actor.hp}/${p.actor.maxHp}`;select.append(option);}select.value=selected;
+    if(mode.value==='group'){sharedView=chooseScene(players.map((p:any)=>p.actor),data.scene||sharedView);if(sharedView){selected=String(sharedView.anchor.id);select.value=selected;}}
+    const outside=sharedView&&mode.value==='group'?players.filter((p:any)=>p.actor.zone!==sharedView.zone||p.actor.x<sharedView.x||p.actor.x>=sharedView.x+game.camera.fullGridW||p.actor.y<sharedView.y||p.actor.y>=sharedView.y+game.camera.fullGridH):[];offscreen.textContent=outside.length?'Off screen: '+outside.map((p:any)=>p.name+' '+(p.actor.y<sharedView.y?'↑':p.actor.y>=sharedView.y+game.camera.fullGridH?'↓':p.actor.x<sharedView.x?'←':'→')).join(' · '):'';offscreen.hidden=!outside.length;
     followed=players.find((p:any)=>String(p.actor.id)===selected)?.actor;
-    game.client.connection.emit('chaos:watch',{key:config.key,actorId:selected||null},()=>{});
+    const watchKey=selected+':'+(mode.value==='group'?sharedView?.id:'follow');if(watchKey!==lastWatch){lastWatch=watchKey;game.client.connection.emit('chaos:watch',{key:config.key,actorId:selected||null},()=>{});}
     log.textContent='';
     if(data.rally?.status==='pending'){const row=document.createElement('div');row.textContent=`Party ${data.rally.kind==='expedition'?'travel to '+data.rally.destination:'rally'} vote: ${data.rally.yes}/${data.rally.required} yes · ${Math.max(0,Math.ceil((data.rally.deadline-Date.now())/1000))}s`;log.append(row);}
     for(const d of (data.declarations||[]).slice(0,2)){const row=document.createElement('div');row.textContent=`${d.player} declares: ${d.text} · ${Math.max(0,Math.ceil((d.dueAt-Date.now())/1000))}s to help/hinder`;log.append(row);}

@@ -75,3 +75,5 @@ test('open-ended AI DM proposes only verified adjacent native scenery, never an 
  assert.equal(await dm.interpretEnvironment('Topple an imaginary tree',{...actor,chaos:{scenery:[{...oak,nativeOrigin:null}]}}),null);
  assert.equal(calls,before,'no provider call when no verified adjacent native object exists');
 });
+
+test('enabled preference survives restart without copying an environment key to disk',t=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'dm-preference-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));const dm=createOptionalDM({dataDir:dir,key:'runtime-test-key'});dm.enabled=true;const next=createOptionalDM({dataDir:dir,key:'runtime-test-key'});assert.equal(next.enabled,true);assert.equal(fs.existsSync(path.join(dir,'dm-config.json')),false);next.enabled=false;assert.equal(createOptionalDM({dataDir:dir,key:'runtime-test-key'}).enabled,false);dm.close();next.close();});

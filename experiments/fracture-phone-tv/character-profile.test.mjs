@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {DEFAULT_APPEARANCE,validateAppearance,randomAppearance,STARTERS} from './character-profile.mjs';import {recolorPixels} from './character-appearance.mjs';import {parseIntent,validIntent} from './action-contract.ts';
 test('appearance accepts only the supported cosmetic choices, never paths, powers or stats',()=>{
  for(let n=0;n<50;n++){const appearance=randomAppearance();assert.deepEqual(validateAppearance(appearance),appearance);}
- for(const patch of [{outfit:'../config'},{body:'dragon'},{skin:-1},{hair:1.2},{color:8},{accessory:'weapon'},{damage:999},{version:2}])assert.throws(()=>validateAppearance({...DEFAULT_APPEARANCE,...patch}));
+ for(const patch of [{outfit:'../config'},{body:'dragon'},{skin:-1},{hair:1.2},{color:16},{accessory:'weapon'},{damage:999},{version:3}])assert.throws(()=>validateAppearance({...DEFAULT_APPEARANCE,...patch}));
  assert.equal(Object.keys(STARTERS).length,4);
 });
 test('original palette preserves native pixels; selected skin and clothing never recolor the outline',()=>{

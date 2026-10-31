@@ -1,0 +1,47 @@
+{
+  "status": "passed",
+  "events": [
+    {
+      "player": 0,
+      "text": "walk south 3",
+      "ackMs": 81,
+      "totalMs": 587,
+      "status": "succeeded",
+      "message": "Walked 3 tiles.",
+      "id": "5e22eeba-ab9b-4b60-ad93-5054564bb00a"
+    },
+    {
+      "sharedCamera": {
+        "before": "1",
+        "after": "1",
+        "scene": "The Refuge:0,216:32,18:1280,720"
+      }
+    },
+    {
+      "player": 0,
+      "text": "enter door-51-205",
+      "ackMs": 71,
+      "totalMs": 445,
+      "status": "succeeded",
+      "message": "Travelled through the door into another area.",
+      "id": "a29a251d-0cea-4b85-a658-62819c46ed1b"
+    },
+    {
+      "player": 0,
+      "text": "exit",
+      "ackMs": 72,
+      "totalMs": 198,
+      "status": "succeeded",
+      "message": "Travelled through the door into another area.",
+      "id": "45fb864f-f1f2-426f-954c-f35bbfc25696"
+    },
+    {
+      "sixBodies": true,
+      "layeredLooks": true,
+      "savedLook": true,
+      "wardrobeRecovery": true,
+      "nativeArmorUnchanged": true
+    }
+  ],
+  "errors": []
+}

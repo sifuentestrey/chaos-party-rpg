@@ -6,6 +6,7 @@ import {pathToFileURL} from 'node:url';
 const geometry=JSON.parse(fs.readFileSync('client/maps/world_client.json','utf8'));
 let chaosObjects:any=null;
 const chaosReady=process.env.CHAOS_WORLD_MODULE?import(pathToFileURL(process.env.CHAOS_WORLD_MODULE).href).then(m=>chaosObjects=m.createChaosWorld({file:'server/data/chaos-party/objects.json',kindName:Types.getKindAsString,nativeTrees,nativeDoors:geometry.doors,useNativeSkill:handleSkillUse})):Promise.resolve(null);
+import {sceneAt} from './scene-view';
 import {Types} from '../../shared/ts/gametypes';
 import {Messages} from './message';
 import {Formulas} from './formulas';
@@ -24,7 +25,7 @@ export function installChaosActor(player:any, connection:any): void {
   const socket=connection._connection, world=player.getWorld();
   if(socket.handshake.auth?.chaosTVKey&&socket.handshake.auth.chaosTVKey!==process.env.CHAOS_TV_KEY){connection.close('TV pairing expired; reopen the current host link');return;}
   const local=['127.0.0.1','::1','::ffff:127.0.0.1'].includes(connection.clientIp);
-  let active:any=null, ticking=false, lastHit=0, watchId:any=null;
+  let active:any=null, ticking=false, lastHit=0, watchId:any=null, watchKey='';
   const spectator=!!process.env.CHAOS_TV_KEY&&socket.handshake.auth?.chaosTVKey===process.env.CHAOS_TV_KEY;
   player.chaosSpectator=spectator;
   player.chaosControlled=local&&socket.handshake.auth?.chaosActorKey===key;
@@ -44,7 +45,9 @@ export function installChaosActor(player:any, connection:any): void {
   const label=(e:any)=>String(e.chaosName||e.name||Types.getKindAsString(e.kind)||e.type);
   const nearby=()=>Object.values(world.entities).filter((e:any)=>e.id!==player.id&&!e.chaosSpectator&&!e.isDead&&distance(player,e)<=18) as any[];
   const objectSnapshot=()=>{try{return chaosObjects?.snapshot(player);}catch{return {bag:[],ground:[],wearables:[],error:'Object storage is unavailable. Ask the host to check disk space and permissions.'};}};
-  const state=()=>({ability:chaosObjects?.abilityState(player),id:player.id,name:player.chaosName||player.name,role:player.chaosRole||null,chaos:objectSnapshot(),zone:world.zoneManager.getZoneAt(player.x,player.y)?.name||'Unknown area',x:player.x,y:player.y,hp:player.hitPoints,maxHp:player.maxHitPoints,level:player.level,gold:player.gold,inventory:player.getInventory().getSlots().map((s:any,i:number)=>s?{slot:i,name:Types.getKindAsString(s.kind),count:s.count}:null).filter(Boolean),weapon:Types.getKindAsString(player.weapon),armor:Types.getKindAsString(player.armor),dead:player.isDead,ready:player.hasEnteredGame,nearby:nearby().map(e=>({id:e.id,name:label(e),type:e.type,x:e.x,y:e.y,stunnedUntil:e.stunUntil||0,hp:e.hitPoints,maxHp:e.maxHitPoints}))});
+  const entrances=()=>geometry.doors.filter((d:any)=>distance(player,d)<=18).map((d:any)=>({id:'door-'+d.x+'-'+d.y,name:world.zoneManager.getZoneAt(d.tx,d.ty)?.name||'building',x:d.x,y:d.y,distance:distance(player,d)})).sort((a:any,b:any)=>a.distance-b.distance);
+  const positionState=()=>({id:player.id,x:player.x,y:player.y,zone:world.zoneManager.getZoneAt(player.x,player.y)?.name||'Unknown area',hp:player.hitPoints,maxHp:player.maxHitPoints,dead:player.isDead,ready:player.hasEnteredGame,entrances:entrances(),scene:sceneAt({x:player.x,y:player.y,zone:world.zoneManager.getZoneAt(player.x,player.y)?.name||'Unknown area'})});
+  const state=()=>({scene:sceneAt({x:player.x,y:player.y,zone:world.zoneManager.getZoneAt(player.x,player.y)?.name||'Unknown area'}),entrances:entrances(),ability:chaosObjects?.abilityState(player),id:player.id,name:player.chaosName||player.name,role:player.chaosRole||null,chaos:objectSnapshot(),zone:world.zoneManager.getZoneAt(player.x,player.y)?.name||'Unknown area',x:player.x,y:player.y,hp:player.hitPoints,maxHp:player.maxHitPoints,level:player.level,gold:player.gold,inventory:player.getInventory().getSlots().map((s:any,i:number)=>s?{slot:i,name:Types.getKindAsString(s.kind),count:s.count}:null).filter(Boolean),weapon:Types.getKindAsString(player.weapon),armor:Types.getKindAsString(player.armor),dead:player.isDead,ready:player.hasEnteredGame,nearby:nearby().map(e=>({id:e.id,name:label(e),type:e.type,x:e.x,y:e.y,stunnedUntil:e.stunUntil||0,hp:e.hitPoints,maxHp:e.maxHitPoints}))});
   const receipt=(id:string,status:string,message:string,detail:any={})=>socket.emit('chaos:receipt',{id,status,message,...detail,actor:state()});
   // Only the action that produced an asynchronous result may finish itself.
   // STOP, disconnect, and replacement actions invalidate all older continuations.
@@ -60,7 +63,7 @@ export function installChaosActor(player:any, connection:any): void {
     if(!body.actorId){watchId=null;return ack({ok:true,lobby:true});}
     const target=world.getEntityById(body.actorId);
     if(!target?.chaosControlled)return ack({error:'No party actor selected'});
-    watchId=target.id; player.chaosSpectator=true; player.spawnProtectionUntil=Number.MAX_SAFE_INTEGER; ack({ok:true});
+    watchKey='';watchId=target.id; player.chaosSpectator=true; player.spawnProtectionUntil=Number.MAX_SAFE_INTEGER; ack({ok:true});
   });
   const move=async(x:number,y:number)=>{
     if(chaosObjects?.isBlocked(player,x,y))return false;
@@ -136,9 +139,9 @@ export function installChaosActor(player:any, connection:any): void {
       const equipped=player.weapon===kind||player.armor===kind;receipt(id,equipped?'succeeded':'blocked',equipped?'Equipment changed.':'That item cannot be equipped.');return ack({ok:true});
     }
     if(intent.verb==='look') {const props=objectSnapshot();const doorHolds=(props?.doors||[]).map(d=>'Door at '+d.x+','+d.y+' held by '+d.heldBy).join('; ');const memories=(props?.npcs||[]).filter(n=>n.items?.length||n.trust<0||n.concern).map(n=>`${n.name} [${n.id}]: ${n.items.map(i=>i.name+' ['+i.id+']').join(', ')||'no Chaos items'}${n.trust<0?' · distrusts you':''}${n.concern?' · '+n.concern:''}`).join('; ');const extras=(props?.ground||[]).map(i=>`${i.name} [${i.id}] (${i.tile.x},${i.tile.y})${i.owner?' belongs to '+i.owner:''}${i.condition!=='intact'?' — '+i.condition:''}`).join('; ');receipt(id,'succeeded',(extras?`Objects: ${extras}. `:'')+(nearby().length?nearby().slice(0,12).map(e=>`${label(e)} (${e.x},${e.y})`).join('; '):'No characters or items nearby. Explore with movement commands.')+(memories?` NPC possessions/memory: ${memories}.`:'')+(doorHolds?` Held doors: ${doorHolds}.`:''));return ack({ok:true});}
-    if(intent.verb==='unknown'){receipt(id,'blocked','I cannot do that with the available mechanics. Try walking, talking, fighting, opening or collecting something nearby.');return ack({ok:true});}
+    if(intent.verb==='unknown'){receipt(id,'blocked','I could not ground that intention in a supported nearby action. Check the AI status on your phone; a building or object ID can clarify which target you mean.');return ack({ok:true});}
     let target:any=null;
-    if(intent.target){
+    if(intent.target&&!['enter','exit'].includes(intent.verb)){
       const phrase=intent.target.toLowerCase();
       const alias=objectSnapshot()?.npcs?.find((n:any)=>n.id===intent.target);
       const visible=nearby();
@@ -152,8 +155,12 @@ export function installChaosActor(player:any, connection:any): void {
     }
     let door:any=null;
     if(intent.verb==='exit'||intent.verb==='enter'){
-      door=geometry.doors.filter((d:any)=>distance(player,d)<=18).sort((a:any,b:any)=>distance(player,a)-distance(player,b))[0];
-      if(!door){receipt(id,'blocked','No door nearby. Walk closer to a visible entrance.');return ack({ok:true});}
+      const ref=String(intent.target||'').toLowerCase().replace(/^(?:the |a |an )/,'');
+      const generic=!ref||/^(?:door|doorway|entrance|building|house|tavern|outside|inside)$/.test(ref);
+      const choices=entrances().filter((d:any)=>generic||d.id===ref||d.name.toLowerCase().includes(ref));
+      if(choices.length>1&&choices[0].distance===choices[1].distance){receipt(id,'blocked','Several entrances are equally near. Choose '+choices.slice(0,3).map((d:any)=>d.id+' ('+d.name+')').join(' or ')+'.');return ack({ok:true});}
+      door=choices[0]&&geometry.doors.find((d:any)=>d.x===choices[0].x&&d.y===choices[0].y);
+      if(!door){receipt(id,'blocked','There is no mapped entrance nearby. Some building artwork has no enterable interior; approach a building with a real doorway.');return ack({ok:true});}
     }
     cancel();active={id,intent,target,door,started:Date.now(),deadline:Date.now()+60000};
     receipt(id,'started',target?`${intent.verb}: approaching ${label(target)}.`:'Walking.');ack({ok:true});
@@ -168,6 +175,7 @@ export function installChaosActor(player:any, connection:any): void {
       if(watchId){
         const watched=world.getEntityById(watchId);
         if(watched?.chaosControlled){
+          const next=watched.id+':'+watched.x+','+watched.y;if(next===watchKey)return;watchKey=next;
           player.spawnProtectionUntil=Number.MAX_SAFE_INTEGER;
           player.setPosition(watched.x,watched.y);player.zoneCallback?.();world.pushRelevantEntityListTo(player);
           socket.emit('chaos:camera',{x:watched.x,y:watched.y,id:watched.id,observers:(Object.values(world.players) as any[]).filter(p=>p.chaosSpectator).map(p=>p.id)});
@@ -222,7 +230,7 @@ export function installChaosActor(player:any, connection:any): void {
           player.zoneCallback?.();player.checkZoneChange(player.x,player.y);
           socket.emit('chaos:position',state());finish('succeeded','Travelled through the door into another area.',{},action);return;
         }
-        socket.emit('chaos:position',state()); return;
+        socket.emit('chaos:position',positionState()); return;
       }
       const door=action.door||geometry.doors.find((d:any)=>d.x===player.x&&d.y===player.y);
       if(door&&!['environment','creative'].includes(intent.verb)){
@@ -296,6 +304,6 @@ export function installChaosActor(player:any, connection:any): void {
       console.error('[Chaos actor]',error);
     }
     finally{ticking=false;}
-  },220);
+  },120);
   socket.on('disconnect',()=>{clearInterval(timer);if(player.chaosControlled)chaosObjects?.releaseDoorHolds(player);cancel();active=null;});
 }

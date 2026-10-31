@@ -1,5 +1,9 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Four-area playtest overhaul — October 31, 2026
+
+The experimental branch adds a majority-selected shared camera, lighter movement synchronization, grounded native building entry/exit with live Groq interpretation/narration, a simplified phone controller, and the expanded six-heritage wardrobe described in `FRACTURE_GAME_NIGHT_RELEASE.md`. These are implemented software improvements, not proof of full campaign parity or physical Mac/20-device acceptance. Group containment and automatic departure restrictions remain paused. Existing native environment, combat and saves are retained.
+
 ## Character creation slice — October 31, 2026
 
 The experimental branch now has a before-adventure creator and later cosmetic wardrobe, using Fracture's six animated outfit sheets plus the owner-approved small recolor/ear/accessory compositor. Four saved classes have real native starter abilities, with a native-health Mend for Healer. Four phone/TV creation and combat flows, save recovery/restart, and a twenty-native-actor software smoke test passed locally. See `FRACTURE_GAME_NIGHT_RELEASE.md` for exact acceptance and limitations. This delivers a bounded character-creation slice; it does not migrate the original campaign, full wardrobe, all original classes, arbitrary body shapes, or establish physical Mac/20-device readiness.

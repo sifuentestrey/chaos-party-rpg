@@ -67,16 +67,20 @@ for(const [source,dest] of [['chaos-abilities.test.ts','server/ts/__tests__/chao
  if(fs.existsSync(p)){const current=fs.readFileSync(p,'utf8');if(!current.startsWith('/** Chaos-owned')||(current!==canonical&&previous[dest]!==digest(current)))throw Error(`Local or unrecognized edits in ${dest}; refusing overwrite`);}
  writes.push([dest,canonical]);
 }
-for(const name of ['character-profile.mjs','character-appearance.mjs']){
+for(const name of ['character-profile.mjs','character-appearance.mjs','scene-view.mjs']){
  const dest='client/ts/'+name,content=fs.readFileSync(path.join(dir,name),'utf8'),file=path.join(root,dest);
  if(fs.existsSync(file)&&fs.readFileSync(file,'utf8')!==content&&previous[dest]!==digest(fs.readFileSync(file,'utf8')))throw Error('Local wardrobe edits; refusing overwrite: '+dest);
  writes.push([dest,content]);
 }
+const serverScene='server/ts/scene-view.ts',sceneContent=fs.readFileSync(path.join(dir,'scene-view.mjs'),'utf8');
+if(fs.existsSync(path.join(root,serverScene))&&previous[serverScene]!==digest(fs.readFileSync(path.join(root,serverScene),'utf8'))&&fs.readFileSync(path.join(root,serverScene),'utf8')!==sceneContent)throw Error('Local scene edits preserved');
+writes.push([serverScene,sceneContent]);
 // A cosmetic cannot silently substitute an incompatible sprite layout.
 for(const outfit of ['clotharmor','leatherarmor','mailarmor','platearmor','redarmor','goldenarmor']){
  const meta=JSON.parse(fs.readFileSync(path.join(root,'client/sprites',outfit+'.json'))),png=fs.readFileSync(path.join(root,'client/img/1',outfit+'.png'));
  if(meta.width!==32||meta.height!==32||png.readUInt32BE(16)!==160||png.readUInt32BE(20)!==288)throw Error('Unsupported wardrobe sprite; original files preserved: '+outfit);
 }
+for(const [name,size,rows] of [['wizard',26,10],['villagegirl',24,1]]){const meta=JSON.parse(fs.readFileSync(path.join(root,'client/sprites',name+'.json'))),png=fs.readFileSync(path.join(root,'client/img/1',name+'.png'));if(meta.width!==size||meta.height!==size||png.readUInt32BE(16)%size||png.readUInt32BE(20)<size*rows)throw Error('Unsupported native garment source: '+name);}
 // Register exact native scenery against the upstream atlas collision metadata.
 const metadataFile=fs.openSync(path.join(root,'tools/maps/tmx/map.tmx'),'r'),metadataBuffer=Buffer.alloc(262144);
 let metadataLength;try{metadataLength=fs.readSync(metadataFile,metadataBuffer,0,metadataBuffer.length,0);}finally{fs.closeSync(metadataFile);}

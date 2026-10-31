@@ -592,3 +592,4 @@ test('STOP invalidates an in-flight AI environment judgment before native dispat
  assert.equal((await request).status,409);
  assert.equal(sockets[0].lastAction.intent.verb,'cancel','stale AI result never reaches native engine');
 });
+test('lightweight native position updates retain the last complete inventory and world snapshot',async t=>{const {app,base,sockets}=await setup(t);const {token}=await(await post(base,'/pair',{key:app.room.join,name:'Walker'})).json();await new Promise(r=>setTimeout(r,20));const s=app.sessions.get(token);s.actor={id:1,ready:true,x:12,y:12,zone:'Town',inventory:[{name:'sword2'}],chaos:{scenery:[{id:'real-oak'}]},ability:{id:'power_strike',readyAt:123}};sockets[0].emit('chaos:position',{id:1,x:13,y:12,ready:true,zone:'Town'});assert.equal(s.actor.x,13);assert.equal(s.actor.inventory[0].name,'sword2');assert.equal(s.actor.chaos.scenery[0].id,'real-oak');assert.equal(s.actor.ability.readyAt,123);});
