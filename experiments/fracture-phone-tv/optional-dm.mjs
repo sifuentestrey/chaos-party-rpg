@@ -102,7 +102,7 @@ export function createOptionalDM({dataDir,key,model=process.env.CHAOS_DM_MODEL||
    // Only the authoritative native snapshot can supply candidates. The model
    // cannot introduce an object, bypass reach, or supply a world-state outcome.
    if(!actor?.ready||actor.dead||!Number.isInteger(actor.x)||!Number.isInteger(actor.y))return Promise.resolve(null);
-   const objects=[...(actor.chaos?.scenery||[]),...(actor.chaos?.bag||[]).filter(o=>o.carried===true)].filter(o=>o?.nativeOrigin&&
+   const objects=[...(actor.chaos?.bag||[]).filter(o=>o.carried===true),...(actor.chaos?.scenery||[])].filter(o=>o?.nativeOrigin&&
     typeof o.id==='string'&&typeof o.scene==='string'&&Number.isInteger((o.interactionTile||o.tile)?.x)&&Number.isInteger((o.interactionTile||o.tile)?.y)&&
     Math.abs((o.interactionTile||o.tile).x-actor.x)+Math.abs((o.interactionTile||o.tile).y-actor.y)<=18)
     .slice(0,24).map(o=>({
