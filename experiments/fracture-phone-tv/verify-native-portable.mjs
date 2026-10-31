@@ -40,7 +40,7 @@ try{
  assert.ok(engine.snapshot(p).bag.some(o=>o.id.endsWith(':'+rock.id)&&o.carried));
  assert.ok(sourceCells.every(c=>!([].concat(world.map.data[c.y*world.map.width+c.x]).includes(c.gid))),
   'All original native atlas rock cells disappear while held');
- assert.ok(engine.snapshot(p).nativeUpdates.some(o=>o.id===rock.id&&o.carriedBy===p.characterId),
+ assert.ok(engine.snapshot(p).nativeUpdates.some(o=>o.id===rock.id&&o.carriedBy===true),
   'TV map update must carry the original rock removal');
  const restarted=worldFromMap(),restored=createChaosWorld({file,nativeTrees:catalog});
  restored.prepareWorld(restarted);
