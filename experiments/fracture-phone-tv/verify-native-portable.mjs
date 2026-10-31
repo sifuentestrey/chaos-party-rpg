@@ -46,8 +46,39 @@ try{
  restored.prepareWorld(restarted);
  assert.ok(sourceCells.every(c=>!([].concat(restarted.map.data[c.y*restarted.map.width+c.x]).includes(c.gid))),
   'Original art remains absent after a separate native map reload while carried');
+ // In this isolated map test, reposition the disposable actor without claiming
+ // native Fracture walking. The drop itself must use the real atlas and collision.
+ let dropped=null;
+ for(let radius=4;radius<=10&&!dropped;radius++)for(let dx=-radius;dx<=radius&&!dropped;dx++)for(let dy=-radius;dy<=radius&&!dropped;dy++){
+  if(Math.max(Math.abs(dx),Math.abs(dy))!==radius)continue;
+  const x=rock.tile.x+dx,y=rock.tile.y+dy;
+  if(!world.isValidPosition(x,y))continue;
+  p.x=x;p.y=y;
+  const result=engine.execute(p,'drop '+rock.id);
+  if(result.success)dropped=result;
+ }
+ assert.ok(dropped,'An actual pinned-map native tile must accept the full original rock footprint');
+ const moved=engine.snapshot(p).scenery.find(o=>o.id.endsWith(':'+rock.id));
+ assert.ok(moved,'The same native rock must reappear on the ground');
+ assert.equal(engine.snapshot(p).bag.some(o=>o.id.endsWith(':'+rock.id)),false);
+ const dx=moved.tile.x-rock.tile.x,dy=moved.tile.y-rock.tile.y;
+ assert.ok(dx||dy,'The existing rock must actually relocate');
+ for(const cell of sourceCells){
+  const index=(cell.y+dy)*world.map.width+cell.x+dx;
+  assert.ok([].concat(world.map.data[index]).includes(cell.gid),'Original atlas cells must return at the new native position');
+ }
+ const saved=JSON.parse(fs.readFileSync(file,'utf8'));
+ assert.equal(Object.keys(saved.items).length,0,'No synthetic inventory item was created');
+ assert.equal(saved.scenery['fracture:pinned-world:'+rock.id].carriedBy,undefined);
+ const droppedWorld=worldFromMap(),droppedEngine=createChaosWorld({file,nativeTrees:catalog});
+ droppedEngine.prepareWorld(droppedWorld);
+ for(const cell of sourceCells){
+  const index=(cell.y+dy)*droppedWorld.map.width+cell.x+dx;
+  assert.ok([].concat(droppedWorld.map.data[index]).includes(cell.gid),'Relocated original rock art survives a separate restart');
+ }
  console.log(JSON.stringify({status:'passed',rockId:rock.id,verifiedNativeSmallRocks:rocks.length,
-  checks:['real pinned 98/99 atlas identity','authenticated pickup of existing native rock','no fabricated inventory item',
-   'original atlas cells removed','TV map update includes carry state','saved carried state restores on fresh pinned map'],
-  boundary:'Disposable pinned-map engine mechanics; not a real browser or physical Mac/phone/TV test'}));
+  dropTile:moved.tile,checks:['real pinned 98/99 atlas identity','authenticated pickup of existing native rock','no fabricated inventory item',
+   'original atlas cells removed','TV map update includes carry state','saved carried state restores on fresh pinned map',
+   'full-footprint original rock drop','real atlas art restored after drop and restart'],
+  boundary:'Disposable pinned-map engine mechanics with manually repositioned test actor; not a real browser or physical Mac/phone/TV test'}));
 }finally{fs.rmSync(dir,{recursive:true,force:true});}
