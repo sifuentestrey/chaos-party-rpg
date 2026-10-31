@@ -21,6 +21,8 @@
 
 **Asset delivery:** Chaos-only HTML is not cached and fingerprints the actual compiled native bundle, preventing an old camera/UI build surviving a browser refresh. The TV skips music files absent from the pinned upstream checkout; existing native sound effects remain. No game-world art, replacement music, synthetic scenery or production dependency was added.
 
+**Hosted verification follow-up:** the original `npm run verify`, experimental checks, pinned builds and all 3,350 native tests passed at `0f124de`. The subsequent legacy native-object smoke scenario exposed a setup mismatch: its new bridge inherited Hybrid and a different party had already claimed the shared test server. The existing native-DM/object/rally scenarios now explicitly select their intended **Live** mode. New-player Hybrid behavior and the separately exercised six-/twenty-character Hybrid scenarios are unchanged.
+
 **Curated evidence and resume point:** [game-night-finish](../experiments/fracture-phone-tv/evidence/game-night-finish/README.md) contains sanitized passing reports and actual phone/creator/TV/environment screenshots. Local silent MP4s are `/workspace/shared/Chaos-Party-Gameplay.mp4`, `/workspace/shared/Chaos-Party-Phone.mp4` and `/workspace/shared/Chaos-Party-Reactive-World.mp4`; videos and traces are not committed or shipped. Feature implementation is complete for this finishing pass. Remaining release gates are physical hardware/group acceptance and the explicitly separate original-campaign parity work; do not resume speculative rewrites or package from green software checks alone.
 
 ## Shared Hybrid adventure pacing — October 31, 2026
