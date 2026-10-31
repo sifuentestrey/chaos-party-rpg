@@ -344,7 +344,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    (object.kind==='roof'?'The stone walls and entrance remain in place if the upper roof is destroyed. ':'')+
    (object.waterSource?'You can drink here or splash a nearby object.':'')};
   if(!carrying&&distance(p,contact)>1)return fail('Stand beside that existing map object first.');
-  if(verb==='take'&&!caps.portable)return fail('Only a verified, loose, one-tile native pebble can be picked up. Larger rocks must be pushed.');
+  if(verb==='take'&&!caps.portable)return fail('Only a verified loose small rock can be picked up. Larger boulders must be pushed.');
   if(verb==='take'&&Object.values(state.scenery).some(o=>o.carriedBy===identity(p)))return fail('You are already carrying a native rock. Drop it before picking up another.');
   if(verb==='drop'&&!carrying)return fail('You can only drop an existing native rock carried by your character.');
   if(verb==='move'&&!caps.movable)return fail(`The ${object.name} is fixed in place.`);
@@ -360,15 +360,20 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   let destination=null;
   if(verb==='drop'){
    // Never conjure a rock: relocate the one original, saved atlas stamp.
-   // A carried native pebble is one cell. The destination must be empty,
+   // The original small rock occupies its verified native atlas cells. The destination must be empty,
    // reachable, in-zone and clear of doors, real bodies and other props.
-   if(!object.portable||object.cells?.length!==1)return fail('This native object has no verified one-tile drop adapter.');
+   if(!object.portable||!object.cells?.length||object.cells.length>2)return fail('This native object has no verified small-rock drop adapter.');
    const near=[[1,0],[0,1],[-1,0],[0,-1]].map(([dx,dy])=>({x:p.x+dx,y:p.y+dy}));
    const blockedByObject=t=>current.some(q=>q.id!==object.id&&!q.carriedBy&&q.condition!=='broken'&&
     (q.footprint?.length||q.movable||q.fireSource||q.protected||q.waterSource)&&
     nativeCells(q).some(cell=>cell.x===t.x&&cell.y===t.y));
    const blockedByDoor=t=>nativeDoors.some(d=>d.x===t.x&&d.y===t.y||d.tx===t.x&&d.ty===t.y);
-   destination=near.find(t=>sameZone(p,t)&&world.isValidPosition(t.x,t.y)&&!occupied(t)&&!blockedByObject(t)&&!blockedByDoor(t))||null;
+   const source=object.nativeTile||object.tile;
+   const fits=anchor=>object.cells.every(cell=>{
+    const t={x:anchor.x+cell.x-source.x,y:anchor.y+cell.y-source.y};
+    return sameZone(p,t)&&world.isValidPosition(t.x,t.y)&&!occupied(t)&&!blockedByObject(t)&&!blockedByDoor(t);
+   });
+   destination=near.find(fits)||null;
    if(!destination)return fail('No clear adjacent native tile is available to put the rock down.');
   }
   if(verb==='move'){
