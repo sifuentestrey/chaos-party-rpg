@@ -115,7 +115,7 @@ export function startChaosTV(game:any):void {
   document.addEventListener('click',e=>{if(!controls.contains(e.target as Node)){e.stopImmediatePropagation();e.preventDefault();}},true);
   document.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d'].includes(e.key)){e.stopImmediatePropagation();e.preventDefault();}},true);
   const shownCombat=new Set();
-  let selected='',lastWatch='';
+  let selected='',lastWatch='',lastWatchAt=0;
   const poll=async()=>{try{
     const u=new URL('/tv-state',config.base);u.searchParams.set('key',config.key);
     const r=await fetch(u.toString());if(!r.ok){log.textContent='TV pairing expired. Reopen the TV from the current host page.';return;}const data=await r.json();
@@ -154,7 +154,7 @@ export function startChaosTV(game:any):void {
     if(mode.value==='group'){sharedView=chooseScene(players.map((p:any)=>p.actor),data.scene||sharedView);if(sharedView){selected=String(sharedView.anchor.id);select.value=selected;}}
     const outside=sharedView&&mode.value==='group'?players.filter((p:any)=>p.actor.zone!==sharedView.zone||p.actor.x<sharedView.x||p.actor.x>=sharedView.x+game.camera.fullGridW||p.actor.y<sharedView.y||p.actor.y>=sharedView.y+game.camera.fullGridH):[];offscreen.textContent=outside.length?'Off screen: '+outside.map((p:any)=>p.name+' '+(p.actor.y<sharedView.y?'↑':p.actor.y>=sharedView.y+game.camera.fullGridH?'↓':p.actor.x<sharedView.x?'←':'→')).join(' · '):'';offscreen.hidden=!outside.length;
     followed=players.find((p:any)=>String(p.actor.id)===selected)?.actor;
-    const watchKey=selected+':'+(mode.value==='group'?sharedView?.id:'follow');if(watchKey!==lastWatch){lastWatch=watchKey;game.client.connection.emit('chaos:watch',{key:config.key,actorId:selected||null},()=>{});}
+    const watchKey=selected+':'+(mode.value==='group'?sharedView?.id:'follow');if(watchKey!==lastWatch||Date.now()-lastWatchAt>=15000){lastWatch=watchKey;lastWatchAt=Date.now();game.client.connection.emit('chaos:watch',{key:config.key,actorId:selected||null},()=>{});}
     log.textContent='';
     if(data.rally?.status==='pending'){const row=document.createElement('div');row.textContent=`Party ${data.rally.kind==='expedition'?'travel to '+data.rally.destination:'rally'} vote: ${data.rally.yes}/${data.rally.required} yes · ${Math.max(0,Math.ceil((data.rally.deadline-Date.now())/1000))}s`;log.append(row);}
     for(const d of (data.declarations||[]).slice(0,2)){const row=document.createElement('div');row.textContent=`${d.player} declares: ${d.text} · ${Math.max(0,Math.ceil((d.dueAt-Date.now())/1000))}s to help/hinder`;log.append(row);}
