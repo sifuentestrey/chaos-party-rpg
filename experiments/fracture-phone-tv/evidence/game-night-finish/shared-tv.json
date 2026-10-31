@@ -1,0 +1,36 @@
+{
+  "status": "passed",
+  "cacheBustedBundle": true,
+  "camera": {
+    "owned": true,
+    "x": 512,
+    "y": 3168,
+    "gridX": 32,
+    "gridY": 198,
+    "width": 40,
+    "height": 21,
+    "fixed": true,
+    "scene": "The Refuge:32,198:32,18",
+    "mode": "group"
+  },
+  "resized": {
+    "owned": true,
+    "x": 512,
+    "y": 3168,
+    "gridX": 32,
+    "gridY": 198,
+    "width": 40,
+    "height": 20,
+    "fixed": true,
+    "scene": "The Refuge:32,198:32,18",
+    "mode": "group"
+  },
+  "frameSample": {
+    "medianMs": 16.699999999999818,
+    "p95Ms": 16.700000000000728,
+    "samples": 119,
+    "scope": "headless cloud rendering during shared planning, no hardware performance claim"
+  },
+  "errors": [],
+  "network": []
+}

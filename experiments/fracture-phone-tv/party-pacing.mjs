@@ -5,13 +5,15 @@ import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 export const PACING_TIMES=Object.freeze({planning:30000,preparation:7000,action:5000,recap:4000,travel:60000});
 export function createSimulationClock({file=null,wall=()=>Date.now()}={}){
- let offset=0,pausedAt=null;
+ let offset=0,pausedAt=null,recovered=false;
  if(file&&fs.existsSync(file)){
   const saved=JSON.parse(fs.readFileSync(file,'utf8'));
   if(saved.version!==1||!Number.isFinite(saved.offset)||saved.offset<0||saved.pausedAt!==null&&!Number.isFinite(saved.pausedAt))throw Error('Unsupported pacing clock; saved data preserved');
+  recovered=saved.pausedAt!==null;
   offset=saved.offset+(saved.pausedAt===null?0:Math.max(0,wall()-saved.pausedAt));
  }
  function save(){if(!file)return;fs.mkdirSync(path.dirname(file),{recursive:true,mode:0o700});fs.writeFileSync(file+'.tmp',JSON.stringify({version:1,offset,pausedAt}),{mode:0o600});fs.renameSync(file+'.tmp',file);}
+ if(recovered)save(); // Commit the resumed offset so another restart cannot rewind simulation time.
  return {now:()=>wall()-offset-(pausedAt===null?0:Math.max(0,wall()-pausedAt)),get paused(){return pausedAt!==null;},
   pause(){if(pausedAt!==null)return;pausedAt=wall();save();},resume(){if(pausedAt===null)return;offset+=Math.max(0,wall()-pausedAt);pausedAt=null;save();}};
 }
@@ -19,7 +21,7 @@ export function createPartyPacing({world,clock,sceneAt,wall=()=>Date.now(),times
  const instanceId=randomUUID();
  let enabled=false,partyId=null,phase='exploration',area=null,round=0,deadline=0,reason='',travel=null,revision=0;
  const routes=new Map(),returning=new Set(),identity=p=>String(p.characterId||p.id);
- let electorate=[],drafts=new Map(),outcomes=[],lastRecap=null,prepared=false;
+ let electorate=[],drafts=new Map(),outcomes=[],lastRecap=null,prepared=false,planningOrigin=null;
  const players=()=>Object.values(world.players||{}).filter(p=>p.chaosControlled&&!p.chaosSpectator&&p.chaosPartyId===partyId&&p.hasEnteredGame&&p.connection?._connection?.connected!==false);
  const zone=p=>world.zoneManager.getZoneAt(p.x,p.y)?.name||'Unknown area';
  const inside=(p,a=area)=>!!a&&zone(p)===a.zone&&p.x>=a.x&&p.y>=a.y&&p.x<a.x+a.width&&p.y<a.y+a.height;
@@ -35,14 +37,24 @@ export function createPartyPacing({world,clock,sceneAt,wall=()=>Date.now(),times
   enabled=true;changed();
  }
  function beginPlanning(why='Choose your next action'){
-  if(!enabled||!area||phase==='planning'||phase==='preparation'||phase==='recap'||phase==='travel')return false;
+  if(!enabled||!area||phase!=='exploration')return false;
+  planningOrigin={instanceId,phase,roundId:round};
   reason=why;round++;prepared=false;outcomes=[];electorate=active().map(p=>String(p.id));drafts=new Map();
   for(const p of active()){const pending=p.chaosPendingAction?.();if(pending)drafts.set(String(p.id),{...pending,actorId:p.id,continuation:true,confirmed:false,ready:false,revision:0});}
   setPhase('planning',times.planning);return true;
  }
+ function admitAction(context){
+  if(!enabled)return;
+  if(!context||context.instanceId!==instanceId)throw Error('The connection to the adventure changed. Refresh your controller.');
+  const current=context.roundId===round&&context.phase===phase;
+  // The first hostile action opens planning synchronously. Other fresh inputs
+  // already sent from that same exploration belong to this opening window.
+  const opening=phase==='planning'&&context.phase==='exploration'&&context.roundId===planningOrigin?.roundId;
+  if(!current&&!opening)throw Error('That moment has passed. Choose what you want to do now.');
+ }
  function queue(player,{id,intent,text}){
   if(!enabled||phase!=='planning')throw Error('The party is not choosing actions right now');
-  if(!electorate.includes(String(player.id))&&!player.isDead)throw Error('Join the active area for the next planning window');
+  if(player.isDead||!electorate.includes(String(player.id)))throw Error('Join the active area for the next planning window');
   const previous=drafts.get(String(player.id));
   if(intent.verb==='ability'){
    if(previous?.ability)player.chaosReceipt?.(previous.ability.id,'cancelled','Replaced by your newer ability choice.');
@@ -66,7 +78,7 @@ export function createPartyPacing({world,clock,sceneAt,wall=()=>Date.now(),times
    if(!travel.stopped.includes(String(player.id)))travel.stopped.push(String(player.id));
    const r=travel.target.request;if(r&&!r.terminal&&r.actorId===player.id){r.terminal=true;player.chaosReceipt?.(r.id,'blocked',result.message);}changed();
   }
-  if(!enabled||phase!=='action'||!['succeeded','failed','blocked'].includes(result.status))return;outcomes.push({id:result.id,player:player.chaosName||player.name,status:result.status,message:result.message});outcomes=outcomes.slice(-40);
+  if(!enabled||phase!=='action'||!['succeeded','failed','blocked'].includes(result.status))return;const d=drafts.get(String(player.id)),verb=d?.ability?.id===result.id?'ability':d?.intent?.verb;outcomes.push({id:result.id,player:player.chaosName||player.name,status:result.status,message:result.message,importance:['attack','creative','environment','talk','quest','open','loot'].includes(verb)?2:verb==='ability'?1:0});outcomes=outcomes.slice(-40);
  }
 
  function threats(){if(players().some(p=>{const d=p.chaosPendingAction?.();const mob=d?.intent?.verb==='attack'&&world.getEntityById?.(d.targetId);return mob&&!mob.isDead&&mob.hitPoints>0;}))return true;const ids=new Set(players().filter(p=>!p.isDead).map(p=>String(p.id)));return Object.values(world.mobs||{}).some(m=>!m.isDead&&m.hitPoints>0&&ids.has(String(m.target)));}
@@ -158,12 +170,12 @@ export function createPartyPacing({world,clock,sceneAt,wall=()=>Date.now(),times
    if((eligible.length&&eligible.every(id=>drafts.get(id)?.ready))||wall()>=deadline)setPhase('preparation',times.preparation);
   }else if(phase==='preparation'&&wall()>=deadline)startAction();
   else if(phase==='action'&&wall()>=deadline){
-   lastRecap={roundId:round,outcomes:[...outcomes],text:outcomes.length?outcomes.slice(-12).map(r=>r.player+': '+r.message).join('\n'):'The party holds position. No confirmed action changed the scene.'};
+   lastRecap={roundId:round,outcomes:[...outcomes],text:outcomes.length?[...outcomes].sort((a,b)=>b.importance-a.importance).slice(0,3).map(r=>r.player+': '+(r.message.length>180?r.message.slice(0,177)+'…':r.message)).join('\n'):'The party holds its ground.'};
    setPhase('recap',times.recap);
   }else if(phase==='recap'&&wall()>=deadline){
    setPhase('exploration');if(threats())beginPlanning('The encounter continues');
   }else if(phase==='travel'&&travel){
-   for(const p of players())if(inside(p,travel.target.area)&&!travel.arrivals.includes(String(p.id)))travel.arrivals.push(String(p.id));
+   for(const p of players())if(inside(p,travel.target.area)&&(p.chaosTravelArrived?.(travel)??true)&&!travel.arrivals.includes(String(p.id)))travel.arrivals.push(String(p.id));
    if(travel.arrivals.length>=travel.required&&!travel.selected){area=travel.target.area;travel.selected=true;changed();}
    const present=players().filter(p=>travel.electorate.includes(String(p.id))&&!travel.stopped.includes(String(p.id))&&!p.isDead);
    if(present.every(p=>travel.arrivals.includes(String(p.id)))||wall()>=deadline){
@@ -184,7 +196,7 @@ export function createPartyPacing({world,clock,sceneAt,wall=()=>Date.now(),times
   if(!queue.length)throw Error('No approved return route is available. Regroup with the host.');
   player.chaosStopAction?.('Returning to the party.');returning.add(identity(player));player.chaosExecuteTravel?.(queue[0]);changed();
  }
- const api={rejoin,canTravel:(p,id)=>routes.get(identity(p))?.some(t=>t.id===id),enable,beginPlanning,queue,ready,cancel,record,noticeThreat,prepare,commit,proposeTravel,voteTravel,walkable,extend,tick,snapshot,
+ const api={admitAction,rejoin,canTravel:(p,id)=>routes.get(identity(p))?.some(t=>t.id===id),enable,beginPlanning,queue,ready,cancel,record,noticeThreat,prepare,commit,proposeTravel,voteTravel,walkable,extend,tick,snapshot,
   get enabled(){return enabled;},get phase(){return phase;},get paused(){return enabled&&['planning','preparation','recap'].includes(phase);},get area(){return area;},get roundId(){return round;},get instanceId(){return instanceId;},get partyId(){return partyId;},
   owns:player=>enabled&&player.chaosPartyId===partyId,
   close(){clock.resume();}};

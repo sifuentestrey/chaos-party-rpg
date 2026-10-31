@@ -1,5 +1,11 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Game-night finishing pass — October 31, 2026
+
+The current bounded Fracture beta completes the Refuge Trial through six actual phone browsers, including simultaneous opening choices, personal STOP, native combat, shared planning/recap and majority travel. Approved free Groq batch interpretation and a grounded shared recap passed against actual native class actions. A separate twenty-native-actor software run completed two movement rounds and a majority trip with twenty distinct reachable arrivals. This pass also fixes connected-floor spawning, travel-search latency, restart clock continuity, native sprite pixel errors and cached old TV bundles; it refines phone/creator presentation and limits recap clutter. See the latest release-tracker section and curated finishing evidence for measured results.
+
+These improvements do not establish twelve-to-twenty physical-phone performance, physical 2015 Intel Mac/TV acceptance, universal environmental physics or migration of the original Crown Job/Dawn Bell campaigns. Original code, branches, accounts and family saves remain protected; packaging remains gated. The verified adventure is the existing bounded Refuge Trial, not a claim of full original-game parity.
+
 ## Four-area playtest overhaul — October 31, 2026
 
 The experimental branch adds a majority-selected shared camera, lighter movement synchronization, grounded native building entry/exit with live Groq interpretation/narration, a simplified phone controller, and the expanded six-heritage wardrobe described in `FRACTURE_GAME_NIGHT_RELEASE.md`. These are implemented software improvements, not proof of full campaign parity or physical Mac/20-device acceptance. The later shared Hybrid pacing milestone now bounds the active scene, pauses native simulation for simultaneous planning, and requires majority-approved departures; see the release tracker for current evidence. Existing native environment, combat and saves are retained.

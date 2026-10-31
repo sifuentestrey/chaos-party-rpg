@@ -104,3 +104,25 @@ describe('grounded native entity identity',()=>{
   socket.emit('disconnect');
  });
 });
+
+describe('native admission at a shared encounter boundary',()=>{
+ it('queues a fresh exploration input once after planning opens; STOP still wins and stale worlds stay rejected',()=>{
+  vi.useFakeTimers();const {socket,player,world}=fixture({chaosActorKey:'test-actor-key',chaosPartyId:'party',chaosHybrid:true});
+  (world as any).players={[player.id]:player};player.chaosStartPacing();const pacing=(world as any).chaosPacing,source=pacing.snapshot(player);
+  const context={instanceId:source.instanceId,phase:source.phase,roundId:source.roundId};pacing.beginPlanning();
+  const receipts:any[]=[];socket.on('chaos:receipt',r=>receipts.push(r));
+  const send=(id:string,intent:any,ctx:any=context)=>{const ack=vi.fn();socket.emit('chaos:action',{key:'test-actor-key',id,actorId:player.id,issuedAt:Date.now(),intent,context:ctx},ack);return ack;};
+  expect(send('opening',{verb:'move',dx:1,dy:0,steps:1})).toHaveBeenCalledWith({ok:true});expect(pacing.snapshot(player).draft.id).toBe('opening');
+  expect(send('opening',{verb:'move',dx:1,dy:0,steps:1}).mock.calls[0][0].error).toMatch(/Duplicate/);
+  expect(send('old',{verb:'move',dx:1,dy:0,steps:1},{...context,instanceId:'old-server'}).mock.calls[0][0].error).toMatch(/connection/);
+  expect(send('stop',{verb:'cancel'},{...context,instanceId:'old-server'})).toHaveBeenCalledWith({ok:true});expect(pacing.snapshot(player).draft).toBe(null);
+  expect(receipts.some(r=>r.id==='opening'&&r.status==='cancelled')).toBe(true);socket.emit('disconnect');
+ });
+});
+
+describe('connected native party spawn ground',()=>{
+ it('supplies only reachable ground for later actors, rather than any nearby unoccupied tile',()=>{
+  const {socket,player,world}=fixture();(world as any).zoneManager.getZoneAt=()=>({name:'Town'});(world as any).isValidPosition=(x:number)=>x!==12;
+  const tiles=player.chaosSpawnTiles({x:9,y:9,width:7,height:4,zone:'Town'});expect(tiles.size).toBeGreaterThan(0);expect([...tiles].every((key:any)=>Number(key.split(',')[0])<12)).toBe(true);socket.emit('disconnect');
+ });
+});

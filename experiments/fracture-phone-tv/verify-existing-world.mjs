@@ -26,11 +26,13 @@ try{
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true}),phone=await context.newPage();phone.on('pageerror',e=>errors.push(e.message));await phone.goto(base+'/join?key='+room.join+'#recover='+p.token);await phone.waitForFunction(()=>document.getElementById('stats').textContent.startsWith('HP'));phones.push(phone);
  }
  assert.notEqual((await state(0)).actor.id,(await state(1)).actor.id);
- tv=await browser.newPage({viewport:{width:1280,height:720}});tv.on('pageerror',e=>errors.push(e.message));await tv.goto('http://localhost:8000/?chaosTV='+encodeURIComponent(base)+'&tvKey='+encodeURIComponent(process.env.CHAOS_TV_KEY));await tv.locator('#chaos-tv-controls').waitFor();await tv.locator('#chaos-camera-options').evaluate(e=>e.open=true);await tv.getByRole('combobox',{name:'Camera mode'}).selectOption('follow');await tv.getByRole('combobox',{name:'Follow player'}).selectOption(String((await state(0)).actor.id));
- if(process.env.CHAOS_RECORD_VIDEO==='1'){
+ tv=await browser.newPage({viewport:{width:1920,height:1080},...(process.env.CHAOS_RECORD_VIDEO==='1'?{recordVideo:{dir:path.join(out,'video'),size:{width:1920,height:1080}}}:{})});tv.on('pageerror',e=>errors.push(e.message));await tv.goto('http://localhost:8000/?chaosTV='+encodeURIComponent(base)+'&tvKey='+encodeURIComponent(process.env.CHAOS_TV_KEY));await tv.locator('#chaos-tv-controls').waitFor();if(process.env.CHAOS_DIAGNOSTIC_FOLLOW==='1'){await tv.locator('#chaos-camera-options').evaluate(e=>e.open=true);await tv.getByRole('combobox',{name:'Camera mode'}).selectOption('follow');await tv.getByRole('combobox',{name:'Follow player'}).selectOption(String((await state(0)).actor.id));}
+ if(process.env.CHAOS_RECORD_FRAMES==='1'){
   fs.mkdirSync(path.join(out,'frames'),{recursive:true});cdp=await tv.context().newCDPSession(tv);cdp.on('Page.screencastFrame',async e=>{try{if(e.metadata.timestamp-lastFrame>=0.099){const file=String(frames.length).padStart(6,'0')+'.jpg';fs.writeFileSync(path.join(out,'frames',file),Buffer.from(e.data,'base64'));frames.push({file,at:e.metadata.timestamp});lastFrame=e.metadata.timestamp;}await cdp.send('Page.screencastFrameAck',{sessionId:e.sessionId});}catch{}});await cdp.send('Page.startScreencast',{format:'jpeg',quality:85,maxWidth:1280,maxHeight:720,everyNthFrame:2});
  }
- await success(0,'walk to 10, 234');await success(1,'walk to 9, 234');await shot('native-tent-before');
+ // Keep both controllers in the object's shared scene; never switch to Follow
+ // just to make a recording appear to show an off-screen interaction.
+ await success(0,'walk to 12, 233');await success(1,'walk to 11, 233');await shot('native-tent-before');
  if(process.env.CHAOS_LIVE_DM_TEST==='1'){
   const tested=await(await post('/dm/test',{key:room.host})).json();assert.ok(tested.ok,JSON.stringify(tested.status));await post('/dm',{key:room.host,enabled:true});
   const ai=await action(0,'Could you shove the canvas shelter a little farther to the right for me?');assert.ok(Number.isInteger(ai.r.roll),'Live interpretation must reach an actual native D20 action');
@@ -40,8 +42,13 @@ try{
  }else await success(0,'push tent east');
  await shot('native-tent-after');
  await success(0,'ignite tent');await shot('native-tent-burning');await success(0,'extinguish tent');
- await success(0,'walk to 11, 235');if((await state(0)).actor.chaos.scenery.some(o=>o.kind==='fire'&&o.condition==='burning'))await success(0,'extinguish campfire');await shot('native-campfire-out');
- await success(0,'walk to 11, 220');await shot('native-roof-before');await success(0,'break house roof');await shot('native-roof-after');await success(0,'repair house roof');await shot('native-roof-repaired');
+ await success(0,'walk to 11, 235');await success(1,'walk to Ash');if((await state(0)).actor.chaos.scenery.some(o=>o.kind==='fire'&&o.condition==='burning'))await success(0,'extinguish campfire');await shot('native-campfire-out');
+ await success(0,'walk to 11, 220');await success(1,'walk to Ash');await shot('native-roof-before');await success(0,'break house roof');await shot('native-roof-after');await success(0,'repair house roof');await shot('native-roof-repaired');
+ const villagers=(await state(0)).actor.nearby.filter(n=>n.type==='npc');assert.ok(villagers.length,'Existing native NPC must be in view');
+ const talk=await action(0,'talk to villager');assert.equal(talk.r.interaction,'talk');const said=talk.s.dialogue;
+ await action(0,'look around');if(said)assert.ok(!(await phones[0].locator('#log').textContent()).includes(said),'Old NPC speech must not be appended to a later observation');
+ events.push({check:'generic villager resolves to a real native NPC; later actions do not repeat old dialogue',speech:said||talk.r.message});
+
  await success(0,'walk to 35, 236');await success(1,'walk to 34, 236');await shot('native-boulder-before');
  const immunity=await action(0,'ignite boulder',{allowBlocked:true});assert.equal(immunity.r.status,'blocked');
  await success(1,'walk to Ash');await success(1,'help Ash');await success(0,'push boulder east');await shot('native-boulder-after');

@@ -10,7 +10,7 @@ import {createOptionalDM} from './optional-dm.mjs';
 import {shouldUseCreative} from './chaos-world.mjs';
 import {worldFingerprint} from './world-change.mjs';
 import {beginActorRefresh,finishActorRefresh,invalidateActorRefresh} from './actor-refresh.mjs';
-import {parseIntent} from './action-contract.ts';
+import {parseIntent,resolveVisibleTarget} from './action-contract.ts';
 import {proposeRally,proposeExpedition,expeditionEligible,voteRally,settleRally,rallyView} from './party-rally.mjs';
 import {preferredLanIp} from './lan-address.mjs';
 import {familyGuide} from './family-guide.mjs';
@@ -27,7 +27,9 @@ const lanIp=()=>preferredLanIp();
 const phoneHost=req=>{const host=(req.headers.host||'localhost').split(':')[0];return ['localhost','127.0.0.1'].includes(host)?lanIp():host;};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const qrSvg=url=>{const code=qrcode(0,'M');code.addData(url);code.make();return code.createSvgTag({cellSize:4,margin:16,scalable:true});};
-const page=(title,body)=>`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>*{box-sizing:border-box}body{margin:0;background:#121922;color:#f4eddc;font:18px system-ui;padding:24px}main{max-width:650px;margin:auto}h1{color:#efbd68}input,button,select{font:inherit;padding:14px;border-radius:8px;width:100%;margin:5px 0;border:1px solid #647386}button{background:#edbd70;color:#18212a;font-weight:bold;cursor:pointer}a{color:#b4dbff}#log{white-space:pre-wrap;line-height:1.5;max-height:180px;overflow:auto}h1{margin:0 0 16px}details{margin:12px 0}summary{cursor:pointer;color:#b4dbff}small{color:#bfc8d3}.row{display:flex;gap:8px}.row button{width:auto;flex:1}.card{padding:18px;background:#202c39;margin:18px 0;border-radius:10px}</style></head><body><main>${body}</main></body></html>`;
+const page=(title,body)=>`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>*{box-sizing:border-box}body{margin:0;background:#121922;color:#f4eddc;font:18px system-ui;padding:24px}main{max-width:650px;margin:auto}h1{color:#efbd68}input,button,select{font:inherit;padding:14px;border-radius:8px;width:100%;margin:5px 0;border:1px solid #647386}button{background:#edbd70;color:#18212a;font-weight:bold;cursor:pointer}a{color:#b4dbff}#log{white-space:pre-wrap;line-height:1.5;max-height:180px;overflow:auto}h1{margin:0 0 16px}details{margin:12px 0}summary{cursor:pointer;color:#b4dbff}small{color:#bfc8d3}.row{display:flex;gap:8px}.row button{width:auto;flex:1}.card{padding:18px;background:#202c39;margin:18px 0;border-radius:10px}
+:root{color-scheme:dark}body{background:radial-gradient(ellipse at top,#253331 0,transparent 65%),#111b1d;color:#eee8dc;line-height:1.5}h1,h2,h3{font-family:Georgia,serif;letter-spacing:-.5px}h1{font-size:32px}input,select{background:#1b2b2c;color:#eee8dc;border-color:#65766b;border-radius:10px}input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid #e7c27f;outline-offset:3px}button{border-radius:10px;background:#e6bf7c;min-height:44px}button:disabled{cursor:default}.card{border:1px solid #78876b40;background:#1c2c2b;border-radius:15px;padding:20px}small{color:#bac6bb}summary{color:#d2d3b6}a{color:#d8ca9c}.row{gap:10px}main{padding-bottom:20px}#pair .creation-preview,#creation-wait .creation-preview{margin:18px auto;border:1px solid #bba26659;border-radius:22px;background:radial-gradient(ellipse at center,#354b3d,#1b2a2b);width:184px;height:184px}#pair label{font-size:14px;color:#d2d9cd}#pair .creator-hint{color:#adbaad;line-height:1.5}#pair .steps span{font-size:12px;letter-spacing:.5px}#creator-next,#join{background:#e6bf7c;color:#17251e}#creator-back,#creator-cancel,#creator-reset{background:transparent;border-color:#74826f;color:#dfd9c9}
+</style></head><body><main>${body}</main></body></html>`;
 export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=process.env.CHAOS_ACTOR_KEY,tvKey=process.env.CHAOS_TV_KEY,port=4748,bind='0.0.0.0',dataDir=process.env.CHAOS_PARTY_DATA||path.join(root||'.','server/data/chaos-party'),ioFactory,dmFactory=createOptionalDM,fracturePort=8000,idleMs=45000,reactionMs=REACTION_MS,autoConnectDM=false}={}) {
  if(!root||!actorKey||!tvKey)throw Error('Isolated Fracture root and private runtime keys required');
  const io=ioFactory||createRequire(path.join(root,'package.json'))('socket.io-client').io;
@@ -103,7 +105,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
   socket.on('disconnect',()=>{invalidateActorRefresh(session);session.worldFingerprint=null;cancelPending(session,'Announced action cancelled: character disconnected.');session.actor=null;session.epoch++;session.storyController?.abort();session.declarations.clear();session.attempts.clear();for(const [id,result] of session.results)if(['received','started','queued'].includes(result.status))session.results.set(id,{...result,status:'failed',message:'Game connection lost. Reconnect and try again.'});});
   socket.on('message',data=>{const messages=Array.isArray(data?.[0])?data:[data];for(const msg of messages){
    if(!Array.isArray(msg))continue;
-   if(msg[0]===1){session.actor={id:msg[1],name:player.name,x:msg[3],y:msg[4],hp:msg[5],ready:true};refresh(session);}
+   if(msg[0]===1){session.actor={id:msg[1],name:player.name,x:msg[3],y:msg[4],hp:msg[5],ready:false};refresh(session);}
    if(msg[0]===28){record({player:player.name,message:String(msg[2]),status:'dialogue'});session.dialogue=String(msg[2]);}
    if(msg[0]===30)session.quest={type:msg[1],target:msg[2],count:msg[3],progress:msg[4],reward:msg[5],xp:msg[6],description:msg[7]};
    if(msg[0]===31)session.quest=msg[1]===null?null:{...session.quest,type:msg[1],target:msg[2],count:msg[3],progress:msg[4]};
@@ -144,14 +146,16 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
  }
  // One dispatch path for personal and majority-approved movement. All outcomes
  // are sourced from the native engine, not the vote or the HTTP acceptance.
- function dispatch(s,intent,text,id=randomUUID(),announced=false){
+ function actionContext(s){const p=publicPacing(s);return p?.enabled?{instanceId:p.instanceId,phase:p.phase,roundId:p.roundId}:null;}
+ function dispatch(s,intent,text,id=randomUUID(),announced=false,context=actionContext(s)){
+  if(intent.verb==='talk')s.dialogue=null;
   s.results.set(id,{status:'received',message:text});s.attempts.set(id,{text,verb:intent.verb,adventureInstance:room.adventure?.instanceId||null});if(s.attempts.size>80)s.attempts.delete(s.attempts.keys().next().value);
   if(s.results.size>80)s.results.delete(s.results.keys().next().value);
   if(meaningful.has(intent.verb)&&!isReaction(text)&&!announced&&!nativePacing?.enabled){
    s.declarations.set(id,{text});
    if(s.declarations.size>80)s.declarations.delete(s.declarations.keys().next().value);
   }
-  s.socket.timeout(2000).emit('chaos:action',{key:actorKey,id,intent,text,roundId:nativePacing?.roundId??s.actor.pacing?.roundId,actorId:s.actor.id,issuedAt:Date.now()},(error,r)=>{
+  s.socket.timeout(2000).emit('chaos:action',{key:actorKey,id,intent,text,context,actorId:s.actor.id,issuedAt:Date.now()},(error,r)=>{
    if(error||r?.error){
     s.declarations.delete(id);
     if(s.results.get(id)?.status==='received'){
@@ -401,7 +405,7 @@ el('rally-yes').onclick=()=>castRally(true);el('rally-no').onclick=()=>castRally
 for(const [id,route] of [['trial-fight','combat']])el(id).onclick=async()=>{try{const r=await api('/adventure/choice/propose',{token:auth,route});activeChoice=r.choiceVote;log('Story vote opened.');await poll();}catch(e){log(e.message);}};
 async function castChoice(yes){if(!activeChoice)return;try{const r=await api('/adventure/choice/vote',{token:auth,id:activeChoice.id,yes});activeChoice=r.choiceVote;log('Story vote locked.');await poll();}catch(e){log(e.message);}}
 el('trial-yes').onclick=()=>castChoice(true);el('trial-no').onclick=()=>castChoice(false);
-async function poll(){if(!auth){log('Choose your name to join.');return;}try{const v=await api('/state?token='+encodeURIComponent(auth));window.dispatchEvent(new CustomEvent('chaos-state',{detail:v}));if(window.chaosController?.editing)return;if(v.phase==='creation'){el('pair').hidden=true;el('play').hidden=true;el('creation-wait').hidden=false;return;}el('creation-wait').hidden=true;el('pair').hidden=true;el('play').hidden=false;el('dm-status-phone').textContent=v.dm?(v.dm.enabled?'Groq · '+v.dm.state:'Offline DM')+' · '+v.dm.message:'';el('who').textContent=v.name+' · '+(v.role?({rogue:'Rogue',bard:'Bard',wizard:'Mage',knight:'Fighter',healer:'Healer',wildcard:'Wildcard'}[v.role]||'Unassigned'):'Unassigned')+(v.perk?' · '+(v.perk==='charming'?'Charming':'Lucky-ish'):'');el('stats').textContent=v.actor?(v.actor.dead?'Knocked out — respawn to continue.':'HP '+v.actor.hp+'/'+v.actor.maxHp+' · '+(v.actor.zone||'')+' · position '+v.actor.x+', '+v.actor.y):(v.error||'Connecting to Fracture…');el('revive').hidden=!v.actor?.dead;el('dm-story').textContent=v.story?'DM ('+v.story.mode+'): '+v.story.text:v.actor?.chaos?.story?.length?'DM memory: '+v.actor.chaos.story.at(-1).fact:'';const adventure=v.adventure;el('adventure').textContent=adventure?'THE REFUGE TRIAL ('+adventure.status+'): '+adventure.steps.map(s=>(s.done?'✓ ':'○ ')+s.label).join(' · '):'Optional party adventure: ask the host to start The Refuge Trial.';el('quest').textContent=v.quest?'Quest: '+(v.quest.description||'Adventure complete')+' '+(v.quest.progress!==undefined?v.quest.progress+'/'+v.quest.count:''):'Ask a nearby NPC for a quest, or explore freely.';el('turn').textContent=v.turn?'Action window: '+Math.max(0,Math.ceil((v.turn.deadline-Date.now())/1000))+'s · '+v.turn.actor+' acted: '+v.turn.text:'';el('declarations').textContent=(v.declarations||[]).map(d=>d.player+' announces '+d.text+' · '+Math.max(0,Math.ceil((d.dueAt-Date.now())/1000))+'s to help/hinder').join(' | ');
+async function poll(){if(!auth){log('Choose your name to join.');return;}try{const v=await api('/state?token='+encodeURIComponent(auth));window.dispatchEvent(new CustomEvent('chaos-state',{detail:v}));if(window.chaosController?.editing)return;if(v.phase==='creation'){el('pair').hidden=true;el('play').hidden=true;el('creation-wait').hidden=false;return;}el('creation-wait').hidden=true;el('pair').hidden=true;el('play').hidden=false;el('dm-status-phone').textContent=v.dm?(v.dm.enabled?'Groq · '+v.dm.state:'Offline DM')+' · '+v.dm.message:'';el('who').textContent=v.name+' · '+(v.role?({rogue:'Rogue',bard:'Bard',wizard:'Mage',knight:'Fighter',healer:'Healer',wildcard:'Wildcard'}[v.role]||'Unassigned'):'Unassigned')+(v.perk?' · '+(v.perk==='charming'?'Charming':'Lucky-ish'):'');el('stats').textContent=v.actor?(v.actor.dead?'Knocked out — respawn to continue.':'HP '+v.actor.hp+'/'+v.actor.maxHp+' · '+(v.actor.zone||'')+' · position '+v.actor.x+', '+v.actor.y):(v.error||'Connecting to Fracture…');el('revive').hidden=!v.actor?.dead;el('dm-story').textContent=v.story&&v.story.text!==v.results.at(-1)?.message?v.story.text:'';const adventure=v.adventure;el('adventure').textContent=adventure?'THE REFUGE TRIAL ('+adventure.status+'): '+adventure.steps.map(s=>(s.done?'✓ ':'○ ')+s.label).join(' · '):'Optional party adventure: ask the host to start The Refuge Trial.';el('quest').textContent=v.quest?'Quest: '+(v.quest.description||'Adventure complete')+' '+(v.quest.progress!==undefined?v.quest.progress+'/'+v.quest.count:''):'Ask a nearby NPC for a quest, or explore freely.';el('turn').textContent=v.turn?'Action window: '+Math.max(0,Math.ceil((v.turn.deadline-Date.now())/1000))+'s · '+v.turn.actor+' acted: '+v.turn.text:'';el('declarations').textContent=(v.declarations||[]).map(d=>d.player+' announces '+d.text+' · '+Math.max(0,Math.ceil((d.dueAt-Date.now())/1000))+'s to help/hinder').join(' | ');
 activeChoice=v.choiceVote;
 el('trial-choice').textContent=v.choiceVote?.status==='pending'?v.choiceVote.proposer+' proposes a monster fight ('+v.choiceVote.yes+'/'+v.choiceVote.required+' yes)':adventure?.choice==='craft'?'This older crafting objective is unavailable. Vote for a fight to continue this saved trial.':adventure?.choice?'The party committed to defeating a real monster.':'No story choice is locked; defeat a real monster to continue.';
 el('trial-fight').hidden=!adventure||adventure.status!=='active'||!adventure.steps[0]?.done||adventure.steps[1]?.done||adventure.choice==='combat'||v.choiceVote?.status==='pending';el('trial-craft').hidden=true;
@@ -411,7 +415,7 @@ el('rally').textContent=v.rally? v.rally.proposer+' proposes '+(v.rally.kind==='
 el('propose-rally').hidden=v.pacing?.enabled||v.rally?.status==='pending';
 el('travel-woods').hidden=v.pacing?.enabled||v.actor?.zone!=='The Refuge'||v.rally?.status==='pending';el('travel-refuge').hidden=v.pacing?.enabled||v.actor?.zone!=='Glitch Woods'||v.rally?.status==='pending';
 el('rally-yes').hidden=el('rally-no').hidden=!v.rally||v.rally.status!=='pending'||!v.rally.eligible||v.rally.voted;
-const r=v.results.find(r=>r.id===pending)||v.results.at(-1);if(!r&&v.actor?.ready)log('Ready — what do you want to do?');if(r)log(r.status.toUpperCase()+': '+r.message+(v.dialogue?'\\nNPC: '+v.dialogue:''));}catch(e){log(e.message);}}
+const r=v.results.find(r=>r.id===pending)||v.results.at(-1);if(!r&&v.actor?.ready)log('Ready — what do you want to do?');if(r){el('log').dataset.outcome=r.status;log(r.message+(r.interaction==='talk'&&v.dialogue&&!r.message.includes(v.dialogue)?'\\n“'+v.dialogue+'”':''));}}catch(e){log(e.message);}}
 let changes=null;function connectChanges(){if(changes){changes.close();changes=null;}if(!auth||typeof EventSource==='undefined')return;changes=new EventSource('/changes?token='+encodeURIComponent(auth));changes.addEventListener('change',()=>{if(!document.hidden)void poll();});}connectChanges();setInterval(poll,750);poll();
 </script>`));
    }
@@ -515,10 +519,11 @@ let changes=null;function connectChanges(){if(changes){changes.close();changes=n
     if(typeof b.text!=='string'||b.text.trim().length<2||b.text.length>180)return json(res,400,{error:'Action must contain 2–180 characters'});
     s.lastSeen=Date.now();
     if(!s.actor?.ready)return json(res,503,{error:'Your character is connecting. Try again shortly.'});
+    const context=actionContext(s);
     if(nativePacing?.enabled&&nativePacing.phase!=='exploration'&&nativePacing.phase!=='travel'){
      let intent=parseIntent(b.text);if(!['enter','exit','cancel','ability'].includes(intent.verb)&&shouldUseCreative(b.text,s.actor))intent={verb:'creative',target:b.text};
      if(intent.verb==='cancel'){s.epoch++;cancelPending(s,'Your action was cancelled.');s.storyController?.abort();}
-     s.lastAction=Date.now();return json(res,202,{id:dispatch(s,intent,b.text.trim())});
+     s.lastAction=Date.now();return json(res,202,{id:dispatch(s,intent,b.text.trim(),undefined,false,context)});
     }
     const staged=stagedAction(b.text);
     if(staged?.error)return json(res,400,{error:staged.error});
@@ -532,7 +537,7 @@ let changes=null;function connectChanges(){if(changes){changes.close();changes=n
     }
     let intent=parseIntent(b.text);if(!['enter','exit','cancel','ability'].includes(intent.verb)&&shouldUseCreative(b.text,s.actor))intent={verb:'creative',target:b.text};const epoch=intent.verb==='cancel'?++s.epoch:s.epoch;
     if(intent.verb==='cancel')cancelPending(s,'Announced action cancelled by STOP before execution.');
-    const unresolved=intent.target&&['go','attack','talk','quest','open','loot','equip'].includes(intent.verb)&&![...(s.actor.nearby||[]),...(s.actor.inventory||[])].some(e=>e.name.toLowerCase().includes(intent.target.toLowerCase()));
+    const unresolved=intent.target&&['go','attack','talk','quest','open','loot','equip'].includes(intent.verb)&&!resolveVisibleTarget([...(s.actor.nearby||[]),...(s.actor.inventory||[])],s.actor,intent);
     const aiActor={...s.actor,partyScene:partyScene()};let interpreted=false;
     // Entrances are native entities, not reactive scenery. Resolve their
     // intentions with the general contract before trying environmental AI.
@@ -547,7 +552,7 @@ let changes=null;function connectChanges(){if(changes){changes.close();changes=n
     if(meaningful.has(intent.verb)&&!isReaction(b.text)&&turn&&turn.participants.includes(s.player.token))return json(res,409,{error:'Your declaration is locked for this reaction window. You can still move or stop.'});
     if(pending.has(s.player.token)&&meaningful.has(intent.verb)&&!isReaction(b.text))return json(res,409,{error:'Your announced action is waiting for reactions. Use STOP to cancel.'});
     if(intent.verb!=='cancel'&&now-s.lastAction<200)return json(res,429,{error:'Give your character a moment.'});s.lastAction=now;
-    const id=dispatch(s,intent,b.text.trim());
+    const id=dispatch(s,intent,b.text.trim(),undefined,false,context);
     return json(res,202,{id});
    }
    json(res,404,{error:'Not found'});

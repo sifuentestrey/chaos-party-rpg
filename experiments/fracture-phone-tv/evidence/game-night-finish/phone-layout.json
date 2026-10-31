@@ -1,0 +1,23 @@
+{
+  "status": "passed",
+  "sizes": [
+    {
+      "width": 320,
+      "inventoryButtonUncovered": true
+    },
+    {
+      "width": 375,
+      "inventoryButtonUncovered": true
+    },
+    {
+      "width": 390,
+      "inventoryButtonUncovered": true
+    },
+    {
+      "width": 430,
+      "inventoryButtonUncovered": true
+    }
+  ],
+  "compactViewportSubmitVisible": true,
+  "errors": []
+}

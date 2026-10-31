@@ -12,7 +12,7 @@ try{
  await until(async()=>{const s=await get(players[0]);return s.actor?.ready&&s.pacing.enabled;},'Recover an existing Hybrid party first');
  while(players.length<20){const b=await post('/pair',{key:room.join,name:'PaceLoad'+String(players.length+1).padStart(2,'0'),role:'knight',perk:'lucky'});players.push({token:b.token});}
  keepAlive=setInterval(()=>{void Promise.all(players.map(get));},2000);
- let states=await until(async()=>{const s=await Promise.all(players.map(get));return s.every(p=>p.actor?.ready)?s:null;},'Twenty native actors did not connect');
+ let states=await until(async()=>{const s=await Promise.all(players.map(get));return s.every(p=>p.actor?.ready&&p.actor.zone&&p.actor.pacing?.enabled)?s:null;},'Twenty native actors did not connect');
  assert.equal(new Set(states.map(s=>s.actor.id)).size,20);
  for(const s of states){const a=s.pacing.area;assert.equal(s.actor.zone,a.zone,'Fresh actors must join the actual party area');assert.ok(s.actor.x>=a.x&&s.actor.x<a.x+a.width&&s.actor.y>=a.y&&s.actor.y<a.y+a.height,'Fresh actor spawned outside the current scene');}
  const geo=JSON.parse(fs.readFileSync(path.join(process.env.FRACTURE_ROOT,'client/maps/world_client.json'))),solid=new Set(geo.collisions),plateau=new Set(geo.plateau);
@@ -30,5 +30,10 @@ try{
   events.push({round:round+1,actors:20,uniqueNativeActors:20,allMoved:true,allHeldDuringPlanning:true,acceptedBatchMs:ackMs});console.log(JSON.stringify(events.at(-1)));
   await until(async()=>(await get(players[0])).pacing.phase==='exploration','Round did not return to exploration');
  }
+ const proposalStarted=Date.now();await post('/pacing',{token:players[0].token,command:'travel',direction:'east'});const proposalMs=Date.now()-proposalStarted;
+ const vote=await until(async()=>{const s=await get(players[0]);return s.pacing.travel?.status==='pending'?s.pacing:null;},'No real twenty-person travel vote');
+ assert.equal(vote.travel.required,11);for(let i=1;i<11;i++)await post('/pacing',{token:players[i].token,command:'vote',instanceId:vote.instanceId,voteId:vote.travel.id,yes:true});
+ const arrived=await until(async()=>{const ss=await Promise.all(players.map(get));return ss[0].pacing.travel?.status==='arrived'&&ss[0].pacing.travel.arrived===20?ss:null;},'All twenty native travelers must actually arrive');
+ const uniqueLandings=new Set(arrived.map(s=>s.actor.x+','+s.actor.y)).size;assert.equal(uniqueLandings,20);events.push({check:'twenty-person majority travel with distinct reachable landings',arrivals:20,uniqueLandings,proposalMs});console.log(JSON.stringify(events.at(-1)));
  fs.writeFileSync(path.join(out,'twenty-actors.json'),JSON.stringify({status:'passed',type:'software native actors; not physical devices',events},null,2));console.log(JSON.stringify({status:'passed',actors:20}));
 }catch(error){const message=error.message.replace(/https?:\/\/\S+/g,'<private test URL>');fs.writeFileSync(path.join(out,'twenty-actors.json'),JSON.stringify({status:'failed',error:message,events},null,2));console.error(message);process.exitCode=1;}finally{clearInterval(keepAlive);}

@@ -334,7 +334,7 @@ test('saved original Chaos class stays bound to the correct native actor, not ph
 });
 
 test('announced world action waits for a real help/hinder reaction before native execution',async t=>{
- const {app,base,sockets}=await setup(t,{reactionMs:90});
+ const {app,base,sockets}=await setup(t,{reactionMs:1000});
  const a=(await(await post(base,'/pair',{key:app.room.join,name:'Ada'})).json()).token;
  const b=(await(await post(base,'/pair',{key:app.room.join,name:'Bryn'})).json()).token;
  await new Promise(r=>setTimeout(r,20));
@@ -353,7 +353,7 @@ test('announced world action waits for a real help/hinder reaction before native
  assert.equal(sockets[1].lastAction.intent.target,'hinder Ada');
  assert.equal(app.room.turn,null,'reaction is not a second irreversible action declaration');
  assert.equal((await post(base,'/action',{token:a,text:'steal rug'})).status,409,'actor cannot overwrite queued declaration');
- await new Promise(r=>setTimeout(r,120));
+ const deadline=Date.now()+1600;while(!sockets[0].lastAction&&Date.now()<deadline)await new Promise(r=>setTimeout(r,20));
  assert.equal(sockets[0].lastAction.id,id,'the same receipt ID is retained through the delayed dispatch');
  assert.equal(sockets[0].lastAction.intent.verb,'creative');
  assert.equal(sockets[0].lastAction.intent.target,'craft green hat from cloth strip and wood splinter');
@@ -637,4 +637,22 @@ test('active Hybrid rejects legacy rally and expedition commands before any nati
   const response=await post(base,endpoint,{token,destination:'woods',id:'old-vote',yes:true});assert.equal(response.status,409);assert.match((await response.json()).error,/Hybrid/);
  }
  assert.equal(sockets[0].lastAction,undefined);assert.equal(app.room.rally,null);
+});
+
+test('an asynchronous interpretation retains its original adventure context instead of joining a later round silently',async t=>{
+ let release,entered;const begun=new Promise(r=>entered=r);
+ const {app,base,sockets}=await setup(t,{dmFactory:()=>({enabled:true,interpret:()=>{entered();return new Promise(r=>release=r);},narrate:async()=>null,close:()=>{}})});
+ const {token}=await(await post(base,'/pair',{key:app.room.join,name:'Ada'})).json();await new Promise(r=>setTimeout(r,20));
+ const opening={enabled:true,instanceId:'instance',roundId:0,revision:1,phase:'exploration',members:[]};sockets[0].emit('chaos:pacing-state',opening);
+ const request=post(base,'/action',{token,text:'Try something unusual for me'});await begun;
+ sockets[0].emit('chaos:pacing-state',{...opening,roundId:1,phase:'planning',revision:2});release({verb:'move',dx:1,dy:0,steps:1});
+ assert.equal((await request).status,202);assert.deepEqual(sockets[0].lastAction.context,{instanceId:'instance',phase:'exploration',roundId:0});
+});
+
+test('a native login greeting does not authorize actions before the complete world snapshot arrives',async t=>{
+ const {app,base,sockets}=await setup(t);const {token}=await(await post(base,'/pair',{key:app.room.join,name:'Ada'})).json();await new Promise(r=>setTimeout(r,20));
+ const socket=sockets[0],emit=socket.emit;let reply;socket.emit=(event,...args)=>{if(event==='chaos:state'){reply=args[1];return true;}return emit(event,...args);};socket.emit('message',[1,1,'Ada',12,12,100,100]);
+ const partial=await(await fetch(base+'/state?token='+token)).json();assert.equal(partial.actor.ready,false);assert.equal((await post(base,'/action',{token,text:'walk east'})).status,503);assert.equal(socket.lastAction,undefined);
+ reply(null,{ok:true,actor:{id:1,ready:true,zone:'Town',x:12,y:12,hp:100,maxHp:100,dead:false}});
+ assert.equal((await post(base,'/action',{token,text:'walk east'})).status,202);assert.equal(socket.lastAction.intent.verb,'move');
 });

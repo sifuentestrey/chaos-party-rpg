@@ -35,6 +35,8 @@ with zipfile.ZipFile(output, 'w', compression=zipfile.ZIP_DEFLATED, compressleve
         mode = int(meta.split()[0], 8)
         if any(part in name.split('/') for part in ['node_modules', 'data', '.env']) or name.endswith(('.db', '.sqlite', '.zip')):
             raise SystemExit(f'Refusing unexpected release member: {name}')
+        if name.startswith('experiments/fracture-phone-tv/playtest/') or name.endswith('playwright.config.mjs'):
+            continue  # Development snapshots/traces/tools never enter the Mac source kit.
         add(name, blob(name), mode)
     add('Start_Chaos_Party.command', blob('experiments/fracture-phone-tv/package/Start_Chaos_Party.command'), 0o100755)
     add('README_FIRST.txt', blob('experiments/fracture-phone-tv/package/README_FIRST.txt'))

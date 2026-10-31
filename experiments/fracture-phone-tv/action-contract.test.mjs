@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseIntent,validIntent,shortestPath} from './action-contract.ts';
+import {parseIntent,validIntent,shortestPath,resolveVisibleTarget,describeVisibleScene,formationTiles} from './action-contract.ts';
 test('intent families separate cancellation, navigation and manipulation',()=>{
  for(const text of ['stop','please stop running!','quit attacking','hold still','I want to stop moving','cancel my action','stop attacking the rat','please hold position',"do not attack","don't keep moving"])assert.equal(parseIntent(text).verb,'cancel',text);
  for(const direction of ['north','south','east','west','left','right','up','down'])for(const verb of ['go','walk','step','run','move'])assert.equal(parseIntent(`${verb} ${direction}`).verb,'move');
@@ -56,4 +56,23 @@ test('expanded native DM wire contract passes only bounded proposals to the auth
   {...move,action:'move_diagonal'},{...move,damage:1000},{...move,targetId:''}]){
   assert.equal(validIntent({verb:'environment',judgment:bad}),false,JSON.stringify(bad));
  }
+});
+
+test('broad intentions select actual nearby target categories and preserve exact native identity',()=>{
+ const actor={x:10,y:10},guard={id:7,name:'guard',type:'npc',x:12,y:10},rat={id:8,name:'rat',type:'mob',x:11,y:10},friend={id:9,name:'Nia',type:'player',x:9,y:10};
+ const entities=[rat,friend,guard];
+ assert.equal(resolveVisibleTarget(entities,actor,{verb:'talk',target:'villager'}),guard);
+ assert.equal(resolveVisibleTarget(entities,actor,{verb:'attack',target:'enemy'}),rat);
+ assert.equal(resolveVisibleTarget(entities,actor,{verb:'go',target:'teammate'}),friend);
+ assert.equal(resolveVisibleTarget(entities,actor,{verb:'talk',target:'7'}),guard);
+ assert.equal(resolveVisibleTarget(entities,actor,{verb:'talk',target:'priest'}),null);
+ assert.deepEqual(parseIntent('inspect nearby'),{verb:'look'});
+ const text=describeVisibleScene(actor,entities,[{id:'private-object-id',name:'oak',kind:'tree',condition:'burning',tile:{x:10,y:12}}]);
+ assert.match(text,/oak burning to the south/);assert.match(text,/guard to the east/);assert.ok(!text.includes('private-object-id'));assert.ok(!text.includes('(12,10)'));
+});
+
+test('party formations use distinct reachable native floor and never cross a solid divide',()=>{
+ const area={x:0,y:0,width:8,height:8},valid=(x,y)=>x!==4&&!(x===2&&y===2);
+ const spots=formationTiles([1,1],area,valid,20);assert.equal(spots.length,20);assert.equal(new Set(spots.map(p=>p.join(','))).size,20);
+ assert.ok(spots.every(([x,y])=>x<4&&valid(x,y)));assert.deepEqual(formationTiles([4,1],area,valid,20),[]);
 });

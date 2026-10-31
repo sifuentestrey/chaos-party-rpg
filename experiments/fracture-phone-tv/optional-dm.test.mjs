@@ -118,3 +118,12 @@ test('a shared recap cannot turn another player’s blocked action into a succes
  const {dm}=dmFixture(t,async()=>({ok:true,json:async()=>({choices:[{message:{content:JSON.stringify({highlights:[{turnId:'a',outcome,text:'The wall blocked Ada’s route.'}]})}}]})}));
  assert.equal(await dm.recapRound(recap),null);outcome='blocked';assert.ok(await dm.recapRound(recap));
 });
+
+test('shared narration supplies the exact constrained IDs and outcome vocabulary, and provider JSON errors use the offline result',async t=>{
+ let invalid=false;const {dm}=dmFixture(t,async(_url,init)=>{
+  const request=JSON.parse(init.body),supplied=JSON.parse(request.messages[1].content);assert.deepEqual(supplied,[{turnId:'actual-result',player:'Ada',outcome:'success',canonical:'The rat fell.'}]);
+  if(invalid)return {ok:false,status:400,json:async()=>({error:{code:'json_validate_failed',failed_generation:'must never be displayed'}})};
+  return {ok:true,json:async()=>({choices:[{message:{content:JSON.stringify({highlights:[{turnId:supplied[0].turnId,outcome:supplied[0].outcome,text:'The rat fell.'}]})}}]})};
+ });
+ const recap={outcomes:[{id:'actual-result',player:'Ada',status:'succeeded',message:'The rat fell.',importance:2}]};assert.ok(await dm.recapRound(recap));invalid=true;assert.equal(await dm.recapRound(recap),null);assert.equal(dm.status().lastError,'invalid_reply');assert.ok(!JSON.stringify(dm.status()).includes('must never be displayed'));
+});

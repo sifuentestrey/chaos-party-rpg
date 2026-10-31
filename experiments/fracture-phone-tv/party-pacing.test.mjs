@@ -79,3 +79,35 @@ test('approved travel can reroute around a guard through the transition strip, b
  assert.equal(f.pacing.walkable(f.people[0],7,16),true);f.people[0].x=7;f.people[0].y=16;f.pacing.tick();assert.equal(f.pacing.snapshot().travel.arrived,0);
  f.people[0].y=14;f.pacing.tick();assert.equal(f.pacing.snapshot().travel.arrived,1);
 });
+
+test('twenty fresh exploration actions survive a shared opening without admitting old planning or previous-server input',()=>{
+ const f=fixture(20),source=f.pacing.snapshot(f.people[0]),context={instanceId:source.instanceId,phase:source.phase,roundId:source.roundId};
+ f.pacing.beginPlanning('A rat engages');
+ for(const p of f.people){assert.doesNotThrow(()=>f.pacing.admitAction(context));f.pacing.queue(p,{id:'opening-'+p.id,intent:{verb:'attack',target:'rat'},text:'Attack the rat'});}
+ assert.equal(f.pacing.prepare().length,20);
+ assert.throws(()=>f.pacing.admitAction({...context,phase:'planning'}),/passed/);
+ assert.throws(()=>f.pacing.admitAction({...context,instanceId:'previous-server'}),/connection/);
+ for(const p of f.people)f.pacing.ready(p,true,1);f.pacing.commit(1,f.pacing.prepare());assert.equal(f.executed.length,20);
+ f.advance(5000);f.advance(4000);assert.throws(()=>f.pacing.admitAction(context),/passed/);
+ f.pacing.beginPlanning();assert.throws(()=>f.pacing.admitAction(context),/passed/);
+ assert.throws(()=>f.pacing.admitAction({...context,phase:'planning',roundId:1}),/passed/);
+ const fresh=f.pacing.snapshot(f.people[0]);assert.doesNotThrow(()=>f.pacing.admitAction(fresh));
+});
+
+test('a twenty-person offline recap stays readable and prioritizes real world consequences',()=>{
+ const f=fixture(20);f.pacing.beginPlanning();for(const p of f.people){f.pacing.queue(p,{id:'a'+p.id,intent:p.id===1?{verb:'attack',target:'rat'}:{verb:'move',dx:1,dy:0,steps:1}});f.pacing.ready(p,true,1);}f.pacing.commit(1,f.pacing.prepare());
+ for(const p of [...f.people].reverse())f.pacing.record(p,{id:'a'+p.id,status:'succeeded',message:p.id===1?'The rat falls.':'Walked one tile.'});
+ f.advance(5000);const recap=f.pacing.snapshot().recap;assert.equal(recap.outcomes.length,20);assert.equal(recap.text.split('\n').length,3);assert.match(recap.text.split('\n')[0],/The rat falls/);
+});
+
+test('crossing the destination boundary is not arrival until the native formation position is reached',()=>{
+ const f=fixture(2),target={id:'east',area:sceneAt({x:32,y:2,zone:'Refuge'}),intent:{verb:'go',x:38,y:2}};
+ f.people[0].chaosTravelArrived=()=>f.people[0].x===38;f.people[1].chaosTravelArrived=()=>f.people[1].x===39;
+ const vote=f.pacing.proposeTravel(f.people[0],target);f.pacing.voteTravel(f.people[1],vote.id,true);f.people[0].x=32;f.people[1].x=33;f.pacing.tick();assert.equal(f.pacing.snapshot().travel.arrived,0);
+ f.people[0].x=38;f.pacing.tick();assert.equal(f.pacing.snapshot().travel.arrived,1);f.people[1].x=39;f.pacing.tick();assert.equal(f.pacing.snapshot().travel.arrived,2);assert.equal(f.pacing.phase,'exploration');
+});
+
+test('a recovered paused clock commits its resumed offset before a second restart',t=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-restart-clock-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));const file=path.join(dir,'clock.json');let wall=100;const options={file,wall:()=>wall};
+ createSimulationClock(options).pause();wall=1100;const firstRestart=createSimulationClock(options);assert.equal(firstRestart.now(),100);wall=1600;assert.equal(firstRestart.now(),600);assert.equal(createSimulationClock(options).now(),600);assert.equal(JSON.parse(fs.readFileSync(file)).pausedAt,null);
+});

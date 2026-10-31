@@ -5,7 +5,7 @@ export function parseIntent(raw: string): Intent {
   let text = String(raw).toLowerCase().trim().replace(/[.!?]+$/, '').replace(/^(?:please\s+|i\s+(?:want to\s+|would like to\s+)?|try to\s+)+/, '').replace(/\s+/g,' ');
   if (/^(?:stop|halt|cancel|quit|cease)(?:\s+(?:(?:running|walking|moving|attacking|fighting)(?:\s+.+)?|everything|that|my action))?$/.test(text) || /^(?:hold still|hold position|stand still|stay put|wait)$/.test(text)) return {verb:'cancel'};
   if (/^(?:respawn|revive|rejoin|stand back up)$/.test(text)) return {verb:'respawn'};
-  if (/^(?:look(?: around)?|survey|inspect surroundings)$/.test(text)) return {verb:'look'};
+  if (/^(?:look(?: around)?|survey(?: the area)?|inspect (?:surroundings|nearby|the area))$/.test(text)) return {verb:'look'};
   const departure=text.match(/^(?:leave|exit|go outside|walk outside|get out)(?: (?:the )?(.+))?$/);
   if(departure)return {verb:'exit',...(departure[1]?{target:departure[1]}:{})};
   const entry=text.match(/^(?:enter|(?:go|walk|head|step|get) (?:in|inside|into|through)|use)(?: (?:the |a |an )?(.+))?$/);
@@ -65,6 +65,36 @@ export function validIntent(value: any): value is Intent {
   if(value.verb==='move')return Number.isInteger(value.dx)&&Number.isInteger(value.dy)&&Math.abs(value.dx)+Math.abs(value.dy)===1&&Number.isInteger(value.steps)&&value.steps>=1&&value.steps<=12;
   if(value.verb==='go' && value.x!==undefined)return Number.isInteger(value.x)&&Number.isInteger(value.y)&&value.x>0&&value.y>0&&value.x<1000&&value.y<1000;
   return !['use_item','creative','go','attack','talk','quest','equip','open','loot','manipulate'].includes(value.verb)||!!value.target;
+}
+// Resolve names and broad target categories against actual visible entities.
+// Exact identity always wins; category words never conjure a missing actor.
+export function resolveVisibleTarget(entities:any[],actor:any,intent:Intent,nameOf=(e:any)=>e.chaosName||e.name||''):any {
+ const phrase=String(intent.target||'').toLowerCase();
+ const exact=entities.find(e=>String(e.id)===phrase);if(exact)return exact;
+ const categories:Record<string,string>={npc:'npc',person:'npc',villager:'npc',local:'npc',someone:'npc',enemy:'mob',monster:'mob',creature:'mob',teammate:'player',ally:'player',friend:'player',item:'item'};
+ const type=categories[phrase];
+ const candidates=entities.filter(e=>{const name=String(nameOf(e)).toLowerCase();return name===phrase||name.includes(phrase)||!!type&&e.type===type;});
+ candidates.sort((a,b)=>(Math.abs(actor.x-a.x)+Math.abs(actor.y-a.y))-(Math.abs(actor.x-b.x)+Math.abs(actor.y-b.y))||String(a.id).localeCompare(String(b.id)));
+ return candidates[0]||null;
+}
+export function describeVisibleScene(actor:any,entities:any[],scenery:any[],nameOf=(e:any)=>e.chaosName||e.name||e.kind):string {
+ const distance=(e:any)=>Math.abs(actor.x-e.x)+Math.abs(actor.y-e.y);
+ const direction=(e:any)=>{const dx=e.x-actor.x,dy=e.y-actor.y;if(!dx&&!dy)return 'beside you';return 'to the '+(dy<0?'north':dy>0?'south':'')+(dx<0?'west':dx>0?'east':'');};
+ const people=entities.filter(e=>e.type!=='player').sort((a,b)=>distance(a)-distance(b)).slice(0,4);
+ const objects=scenery.filter(o=>!o.carried).map(o=>({...o,...(o.interactionTile||o.tile)})).filter(o=>Number.isFinite(o.x)&&Number.isFinite(o.y)).sort((a,b)=>distance(a)-distance(b)).slice(0,3);
+ const descriptions=[...people.map(e=>String(nameOf(e))+' '+direction(e)),...objects.map(e=>String(e.name||e.kind)+(e.condition==='burning'?' burning':e.condition==='broken'?' broken':'')+' '+direction(e))];
+ return descriptions.length?'You notice '+descriptions.join('; ')+'.':'Nothing catches your eye nearby.';
+}
+// One bounded flood-fill supplies distinct reachable party landing tiles.
+export function formationTiles(start:number[],area:any,walkable:(x:number,y:number)=>boolean,count:number):number[][] {
+ const inside=(x:number,y:number)=>x>=area.x&&y>=area.y&&x<area.x+area.width&&y<area.y+area.height;
+ if(!inside(start[0],start[1])||!walkable(start[0],start[1]))return [];
+ const queue=[start],seen=new Set([start.join(',')]),result=[];
+ for(let i=0;i<queue.length&&i<area.width*area.height&&result.length<count;i++){
+  const [x,y]=queue[i];result.push([x,y]);
+  for(const [dx,dy] of [[0,1],[-1,0],[1,0],[0,-1]]){const nx=x+dx,ny=y+dy,k=nx+','+ny;if(!seen.has(k)&&inside(nx,ny)&&walkable(nx,ny)){seen.add(k);queue.push([nx,ny]);}}
+ }
+ return result;
 }
 // Breadth-first search gives a shortest cardinal path, with bounded work on the real map.
 export function shortestPath(start: number[], goal: (x:number,y:number)=>boolean, walkable: (x:number,y:number)=>boolean, limit=55000): number[][] | null {

@@ -14,15 +14,16 @@ async function act(i,text){const result=await done(i,await submit(i,text));asser
 async function readyAll(except=-1){for(let i=0;i<phones.length;i++)if(i!==except){await phones[i].locator('#pacing-ready').waitFor({state:'visible'});await phones[i].locator('#pacing-ready').click();}}
 async function phase(name){return until(async()=>{const s=await get(0);return s.pacing?.phase===name&&s.actor?.pacing?.phase===name?s:null;},'Missing phase: '+name);}
 async function travel(direction){
- await until(async()=>['exploration','planning'].includes((await get(0)).pacing.phase),'No travel window');await post('/pacing',{token:players[0].token,command:'travel',direction});
+ await until(async()=>['exploration','planning'].includes((await get(0)).pacing.phase),'No travel window');const proposedAt=Date.now();await post('/pacing',{token:players[0].token,command:'travel',direction});const proposalMs=Date.now()-proposedAt;
  const vote=await until(async()=>{const s=await get(0);return s.pacing.travel?.status==='pending'?s.pacing.travel:null;},'No travel vote');
  for(let i=1;i<vote.required;i++){await phones[i].locator('#pacing-yes').waitFor({state:'visible'});await phones[i].locator('#pacing-yes').click();}
  await until(async()=>{const s=await get(0);return s.pacing.travel?.status==='arrived'&&s.pacing.travel.arrived===6;},'Native group did not finish travel');
- note({check:'majority native travel',direction,arrivals:6,area:(await get(0)).pacing.area});
+ const arrived=await Promise.all(players.map((p,i)=>get(i))),uniqueLandings=new Set(arrived.map(s=>s.actor.x+','+s.actor.y)).size;assert.equal(uniqueLandings,6,'Group travel must leave distinct native standing positions');
+ note({check:'majority native travel',direction,proposalMs,uniqueLandings,arrivals:6,area:(await get(0)).pacing.area});
 }
 try{
  assert.equal(players.length,6);browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
- for(let i=0;i<6;i++){const p=await browser.newPage({viewport:{width:390,height:844},isMobile:true});phones.push(p);p.on('pageerror',e=>errors.push(e.message));await p.goto(base+'/join?key='+room.join+'#recover='+players[i].token);await p.waitForFunction(()=>document.getElementById('stats').textContent.startsWith('HP'));}
+ for(let i=0;i<6;i++){const p=await browser.newPage({viewport:{width:390,height:844},isMobile:true,...(i===0&&process.env.CHAOS_RECORD_VIDEO==='1'?{recordVideo:{dir:path.join(out,'video'),size:{width:390,height:844}}}:{})});phones.push(p);p.on('pageerror',e=>errors.push(e.message));await p.goto(base+'/join?key='+room.join+'#recover='+players[i].token);await p.waitForFunction(()=>document.getElementById('stats').textContent.startsWith('HP'));}
  host=await browser.newPage();host.on('pageerror',e=>errors.push(e.message));await host.goto(base+'/host?key='+room.host);
  const first=await get(0);assert.equal(first.pacing.enabled,false,'Use a disposable live room before the first Hybrid activation');
  if(first.actor.zone!=='The Refuge')await act(0,'exit');
@@ -30,7 +31,7 @@ try{
  for(let y=206;y<211;y++)for(let x=48;x<59;x++)if(!solid.has(y*geo.width+x))spots.push([x,y]);
  await Promise.all(phones.map((p,i)=>act(i,'walk to '+spots[i].join(', '))));
  await host.locator('#pacing-enable').click();await until(async()=>(await get(0)).pacing.enabled,'Host could not enable Hybrid');
- tv=await browser.newPage({viewport:{width:1280,height:720}});tv.on('pageerror',e=>errors.push(e.message));await tv.goto('http://localhost:8000/?chaosTV='+encodeURIComponent(base)+'&tvKey=local-test-tv-key');await tv.locator('#chaos-tv-controls').waitFor();
+ tv=await browser.newPage({viewport:{width:1920,height:1080},...(process.env.CHAOS_RECORD_VIDEO==='1'?{recordVideo:{dir:path.join(out,'video'),size:{width:1920,height:1080}}}:{})});tv.on('pageerror',e=>errors.push(e.message));await tv.goto('http://localhost:8000/?chaosTV='+encodeURIComponent(base)+'&tvKey=local-test-tv-key');await tv.locator('#chaos-tv-controls').waitFor();
  note({check:'six independent phones regrouped through native walking',actors:(await Promise.all(players.map((p,i)=>get(i)))).map(s=>({name:s.name,x:s.actor.x,y:s.actor.y})),area:(await get(0)).pacing.area});
  await post('/host/adventure',{key:room.host,action:'start'});
  const beforeTalk=await get(0),a=beforeTalk.pacing.area,npc=beforeTalk.actor.nearby.find(n=>n.type==='npc'&&n.x>=a.x&&n.x<a.x+a.width&&n.y>=a.y&&n.y<a.y+a.height);assert.ok(npc,'Need an existing NPC in the active scene');
@@ -39,18 +40,21 @@ try{
  const frozen=(await Promise.all(players.map((p,i)=>get(i)))).map(s=>({x:s.actor.x,y:s.actor.y,hp:s.actor.hp})),remaining=planning.actor.ability.remainingMs;
  await sleep(2500);const still=await get(0);assert.ok(Math.abs(still.actor.ability.remainingMs-remaining)<200,'Planning must freeze actual ability duration');
  assert.deepEqual((await Promise.all(players.map((p,i)=>get(i)))).map(s=>({x:s.actor.x,y:s.actor.y,hp:s.actor.hp})),frozen);
- await phones[0].screenshot({path:path.join(out,'phone-planning.png'),fullPage:true});await tv.screenshot({path:path.join(out,'tv-planning.png')});
+ await tv.waitForFunction(()=>document.getElementById('chaos-pacing-screen')?.textContent.startsWith('CHOOSE TOGETHER'));await phones[0].screenshot({path:path.join(out,'phone-planning.png'),fullPage:true});await tv.screenshot({path:path.join(out,'tv-planning.png')});
  await submit(0,'walk east 1');await submit(1,'walk east 1');const bonusResponse=phones[1].waitForResponse(r=>r.url()===base+'/action'&&r.request().method()==='POST');await phones[1].locator('#ability-use').click();assert.equal((await bonusResponse).status(),202);
  await until(async()=>{const s=await get(1);return s.pacing.draft?.text.includes('walk east');},'Ability must retain the chosen movement');
  await phones[0].locator('#stop').click();await until(async()=>!(await get(0)).pacing.draft,'STOP did not clear own draft');assert.ok((await get(1)).pacing.draft,'STOP must not clear another player');
  const p1=(await get(1)).actor;await readyAll();await phase('action');await until(async()=>(await get(1)).actor.ability.phased,'Native Phase Shift did not execute');
- assert.equal((await get(0)).actor.x,frozen[0].x);await phase('recap');assert.equal((await get(1)).actor.x,p1.x+1);await tv.screenshot({path:path.join(out,'tv-recap.png')});await phase('exploration');
+ assert.equal((await get(0)).actor.x,frozen[0].x);await phase('recap');assert.equal((await get(1)).actor.x,p1.x+1);await tv.waitForFunction(()=>document.getElementById('chaos-pacing-screen')?.textContent.startsWith('WHAT HAPPENED'));await tv.screenshot({path:path.join(out,'tv-recap.png')});await phase('exploration');
  note({check:'actual pause, frozen cooldown, own STOP, ability plus action, shared five-second playback and recap',remainingMs:remaining});
  await travel('west');await travel('south');
  await submit(0,'walk to 22, 223');
  await until(async()=>{const s=await get(0);return s.pacing.phase==='planning'||s.actor.nearby.some(n=>n.type==='mob'&&n.name==='rat');},'No existing rat was reachable');
  let s=await get(0),rat=s.actor.nearby.filter(n=>n.type==='mob'&&n.name==='rat').sort((x,y)=>Math.abs(x.x-s.actor.x)+Math.abs(x.y-s.actor.y)-Math.abs(y.x-s.actor.x)-Math.abs(y.y-s.actor.y))[0];assert.ok(rat,'No native rat in view');
- if(s.pacing.phase==='exploration')await submit(0,'attack '+rat.id);await phase('planning');
+ const openingPhase=s.pacing.phase;const openingIds=await Promise.all(phones.map((p,i)=>submit(i,'attack '+rat.id)));await phase('planning');
+ await until(async()=>{const states=await Promise.all(players.map((p,i)=>get(i)));return states.every((s,i)=>s.pacing.draft?.id===openingIds[i]);},'Every simultaneous opening action must be admitted without retry');
+ note({check:'six actual phone forms submit together at the encounter boundary without retries',sourcePhase:openingPhase,accepted:6});
+ for(let i=1;i<6;i++)await phones[i].locator('#stop').click();
  const combatBefore=await get(0),hp=combatBefore.actor.hp,mobBefore=combatBefore.actor.nearby.find(n=>n.id===rat.id);await sleep(2200);const combatStill=await get(0);assert.equal(combatStill.actor.hp,hp);assert.deepEqual(combatStill.actor.nearby.find(n=>n.id===rat.id),mobBefore,'Enemy position and HP must freeze before combat');
  const hit=await submit(0,'attack '+rat.id);let kill;await readyAll();
  for(let round=0;round<6;round++){

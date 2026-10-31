@@ -29,9 +29,9 @@ patches.push(
     if (!characterExists) {
       const leader = (Object.values(world.players) as any[]).find(p => p.chaosControlled && p.hasEnteredGame && !p.isDead);
       if (leader) {
-        const activeArea = (world as any).chaosPacing?.enabled ? (world as any).chaosPacing.area : null;\n        const offsets: number[][] = [];for(let r=1;r<=(activeArea?Math.max(activeArea.width,activeArea.height):5);r++)for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++)if(Math.max(Math.abs(dx),Math.abs(dy))===r)offsets.push([dx,dy]);
+        const activeArea = (world as any).chaosPacing?.enabled ? (world as any).chaosPacing.area : null;\n        const reachable = (leader as any).chaosSpawnTiles?.(activeArea);\n        const offsets: number[][] = [];for(let r=1;r<=(activeArea?Math.max(activeArea.width,activeArea.height):5);r++)for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++)if(Math.max(Math.abs(dx),Math.abs(dy))===r)offsets.push([dx,dy]);
         const occupied = new Set((Object.values(world.entities) as any[]).filter(e=>e.type!=='item').map(e=>e.x+','+e.y));
-        const spot = offsets.map(([dx,dy])=>({x:leader.x+dx,y:leader.y+dy})).find(p=>world.isValidPosition(p.x,p.y)&&!occupied.has(p.x+','+p.y)&&(!activeArea||(p.x>=activeArea.x&&p.x<activeArea.x+activeArea.width&&p.y>=activeArea.y&&p.y<activeArea.y+activeArea.height&&world.zoneManager.getZoneAt(p.x,p.y)?.name===activeArea.zone)));
+        const spot = offsets.map(([dx,dy])=>({x:leader.x+dx,y:leader.y+dy})).find(p=>world.isValidPosition(p.x,p.y)&&!occupied.has(p.x+','+p.y)&&(!reachable||reachable.has(p.x+','+p.y))&&(!activeArea||(p.x>=activeArea.x&&p.x<activeArea.x+activeArea.width&&p.y>=activeArea.y&&p.y<activeArea.y+activeArea.height&&world.zoneManager.getZoneAt(p.x,p.y)?.name===activeArea.zone)));
         if (spot) player.setPosition(spot.x,spot.y);
       }
     }
@@ -54,6 +54,20 @@ patches.push(['client/ts/sprites.ts',"const sword1 = require('../sprites/platear
 patches.push(['server/ts/player/skill.handler.ts','if (!hasUnlockedSkill(skillId as SkillId, ctx.level)) {','if (!hasUnlockedSkill(skillId as SkillId, ctx.level) && !((ctx as any).chaosControlled && (ctx as any).chaosSignatureSkill === skillId)) {','const success = executeSkill(ctx, skill);','const success = executeSkill(ctx, skill);']);
 // Experimental pacing hooks. No hook is active in an ordinary Fracture world.
 const pacingEdits={
+ 'client/ts/game.ts':[['if (this.getEntityById(t.id)) { // does it still exist?', 'if (this.entities[t.id]) { // does it still exist?']],
+ 'client/ts/audio.ts':[
+  ['  loadMusic(name, handleLoaded?): void {', "  loadMusic(name, handleLoaded?): void {\n    if (typeof window !== 'undefined' && window.location && new URLSearchParams(window.location.search).has('chaosTV') && !"+JSON.stringify(fs.existsSync(path.join(root,'client/audio/music'))?fs.readdirSync(path.join(root,'client/audio/music')).filter(name=>/\.(mp3|ogg)$/.test(name)):[])+".includes(name + '.' + this.extension)) { handleLoaded?.(); return; }"]],
+
+ 'server/ts/ws.ts':[
+  ["import express from 'express';", "import express from 'express';\nimport * as fs from 'fs';"],
+  ["    app.use(express.static(clientPath, { maxAge: 300000, etag: true }));", "    if (process.env.CHAOS_ACTOR_KEY) {\n      const indexFile = path.join(clientPath, 'index.html');\n      const build = String(fs.statSync(path.join(clientPath, 'main.js')).mtimeMs);\n      const html = fs.readFileSync(indexFile, 'utf8').replace(/main\\.js(?=['\"])/g, 'main.js?chaosBuild=' + build);\n      app.get(['/', '/index.html'], (_req, res) => { res.type('html').set('Cache-Control', 'no-store').send(html); });\n    }\n    app.use(express.static(clientPath, { maxAge: 300000, etag: true, setHeaders: (res, file) => { if (process.env.CHAOS_ACTOR_KEY && /\\.(?:js|html)$/.test(file)) res.setHeader('Cache-Control', 'no-cache'); } }));"]],
+
+ 'client/ts/renderer/sprite.ts':[
+  ['      spriteData.data = data;', '      // ImageData.data is readonly; its pixel buffer was changed in place.'],
+  ['    finalData.data = fdata;', '    // The silhouette pixel buffer is already updated in place.'],
+  ['  whiteSprite;', '  whiteSprite;\n  chaosHurtPending = false;'],
+  ['  createHurtSprite() {', "  createHurtSprite() {\n    if (!this.image?.width || !this.image?.height) {\n      if (this.image && !this.chaosHurtPending) {\n        this.chaosHurtPending = true;\n        this.image.addEventListener('load', () => { this.chaosHurtPending = false; this.createHurtSprite(); }, {once:true});\n      }\n      return;\n    }"]],
+
  'server/ts/player/auth.handler.ts':[['  player.hasEnteredGame = true;', '  player.hasEnteredGame = true;\n  (player as any).chaosStartPacing?.();']],
  'server/ts/entity.ts':[['  setPosition(x: number, y: number): void {', '  setPosition(x: number, y: number): void {\n    const entity = this as any, world = entity.getWorld?.() || entity.chaosWorld;\n    if (world?.chaosPacing?.paused && !entity.chaosSpectator && (entity.type === \'mob\' || entity.type === \'player\' && entity.hasEnteredGame)) return;']],
  'server/ts/player/message-router.ts':[
@@ -112,7 +126,7 @@ for(const [file,a,b,c,d] of patches){
  if(current!==upstream&&current!==patched&&current!==legacy&&previous[file]!==digest(current))throw Error(`Local source edits in ${file}; refusing overwrite`);
  writes.push([file,patched]);
 }
-for(const [source,dest] of [['chaos-pacing.test.ts','server/ts/__tests__/chaos-pacing.test.ts'],['chaos-clock.ts','server/ts/chaos-clock.ts'],['chaos-camera.test.ts','client/ts/__tests__/chaos-camera.test.ts'],['chaos-abilities.test.ts','server/ts/__tests__/chaos-abilities.test.ts'],['chaos-actor.test.ts','server/ts/__tests__/chaos-actor.test.ts'],['chaos-actor.ts','server/ts/chaos-actor.ts'],['action-contract.ts','server/ts/chaos-action-contract.ts'],['chaos-tv.ts','client/ts/chaos-tv.ts'],['native-map-state.ts','client/ts/chaos-native-map-state.ts']]){
+for(const [source,dest] of [['chaos-sprites.test.ts','client/ts/__tests__/chaos-sprites.test.ts'],['chaos-pacing.test.ts','server/ts/__tests__/chaos-pacing.test.ts'],['chaos-clock.ts','server/ts/chaos-clock.ts'],['chaos-camera.test.ts','client/ts/__tests__/chaos-camera.test.ts'],['chaos-abilities.test.ts','server/ts/__tests__/chaos-abilities.test.ts'],['chaos-actor.test.ts','server/ts/__tests__/chaos-actor.test.ts'],['chaos-actor.ts','server/ts/chaos-actor.ts'],['action-contract.ts','server/ts/chaos-action-contract.ts'],['chaos-tv.ts','client/ts/chaos-tv.ts'],['native-map-state.ts','client/ts/chaos-native-map-state.ts']]){
  const p=path.join(root,dest);
  const canonical=fs.readFileSync(path.join(dir,source),'utf8');
  if(fs.existsSync(p)){const current=fs.readFileSync(p,'utf8');if(!current.startsWith('/** Chaos-owned')||(current!==canonical&&previous[dest]!==digest(current)))throw Error(`Local or unrecognized edits in ${dest}; refusing overwrite`);}

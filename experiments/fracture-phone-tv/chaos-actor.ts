@@ -17,7 +17,7 @@ import {Formulas} from './formulas';
 import {Utils} from './utils';
 import {Chest} from './chest';
 import {MessageRouter} from './player/message-router';
-import {validIntent, shortestPath, extractNativeAttackRates} from './chaos-action-contract';
+import {validIntent, shortestPath, extractNativeAttackRates,resolveVisibleTarget,describeVisibleScene,formationTiles} from './chaos-action-contract';
 const router = new MessageRouter(Messages,Formulas,Utils,Chest);
 const nativeRates=extractNativeAttackRates(fs.readFileSync('client/ts/entity/character/character.ts','utf8'),fs.readFileSync('client/ts/entity/character/mob/mobs.ts','utf8'));
 const plateaus=new Set(geometry.plateau);
@@ -67,7 +67,20 @@ export function installChaosActor(player:any, connection:any): void {
   const enemyHits=new Map(); const seen=new Set<string>();
   const label=(e:any)=>String(e.chaosName||e.name||Types.getKindAsString(e.kind)||e.type);
   const nearby=()=>Object.values(world.entities).filter((e:any)=>e.id!==player.id&&!e.chaosSpectator&&!e.isDead&&distance(player,e)<=18) as any[];
+  if(player.chaosControlled)player.chaosSpawnTiles=(area:any)=>{
+    const bounds=area||{x:player.x-5,y:player.y-5,width:11,height:11};
+    const occupied=new Set((Object.values(world.entities) as any[]).filter(e=>!e.isDead&&e.type!=='player'&&e.type!=='item').map(e=>e.x+','+e.y));
+    const clear=(x:number,y:number)=>world.isValidPosition(x,y)&&plateau(x,y)===plateau(player.x,player.y)&&!occupied.has(x+','+y)&&!chaosObjects?.isBlocked(player,x,y)&&(!area||world.zoneManager.getZoneAt(x,y)?.name===area.zone);
+    return new Set(formationTiles([player.x,player.y],bounds,clear,bounds.width*bounds.height).map(p=>p.join(',')));
+  };
   const objectSnapshot=()=>{try{return chaosObjects?.snapshot(player);}catch{return {bag:[],ground:[],wearables:[],error:'Object storage is unavailable. Ask the host to check disk space and permissions.'};}};
+  const blockedStep=(x:number,y:number)=>{
+    if(pacing?.owns(player)&&!pacing.walkable(player,x,y))return 'The party is staying in this area. You pause at the edge of the journey.';
+    const body=nearby().find(e=>e.type!=='item'&&e.type!=='player'&&e.x===x&&e.y===y);
+    if(body)return `${label(body)} stands in your way.`;
+    if(plateau(x,y)!==plateau(player.x,player.y))return 'The change in ground is too steep to cross here.';
+    return 'There is no clear footing that way.';
+  };
   const entrances=()=>geometry.doors.filter((d:any)=>distance(player,d)<=18).map((d:any)=>({id:'door-'+d.x+'-'+d.y,name:world.zoneManager.getZoneAt(d.tx,d.ty)?.name||'building',x:d.x,y:d.y,distance:distance(player,d)})).sort((a:any,b:any)=>a.distance-b.distance);
   const positionState=()=>({id:player.id,x:player.x,y:player.y,zone:world.zoneManager.getZoneAt(player.x,player.y)?.name||'Unknown area',hp:player.hitPoints,maxHp:player.maxHitPoints,dead:player.isDead,ready:player.hasEnteredGame,entrances:entrances(),scene:sceneAt({x:player.x,y:player.y,zone:world.zoneManager.getZoneAt(player.x,player.y)?.name||'Unknown area'})});
   const state=()=>({pacing:pacing?.snapshot(player),scene:sceneAt({x:player.x,y:player.y,zone:world.zoneManager.getZoneAt(player.x,player.y)?.name||'Unknown area'}),entrances:entrances(),ability:chaosObjects?.abilityState(player),id:player.id,name:player.chaosName||player.name,role:player.chaosRole||null,chaos:objectSnapshot(),zone:world.zoneManager.getZoneAt(player.x,player.y)?.name||'Unknown area',x:player.x,y:player.y,hp:player.hitPoints,maxHp:player.maxHitPoints,level:player.level,gold:player.gold,inventory:player.getInventory().getSlots().map((s:any,i:number)=>s?{slot:i,name:Types.getKindAsString(s.kind),count:s.count}:null).filter(Boolean),weapon:Types.getKindAsString(player.weapon),armor:Types.getKindAsString(player.armor),dead:player.isDead,ready:player.hasEnteredGame,nearby:nearby().map(e=>({id:e.id,name:label(e),type:e.type,x:e.x,y:e.y,stunnedUntil:e.stunUntil||0,hp:e.hitPoints,maxHp:e.maxHitPoints}))});
@@ -108,12 +121,15 @@ export function installChaosActor(player:any, connection:any): void {
     seen.add(body.id);if(seen.size>256)seen.delete(seen.values().next().value);
     const intent=body.intent,id=body.id;
     if(intent.verb==='cancel') {if(pacing?.owns(player))pacing.cancel(player);finish('cancelled','Your previous action was cancelled.');cancel();receipt(id,'cancelled','Holding still. Your attacks and path are cancelled.');return ack({ok:true});}
+    if(!planned&&pacing?.owns(player)&&intent.verb!=='look'){
+      try{pacing.admitAction(body.context);}catch(error){return ack({error:error.message});}
+    }
     if(!planned&&pacing?.owns(player)&&pacing.phase==='planning'&&['enter','exit'].includes(intent.verb)){
       try{proposeDoorTravel(intent,id);receipt(id,'queued','Vote to travel through the existing doorway. No arrival is claimed yet.');return ack({ok:true});}catch(error){return ack({error:error.message});}
     }
     if(!planned&&pacing?.owns(player)&&['preparation','action','recap'].includes(pacing.phase)&&intent.verb!=='look')return ack({error:'Watch this moment play out; STOP is always available.'});
     if(!planned&&pacing?.owns(player)&&pacing.paused&&intent.verb!=='look'){
-      try{if(body.roundId!==pacing.roundId)throw Error('That planning window has changed. Submit again.');pacing.queue(player,{id,intent,text:body.text});receipt(id,'queued','Chosen for the shared planning window. Tap Ready when you are happy with it.');return ack({ok:true});}
+      try{pacing.queue(player,{id,intent,text:body.text});receipt(id,'queued','Chosen for the shared planning window. Tap Ready when you are happy with it.');return ack({ok:true});}
       catch(error){return ack({error:error.message});}
     }
     if(intent.verb==='respawn'){
@@ -174,18 +190,17 @@ export function installChaosActor(player:any, connection:any): void {
       const kind=slots[index].kind;await router.route(player,[Types.Messages.INVENTORY_EQUIP,index]);
       const equipped=player.weapon===kind||player.armor===kind;receipt(id,equipped?'succeeded':'blocked',equipped?'Equipment changed.':'That item cannot be equipped.');return ack({ok:true});
     }
-    if(intent.verb==='look') {const props=objectSnapshot();const doorHolds=(props?.doors||[]).map(d=>'Door at '+d.x+','+d.y+' held by '+d.heldBy).join('; ');const memories=(props?.npcs||[]).filter(n=>n.items?.length||n.trust<0||n.concern).map(n=>`${n.name} [${n.id}]: ${n.items.map(i=>i.name+' ['+i.id+']').join(', ')||'no Chaos items'}${n.trust<0?' · distrusts you':''}${n.concern?' · '+n.concern:''}`).join('; ');const extras=(props?.ground||[]).map(i=>`${i.name} [${i.id}] (${i.tile.x},${i.tile.y})${i.owner?' belongs to '+i.owner:''}${i.condition!=='intact'?' — '+i.condition:''}`).join('; ');receipt(id,'succeeded',(extras?`Objects: ${extras}. `:'')+(nearby().length?nearby().slice(0,12).map(e=>`${label(e)} (${e.x},${e.y})`).join('; '):'No characters or items nearby. Explore with movement commands.')+(memories?` NPC possessions/memory: ${memories}.`:'')+(doorHolds?` Held doors: ${doorHolds}.`:''));return ack({ok:true});}
-    if(intent.verb==='unknown'){receipt(id,'blocked','I could not ground that intention in a supported nearby action. Check the AI status on your phone; a building or object ID can clarify which target you mean.');return ack({ok:true});}
+    if(intent.verb==='look') {const props=objectSnapshot();receipt(id,'succeeded',describeVisibleScene(player,nearby(),props.scenery||[],label));return ack({ok:true});}
+    if(intent.verb==='unknown'){receipt(id,'blocked','You look for a way to do that, but cannot see how to attempt it here.');return ack({ok:true});}
     let target:any=null;
     if(intent.target&&!['enter','exit'].includes(intent.verb)){
       const phrase=intent.target.toLowerCase();
       const alias=objectSnapshot()?.npcs?.find((n:any)=>n.id===intent.target);
       const visible=nearby();
       const exact=visible.find(e=>String(e.id)===phrase || (alias&&String(e.id)===String(alias.nativeId)));
-      const candidates=exact?[exact]:visible.filter(e=>{const name=label(e).toLowerCase();return name===phrase || name.includes(phrase) || (phrase==='item'&&Types.isItem(e.kind)) || (phrase==='enemy'&&Types.isMob(e.kind)) || (phrase==='guard'&&Types.isNpc(e.kind)&&name.includes('guard'));});
-      candidates.sort((a,b)=>distance(player,a)-distance(player,b)); target=candidates[0];
+      target=exact||resolveVisibleTarget(visible,player,intent,label);
       if(intent.verb==='manipulate'){receipt(id,'blocked',target?`${label(target)} cannot be moved by the available mechanics.`:`I don't see an interactable ${intent.target} nearby. Scenery cannot be moved.`);return ack({ok:true});}
-      if(!target){receipt(id,'blocked',`I don't see ${intent.target} nearby. Use look around.`);return ack({ok:true});}
+      if(!target){receipt(id,'blocked',`You cannot spot ${intent.target} from here.`);return ack({ok:true});}
       const allowed=intent.verb==='attack'?Types.isMob(target.kind):['talk','quest'].includes(intent.verb)?Types.isNpc(target.kind):intent.verb==='open'?target instanceof Chest:intent.verb==='loot'?Types.isItem(target.kind):true;
       if(!allowed){receipt(id,'blocked',`${label(target)} does not support that action.`);return ack({ok:true});}
     }
@@ -223,7 +238,25 @@ export function installChaosActor(player:any, connection:any): void {
   player.chaosPendingAction=()=>active?{id:active.id,intent:active.intent,targetId:active.target?.id,text:active.text||active.intent.verb}:null;
   player.chaosStopAction=(message:string)=>{finish('cancelled',message);cancel();};
   player.chaosExecutePlan=(d:any)=>void executeAction({key,id:d.id,intent:d.intent,text:d.text,travelId:d.travelId,actorId:player.id,issuedAt:Date.now()},(result:any)=>{if(result?.error)receipt(d.id,'blocked',result.error);},true);
-  player.chaosExecuteTravel=(t:any)=>player.chaosExecutePlan({id:t.id+'-'+player.id,intent:t.target.intent,text:'Travel with the party',travelId:t.id});
+  const landings=new Map();
+  player.chaosTravelArrived=(t:any)=>{const spot=landings.get(t.id);return !spot||(player.x===spot[0]&&player.y===spot[1]);};
+  player.chaosExecuteTravel=(t:any)=>{
+    let intent=t.target.intent;
+    if(intent.verb==='go'&&Number.isInteger(intent.x)){
+      world.chaosTravelLandings||=new Map();let formation=world.chaosTravelLandings.get(t.id);
+      if(!formation){
+        const occupied=new Set((Object.values(world.entities) as any[]).filter(e=>!e.isDead&&e.type!=='player'&&e.type!=='item').map(e=>e.x+','+e.y));
+        const clear=(x:number,y:number)=>world.isValidPosition(x,y)&&!occupied.has(x+','+y)&&plateau(x,y)===plateau(intent.x,intent.y)&&!chaosObjects?.isBlocked(player,x,y)&&world.zoneManager.getZoneAt(x,y)?.name===t.target.area.zone;
+        formation={tiles:formationTiles([intent.x,intent.y],t.target.area,clear,20),claims:new Map()};world.chaosTravelLandings.set(t.id,formation);
+        if(world.chaosTravelLandings.size>8)world.chaosTravelLandings.delete(world.chaosTravelLandings.keys().next().value);
+      }
+      const identity=String(player.characterId||player.id);let spot=formation.claims.get(identity);
+      if(!spot){spot=formation.tiles[formation.claims.size];if(spot)formation.claims.set(identity,spot);}
+      if(!spot){receipt(t.id+'-'+player.id,'blocked','There is no clear place for you to stand at the destination.');return;}
+      landings.set(t.id,spot);if(landings.size>8)landings.delete(landings.keys().next().value);intent={...intent,x:spot[0],y:spot[1]};
+    }
+    player.chaosExecutePlan({id:t.id+'-'+player.id,intent,text:'Travel with the party',travelId:t.id});
+  };
   socket.on('chaos:pacing',(body:any,ack:any)=>{
     if(typeof ack!=='function')return;if(!authorized(body)||!player.chaosControlled)return ack({error:'Unauthorized pacing control'});
     try{
@@ -271,15 +304,21 @@ export function installChaosActor(player:any, connection:any): void {
       if(clearFloor(x,y)&&plateau(x,y)===plateau(player.x,player.y))goals.push([x,y]);
     }
     goals.sort((x,y)=>Math.abs(player.x-x[0])+Math.abs(player.y-x[1])-Math.abs(player.x-y[0])-Math.abs(player.y-y[1]));
+    const areas=new Map();
     for(const edge of goals){
       const aim={x:Math.max(1,Math.min(geometry.width-2,edge[0]+v[0]*4)),y:Math.max(1,Math.min(geometry.height-2,edge[1]+v[1]*4))};
-      const aimedZone=world.zoneManager.getZoneAt(aim.x,aim.y),next=sceneAt({...aim,zone:aimedZone?.name||a.zone});
-      const center={x:v[0]?next.x+Math.floor(next.width/2):edge[0],y:v[1]?next.y+Math.floor(next.height/2):edge[1]},landings=[];
-      for(let y=next.y;y<next.y+next.height;y++)for(let x=next.x;x<next.x+next.width;x++)if((x-edge[0])*v[0]+(y-edge[1])*v[1]>=0&&world.zoneManager.getZoneAt(x,y)?.name===next.zone&&clearFloor(x,y)&&plateau(x,y)===plateau(player.x,player.y))landings.push([x,y]);
-      landings.sort((p,q)=>Math.abs(p[0]-center.x)+Math.abs(p[1]-center.y)-Math.abs(q[0]-center.x)-Math.abs(q[1]-center.y));
-      for(const goal of landings.slice(0,12)){
-        const path=shortestPath([player.x,player.y],(x:number,y:number)=>x===goal[0]&&y===goal[1],(x:number,y:number)=>clearFloor(x,y)&&plateau(x,y)===plateau(player.x,player.y)&&(x>=a.x&&x<a.x+a.width&&y>=a.y&&y<a.y+a.height||x>=next.x&&x<next.x+next.width&&y>=next.y&&y<next.y+next.height));if(!path)continue;
-        return pacing.proposeTravel(player,{id:direction+'-'+next.id,name:direction+' into '+next.zone,area:next,intent:{verb:'go',x:goal[0],y:goal[1]},corridor:path.map(([x,y])=>({x,y}))});
+      const z=world.zoneManager.getZoneAt(aim.x,aim.y),next=sceneAt({...aim,zone:z?.name||a.zone});
+      if(next.id!==a.id&&!areas.has(next.id))areas.set(next.id,next);
+    }
+    // Search for a reachable part of each neighboring scene, rather than
+    // restarting BFS for every candidate landing tile. At most two bounded
+    // searches per distinct area; occupied native entities stay authoritative.
+    for(const next of areas.values()){
+      const permitted=(x:number,y:number)=>clearFloor(x,y)&&plateau(x,y)===plateau(player.x,player.y)&&((x>=a.x&&x<a.x+a.width&&y>=a.y&&y<a.y+a.height)||(x>=next.x&&x<next.x+next.width&&y>=next.y&&y<next.y+next.height));
+      for(const inset of [6,1]){
+        const goal=(x:number,y:number)=>x>=next.x&&x<next.x+next.width&&y>=next.y&&y<next.y+next.height&&world.zoneManager.getZoneAt(x,y)?.name===next.zone&&(v[0]>0?x-next.x:v[0]<0?next.x+next.width-1-x:v[1]>0?y-next.y:next.y+next.height-1-y)>=inset;
+        const path=shortestPath([player.x,player.y],goal,permitted,a.width*a.height+next.width*next.height+1);if(!path?.length)continue;
+        const end=path[path.length-1];return pacing.proposeTravel(player,{id:direction+'-'+next.id,name:direction+' into '+next.zone,area:next,intent:{verb:'go',x:end[0],y:end[1]},corridor:path.map(([x,y])=>({x,y}))});
       }
     }
     throw Error('No clear native crossing exists at that edge');
@@ -332,7 +371,7 @@ export function installChaosActor(player:any, connection:any): void {
             const steps=action.stepsMoved||0;
             finish(steps?'succeeded':'blocked',steps
               ?`Walked ${steps} tile${steps===1?'':'s'} before an obstacle stopped you.`
-              :'That direction is blocked.',{},action);
+              :blockedStep(x,y),{},action);
             return;
           }
           action.path=[[x,y]];
@@ -341,7 +380,7 @@ export function installChaosActor(player:any, connection:any): void {
           action.targetPosition=targetPosition;
         }
         const path=action.path;
-        if(!path?.length){finish('blocked','No walkable path to that destination.');return;}
+        if(!path?.length){finish('blocked','You cannot find a clear path to reach that place.');return;}
         const [x,y]=path.shift();
         const moved=await move(x,y);
         if(active!==action)return; // STOP may arrive while native MOVE/checkpoint is in flight.
@@ -408,10 +447,10 @@ export function installChaosActor(player:any, connection:any): void {
         await router.route(player,[Types.Messages.REQUEST_QUEST,target.kind]);if(active!==action)return;finish('succeeded',`Asked ${label(target)} for an adventure. Check your quest.`);return;
       }
       if(intent.verb==='talk'){
-        const memory=chaosObjects?.talk(player,target);if(memory){speakMemory(memory);finish('succeeded',memory,{},action);return;}
+        const memory=chaosObjects?.talk(player,target);if(memory){speakMemory(memory);finish('succeeded',memory,{interaction:'talk'},action);return;}
         await router.route(player,[Types.Messages.NPCTALK,target.kind]);
         if(active!==action)return;
-        finish('succeeded',chaosObjects?.talk(player,target)||`Spoke to ${label(target)}. See their response.`);return;
+        finish('succeeded',chaosObjects?.talk(player,target)||`You speak with ${label(target)}.`,{interaction:'talk'},action);return;
       }
       if(intent.verb==='open'){
         await router.route(player,[Types.Messages.OPEN,target.id]);
