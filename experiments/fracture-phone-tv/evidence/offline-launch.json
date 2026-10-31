@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "platform": "Linux x64 cloud; physical macOS not tested",
+  "checks": [
+    "real launcher rebuilt from cached dependencies with npm offline and unreachable HTTP/HTTPS proxy",
+    "unchanged immediate restart logged Using the existing verified build; no download is needed",
+    "launcher Control-C waited for owned bridge and server shutdown",
+    "Node 22.23.4 extracted-kit checks passed; optional checkout fixture separately passed"
+  ]
+}

@@ -1,0 +1,109 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import {createOptionalDM} from './optional-dm.mjs';
+const actor={nearby:[{name:'rat',type:'mob',x:2,y:3}],inventory:[]};
+test('AI defaults off, rejects ungrounded plans, and falls back on quota or provider errors',async t=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-dm-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));let calls=0;const dm=createOptionalDM({dataDir:dir,key:'test-key',fetchImpl:async()=>{calls++;return {ok:true,json:async()=>({choices:[{message:{content:'{"verb":"attack","target":"dragon"}'}}]})};}});assert.equal(await dm.interpret('fight that thing',actor),null);assert.equal(calls,0);dm.enabled=true;assert.equal(await dm.interpret('fight that thing',actor),null);assert.equal(calls,1);assert.equal(await dm.interpret('more',actor),null);assert.equal(calls,2);});
+test('approved grounded interpretation is a proposal and never an outcome',async t=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-dm-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));const dm=createOptionalDM({dataDir:dir,key:'test-key',enabled:true,fetchImpl:async()=>({ok:true,json:async()=>({choices:[{message:{content:'{"verb":"attack","target":"rat"}'}}]})})});assert.deepEqual(await dm.interpret('bonk the rodent',actor),{verb:'attack',target:'rat'});});
+test('429, malformed plans, and timeouts preserve deterministic fallback',async t=>{for(const response of [async()=>({ok:false,status:429}),async()=>{throw Error('timeout');},async()=>({ok:true,json:async()=>({choices:[{message:{content:'{"verb":"go","x":1,"y":1}'}}]})})]){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-dm-'));try{const dm=createOptionalDM({dataDir:dir,key:'test-key',enabled:true,fetchImpl:response});assert.equal(await dm.interpret('anything',actor),null);}finally{fs.rmSync(dir,{recursive:true,force:true});}}});
+
+test('creative proposals require existing component IDs and cannot supply game outcomes',async t=>{
+ for(const [target,ok] of [['make crown from item-1 and item-2',true],['make crown from item-1 and item-999',false],['equip item-2',true],['help Bob craft',true],['help invented player craft',false]]){
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-dm-craft-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+ const proposal={verb:'creative',target};const dm=createOptionalDM({dataDir:dir,key:'test-key',enabled:true,fetchImpl:async()=>({ok:true,json:async()=>({choices:[{message:{content:JSON.stringify(proposal)}}]})})});
+ const result=await dm.interpret('make something royal',{nearby:[{name:'Bob',type:'player'}],chaos:{bag:[{id:'item-1'},{id:'item-2'}]}});assert.deepEqual(result,ok?proposal:null);
+ }
+});
+
+test('DM narration reuses canonical validation, supplied memories and safe fallback',async t=>{
+ const receipt={id:'turn-7',status:'failed',player:'Ada',message:'The rug was not stolen. Guard noticed.',event:{attempt:'steal rug'},actor:{chaos:{npcs:[{id:'guard-1',name:'Guard',trust:-2,memory:[{verb:'theft'}]}],story:[{fact:'Guard noticed the attempt.'}]}}};
+ for(const [answer,ok] of [[{turnId:'turn-7',outcome:'failure',text:'The guard gives Ada a suspicious look.',dialogue:[{speakerId:'guard-1',line:'I remember that attempt.'}]},true],[{turnId:'turn-7',outcome:'success',text:'You stole it!',dialogue:[]},false],[{turnId:'turn-7',outcome:'failure',text:'A dragon appears.',dialogue:[{speakerId:'dragon',line:'Hello'}]},false]]){
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-story-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));let sent;
+  const dm=createOptionalDM({dataDir:dir,key:'test',enabled:true,fetchImpl:async(_url,init)=>{sent=JSON.parse(init.body);return {ok:true,json:async()=>({choices:[{message:{content:JSON.stringify(answer)}}]})};}});
+  assert.equal(!!await dm.narrate(receipt),ok);assert.ok(sent.messages[1].content.includes('Guard noticed the attempt'));assert.equal(receipt.status,'failed');
+ }
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-story-off-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));let calls=0;const dm=createOptionalDM({dataDir:dir,key:'test',fetchImpl:async()=>calls++});assert.equal(await dm.narrate(receipt),null);assert.equal(calls,0);
+});
+
+function dmFixture(t,fetchImpl,options={}){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-dm-fixed-'));const dm=createOptionalDM({dataDir:dir,key:'test-key',enabled:true,fetchImpl,...options});t.after(()=>{dm.close();fs.rmSync(dir,{recursive:true,force:true});});return {dm,dir};}
+const resolved={id:'real-1',status:'failed',player:'Ada',message:'The craft failed. Materials were kept.',event:{attempt:'make a hat'},actor:{chaos:{npcs:[],story:[]}}};
+function reply(init){const body=JSON.parse(init.body),context=JSON.parse(body.messages[1].content);assert.equal(body.model,'openai/gpt-oss-120b');assert.equal(body.response_format.type,'json_schema');return {ok:true,json:async()=>({choices:[{message:{content:JSON.stringify(body.response_format.json_schema.name==='game_intent'?{verb:'attack',target:'rat'}:{turnId:context.turnId,outcome:context.outcome.status,text:context.outcome.canonical,dialogue:[]})}}]})};}
+test('AI-interpreted actions immediately receive narration without the old shared cooldown',async t=>{let calls=0;const {dm}=dmFixture(t,async(_url,init)=>{calls++;return reply(init);});assert.deepEqual(await dm.interpret('bonk rodent',actor),{verb:'attack',target:'rat'});assert.ok(await dm.narrate(resolved));assert.equal(calls,2);assert.equal(dm.status().state,'connected');});
+test('parallel players are queued with bounded concurrency instead of silently dropping narration',async t=>{let active=0,peak=0;const {dm}=dmFixture(t,async(_url,init)=>{active++;peak=Math.max(peak,active);await new Promise(r=>setTimeout(r,10));active--;return reply(init);});const results=await Promise.all(Array.from({length:4},(_,i)=>dm.narrate({...resolved,id:'turn-'+i})));assert.ok(results.every(Boolean));assert.equal(peak,2);assert.equal(dm.status().active,0);assert.equal(dm.status().queued,0);});
+test('provider failures have safe actionable status and 429 avoids repeated requests',async t=>{for(const [status,code] of [[401,'authentication'],[404,'model'],[429,'quota'],[500,'provider']]){let calls=0;const {dm}=dmFixture(t,async()=>{calls++;return {ok:false,status};});assert.equal(await dm.narrate(resolved),null);assert.equal(dm.status().lastError,code);assert.ok(!JSON.stringify(dm.status()).includes('test-key'));if(status===429){assert.equal(await dm.narrate(resolved),null);assert.equal(calls,1);}}});
+test('superseded or stopped narration is aborted without exhausting queued gameplay',async t=>{const {dm}=dmFixture(t,async(_url,init)=>new Promise((resolve,reject)=>{init.signal.addEventListener('abort',()=>reject(init.signal.reason),{once:true});}));const controller=new AbortController(),pending=dm.narrate(resolved,{signal:controller.signal});await new Promise(r=>setTimeout(r,5));controller.abort();assert.equal(await pending,null);assert.equal(dm.status().active,0);});
+test('saved connection reloads privately, stays off by default and can be checked explicitly',async t=>{const {dm,dir}=dmFixture(t,async(_u,init)=>reply(init));dm.configureKey('private-test-key-123456');assert.equal(dm.enabled,false);const fresh=createOptionalDM({dataDir:dir,fetchImpl:async(_u,init)=>reply(init)});t.after(()=>fresh.close());assert.equal(fresh.available,true);assert.equal(fresh.enabled,false);assert.ok(await fresh.check());assert.ok(!JSON.stringify(fresh.status()).includes('private-test-key'));assert.equal(fs.statSync(path.join(dir,'dm-config.json')).mode&0o077,0);});
+
+test('known entity capitalization is canonicalized without accepting invented names',async t=>{const {dm}=dmFixture(t,async()=>({ok:true,json:async()=>({choices:[{message:{content:'{"verb":"talk","target":"Guard"}'}}]})}));assert.deepEqual(await dm.interpret('ask the watchman',{nearby:[{name:'guard',type:'npc'}]}),{verb:'talk',target:'guard'});});
+
+test('queued requests respect a newly received provider rate limit',async t=>{let calls=0;const {dm}=dmFixture(t,async()=>{calls++;await new Promise(r=>setTimeout(r,5));return {ok:false,status:429};});const results=await Promise.all(Array.from({length:4},(_,i)=>dm.narrate({...resolved,id:'rate-'+i})));assert.ok(results.every(r=>r===null));assert.equal(calls,2,'Only the two already in flight are sent');});
+test('AI may propose an action on a visible authored object, never an invented scenery ID',async t=>{
+ let target='extinguish fracture:world:authored-tree-1';
+ const {dm}=dmFixture(t,async()=>({ok:true,json:async()=>({choices:[{message:{content:JSON.stringify({verb:'creative',target})}}]})}));
+ const scene={chaos:{scenery:[{id:'fracture:world:authored-tree-1',condition:'burning'}]}};
+ assert.deepEqual(await dm.interpret('save that burning tree',scene),{verb:'creative',target});
+ target='extinguish fracture:world:invented-tree';
+ assert.equal(await dm.interpret('save that burning tree',scene),null);
+});
+
+test('large native scenes stay within free-provider input limits without leaking atlas geometry',async t=>{
+ const scenery=Array.from({length:400},(_,i)=>({id:'fracture:world:native-grass-'+i,kind:'grass',name:'grass',condition:'intact',nativeOrigin:{x:i,y:0},tile:{x:i,y:0},cells:Array.from({length:64},(_,x)=>({x,y:i,gid:155})),capabilities:{flammable:true}}));
+ const target='push fracture:world:native-tent-1 east';scenery.push({id:'fracture:world:native-tent-1',kind:'tent',name:'tent',tile:{x:4,y:3},nativeOrigin:{x:4,y:1},condition:'intact',capabilities:{movable:true}});let context;
+ const {dm}=dmFixture(t,async(_u,init)=>{context=JSON.parse(init.body).messages[1].content;return {ok:true,json:async()=>({choices:[{message:{content:JSON.stringify({verb:'creative',target})}}]})};});
+ assert.deepEqual(await dm.interpret('shift that canvas shelter aside',{x:3,y:3,chaos:{scenery}}),{verb:'creative',target});assert.ok(context.length<12000,'Dense grass must not cause Groq HTTP 413');assert.ok(context.includes('native-tent-1'));assert.ok(!context.includes('"cells"'));assert.ok(!context.includes('nativeOrigin'));
+});
+
+test('open-ended AI DM proposes only verified adjacent native scenery, never an outcome',async t=>{
+ const oak={id:'fracture:test:native-tree-30-200',nativeOrigin:{x:30,y:200},kind:'tree',scene:'fracture:test',tile:{x:10,y:10},condition:'intact',wet:0};
+ const actor={ready:true,dead:false,x:10,y:11,chaos:{scenery:[oak]}};
+ let proposal={action:'break',targetId:oak.id,ability:'strength',dc:14,description:'Try to topple the existing oak.'};
+ let calls=0;
+ const {dm}=dmFixture(t,async(_url,init)=>{
+  calls++;const body=JSON.parse(init.body);
+  assert.equal(body.response_format.json_schema.name,'native_environment');
+  assert.ok(body.messages[1].content.includes(oak.id));
+  return {ok:true,json:async()=>({choices:[{message:{content:JSON.stringify(proposal)}}]})};
+ });
+ assert.deepEqual(await dm.interpretEnvironment('Could I topple that oak?',actor),proposal);
+ assert.equal(Object.hasOwn(proposal,'success'),false);
+ proposal={...proposal,targetId:'fracture:test:invented-rock'};
+ assert.equal(await dm.interpretEnvironment('Move the rock',actor),null);
+ proposal={...proposal,targetId:oak.id,dc:1};
+ assert.equal(await dm.interpretEnvironment('Topple the oak',actor),null);
+ proposal={...proposal,dc:14,action:'ignite',ability:'wisdom',description:'Try lighting the oak.'};
+ assert.deepEqual(await dm.interpretEnvironment('Set that tree alight',actor),proposal);
+ assert.equal(await dm.interpretEnvironment('Set that wet tree alight',{...actor,chaos:{scenery:[{...oak,wet:1}]}}),null);
+ const before=calls;
+ assert.equal(await dm.interpretEnvironment('Topple a distant tree',{...actor,x:40}),null);
+ assert.equal(await dm.interpretEnvironment('Topple an imaginary tree',{...actor,chaos:{scenery:[{...oak,nativeOrigin:null}]}}),null);
+ assert.equal(calls,before,'no provider call when no verified adjacent native object exists');
+});
+
+test('enabled preference survives restart without copying an environment key to disk',t=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'dm-preference-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));const dm=createOptionalDM({dataDir:dir,key:'runtime-test-key'});dm.enabled=true;const next=createOptionalDM({dataDir:dir,key:'runtime-test-key'});assert.equal(next.enabled,true);assert.equal(fs.existsSync(path.join(dir,'dm-config.json')),false);next.enabled=false;assert.equal(createOptionalDM({dataDir:dir,key:'runtime-test-key'}).enabled,false);dm.close();next.close();});
+
+test('startup validates an existing connection once, remembers ON, and respects a later OFF',async t=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'dm-auto-'));let calls=0;
+ const options={dataDir:dir,key:'runtime-test-key',fetchImpl:async(_u,init)=>{calls++;return reply(init);}};
+ const dm=createOptionalDM(options);t.after(()=>{dm.close();fs.rmSync(dir,{recursive:true,force:true});});
+ assert.equal(await dm.initialize(),true);assert.equal(dm.enabled,true);assert.equal(calls,1);
+ assert.equal(fs.existsSync(path.join(dir,'dm-config.json')),false);
+ const next=createOptionalDM(options);t.after(()=>next.close());
+ assert.equal(await next.initialize(),true);assert.equal(calls,2);
+ next.enabled=false;
+ const off=createOptionalDM(options);t.after(()=>off.close());
+ assert.equal(await off.initialize(),false);assert.equal(off.enabled,false);assert.equal(calls,2);
+});
+test('missing or rejected startup connections do not enable live AI',async t=>{
+ for(const key of ['', 'rejected-test-key']){
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'dm-auto-error-'));let calls=0;
+  const dm=createOptionalDM({dataDir:dir,key,fetchImpl:async()=>{calls++;return {ok:false,status:401};}});
+  t.after(()=>{dm.close();fs.rmSync(dir,{recursive:true,force:true});});
+  assert.equal(await dm.initialize(),false);assert.equal(dm.enabled,false);assert.equal(calls,key?1:0);
+  if(key)assert.equal(dm.status().lastError,'authentication');
+ }
+});
+test('turning AI off while startup is checking fences even a late successful response',async t=>{
+ let release,started;
+ const waiting=new Promise(r=>started=r);
+ const {dm,dir}=dmFixture(t,async(_u,init)=>{started();await new Promise(r=>release=r);return reply(init);});
+ const checking=dm.initialize();await waiting;dm.enabled=false;release();
+ assert.equal(await checking,false);assert.equal(dm.enabled,false);
+ assert.equal(JSON.parse(fs.readFileSync(path.join(dir,'dm-preferences.json'))).enabled,false);
+});

@@ -1,0 +1,17 @@
+{
+  "model": "openai/gpt-oss-120b",
+  "elapsedMs": 1239,
+  "intent": null,
+  "story": {
+    "text": "The guard recalls the failed theft you tried and refuses to give you a new quest, offering no reward or task.",
+    "dialogue": [
+      {
+        "speakerId": "guard-1",
+        "name": "Guard",
+        "line": "I saw what you tried, and until you make amends I won’t send you on any new errand."
+      }
+    ]
+  },
+  "status": "connected",
+  "lastError": null
+}

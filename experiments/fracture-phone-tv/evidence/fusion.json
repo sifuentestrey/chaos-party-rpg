@@ -1,0 +1,97 @@
+{
+  "status": "passed",
+  "checks": [
+    "original Chaos crafting on actual Fracture actors",
+    "server D20 result",
+    "visible wearable",
+    "nearby gift transfers ownership",
+    "drop at real native coordinates and auto-approach pickup",
+    "phone reload retains crafted equipment",
+    "no browser errors"
+  ],
+  "events": [
+    {
+      "player": "Ember813da",
+      "text": "walk to 11, 220",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 11,
+      "y": 220
+    },
+    {
+      "player": "Ash813ce",
+      "text": "make blue hat from cloth strip and wood splinter",
+      "status": "failed",
+      "message": "D20 8 / 10: Ash813ce tries, but the materials resist. Nothing is consumed or changed.",
+      "roll": 8,
+      "x": 10,
+      "y": 220
+    },
+    {
+      "player": "Ash813ce",
+      "text": "make blue hat from cloth strip and wood splinter",
+      "status": "succeeded",
+      "message": "D20 16 / 10: Ash813ce creates blue hat (item-113) from cloth strip and wood splinter.",
+      "roll": 16,
+      "x": 10,
+      "y": 220
+    },
+    {
+      "player": "Ash813ce",
+      "text": "equip blue hat",
+      "status": "succeeded",
+      "message": "Ash813ce: equip blue hat.",
+      "x": 10,
+      "y": 220
+    },
+    {
+      "player": "Ash813ce",
+      "text": "give blue hat to Ember813da",
+      "status": "succeeded",
+      "message": "Ash813ce: give blue hat → Ember813da.",
+      "x": 10,
+      "y": 220
+    },
+    {
+      "player": "Ember813da",
+      "text": "equip blue hat",
+      "status": "succeeded",
+      "message": "Ember813da: equip blue hat.",
+      "x": 11,
+      "y": 220
+    },
+    {
+      "player": "Ember813da",
+      "text": "drop blue hat",
+      "status": "succeeded",
+      "message": "Ember813da: drop blue hat.",
+      "x": 11,
+      "y": 220
+    },
+    {
+      "player": "Ash813ce",
+      "text": "walk to 8, 220",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 8,
+      "y": 220
+    },
+    {
+      "player": "Ash813ce",
+      "text": "take item-113",
+      "status": "succeeded",
+      "message": "Ash813ce: take blue hat.",
+      "x": 10,
+      "y": 220
+    },
+    {
+      "player": "Ash813ce",
+      "text": "equip blue hat",
+      "status": "succeeded",
+      "message": "Ash813ce: equip blue hat.",
+      "x": 10,
+      "y": 220
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "checks": [
+    "full ordered launcher stop and fresh-process restart",
+    "both native actors resume inside formerly blocked native trunk cells",
+    "positions, HP, level, gold, native inventory, crafted wearable and wood resource preserved",
+    "native canopy destruction and all trunk cells remain cleared",
+    "NPC personal memory and canonical DM facts retained",
+    "completed shared adventure remains completed"
+  ],
+  "players": [
+    {
+      "name": "Ash",
+      "x": 30,
+      "y": 197,
+      "adventure": "completed"
+    },
+    {
+      "name": "Bram",
+      "x": 31,
+      "y": 197,
+      "adventure": "completed"
+    }
+  ]
+}

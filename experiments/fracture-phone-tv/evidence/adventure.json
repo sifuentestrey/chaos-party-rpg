@@ -1,0 +1,285 @@
+{
+  "status": "passed",
+  "checks": [
+    "two recovered phones bind distinct actors",
+    "native quest completion and reward",
+    "conversation, combat, manipulation rejection, doors and forest",
+    "TV leaves original browser storage untouched",
+    "no browser errors"
+  ],
+  "events": [
+    {
+      "text": "look around",
+      "status": "succeeded",
+      "message": "rat (40,219); rat (33,234); rat (38,236)",
+      "x": 41,
+      "y": 235,
+      "hp": 100,
+      "gold": 5,
+      "weapon": "sword1",
+      "zone": "The Refuge"
+    },
+    {
+      "text": "look around",
+      "status": "succeeded",
+      "message": "sword2 (19,233); rat (12,223); rat (17,224); rat (33,234); rat (20,237); rat (21,235); octocat (10,235); villagegirl (15,222); sorcerer (15,246)",
+      "x": 16,
+      "y": 233,
+      "hp": 100,
+      "gold": 5,
+      "weapon": "sword1",
+      "zone": "The Refuge"
+    },
+    {
+      "text": "walk to 46, 202",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 46,
+      "y": 202,
+      "hp": 100,
+      "gold": 5,
+      "weapon": "sword1",
+      "zone": "The Refuge"
+    },
+    {
+      "text": "talk to guard",
+      "status": "succeeded",
+      "message": "Spoke to guard. See their response.",
+      "x": 46,
+      "y": 195,
+      "hp": 100,
+      "gold": 5,
+      "weapon": "sword1",
+      "zone": "The Refuge"
+    },
+    {
+      "text": "ask guard for a quest",
+      "status": "succeeded",
+      "message": "Asked guard for an adventure. Check your quest.",
+      "x": 46,
+      "y": 195,
+      "hp": 100,
+      "gold": 5,
+      "weapon": "sword1",
+      "zone": "The Refuge",
+      "quest": {
+        "type": "kill",
+        "target": "rat",
+        "count": 3,
+        "progress": 0,
+        "reward": "burger",
+        "xp": 10,
+        "description": "Defeat 3 rat!"
+      }
+    },
+    {
+      "text": "attack rat",
+      "status": "succeeded",
+      "message": "rat defeated. Check nearby loot.",
+      "x": 46,
+      "y": 207,
+      "hp": 85,
+      "gold": 12,
+      "weapon": "sword1",
+      "zone": "The Refuge",
+      "quest": {
+        "type": "kill",
+        "target": "rat",
+        "count": 3,
+        "progress": 1,
+        "reward": "burger",
+        "xp": 10,
+        "description": "Defeat 3 rat!"
+      }
+    },
+    {
+      "text": "attack rat",
+      "status": "succeeded",
+      "message": "rat defeated. Check nearby loot.",
+      "x": 41,
+      "y": 211,
+      "hp": 65,
+      "gold": 18,
+      "weapon": "sword1",
+      "zone": "The Refuge",
+      "quest": {
+        "type": "kill",
+        "target": "rat",
+        "count": 3,
+        "progress": 2,
+        "reward": "burger",
+        "xp": 10,
+        "description": "Defeat 3 rat!"
+      }
+    },
+    {
+      "text": "attack rat",
+      "status": "succeeded",
+      "message": "rat defeated. Check nearby loot.",
+      "x": 48,
+      "y": 218,
+      "hp": 68,
+      "gold": 24,
+      "weapon": "sword1",
+      "zone": "The Refuge",
+      "quest": {
+        "type": "kill",
+        "target": "rat",
+        "count": 3,
+        "progress": 3,
+        "reward": "burger",
+        "xp": 10,
+        "description": "Defeat 3 rat!",
+        "completed": true
+      }
+    },
+    {
+      "text": "walk to 34, 210",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 34,
+      "y": 210,
+      "hp": 76,
+      "gold": 24,
+      "weapon": "sword1",
+      "zone": "The Refuge",
+      "quest": {
+        "type": "kill",
+        "target": "rat",
+        "count": 3,
+        "progress": 3,
+        "reward": "burger",
+        "xp": 10,
+        "description": "Defeat 3 rat!",
+        "completed": true
+      }
+    },
+    {
+      "text": "pick up sword2",
+      "status": "succeeded",
+      "message": "sword2 collected.",
+      "x": 34,
+      "y": 210,
+      "hp": 76,
+      "gold": 24,
+      "weapon": "sword1",
+      "zone": "The Refuge",
+      "quest": {
+        "type": "kill",
+        "target": "rat",
+        "count": 3,
+        "progress": 3,
+        "reward": "burger",
+        "xp": 10,
+        "description": "Defeat 3 rat!",
+        "completed": true
+      }
+    },
+    {
+      "text": "equip sword2",
+      "status": "succeeded",
+      "message": "Equipment changed.",
+      "x": 34,
+      "y": 210,
+      "hp": 80,
+      "gold": 24,
+      "weapon": "sword2",
+      "zone": "The Refuge",
+      "quest": {
+        "type": "kill",
+        "target": "rat",
+        "count": 3,
+        "progress": 3,
+        "reward": "burger",
+        "xp": 10,
+        "description": "Defeat 3 rat!",
+        "completed": true
+      }
+    },
+    {
+      "text": "move the tent",
+      "status": "blocked",
+      "message": "I don't see an interactable tent nearby. Scenery cannot be moved.",
+      "x": 34,
+      "y": 210,
+      "hp": 96,
+      "gold": 24,
+      "weapon": "sword2",
+      "zone": "The Refuge",
+      "quest": {
+        "type": "kill",
+        "target": "rat",
+        "count": 3,
+        "progress": 3,
+        "reward": "burger",
+        "xp": 10,
+        "description": "Defeat 3 rat!",
+        "completed": true
+      }
+    },
+    {
+      "text": "walk to 27, 209",
+      "status": "succeeded",
+      "message": "Travelled through the door into another area.",
+      "x": 155,
+      "y": 286,
+      "hp": 100,
+      "gold": 24,
+      "weapon": "sword2",
+      "zone": "Shattered Coast",
+      "quest": {
+        "type": "kill",
+        "target": "rat",
+        "count": 3,
+        "progress": 3,
+        "reward": "burger",
+        "xp": 10,
+        "description": "Defeat 3 rat!",
+        "completed": true
+      }
+    },
+    {
+      "text": "leave building",
+      "status": "succeeded",
+      "message": "Travelled through the door into another area.",
+      "x": 27,
+      "y": 209,
+      "hp": 100,
+      "gold": 24,
+      "weapon": "sword2",
+      "zone": "The Refuge",
+      "quest": {
+        "type": "kill",
+        "target": "rat",
+        "count": 3,
+        "progress": 3,
+        "reward": "burger",
+        "xp": 10,
+        "description": "Defeat 3 rat!",
+        "completed": true
+      }
+    },
+    {
+      "text": "walk to 34, 188",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 34,
+      "y": 188,
+      "hp": 100,
+      "gold": 24,
+      "weapon": "sword2",
+      "zone": "Glitch Woods",
+      "quest": {
+        "type": "kill",
+        "target": "rat",
+        "count": 3,
+        "progress": 3,
+        "reward": "burger",
+        "xp": 10,
+        "description": "Defeat 3 rat!",
+        "completed": true
+      }
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,116 @@
+name: Fracture integration spike (non-release)
+on:
+  push:
+    branches: ['spike/fracture-phone-tv']
+    paths:
+      - 'experiments/fracture-phone-tv/**'
+      - '.github/workflows/fracture-spike.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bridge-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test current multiplayer bridge and action contract (plus legacy regressions)
+        run: node --test experiments/fracture-phone-tv/*.test.mjs
+      - name: Validate current Mac beta launcher and pinned package manager
+        run: |
+          bash -n experiments/fracture-phone-tv/Start_Fracture_Chaos_Test.command
+          grep -Fq 'pnpm@10.34.9' experiments/fracture-phone-tv/Start_Fracture_Chaos_Test.command
+          grep -Fq 'apply-party-overlay.mjs' experiments/fracture-phone-tv/Start_Fracture_Chaos_Test.command
+          grep -Fq 'party-bridge.mjs' experiments/fracture-phone-tv/Start_Fracture_Chaos_Test.command
+  pinned-fracture-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Clone pinned upstream only in isolated runner directory
+        run: |
+          git clone https://github.com/georgeglarson/Fracture.git "$RUNNER_TEMP/Fracture"
+          git -C "$RUNNER_TEMP/Fracture" checkout 642c00a8a2d3a95979e85bbfa3f62deee611a4a6
+          test "$(git -C "$RUNNER_TEMP/Fracture" rev-parse HEAD)" = 642c00a8a2d3a95979e85bbfa3f62deee611a4a6
+      - name: Install package manager and Fracture dependencies
+        run: |
+          npm install --global pnpm@10
+          cd "$RUNNER_TEMP/Fracture"
+          pnpm install --frozen-lockfile
+      - name: Apply actual game-night party adapter to disposable Fracture clone
+        run: node experiments/fracture-phone-tv/apply-party-overlay.mjs "$RUNNER_TEMP/Fracture"
+      - name: Verify safe repeat application and protection of saved state
+        run: |
+          FRACTURE_TEST_ROOT="$RUNNER_TEMP/Fracture" node --test experiments/fracture-phone-tv/party-overlay.test.mjs
+      - name: Compile Fracture client and server with adapter
+        run: |
+          cd "$RUNNER_TEMP/Fracture"
+          pnpm run build:server
+          pnpm run build:client
+      - name: Run pinned Fracture tests with multiplayer beta adapter included
+        run: |
+          cd "$RUNNER_TEMP/Fracture"
+          pnpm test
+      - name: Verify real beta-adapted Fracture server boots and serves a client without AI keys
+        run: |
+          export CHAOS_ACTOR_KEY=disposable-ci-actor-key
+          export CHAOS_TV_KEY=disposable-ci-tv-key
+          export CHAOS_WORLD_MODULE="$GITHUB_WORKSPACE/experiments/fracture-phone-tv/chaos-world.mjs"
+          cd "$RUNNER_TEMP/Fracture"
+          NO_DEBUG=1 node dist/server/ts/main.js > "$RUNNER_TEMP/fracture-startup.log" 2>&1 &
+          game_pid=$!
+          trap 'kill "$game_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 35); do
+            if curl --fail --silent --max-time 2 http://127.0.0.1:8000/ -o "$RUNNER_TEMP/fracture-index.html"; then ready=1; break; fi
+            if ! kill -0 "$game_pid" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then tail -80 "$RUNNER_TEMP/fracture-startup.log"; exit 1; fi
+          test -s "$RUNNER_TEMP/fracture-index.html"
+          echo 'Fracture game server responds to HTTP, AI unset.'
+          cd "$GITHUB_WORKSPACE"
+          CHAOS_BETA_TEST=1 FRACTURE_ROOT="$RUNNER_TEMP/Fracture" node experiments/fracture-phone-tv/verify-native-dm.mjs
+          CHAOS_BETA_TEST=1 FRACTURE_ROOT="$RUNNER_TEMP/Fracture" node experiments/fracture-phone-tv/verify-native-objects.mjs
+          CHAOS_BETA_TEST=1 FRACTURE_ROOT="$RUNNER_TEMP/Fracture" node experiments/fracture-phone-tv/verify-native-portable.mjs
+          CHAOS_BETA_TEST=1 FRACTURE_ROOT="$RUNNER_TEMP/Fracture" node experiments/fracture-phone-tv/verify-rally.mjs
+
+  mac-source-kit:
+    # Strict owner gate: never package before physical Mac/phone/TV acceptance.
+    if: false
+    name: Verified Mac beta source kit
+    needs: [bridge-unit, pinned-fracture-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package committed isolated game-night beta (no secrets or saved games)
+        run: |
+          python3 experiments/fracture-phone-tv/package-beta.py "$RUNNER_TEMP/Chaos_Party_Fracture_Beta.zip"
+          unzip -t "$RUNNER_TEMP/Chaos_Party_Fracture_Beta.zip"
+          python3 - "$RUNNER_TEMP/Chaos_Party_Fracture_Beta.zip" <<'PY'
+          import sys,zipfile
+          p=sys.argv[1]
+          with zipfile.ZipFile(p) as z:
+              names=z.namelist()
+              assert any(n.endswith('/Start_Chaos_Party.command') for n in names)
+              assert any(n.endswith('/SOURCE.txt') for n in names)
+              assert any(n.endswith('/docs/CHAOS_TO_FRACTURE_PARITY.md') for n in names), 'The release warning must ship with the experimental kit'
+              assert not any(n.endswith(('.db','.sqlite','.env')) or '/node_modules/' in n or '/data/' in n for n in names)
+              print('Confirmed: launcher + source identity; no databases, credentials or installed dependencies')
+          PY
+      - name: Attach downloadable Mac beta kit to this successful build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Chaos-Party-Fracture-Mac-Source-Kit
+          path: |
+            ${{ runner.temp }}/Chaos_Party_Fracture_Beta.zip
+            ${{ runner.temp }}/Chaos_Party_Fracture_Beta.zip.sha256
+          if-no-files-found: error
+          retention-days: 7

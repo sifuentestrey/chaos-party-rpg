@@ -1,0 +1,52 @@
+/** Real browser fusion acceptance; creates characters only in an explicitly disposable room. */
+import fs from 'node:fs';import path from 'node:path';import assert from 'node:assert/strict';import {createRequire} from 'node:module';
+if(process.env.CHAOS_BETA_TEST!=='1'||!process.env.CHAOS_TEST_ROOM_FILE||!process.env.CHAOS_BROWSER_TOOLS||!process.env.CHAOS_TV_KEY)throw Error('Explicit disposable room, external browser tools and TV key required');
+const {chromium}=createRequire(path.join(process.env.CHAOS_BROWSER_TOOLS,'package.json'))('playwright-core');
+const room=JSON.parse(fs.readFileSync(process.env.CHAOS_TEST_ROOM_FILE,'utf8')),players=[],base=process.env.CHAOS_TEST_BRIDGE||'http://localhost:4748',out=process.env.CHAOS_BROWSER_REPORT_DIR||'/tmp/chaos-fusion-report';fs.mkdirSync(out,{recursive:true});
+let browser;const sleep=ms=>new Promise(r=>setTimeout(r,ms)),events=[];
+async function until(p,predicate){for(let n=0;n<40;n++){const s=await state(p);if(predicate(s))return s;
+ await sleep(150);}throw Error('State failed to converge');}
+const state=p=>fetch(base+'/state?token='+p.token).then(r=>r.json());
+async function act(page,p,text,wait=true){await sleep(220);let s=await state(p);if(wait&&s.turn)await sleep(Math.max(0,s.turn.deadline-Date.now()+100));const reply=page.waitForResponse(r=>r.url()===base+'/action'&&r.request().method()==='POST');
+ await page.locator('#text').fill(text);
+ await page.locator('#send-action').click();const r=await reply,b=await r.json();
+ assert.equal(r.status(),202,b.error);for(let i=0;i<200;i++){await sleep(150);s=await state(p);const result=s.results.find(r=>r.id===b.id);if(result&&!['received','started'].includes(result.status)){events.push({player:p.name,text,status:result.status,message:result.message,roll:result.roll,x:s.actor.x,y:s.actor.y});console.log(JSON.stringify(events.at(-1)));return {s,result};}}throw Error('Action timeout');}
+(async()=>{for(const [i,name] of ['Ash','Ember'].entries()){const r=await fetch(base+'/pair',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key:room.join,name:name+Date.now().toString(36).slice(-5),color:i?'Rose':'Blue'})});
+ assert.equal(r.status,201);const b=await r.json();players.push({name:JSON.parse(fs.readFileSync(process.env.CHAOS_TEST_ROOM_FILE)).players.at(-1).name,token:b.token});}browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox']});const pages=[],errors=[];for(const p of players){const c=await browser.newContext({viewport:{width:390,height:844},isMobile:true}),page=await c.newPage();page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(base+'/join?key='+room.join+'#recover='+p.token);
+ await page.locator('#play').waitFor({state:'visible'});
+ await page.waitForFunction(()=>document.getElementById('stats').textContent.startsWith('HP'));pages.push(page);}await sleep(500);let s=await state(players[0]);
+ assert.equal(s.actor.chaos.bag.length,2);const id=s.actor.id;
+ await act(pages[1],players[1],`walk to ${s.actor.x+1}, ${s.actor.y}`,false);let made;if(!s.actor.chaos.bag.some(i=>i.name==='blue hat')&&!(await state(players[1])).actor.chaos.bag.some(i=>i.name==='blue hat')){for(let n=0;n<8;n++){made=await act(pages[0],players[0],'make blue hat from cloth strip and wood splinter');if(made.result.status==='succeeded')break;}assert.equal(made.result.status,'succeeded');
+ assert.ok(made.result.roll);
+ assert.equal(made.s.actor.chaos.bag.filter(i=>i.name==='blue hat').length,1);}if((await state(players[0])).actor.chaos.bag.some(i=>i.name==='blue hat')){await act(pages[0],players[0],'equip blue hat');
+ assert.equal((await state(players[0])).actor.chaos.wearables[0].name,'blue hat');
+ await act(pages[0],players[0],`give blue hat to ${players[1].name}`);
+ assert.ok(!(await state(players[0])).actor.chaos.bag.some(i=>i.name==='blue hat'));
+ await until(players[1],s=>s.actor?.chaos?.bag.some(i=>i.name==='blue hat'));}await act(pages[1],players[1],'equip blue hat');
+const tv=await browser.newPage({viewport:{width:1280,height:720}});tv.on('pageerror',e=>errors.push(e.message));
+ await tv.goto('http://localhost:8000/?chaosTV='+encodeURIComponent(base)+'&tvKey='+encodeURIComponent(process.env.CHAOS_TV_KEY));
+ await tv.locator('#chaos-tv-controls').waitFor();
+ await sleep(1800);
+ await tv.screenshot({path:path.join(out,'fusion-tv.png')});
+ await pages[1].getByText('Gear and quest',{exact:true}).click();
+ await pages[1].screenshot({path:path.join(out,'fusion-phone.png'),fullPage:true});
+ await act(pages[1],players[1],'drop blue hat');const dropped=(await state(players[1])).actor.chaos.ground.find(i=>i.name==='blue hat');
+ assert.ok(dropped);const dropState=await state(players[1]);
+ assert.deepEqual(dropped.tile,{x:dropState.actor.x,y:dropState.actor.y});
+ let away;
+ for(const [dx,dy] of [[-3,0],[3,0],[0,-3],[0,3]]){
+  away=await act(pages[0],players[0],`walk to ${dropped.tile.x+dx}, ${dropped.tile.y+dy}`,false);
+  const d=Math.abs(away.s.actor.x-dropped.tile.x)+Math.abs(away.s.actor.y-dropped.tile.y);
+  if(away.result.status==='succeeded'&&d>2&&d<=8)break;
+ }
+ assert.ok(Math.abs(away.s.actor.x-dropped.tile.x)+Math.abs(away.s.actor.y-dropped.tile.y)>2,'Must actually walk away before testing auto-approach');
+ const beforePickup=[away.s.actor.x,away.s.actor.y];
+ const pickup=await act(pages[0],players[0],'take '+dropped.id);
+ assert.equal(pickup.result.status,'succeeded');assert.notDeepEqual([pickup.s.actor.x,pickup.s.actor.y],beforePickup);
+ assert.ok((await state(players[0])).actor.chaos.bag.some(i=>i.id===dropped.id));
+ await act(pages[0],players[0],'equip blue hat');
+ await pages[0].reload();
+ await pages[0].waitForFunction(()=>document.getElementById('stats').textContent.startsWith('HP'));
+ assert.ok((await state(players[0])).actor.chaos.wearables.some(i=>i.id===dropped.id));
+ assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'fusion.json'),JSON.stringify({status:'passed',checks:['original Chaos crafting on actual Fracture actors','server D20 result','visible wearable','nearby gift transfers ownership','drop at real native coordinates and auto-approach pickup','phone reload retains crafted equipment','no browser errors'],events,errors},null,2));})().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{await browser?.close();});

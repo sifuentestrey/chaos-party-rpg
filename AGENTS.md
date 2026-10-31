@@ -1,3 +1,79 @@
+# CURRENT OWNER STRICT ART GATE — NATIVE FRACTURE ONLY (October 30, 2026)
+
+On `spike/fracture-phone-tv`, **never create, draw, import, seed, or invent visual assets, scenery, props, trees, furniture, buildings, maps, tiles or placeholder objects.** Reuse only verified existing Fracture map art, native objects, sprites, collision and animation. Existing synthetic fixture logic is opt-in for isolated legacy tests only (`allowSyntheticFixtures:true`), never for the live Fracture bridge. Preserve all existing saves, including older synthetic records; do not silently delete them. Unsupported native rock, bush, grass, furniture, water or structure assets must remain honestly unsupported until their authoritative identity, collision and rendering are mapped.
+
+Environmental gameplay is D&D-like, **not visible HP grinding**: a validated existing oak can be felled/chopped with one original D20 check and persisted real trunk-collision consequence, with hidden durability. No new wood prop drops. Do not bypass the authoritative mutation boundary or report fake success. Fresh Refuge Trial craft voting is disabled because native-art-only mode cannot create unverified crafted props; older saved craft choices need an explicit recovery path. No public release, package, or merge until latest-head pinned native build/browser and physical Mac/phone/TV gates are met. See `docs/FRACTURE_GAME_NIGHT_RELEASE.md` and `docs/CHAOS_TO_FRACTURE_PARITY.md`.
+
+---
+
+# HARD RELEASE GATE — CHAOS-TO-FRACTURE PARITY NOT ACHIEVED (owner correction, October 29)
+
+**Read [docs/CHAOS_TO_FRACTURE_PARITY.md](docs/CHAOS_TO_FRACTURE_PARITY.md) before work or release claims.** The owner correctly challenged previous descriptions of the Fracture beta as the game being finished. Current Fracture work is a *separate engine/integration playtest*, NOT a migration of the original Chaos Party's Crown Job, seventeen-scene Dawn Bell adventure, customizable characters, dice/advantage, table/rug/fire/ownership/crafting mechanics, NPC trust/witness memory, majority travel voting, campaign maps/saves, or creative DM. The canonical original `luna/visual-game-night-release` contains much more implemented gameplay and must remain protected.
+
+Don't confuse Fracture's native rat quest or standalone account persistence with Chaos parity. STOP calling the current beta "finished Chaos Party" or suggesting feature migration is complete. Before any more wholesale Fracture code changes, compare the cost/risk of **preserving the original Chaos game engine and upgrading rendering** versus individually porting its mechanics to Fracture. Require a demonstrable original Chaos scenario with real object/dice/ownership/NPC consequence behavior, not merely a bigger action parser or green unit tests. Preserve both branches and player saves. No merges/deployment/costs without approval.
+
+---
+
+# OWNER OPERATING RULE — BRILLIANT BUT LAZY GAME DEVELOPER (October 29, 2026)
+
+**You are an exceptionally capable, deliberately resource-efficient senior game developer. Be lazy about unnecessary work, NOT lazy about correctness or finish quality.** The active deliverable is the playable game-night beta in [issue #12](https://github.com/sifuentestrey/chaos-party-rpg/issues/12), on `spike/fracture-phone-tv`. This section takes precedence over older prototype-era process instructions below.
+
+## Fix mechanics, not phrases
+
+- The owner's playtest examples **"stop"**, **"move left"**, **"attack rat"**, and **"move the tent"** are *symptoms*, not a finite test menu. Do not respond by piling up `if (text === "...")` clauses. Identify the reusable missing capability and fix it once for whole **intent categories** (cancel/interruption; movement and pathing; target/action interaction; combat/damage; scene-object capabilities and constraints).
+- Build a reusable **action contract**: parse any player's natural phrasing to a typed intent + grounded target + parameters; validate actor, world/zone, range, path, permissions and available mechanics; execute through Fracture's authoritative gameplay APIs; return an explicit result/state acknowledgement. Separate `received`, `started`, `succeeded`, `failed`, `blocked` and `cancelled`. Never narrate success unless the real engine confirmed it.
+- Use existing deterministic commands for standard verbs; optional AI is a **semantic parser/fallback**, not the damage engine or source of world truth. Unsupported possibilities should be grounded and intelligible, not an endless hard-coded phrase list. Distinguish moving a player from moving an object.
+- **STOP must interrupt the current authorized player's motion/attack promptly, even during an action lock.** Investigate cancellation end-to-end in pathfinding, state, animation and server target. Future multiplayer STOP cannot cancel another person's actor. Solve underlying combat hit cadence and damage reporting, not just the rat's health value.
+- Test **families**, not one phrase: synonyms, unexpected wording, various actors/targets, multiple entities with shared names, long distance, impassable obstacles, different location, malformed requests, reconnect and concurrency. Add focused regression/property-style cases for every underlying bug. A successful parse is not a successful action.
+
+## Brilliant-but-lazy usage policy
+
+1. **Reuse first:** inventory/search installed code, Fracture's NPCs, maps, animations, movement/pathfinding, combat, quest and interaction APIs, plus applicable previously working Chaos systems and properly licensed open-source assets. Never build another framework, renderer, dialogue engine, quest system, network stack, or placeholder scene when a suitable tested component exists.
+2. **Use the least expensive adequate method:** small targeted searches/reads, existing tests and scripts, lean diffs. Start with a single primary agent. Avoid parallel agents/reviewers unless clearly cheaper overall or independent tasks require them; multiple agents consume usage. If selectable, prefer Low/Medium reasoning and standard speed for routine coding; reserve High reasoning and premium models for genuinely difficult architecture/security/root-cause debugging. Use cheap scripts/tools (not agents) for mechanical changes where reliable.
+3. **Read just what you need:** read this top instruction, issue #12, active release tracker, current branch status and relevant files. Do not repeatedly ingest giant READMEs, historical milestone directories, or entire codebases. Keep concise progress notes in `docs/FRACTURE_GAME_NIGHT_RELEASE.md` so a resumed session needs minimal context.
+4. **Plan briefly, implement continuously:** work end-to-end milestone by milestone, reuse code, make the smallest clean reusable changes, avoid full rewrites or overengineering. Run focused checks after a change and full build/integration/real-play verification at meaningful checkpoints. Do not rerun all thousands of tests for every one-line edit or enter retry loops without diagnosis.
+5. **Escalate only consequential decisions:** spending, secret access, destructive saves/data, licensing/security risk, public deployment, irreversible branch/merge changes, or genuine blocker. Do not ask the owner to babysit routine fixes. No paid services without explicit approval. Do not invent free unlimited API access.
+6. **Value verified fun over output volume:** prioritize separate controllable phone characters, reliable actions/combat, free travel, reactive NPCs, full-screen shared TV and Mac game-night packaging before optional features or cosmetic redesign. Automated tests alone are not gameplay proof; do not label an incomplete prototype a finished game.
+
+**Release target:** strongest genuinely playable Mac family beta by the end of October 29, 2026, with the accepted/not accepted list documented honestly. Do not equate a fixed single command with a fixed action interpreter, and do not falsely promise finished 20-player creative-AI gameplay without physical evidence.
+
+---
+
+# TOP PRIORITY — OWNER SAYS FINISH GAME-NIGHT BUILD TODAY (October 29, 2026)
+
+**Read [issue #12](https://github.com/sifuentestrey/chaos-party-rpg/issues/12) FIRST.** Its new top section replaces the old small STOP/movement fix and the original one-character research spike: **build the strongest honest, playable Mac + phone + TV Chaos Party game-night beta achievable today**. Work continuously through independent phone actors, world exploration, reactive actions, combat, optional DM and a tested Mac package. Do not stop at another plan, generic dashboard, automated test count, or single actor controlled by 20 phones.
+
+**Nonnegotiable:** Only modify isolated `spike/fracture-phone-tv` / disposable pinned upstream worktree, never merge or overwrite original `luna/visual-game-night-release`, saves, credentials or main. No spending, live deployment, unsafe auth or fake state. If full 12–20 player/creative AI scope cannot pass genuine tests today, ship and label a smaller verified beta; don't fabricate acceptance. Track milestone outcomes and evidence in `docs/FRACTURE_GAME_NIGHT_RELEASE.md`.
+
+**Codex is not automatically started by changing these files; user must invoke it or another connected coding runner.**
+
+---
+
+# ACTIVE CODEX TASK — PHYSICAL PLAYTEST FOLLOW-UP (October 29, 2026)
+
+**FIRST read issue [#12](https://github.com/sifuentestrey/chaos-party-rpg/issues/12).** The owner has now ACTUALLY run this Fracture bridge on their Intel Mac and iPhone: `attack the rat` worked at least enough to trigger an action, but the rat barely lost HP; `stop`, `move left`, and `move the tent` did not work. This is now the latest authorized implementation milestone, superseding the original "try one attack" proof-of-concept. Codex: investigate real combat/HIT and HP, implement movement + immediate STOP + truthful action outcomes + grounded object feedback, then provide real evidence. Issue #12 contains explicit work order, tests, boundaries and acceptance criteria. Follow it rather than generating more RPG locations, UI polish or content.
+
+Only code on `spike/fracture-phone-tv`, keep `luna/visual-game-night-release` and its saves untouched, retain the separate upstream Fracture checkout and account separation. No merge/deploy, no unauthorized AI provider, no paid API calls, no raw movement/HP exploits. Do not conflate accepted messages with succeeded actions. **Codex is NOT running automatically simply because this issue exists.**
+
+---
+
+# CURRENT OWNER OVERRIDE — FRACTURE MIGRATION SPIKE, 2026-10-29
+
+**THIS BRANCH HAS A DIFFERENT TASK FROM THE OLD CHAOS PARTY BUILD.** The owner stopped expanding the custom prototype after a failed hands-on playtest and directed an investigation into adapting an **already playable RPG** instead. The chosen FIRST CANDIDATE is Fracture, **not yet an approved completed migration**.
+
+**READ FIRST:** [docs/FRACTURE_MIGRATION_SPIKE.md](docs/FRACTURE_MIGRATION_SPIKE.md). This is the sole active scope for branch `spike/fracture-phone-tv`. The old instructions below and `START_HERE.md` remain for provenance only; their old build/AI qualification/packaging queues do NOT apply here.
+
+**ABSOLUTE SEPARATION:**
+- Original Chaos source, `luna/visual-game-night-release`: preserve unchanged, including its Colyseus/PartyFrame network, saves, packages and historical Codex work. Not a target for experimental edits.
+- New migration spike, `spike/fracture-phone-tv`: only isolated docs/research/prototypes. No merge into `main` or canonical release without owner-approved verified proof.
+- Candidate external engine, `georgeglarson/Fracture` at upstream commit `642c00a8a2d3a95979e85bbfa3f62deee611a4a6`: separate checkout, separate database, code MPL 2.0, content CC BY-SA 3.0; inspect art provenance. Do not treat this as Chaos code or import it wholesale.
+
+**NEVER MIX** Socket.IO with Colyseus by guessing, overwrite authentic player saves, conflate account passwords and recovery PINs, let AI bypass server-authoritative movement/hits, or pretend a README claim equals successful local runtime testing. No paid services, external/public deployments, credential exposure or destructive operations.
+
+**FIRST MILESTONE ONLY:** independently boot and inspect unmodified Fracture. Then connect ONE phone-driven free-form action to actual Fracture movement/combat with a visible on-TV consequence, and test with two controllers. Stop if that is not demonstrably workable. Full details and objective acceptance in the migration spike document.
+
+---
+
 ## Current owner instruction — consolidation, October 29, 2026
 
 Start with [START_HERE.md](START_HERE.md). It is the single current handoff and work queue. Work in this checkout on `luna/visual-game-night-release`; the name is historical. Older branch-specific assignments and the instructions below are historical context, not competing active tasks. The owner asked to consolidate first and move to a new chat. Do not automatically resume old milestones, create additional work branches, delegate old assignments, merge into main, or deploy from a stale document. Preserve product and safety requirements below. Future implementation follows the owner's new-chat direction.

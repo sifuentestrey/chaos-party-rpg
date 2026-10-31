@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "checks": [
+    "actual launcher Control-C stops services",
+    "native save acknowledgment precedes server stop",
+    "SQLite quick_check ok",
+    "active actors retain level, gold and exact engine position"
+  ],
+  "players": [
+    {
+      "player": "Terraf8h",
+      "level": 1,
+      "gold": 5,
+      "x": 39,
+      "y": 209
+    },
+    {
+      "player": "Flintf8h",
+      "level": 1,
+      "gold": 5,
+      "x": 57,
+      "y": 210
+    }
+  ]
+}

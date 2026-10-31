@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "model": "openai/gpt-oss-120b",
+  "canonical": "D20 2 / 8: CoreAsh8wbxe cannot move camp table this time.",
+  "outcome": "failure",
+  "story": {
+    "text": "CoreAsh8wbxe tries to push the camp table east, but the table stays stubbornly where it is, refusing to budge this time.",
+    "dialogue": []
+  },
+  "lastError": null
+}
