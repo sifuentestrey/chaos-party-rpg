@@ -18,7 +18,7 @@ async function action(token,text){
 }
 async function success(token,text){for(let n=0;n<12;n++){const r=await action(token,text);assert.ok(['failed','succeeded'].includes(r.r.status),r.r.message);if(r.r.status==='succeeded')return r;}assert.fail('Twelve genuine D20 failures: '+text);}
 try{
- await app.start();base='http://127.0.0.1:'+app.server.address().port;const suffix=Math.random().toString(36).slice(2,6),tokens=[];
+ app.room.phase='playing';await app.start();base='http://127.0.0.1:'+app.server.address().port;const suffix=Math.random().toString(36).slice(2,6),tokens=[];
  for(const name of ['Object_'+suffix,'Helper_'+suffix]){const p=await post('/pair',{key:app.room.join,name,role:'knight',perk:'lucky'});assert.equal(p.status,201);tokens.push(p.token);}
  let states,deadline=Date.now()+20000;do{states=await Promise.all(tokens.map(get));if(states.every(s=>s.actor?.ready&&s.actor.chaos))break;await sleep(200);}while(Date.now()<deadline);
  assert.ok(states.every(s=>s.actor?.ready));assert.notEqual(states[0].actor.id,states[1].actor.id);assert.equal(states[0].actor.chaos.bag.length,0,'Native-only mode must not create crafting props');

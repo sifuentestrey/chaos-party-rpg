@@ -1,5 +1,9 @@
 # Chaos Party → Fracture: Feature-Parity Audit (2026-10-29)
 
+## Character creation slice — October 31, 2026
+
+The experimental branch now has a before-adventure creator and later cosmetic wardrobe, using Fracture's six animated outfit sheets plus the owner-approved small recolor/ear/accessory compositor. Four saved classes have real native starter abilities, with a native-health Mend for Healer. Four phone/TV creation and combat flows, save recovery/restart, and a twenty-native-actor software smoke test passed locally. See `FRACTURE_GAME_NIGHT_RELEASE.md` for exact acceptance and limitations. This delivers a bounded character-creation slice; it does not migrate the original campaign, full wardrobe, all original classes, arbitrary body shapes, or establish physical Mac/20-device readiness.
+
 ## Verified-art small-rock carry/drop — October 30, 2026 (pinned native CI passed; physical/browser rock playtest pending)
 
 **Native asset inventory before enabling pickup:** the pinned Fracture world map contains **six complete two-cell small-rock art signatures (atlas IDs 98/99)**, but **zero** occurrences of the one-cell pebble ID 218. The one-cell pebble therefore remains nonportable/unsupported; no rock was created, seeded, painted or imported. Only the pre-existing, fully validated two-cell `native-stone` stamp is now eligible for carrying, subject to its native collision/layer registration.

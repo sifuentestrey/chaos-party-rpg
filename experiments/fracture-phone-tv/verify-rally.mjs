@@ -16,7 +16,7 @@ async function finalResult(token,id,timeout=12000){
  throw Error('Timed out waiting for native actor outcome');
 }
 try{
- await app.start();base='http://127.0.0.1:'+app.server.address().port;
+ app.room.phase='playing';await app.start();base='http://127.0.0.1:'+app.server.address().port;
  const tokens=[];
  for(const name of ['RallyA_'+Math.random().toString(36).slice(2,6),'RallyB_'+Math.random().toString(36).slice(2,6)]){
   const p=await post('/pair',{key:app.room.join,name});

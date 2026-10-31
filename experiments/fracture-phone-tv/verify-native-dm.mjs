@@ -45,7 +45,7 @@ async function move(token,x,y){
  throw Error('Native action rate limit did not clear');
 }
 try{
- await app.start();base='http://127.0.0.1:'+app.server.address().port;
+ app.room.phase='playing';await app.start();base='http://127.0.0.1:'+app.server.address().port;
  const tokens=[];
  for(const name of ['OakA_','OakB_']){
   const joined=await post('/pair',{key:app.room.join,name:name+Math.random().toString(36).slice(2,6),role:'knight'});

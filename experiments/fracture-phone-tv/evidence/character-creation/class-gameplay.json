@@ -1,0 +1,113 @@
+{
+  "status": "passed",
+  "events": [
+    {
+      "name": "Ash",
+      "status": "cancelled",
+      "message": "Holding still. Your attacks and path are cancelled."
+    },
+    {
+      "nativeWound": {
+        "hp": 91,
+        "maxHp": 100,
+        "x": 69,
+        "y": 221
+      }
+    },
+    {
+      "name": "Dara",
+      "status": "succeeded",
+      "message": "Reached your destination."
+    },
+    {
+      "name": "Dara",
+      "status": "succeeded",
+      "message": "Mend: Ash recovers 10 health (100/100).",
+      "abilityEffect": {
+        "id": "mend",
+        "actorId": 56110,
+        "targetId": 5961,
+        "before": 90,
+        "after": 100
+      }
+    },
+    {
+      "name": "Dara",
+      "status": "blocked",
+      "message": "Mend is ready in 20 seconds."
+    },
+    {
+      "name": "Cora",
+      "status": "succeeded",
+      "message": "Reached your destination."
+    },
+    {
+      "name": "Cora",
+      "status": "succeeded",
+      "message": "Arcane Shock! Stun enemies within three tiles for three seconds.",
+      "abilityEffect": {
+        "id": "war_cry",
+        "actorId": 5239,
+        "x": 68,
+        "y": 221,
+        "orientation": 4
+      }
+    },
+    {
+      "nativeStun": {
+        "id": 1820,
+        "until": 1793416579876
+      }
+    },
+    {
+      "name": "Ash",
+      "status": "succeeded",
+      "message": "Power Strike! Your next attack within five seconds deals double damage.",
+      "abilityEffect": {
+        "id": "power_strike",
+        "actorId": 5961,
+        "x": 69,
+        "y": 221,
+        "orientation": 4
+      }
+    },
+    {
+      "name": "Ash",
+      "status": "succeeded",
+      "message": "rat defeated. Check nearby loot."
+    },
+    {
+      "nativeDeath": {
+        "target": 1820,
+        "before": 7,
+        "after": 0,
+        "dead": true
+      }
+    },
+    {
+      "name": "Bram",
+      "status": "succeeded",
+      "message": "Phase Shift! Vanish for two seconds, lose enemy attention and slip past enemies. Walls still block you.",
+      "abilityEffect": {
+        "id": "phase_shift",
+        "actorId": 5608,
+        "x": 67,
+        "y": 221,
+        "orientation": 3
+      }
+    },
+    {
+      "name": "Bram",
+      "status": "succeeded",
+      "message": "Walked 1 tile before an obstacle stopped you."
+    },
+    {
+      "syntheticCapacity": {
+        "profiles": 20,
+        "distinctNativeActors": 20,
+        "physicalDevices": false
+      }
+    }
+  ],
+  "errors": []
+}

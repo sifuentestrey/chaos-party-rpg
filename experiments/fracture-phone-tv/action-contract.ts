@@ -1,5 +1,5 @@
 /** Chaos-owned action contract. No engine state or outcomes are invented here. */
-export type Intent = {verb: string; target?: string; dx?: number; dy?: number; steps?: number; x?: number; y?: number; judgment?: {action:string;targetId:string;ability:string;dc:number;description:string}};
+export type Intent = {verb: string; skill?: string; target?: string; dx?: number; dy?: number; steps?: number; x?: number; y?: number; judgment?: {action:string;targetId:string;ability:string;dc:number;description:string}};
 const directions: Record<string, number[]> = {left:[-1,0],west:[-1,0],right:[1,0],east:[1,0],up:[0,-1],north:[0,-1],down:[0,1],south:[0,1]};
 export function parseIntent(raw: string): Intent {
   let text = String(raw).toLowerCase().trim().replace(/[.!?]+$/, '').replace(/^(?:please\s+|i\s+(?:want to\s+|would like to\s+)?|try to\s+)+/, '').replace(/\s+/g,' ');
@@ -9,6 +9,9 @@ export function parseIntent(raw: string): Intent {
   if (/^(?:leave|exit)(?: the)?(?: building|house|tavern)?$/.test(text)) return {verb:'exit'};
   if (/^(?:enter|use)(?: the)?(?: door|building|house|tavern)$/.test(text)) return {verb:'enter'};
   if(/^(?:don't|do not|no more) (?:run|walk|move|attack|fight|keep running|keep moving|keep attacking)(?:\s+.*)?$/.test(text))return {verb:'cancel'};
+  const ability=text.match(/^(?:use (?:my )?(?:class )?ability|power strike|phase shift|arcane shock|mend)(?: (?:on|to) (.+))?$/);
+  if(ability){const skill=text.startsWith('power strike')?'power_strike':text.startsWith('phase shift')?'phase_shift':text.startsWith('arcane shock')?'war_cry':text.startsWith('mend')?'mend':null;return {verb:'ability',...(skill?{skill}:{}),...(ability[1]?{target:ability[1]}:{})};}
+  const heal=text.match(/^(?:heal|mend) (.+)$/);if(heal)return {verb:'ability',skill:'mend',target:heal[1]};
   const numbers:Record<string,string>={one:'1',two:'2',three:'3',four:'4',five:'5',six:'6',seven:'7',eight:'8',nine:'9',ten:'10',eleven:'11',twelve:'12'};
   text=text.replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b/g,w=>numbers[w]);
   const beforeDirection=text.match(/^(move|walk|run|go|step|head) (\d{1,2}) (?:steps?|tiles?) (left|right|up|down|north|south|east|west)$/);
@@ -36,8 +39,8 @@ export function parseIntent(raw: string): Intent {
 }
 export function validIntent(value: any): value is Intent {
   if (!value || typeof value!=='object' || Array.isArray(value)) return false;
-  if (!['use_item','creative','cancel','respawn','equip','quest','look','exit','enter','move','go','attack','talk','open','loot','manipulate','environment','unknown'].includes(value.verb)) return false;
-  if(Object.keys(value).some(k=>!['verb','target','dx','dy','steps','x','y','judgment'].includes(k)))return false;
+  if (!['use_item','creative','cancel','respawn','equip','quest','look','exit','enter','move','go','attack','talk','open','loot','manipulate','environment','ability','unknown'].includes(value.verb)) return false;
+  if(Object.keys(value).some(k=>!['verb','target','dx','dy','steps','x','y','judgment','skill'].includes(k)))return false;
   if(value.verb==='environment'){
      if(Object.keys(value).some(k=>!['verb','judgment'].includes(k)))return false;
      const j=value.judgment;
@@ -54,6 +57,8 @@ export function validIntent(value: any): value is Intent {
        typeof j.description==='string'&&j.description.length<=240;
    }
    if(value.judgment!==undefined)return false;
+   if(value.verb==='ability'&&Object.keys(value).some(k=>!['verb','skill','target'].includes(k)))return false;
+   if(value.skill!==undefined&&(value.verb!=='ability'||!['power_strike','phase_shift','war_cry','mend'].includes(value.skill)))return false;
    if(value.target!==undefined && (typeof value.target!=='string'||!value.target.trim()||value.target.length>180))return false;
   if(value.verb==='move')return Number.isInteger(value.dx)&&Number.isInteger(value.dy)&&Math.abs(value.dx)+Math.abs(value.dy)===1&&Number.isInteger(value.steps)&&value.steps>=1&&value.steps<=12;
   if(value.verb==='go' && value.x!==undefined)return Number.isInteger(value.x)&&Number.isInteger(value.y)&&value.x>0&&value.y>0&&value.x<1000&&value.y<1000;

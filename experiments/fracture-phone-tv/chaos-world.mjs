@@ -1,4 +1,5 @@
 /** Chaos Party object rules projected onto real Fracture tiles; no legacy networking or saves. */
+import {createPartyAbilities} from './party-abilities.mjs';
 import fs from 'node:fs';import path from 'node:path';import {randomInt} from 'node:crypto';
 import {parseItemAttempt,planItemAttempt,resolveItem,ITEM_TYPES,MATERIALS} from '../../public/world-items.js';
 import {parseEntityAttempt,planEntity,resolveEntity,advanceEntities,MATERIAL_RULES} from '../../public/entity-rules.js';
@@ -90,8 +91,9 @@ const reachable=(p,q)=>{
 const identity=p=>String(p.characterId||'');
 const name=p=>p.chaosName||p.name;
 const nativeSightCells=o=>[...nativeCells(o),...nativeCells(o,true)];
-export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.now,kindName=()=> 'villager',now=clock,npcName=n=>n.chaosName||n.name||kindName(n.kind),nativeTrees=[],nativeDoors=[],allowSyntheticFixtures=false}={}){
+export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.now,kindName=()=> 'villager',now=clock,npcName=n=>n.chaosName||n.name||kindName(n.kind),nativeTrees=[],nativeDoors=[],allowSyntheticFixtures=false,useNativeSkill}={}){
  if(!file)throw Error('Separate Fracture object save path required');
+ const abilities=createPartyAbilities({file:file+'.abilities.json',useNativeSkill,clock});
  fs.mkdirSync(path.dirname(file),{recursive:true,mode:0o700});
  let state=fs.existsSync(file)?JSON.parse(fs.readFileSync(file,'utf8')):{version:1,seed,rng:seed,nextId:1,round:0,items:{},actors:{},camp:null};
  if(state.version!==1||!state.items||!state.actors)throw Error('Unsupported Chaos object save; refusing to overwrite');
@@ -758,5 +760,5 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    return {id,fact,witnesses:witnessed.map(n=>n.name)};
   }catch(error){state=previous;throw error;}
  }
- return {prepareWorld:world=>seedNative({getWorld:()=>world}),snapshot,execute,adjudicateEnvironment,approach,isBlocked:blocked,releaseDoorHolds:doorControl.releaseActor,talk,canQuest,recordNativeDefeat,registerScenery,strikeScenery};
+ return {abilityState:abilities.snapshot,useAbility:abilities.use,prepareWorld:world=>seedNative({getWorld:()=>world}),snapshot,execute,adjudicateEnvironment,approach,isBlocked:blocked,releaseDoorHolds:doorControl.releaseActor,talk,canQuest,recordNativeDefeat,registerScenery,strikeScenery};
 }

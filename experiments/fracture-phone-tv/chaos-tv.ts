@@ -1,4 +1,6 @@
 /** Chaos-owned shared TV adapter. Ordinary Fracture is unchanged without chaosTV. */
+import {appearanceSheet,drawPreview} from './character-appearance.mjs';
+import {STARTERS,DEFAULT_APPEARANCE} from './character-profile.mjs';
 import {nativeTrees} from './chaos-native-scenery';
 import {reconcileNativeMap} from './chaos-native-map-state';
 import {Types} from '../../shared/ts/gametypes';
@@ -24,7 +26,7 @@ export function startChaosTV(game:any):void {
   const controls=document.createElement('div');controls.id='chaos-tv-controls';
   const select=document.createElement('select');select.setAttribute('aria-label','Follow player');controls.append(select);
   const fullscreen=document.createElement('button');fullscreen.textContent='Full screen';fullscreen.onclick=()=>{void document.documentElement.requestFullscreen?.();};controls.append(fullscreen);document.body.append(controls);
-  const lobby=document.createElement('div');Object.assign(lobby.style,{position:'fixed',inset:'0',background:'#121922',color:'#f4eddc',zIndex:'19000',display:'grid',placeContent:'center',textAlign:'center',font:'24px system-ui'});document.body.append(lobby);
+  const lobby=document.createElement('div');Object.assign(lobby.style,{position:'fixed',inset:'0',background:'#121922ed',color:'#f4eddc',zIndex:'19000',display:'grid',placeContent:'center',textAlign:'center',font:'24px system-ui'});document.body.append(lobby);
   const log=document.createElement('div');log.id='chaos-tv-log';document.body.append(log);
   // Spectator does not issue HURT for party actors; their server driver owns cadence.
   let cameraKey='';let observerIds=new Set<string>();
@@ -81,14 +83,27 @@ export function startChaosTV(game:any):void {
       if(followed&&Math.abs(followed.x-prop.tile.x)+Math.abs(followed.y-prop.tile.y)<=4){const label=(prop.name||prop.kind)+(prop.hp!==undefined&&prop.hp<12?' · '+prop.hp+' HP':'');game.renderer.drawText(label,x+8*scale,y-3*scale,true,prop.color||'#efbd68',true);}
     }originalEntities(dirty);
   };
+  const wardrobe=new Map();
+  function outfit(profile:any,factor=1):any {
+    const key=JSON.stringify(profile)+':'+factor;if(wardrobe.has(key))return wardrobe.get(key);
+    const entry:any={sheet:null};wardrobe.set(key,entry);if(wardrobe.size>64)wardrobe.delete(wardrobe.keys().next().value);
+    void appearanceSheet(profile,'img/1/').then((sheet:any)=>{if(factor===1)entry.sheet=sheet;else{const c=document.createElement('canvas');c.width=sheet.width*factor;c.height=sheet.height*factor;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(sheet,0,0,c.width,c.height);entry.sheet=c;}}).catch(()=>{entry.failed=true;});return entry;
+  }
+  let rosterKey='';
+  const previewTimer=setInterval(()=>{if(lobby.hidden)return;lobby.querySelectorAll('canvas').forEach((c:any)=>{if(c.__wardrobe?.sheet)drawPreview(c.getContext('2d'),c.__wardrobe.sheet,{time:Date.now(),scale:3});});},250);
+  window.addEventListener('beforeunload',()=>clearInterval(previewTimer),{once:true});
   const originalDraw=game.renderer.drawEntity.bind(game.renderer);
   game.renderer.drawEntity=(entity:any)=>{
     if(entity.id===game.playerId||observerIds.has(String(entity.id)))return;
     const appearance=appearances.get(String(entity.id));
     if(!appearance){originalDraw(entity);return;}
-    const context=game.renderer.context;context.save();context.strokeStyle=colors[appearance.color];context.lineWidth=2;context.beginPath();context.ellipse((entity.x+8)*game.renderer.scale,(entity.y+14)*game.renderer.scale,8*game.renderer.scale,3*game.renderer.scale,0,0,Math.PI*2);context.stroke();context.filter=hues[appearance.color]||'none';originalDraw(entity);
-    for(const item of appearance.wearables||[]){context.filter='none';context.fillStyle=item.color||'#bd88cf';const y=entity.y+(item.slot==='head'?-9:item.slot==='body'?9:12);context.fillRect((entity.x+3)*game.renderer.scale,y*game.renderer.scale,10*game.renderer.scale,3*game.renderer.scale);}
-    context.restore();
+    const context=game.renderer.context;context.save();context.strokeStyle=colors[appearance.color];context.lineWidth=2;context.beginPath();context.ellipse((entity.x+8)*game.renderer.scale,(entity.y+14)*game.renderer.scale,8*game.renderer.scale,3*game.renderer.scale,0,0,Math.PI*2);context.stroke();
+    entity.isPhased=(appearance.phaseUntil||0)>Date.now();
+    const originalSprite=entity.sprite;
+    const cosmetic=appearance.profile&&originalSprite?.id&&originalSprite.width===32&&originalSprite.height===32?outfit(appearance.profile,originalSprite.image.width/160):null;
+    context.filter=appearance.profile?'none':hues[appearance.color]||'none';
+    try{if(cosmetic?.sheet)entity.sprite={...originalSprite,image:cosmetic.sheet};originalDraw(entity);}finally{entity.sprite=originalSprite;context.restore();}
+
   };
   const originalName=game.renderer.drawEntityName.bind(game.renderer);
   game.renderer.drawEntityName=(entity:any)=>{if(entity.id===game.playerId||observerIds.has(String(entity.id)))return;const appearance=appearances.get(String(entity.id));if(!appearance)return originalName(entity);const context=game.renderer.context;context.save();context.filter='none';game.renderer.drawText(appearance.name,(entity.x+8)*game.renderer.scale,(entity.y+entity.nameOffsetY)*game.renderer.scale,true,colors[appearance.color]);context.restore();};
@@ -117,16 +132,20 @@ export function startChaosTV(game:any):void {
       if(actor?.hit){const dx=object.tile.x-Math.round(actor.x/16),dy=object.tile.y-Math.round(actor.y/16);const direction=Math.abs(dx)>Math.abs(dy)?(dx<0?Types.Orientations.LEFT:Types.Orientations.RIGHT):(dy<0?Types.Orientations.UP:Types.Orientations.DOWN);actor.hit(direction);setTimeout(()=>{if(actor.currentAnimation?.name?.startsWith('atk'))actor.idle();},450);}
       if(Number.isFinite(object.before)&&object.before>object.after)game.infoManager.addDamageInfo(object.before-object.after,object.tile.x*16,object.tile.y*16-20,'inflicted');
     }
+    for(const e of data.events){const a=e.abilityEffect,key='ability:'+e.id+':'+e.at;if(!a||shownObjects.has(key))continue;shownObjects.add(key);if(Date.now()-e.at>3000)continue;
+      if(a.id==='mend'){const target=game.getEntityById(a.targetId);if(target)game.infoManager.addDamageInfo(a.after-a.before,target.x,target.y-15,'healed');}
+      else game.client.receiveSkillEffect([Types.Messages.SKILL_EFFECT,a.actorId,a.id,a.x,a.y,a.orientation]);
+    }
     if(shownObjects.size>200)shownObjects.clear();
     const props=new Map();for(const p of players)for(const item of [...(p.actor.chaos?.ground||[]),...(p.actor.chaos?.scenery||[])])props.set(item.id,item);groundProps=Array.from(props.values());
     for(const p of players){
-      appearances.set(String(p.actor.id),{name:p.name,color:p.color,wearables:p.actor.chaos?.wearables||[]});
+      appearances.set(String(p.actor.id),{name:p.name,color:p.color,profile:p.appearance,phaseUntil:p.actor.ability?.phaseUntil||0});
       for(const e of p.actor.nearby||[]){const entity=game.getEntityById(e.id);if(entity&&e.hp!==undefined){entity.hitPoints=e.hp;entity.maxHitPoints=e.maxHp;}}
     }
     for(const e of data.events){if(e.combat&&!shownCombat.has(e.id+':'+e.at)){shownCombat.add(e.id+':'+e.at);const mob=game.getEntityById(e.combat.target);if(mob)game.infoManager.addDamageInfo(Math.max(0,e.combat.before-e.combat.after),mob.x,mob.y-15,'inflicted');}}
     if(shownCombat.size>200)shownCombat.clear();
     if(!players.some((p:any)=>String(p.actor.id)===select.value))selected=String(players[0]?.actor.id||'');else selected=select.value;
-    select.textContent='';for(const p of players){const option=document.createElement('option');option.value=String(p.actor.id);option.textContent=`${p.name}${p.role?' · '+p.role:''} · HP ${p.actor.hp}/${p.actor.maxHp}`;select.append(option);}select.value=selected;
+    select.textContent='';for(const p of players){const option=document.createElement('option');option.value=String(p.actor.id);option.textContent=`${p.name}${p.role?' · '+(STARTERS[p.role]?.name||p.role):''} · HP ${p.actor.hp}/${p.actor.maxHp}`;select.append(option);}select.value=selected;
     followed=players.find((p:any)=>String(p.actor.id)===selected)?.actor;
     game.client.connection.emit('chaos:watch',{key:config.key,actorId:selected||null},()=>{});
     log.textContent='';
@@ -135,7 +154,16 @@ export function startChaosTV(game:any):void {
     if(data.adventure){const row=document.createElement('div');row.style.color='#efbd68';const next=data.adventure.steps.find((step:any)=>!step.done);row.textContent=data.adventure.status==='completed'?'The Refuge Trial — adventure complete!':'The Refuge Trial · '+(next?.label||'Explore together');log.append(row);}
     for(const e of data.events.slice(-2)){const row=document.createElement('div');row.textContent=`${e.player}: ${e.message}`;log.append(row);}
     if(!players.length&&connected.length)log.textContent='Party knocked out — respawn on your phones.';
-    lobby.hidden=connected.length>0;lobby.style.display=connected.length?'none':'grid';if(!connected.length){lobby.textContent='';const title=document.createElement('h1');title.textContent='Chaos Party';lobby.append(title);const qr=document.createElement('div');qr.style.cssText='width:260px;margin:auto;background:white';qr.innerHTML=data.lobby.qr;lobby.append(qr);const message=document.createElement('p');message.textContent='Scan to join. Your phone is your character.';lobby.append(message);log.textContent='Waiting for phones to join the adventure…';}
+    lobby.hidden=data.phase!=='creation'&&connected.length>0;lobby.style.display=lobby.hidden?'none':'grid';
+    if(!lobby.hidden){const key=JSON.stringify([data.phase,data.players.map((p:any)=>[p.name,p.role,p.appearance])]);if(key!==rosterKey){rosterKey=key;lobby.textContent='';
+      const title=document.createElement('h1');title.textContent=data.phase==='creation'?'Create your adventurers':'Gathering the party';lobby.append(title);
+      const content=document.createElement('div');content.style.cssText='display:flex;gap:30px;align-items:center;max-width:1100px';lobby.append(content);
+      const join=document.createElement('div');join.style.cssText='width:220px;flex-shrink:0;font-size:18px';const qr=document.createElement('div');qr.style.background='white';qr.innerHTML=data.lobby.qr;join.append(qr);const instruction=document.createElement('p');instruction.textContent=data.phase==='creation'?'Scan, create on your phone, then tap Ready.':'Reconnect using your saved phone.';join.append(instruction);content.append(join);
+      const grid=document.createElement('div');grid.id='chaos-ready-grid';grid.style.cssText='display:grid;grid-template-columns:repeat(5,120px);gap:8px;max-height:540px;overflow:auto';content.append(grid);
+      for(const p of data.players){const card=document.createElement('div');card.style.cssText='background:#202c39;border-radius:10px;padding:6px;font-size:14px';const c:any=document.createElement('canvas');c.width=96;c.height=96;c.style.cssText='position:static;display:block;margin:auto;image-rendering:pixelated;width:96px;height:96px';c.__wardrobe=outfit(p.appearance||DEFAULT_APPEARANCE);card.append(c);const name=document.createElement('div');name.textContent=p.name;name.style.color=colors[p.color];card.append(name);const label=document.createElement('small');label.textContent=(STARTERS[p.role]?.name||p.role||'Adventurer')+' · Ready';card.append(label);grid.append(card);}
+      const message=document.createElement('p');message.textContent=data.phase==='creation'?'The host begins when the party is ready.':'Your characters are entering the world…';lobby.append(message);
+    }log.textContent='';}
+
   }catch{log.textContent='Room connection lost; reconnecting…';}};
   void poll();const timer=setInterval(poll,800);window.addEventListener('beforeunload',()=>clearInterval(timer),{once:true});
 }

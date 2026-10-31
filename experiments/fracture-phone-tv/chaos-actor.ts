@@ -1,10 +1,11 @@
 /** Chaos-owned authoritative actor driver; enabled only by a private local host key. */
 import * as fs from 'node:fs';
 import {nativeTrees} from './chaos-native-scenery';
+import {handleSkillUse} from './player/skill.handler';
 import {pathToFileURL} from 'node:url';
 const geometry=JSON.parse(fs.readFileSync('client/maps/world_client.json','utf8'));
 let chaosObjects:any=null;
-const chaosReady=process.env.CHAOS_WORLD_MODULE?import(pathToFileURL(process.env.CHAOS_WORLD_MODULE).href).then(m=>chaosObjects=m.createChaosWorld({file:'server/data/chaos-party/objects.json',kindName:Types.getKindAsString,nativeTrees,nativeDoors:geometry.doors})):Promise.resolve(null);
+const chaosReady=process.env.CHAOS_WORLD_MODULE?import(pathToFileURL(process.env.CHAOS_WORLD_MODULE).href).then(m=>chaosObjects=m.createChaosWorld({file:'server/data/chaos-party/objects.json',kindName:Types.getKindAsString,nativeTrees,nativeDoors:geometry.doors,useNativeSkill:handleSkillUse})):Promise.resolve(null);
 import {Types} from '../../shared/ts/gametypes';
 import {Messages} from './message';
 import {Formulas} from './formulas';
@@ -28,6 +29,7 @@ export function installChaosActor(player:any, connection:any): void {
   player.chaosSpectator=spectator;
   player.chaosControlled=local&&socket.handshake.auth?.chaosActorKey===key;
   if(player.chaosControlled)player.chaosPrepareWorld=async()=>{await chaosReady;chaosObjects?.prepareWorld(world);};
+  player.chaosPartyId=player.chaosControlled&&typeof socket.handshake.auth?.chaosPartyId==='string'?socket.handshake.auth.chaosPartyId:null;
   // The bridge authenticates each native actor and supplies a saved class.
   // Never accept a role or perk from a phone action or unauthenticated socket.
   player.chaosRole=player.chaosControlled&&['rogue','bard','wizard','knight','healer','wildcard'].includes(socket.handshake.auth?.chaosRole)?socket.handshake.auth.chaosRole:null;
@@ -42,7 +44,7 @@ export function installChaosActor(player:any, connection:any): void {
   const label=(e:any)=>String(e.chaosName||e.name||Types.getKindAsString(e.kind)||e.type);
   const nearby=()=>Object.values(world.entities).filter((e:any)=>e.id!==player.id&&!e.chaosSpectator&&!e.isDead&&distance(player,e)<=18) as any[];
   const objectSnapshot=()=>{try{return chaosObjects?.snapshot(player);}catch{return {bag:[],ground:[],wearables:[],error:'Object storage is unavailable. Ask the host to check disk space and permissions.'};}};
-  const state=()=>({id:player.id,name:player.chaosName||player.name,role:player.chaosRole||null,chaos:objectSnapshot(),zone:world.zoneManager.getZoneAt(player.x,player.y)?.name||'Unknown area',x:player.x,y:player.y,hp:player.hitPoints,maxHp:player.maxHitPoints,level:player.level,gold:player.gold,inventory:player.getInventory().getSlots().map((s:any,i:number)=>s?{slot:i,name:Types.getKindAsString(s.kind),count:s.count}:null).filter(Boolean),weapon:Types.getKindAsString(player.weapon),armor:Types.getKindAsString(player.armor),dead:player.isDead,ready:player.hasEnteredGame,nearby:nearby().map(e=>({id:e.id,name:label(e),type:e.type,x:e.x,y:e.y,hp:e.hitPoints,maxHp:e.maxHitPoints}))});
+  const state=()=>({ability:chaosObjects?.abilityState(player),id:player.id,name:player.chaosName||player.name,role:player.chaosRole||null,chaos:objectSnapshot(),zone:world.zoneManager.getZoneAt(player.x,player.y)?.name||'Unknown area',x:player.x,y:player.y,hp:player.hitPoints,maxHp:player.maxHitPoints,level:player.level,gold:player.gold,inventory:player.getInventory().getSlots().map((s:any,i:number)=>s?{slot:i,name:Types.getKindAsString(s.kind),count:s.count}:null).filter(Boolean),weapon:Types.getKindAsString(player.weapon),armor:Types.getKindAsString(player.armor),dead:player.isDead,ready:player.hasEnteredGame,nearby:nearby().map(e=>({id:e.id,name:label(e),type:e.type,x:e.x,y:e.y,stunnedUntil:e.stunUntil||0,hp:e.hitPoints,maxHp:e.maxHitPoints}))});
   const receipt=(id:string,status:string,message:string,detail:any={})=>socket.emit('chaos:receipt',{id,status,message,...detail,actor:state()});
   // Only the action that produced an asynchronous result may finish itself.
   // STOP, disconnect, and replacement actions invalidate all older continuations.
@@ -84,6 +86,12 @@ export function installChaosActor(player:any, connection:any): void {
       finish('cancelled','Respawning.');await router.route(player,[Types.Messages.HELLO]);receipt(id,player.isDead?'failed':'succeeded',player.isDead?'Could not respawn.':'Back on your feet at a safe checkpoint.');return ack({ok:true});
     }
     if(player.isDead)return ack({error:'Your character is knocked out. Use respawn.'});
+    if(intent.verb==='ability'){
+      try{if(!chaosObjects?.useAbility)return ack({error:'Class abilities are unavailable on this host.'});
+        const result=chaosObjects.useAbility(player,intent.target||'',intent.skill);
+        receipt(id,result.blocked?'blocked':result.success?'succeeded':'failed',result.text,{abilityEffect:result.abilityEffect});return ack({ok:true});
+      }catch{receipt(id,'failed','The ability could not be safely completed. Check the host storage.');return ack({ok:true});}
+    }
     if(intent.verb==='use_item'){
       const inventory=player.getInventory(),slots=inventory.getSlots();const index=slots.findIndex((s:any)=>s&&Types.getKindAsString(s.kind)?.includes(intent.target));
       if(index<0)return ack({error:'That item is not in your pack.'});
@@ -177,7 +185,7 @@ export function installChaosActor(player:any, connection:any): void {
       const {intent,target}=action;
       if(target && (world.getEntityById(target.id)!==target || target.isDead)) {cancel();finish('blocked','The target is no longer available.');return;}
       const occupiedTiles=new Set(nearby().filter(e=>!Types.isItem(e.kind)&&e.type!=='player').map(e=>`${e.x},${e.y}`));
-      const occupied=(x:number,y:number)=>occupiedTiles.has(`${x},${y}`);
+      const occupied=(x:number,y:number)=>!player.isPhased?.()&&occupiedTiles.has(`${x},${y}`);
       const walkable=(x:number,y:number)=>world.isValidPosition(x,y)&&plateau(x,y)===plateau(player.x,player.y)&&!occupied(x,y)&&!chaosObjects?.isBlocked(player,x,y);
       if(!action.destination && !target){action.destination=action.door?[action.door.x,action.door.y]:intent.verb==='move'?[player.x+intent.dx*intent.steps,player.y+intent.dy*intent.steps]:[intent.x,intent.y];}
       const goal=(x:number,y:number)=>target?(intent.verb==='loot'?x===target.x&&y===target.y:Math.abs(x-target.x)+Math.abs(y-target.y)===1):action.nearDestination?Math.abs(x-action.destination[0])+Math.abs(y-action.destination[1])<=1:x===action.destination[0]&&y===action.destination[1];

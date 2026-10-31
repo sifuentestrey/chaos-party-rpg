@@ -1,0 +1,85 @@
+{
+  "status": "passed",
+  "events": [
+    {
+      "lobby": true,
+      "profiles": 4,
+      "noNativeActors": true
+    },
+    {
+      "started": true,
+      "actors": [
+        {
+          "name": "Ash",
+          "id": 5961,
+          "x": 68,
+          "y": 222,
+          "level": 1,
+          "armor": "clotharmor",
+          "ability": "power_strike"
+        },
+        {
+          "name": "Bram",
+          "id": 5452,
+          "x": 67,
+          "y": 221,
+          "level": 1,
+          "armor": "clotharmor",
+          "ability": "phase_shift"
+        },
+        {
+          "name": "Cora",
+          "id": 5833,
+          "x": 66,
+          "y": 220,
+          "level": 1,
+          "armor": "clotharmor",
+          "ability": "war_cry"
+        },
+        {
+          "name": "Dara",
+          "id": 5264,
+          "x": 66,
+          "y": 221,
+          "level": 1,
+          "armor": "clotharmor",
+          "ability": "mend"
+        }
+      ]
+    },
+    {
+      "nativeAbility": "power_strike",
+      "confirmed": true
+    },
+    {
+      "nativeAbility": "phase_shift",
+      "confirmed": true
+    },
+    {
+      "nativeAbility": "war_cry",
+      "confirmed": true
+    },
+    {
+      "player": "Dara",
+      "text": "mend",
+      "status": "blocked",
+      "message": "That character is already at full health.",
+      "x": 66,
+      "y": 221
+    },
+    {
+      "player": "Ash",
+      "text": "walk north 3",
+      "status": "succeeded",
+      "message": "Walked 3 tiles.",
+      "x": 68,
+      "y": 219
+    },
+    {
+      "wardrobe": true,
+      "recovery": true,
+      "armorUnchanged": true
+    }
+  ],
+  "errors": []
+}
