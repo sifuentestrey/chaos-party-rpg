@@ -12,7 +12,7 @@ function report(status,error){fs.writeFileSync(path.join(out,'family-night.json'
 async function action(i,text,{blocked=false}={}){
  let s=await get(i);if(s.turn)await sleep(Math.max(0,s.turn.deadline-Date.now()+250));await sleep(200);
  const pending=phones[i].waitForResponse(r=>r.url()===base+'/action'&&r.request().method()==='POST');
- await phones[i].locator('#text').fill(text);await phones[i].locator('#form button').click();const response=await pending,ack=await response.json();assert.equal(response.status(),202,ack.error||text);
+ await phones[i].locator('#text').fill(text);await phones[i].locator('#send-action').click();const response=await pending,ack=await response.json();assert.equal(response.status(),202,ack.error||text);
  const until=Date.now()+65000;
  while(Date.now()<until){await sleep(150);s=await get(i);const r=s.results.find(r=>r.id===ack.id);if(r&&!['received','started','queued'].includes(r.status)){
   const event={player:players[i].name,text,status:r.status,message:r.message,roll:r.roll,rolls:r.rolls,combat:r.combat,object:r.object,x:s.actor.x,y:s.actor.y,zone:s.actor.zone,adventure:s.adventure?.status};events.push(event);report('running');console.log(JSON.stringify(event));

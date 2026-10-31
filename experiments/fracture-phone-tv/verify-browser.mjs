@@ -9,7 +9,7 @@ const get=player=>fetch(base+'/state?token='+player.token).then(r=>r.json());
 async function action(phone,player,text,{meaningful=false,allowBlocked=false}={}){
  if(meaningful){const s=await get(player);if(s.turn)await sleep(Math.max(0,s.turn.deadline-Date.now()+250));}
  const response=phone.waitForResponse(r=>r.url()===base+'/action'&&r.request().method()==='POST');
- await phone.locator('#text').fill(text);await phone.locator('#form button').click();const http=await response,body=await http.json();assert.equal(http.status(),202,body.error||text);
+ await phone.locator('#text').fill(text);await phone.locator('#send-action').click();const http=await response,body=await http.json();assert.equal(http.status(),202,body.error||text);
  const end=Date.now()+65000;while(Date.now()<end){await sleep(250);const s=await get(player),r=s.results.find(r=>r.id===body.id);if(r&&!['received','started'].includes(r.status)){const event={text,status:r.status,message:r.message,x:s.actor.x,y:s.actor.y,hp:s.actor.hp,gold:s.actor.gold,weapon:s.actor.weapon,zone:s.actor.zone,quest:s.quest};events.push(event);console.log(JSON.stringify(event));if(!allowBlocked)assert.ok(['succeeded','cancelled'].includes(r.status),JSON.stringify(event));return s;}}
  throw Error('No final result for '+text);
 }

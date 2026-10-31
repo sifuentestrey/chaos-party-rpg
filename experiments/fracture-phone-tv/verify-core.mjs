@@ -7,7 +7,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms)),events=[],players=[],pages=[],e
 const state=p=>fetch(base+'/state?token='+p.token).then(r=>r.json());
 async function action(i,text,{allowFailure=false}={}){
  const p=players[i];let s=await state(p);if(s.turn)await sleep(Math.max(0,s.turn.deadline-Date.now()+200));await sleep(220);
- const pending=pages[i].waitForResponse(r=>r.url()===base+'/action'&&r.request().method()==='POST');await pages[i].locator('#text').fill(text);await pages[i].locator('#form button').click();const http=await pending,b=await http.json();assert.equal(http.status(),202,b.error);
+ const pending=pages[i].waitForResponse(r=>r.url()===base+'/action'&&r.request().method()==='POST');await pages[i].locator('#text').fill(text);await pages[i].locator('#send-action').click();const http=await pending,b=await http.json();assert.equal(http.status(),202,b.error);
  for(let n=0;n<440;n++){await sleep(150);s=await state(p);const r=s.results.find(r=>r.id===b.id);if(r&&!['received','started'].includes(r.status)){const event={player:p.name,text,status:r.status,message:r.message,roll:r.roll,x:s.actor.x,y:s.actor.y};events.push(event);console.log(JSON.stringify(event));if(!allowFailure)assert.equal(r.status,'succeeded');return {s,r};}}
  throw Error('No terminal engine receipt: '+text);
 }

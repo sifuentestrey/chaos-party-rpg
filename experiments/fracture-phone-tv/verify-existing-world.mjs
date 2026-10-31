@@ -9,7 +9,7 @@ const state=i=>fetch(base+'/state?token='+players[i].token).then(r=>r.json());
 const report=(status,error)=>fs.writeFileSync(path.join(out,'existing-world.json'),JSON.stringify({status,error,events,errors},null,2));
 async function action(i,text,{allowBlocked=false}={}){
  let s=await state(i);if(s.turn)await sleep(Math.max(0,s.turn.deadline-Date.now()+250));await sleep(220);
- const pending=phones[i].waitForResponse(r=>r.url()===base+'/action'&&r.request().method()==='POST');await phones[i].locator('#text').fill(text);await phones[i].locator('#form button').click();const r=await pending,b=await r.json();assert.equal(r.status(),202,b.error||text);
+ const pending=phones[i].waitForResponse(r=>r.url()===base+'/action'&&r.request().method()==='POST');await phones[i].locator('#text').fill(text);await phones[i].locator('#send-action').click();const r=await pending,b=await r.json();assert.equal(r.status(),202,b.error||text);
  const deadline=Date.now()+65000;
  while(Date.now()<deadline){await sleep(200);s=await state(i);const result=s.results.find(r=>r.id===b.id);if(result&&!['started','received','queued'].includes(result.status)){
   const e={player:players[i].name,text,status:result.status,message:result.message,roll:result.roll,dc:result.dc,rolls:result.rolls,object:result.object,x:s.actor.x,y:s.actor.y};events.push(e);report('running');console.log(JSON.stringify(e));if(!allowBlocked)assert.ok(['succeeded','failed'].includes(result.status),result.message);return {s,r:result};

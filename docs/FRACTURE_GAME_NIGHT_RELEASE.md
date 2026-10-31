@@ -1,5 +1,15 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Phone controller polish — October 31, 2026
+
+**Owner request:** make the controller less basic and reduce scrolling, keeping Action → Abilities → Gear. Implemented a compact animated portrait/name/class/location/health header, shorter action and ability sections, native-icon equipment cards, grouped native bag quantities and separate exact-ID carried-object cards. Equip/Use/Inspect/Drop buttons call the existing authenticated action executor only where supported. Cosmetic outfits never become equipment. A bottom Action/Abilities/Gear/Stop bar hides during typing and wardrobe editing; party/world/help remain collapsed. Successful HTTP acceptance clears the submitted draft; request failure preserves it. AI status reflects the existing provider state without making extra AI requests.
+
+- [x] **Actual browser phone → native engine:** collect an existing Sword 2, see its bag card, tap Equip, confirm native weapon and equipped card change. No seeded loot, position/HP edits or fake outcome.
+- [x] Enter-to-send and both personal STOP buttons return native cancellation receipts; Wardrobe → Cancel restores the controller. At 320/375/390 pixels, no horizontal overflow and Gear navigation reaches Wardrobe. Existing Healer/Mend target selector remains usable at 320 pixels, with one real eligible target in the rehearsal.
+- [x] 252 standard experimental tests passed with the checkout-dependent overlay case initially skipped; that case and the overlay refusal case then passed against the pinned checkout. Four inventory cases cover actual equipment, stacks, exact carried IDs and the icon allowlist. No native source changed or native rebuild was required.
+- [x] Reproduction: `verify-phone-ui.mjs` with `CHAOS_BETA_TEST=1`, `CHAOS_TEST_ROOM_FILE`, `CHAOS_BROWSER_TOOLS` and optional `CHAOS_BROWSER_REPORT_DIR`. Requires a disposable playing room whose first player owns or can reach an existing native sword/axe/morning star. [Sanitized receipts and actual phone screenshot](../experiments/fracture-phone-tv/evidence/phone-ui/phone-ui.json); [preview with a collected item](../experiments/fracture-phone-tv/evidence/phone-ui/phone-with-inventory.png). Local additional screenshots: `/workspace/shared/phone-polish`.
+- [ ] Physical iPhone keyboard/safe-area behavior and Intel Mac/family Wi-Fi acceptance remain open. Use buttons and carried-object actions reuse existing engine behavior; this UI rehearsal exercised native Equip, not every consumable/carry/drop effect. No live AI call or new release ZIP was needed. Original branches/saves, native art and prior camera/gameplay mechanics remain protected.
+
 ## Shared camera ownership correction — October 31, 2026
 
 **Owner correction accepted:** the previous gameplay preview explicitly switched to Follow player for combat. The earlier “1 → 1 adapter updates” check did not observe Fracture's own camera writes, and outdoor Shared mode still left the native viewport unfixed. That preview and counter alone were insufficient acceptance evidence. The old preview was also encoded at 12 FPS, which can exaggerate apparent stutter.

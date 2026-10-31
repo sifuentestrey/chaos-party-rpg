@@ -11,7 +11,7 @@ let browser;
 async function action(i,text,{allowBlocked=false}={}){
  let state=await get(i);if(state.turn)await sleep(Math.max(0,state.turn.deadline-Date.now()+250));await sleep(250);
  const pending=phones[i].waitForResponse(r=>r.url()===base+'/action'&&r.request().method()==='POST');
- await phones[i].locator('#text').fill(text);await phones[i].locator('#form button').click();const response=await pending,ack=await response.json();assert.equal(response.status(),202,ack.error||text);
+ await phones[i].locator('#text').fill(text);await phones[i].locator('#send-action').click();const response=await pending,ack=await response.json();assert.equal(response.status(),202,ack.error||text);
  const until=Date.now()+65000;
  while(Date.now()<until){await sleep(150);state=await get(i);const result=state.results.find(r=>r.id===ack.id);
   if(result&&!['received','started'].includes(result.status)){
