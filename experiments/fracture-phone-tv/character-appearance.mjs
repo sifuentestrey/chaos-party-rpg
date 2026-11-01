@@ -3,7 +3,7 @@
  * Only original Fracture outfit pixels are recolored. Small accessory/ear
  * rectangles adapt the existing original-Chaos compositor, not its renderer.
  */
-import {validateAppearance,normalizeAppearance,bodyScale} from './character-profile.mjs';
+import {validateAppearance,normalizeAppearance,bodyScale,OUTFIT_SOURCES,HEADWEAR_SOURCES,DERIVED_HERITAGES} from './character-profile.mjs';
 const skins=['#faa676','#f8d7ba','#d6a37a','#a87350','#744b37','#4b3028','#ffe7d1','#9b8960','#bd7956','#5e453d'];
 const hairs=['#d5b030','#805233','#292331','#e8e3dc','#9e75c7','#e397b6','#a0442f','#faf2e5','#537ab4','#578754','#c84c41','#e6ba64'];
 const cloths=[null,'#df8cae','#aa8bd4','#65b6a5','#679bd3','#d8b65f','#c65a66','#6e9566','#e8dfc5','#303443','#724a83','#e78b76','#9acda6','#9bc7e3','#ab7655','#bbc2d0'];
@@ -13,17 +13,43 @@ const originals=new Map(),variants=new Map();
 const skinSet=new Set(['faa676','c78058','a06244','b57657','ea996b']);
 const hairSet=new Set(['b49320','d5b030','dac273','e1bd3f','e6cd78']);
 const garment={clotharmor:['d1d1d1','ececec','774e2d','92623a','966f4f'],leatherarmor:['774e2d','795335','966f4f','b4785b','896546','9f6448','db9e80','896446','92623a','9c6b54'],mailarmor:['6f6f6f','9c9c9c','b8b8b8','525252','505050','646464','979797','8b8b8b','717171'],platearmor:['9c9c9c','bebebe','ececec','6f6f6f','5c416c','664a77','525252'],redarmor:['f31818','f64f4f','b30a0a','fa9999','d82525','ff5e5e','ba1414','e00c0c'],goldenarmor:['e1cf36','d5b030','fff074','bc9b29','a68821','a98b23','eede59']};
-export const hairVisible=outfit=>['bare','clotharmor','leatherarmor','robe','dress','mask'].includes(outfit);
+export const hairVisible=headwear=>['bare','clotharmor','leatherarmor','robe','dress','mask','circlet'].includes(headwear);
 function canvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c;}
 function hex(r,g,b){return [r,g,b].map(n=>n.toString(16).padStart(2,'0')).join('');}
 export function recolorPixels(data,width,a){
- const garmentSet=new Set(garment[a.outfit]||[]);
+ const sourceOutfit=OUTFIT_SOURCES[a.outfit]||a.outfit,heritage=DERIVED_HERITAGES[a.body],garmentSet=new Set(garment[sourceOutfit]||[]);
  for(let i=0;i<data.length;i+=4){if(!data[i+3])continue;const key=hex(data[i],data[i+1],data[i+2]),y=Math.floor(i/4/width)%32;let color=null;
-  if(skinSet.has(key)&&(a.skin||['orc','ogre'].includes(a.body))){const base=['orc','ogre'].includes(a.body)?shade(skins[a.skin],0.65).map((v,j)=>Math.round(v*0.5+[106,158,88][j]*0.5)):rgb(skins[a.skin]);const f=key==='c78058'||key==='a06244'?0.76:key==='b57657'?0.88:1;color=base.map(v=>Math.round(v*f));}
-  else if(y<18&&hairVisible(a.outfit)&&hairSet.has(key)&&a.hair)color=shade(hairs[a.hair],(data[i]+data[i+1]+data[i+2])/3/161);
-  else if(a.color&&garmentSet.has(key)&&(a.outfit!=='clotharmor'||y>=17))color=shade(cloths[a.color],0.55+(data[i]+data[i+1]+data[i+2])/3/310);
+  if(skinSet.has(key)&&(a.skin||heritage||['orc','ogre'].includes(a.body))){const base=heritage?shade(heritage.skin,.94+(a.skin%4)*.03):['orc','ogre'].includes(a.body)?shade(skins[a.skin],0.65).map((v,j)=>Math.round(v*0.5+[106,158,88][j]*0.5)):rgb(skins[a.skin]);const f=key==='c78058'||key==='a06244'?0.76:key==='b57657'?0.88:1;color=base.map(v=>Math.round(v*f));}
+  else if(y<18&&hairVisible(a.headwear||sourceOutfit)&&hairSet.has(key)&&a.hair)color=shade(hairs[a.hair],(data[i]+data[i+1]+data[i+2])/3/161);
+  else if(a.color&&garmentSet.has(key)&&(sourceOutfit!=='clotharmor'||y>=17))color=shade(cloths[a.color],0.55+(data[i]+data[i+1]+data[i+2])/3/310);
   if(color){data[i]=color[0];data[i+1]=color[1];data[i+2]=color[2];}
  }return data;
+}
+const shadeHex=(color,f)=>'#'+shade(color,f).map(v=>v.toString(16).padStart(2,'0')).join('');
+function derivedCostume(ctx,a,cx,y,up,fill){
+ const color=cloths[a.color]||'#9f79c7',shadow=shadeHex(color,.62);
+ if(a.outfit==='cloak'){
+  ctx.save();ctx.globalCompositeOperation='destination-over';fill(cx-9,y+8,4,13,shadow);fill(cx+6,y+8,4,13,shadow);if(up)fill(cx-8,y+7,16,3,shadow);ctx.restore();
+ }
+ if(a.outfit==='tunic'){fill(cx-7,y+17,14,10,color);fill(cx-8,y+22,16,2,shadow);fill(cx-2,y+18,4,8,shadeHex(color,1.18));}
+ if(a.outfit==='tabard'){fill(cx-6,y+17,12,11,color);fill(cx-2,y+17,4,11,shadeHex(color,1.2));fill(cx-7,y+26,14,2,shadow);}
+}
+function heritageLayer(ctx,a,cx,y,up,side,fill){
+ const h=DERIVED_HERITAGES[a.body];if(!h)return;
+ const accent=h.accent,shadow=shadeHex(accent,.68),skin=h.skin;
+ if(a.body==='vampire'){
+  if(a.accessory!=='cape'){ctx.save();ctx.globalCompositeOperation='destination-over';fill(cx-9,y+6,4,14,shadow);fill(cx+6,y+6,4,14,shadow);if(up)fill(cx-8,y+5,16,3,shadow);ctx.restore();}
+  if(!up){fill(cx-5,y+6,2,2,accent);fill(cx+3,y+6,2,2,accent);fill(cx-3,y+10,2,3,'#f7f1e6');fill(cx+1,y+10,2,3,'#f7f1e6');}
+ }
+ if(a.body==='werewolf'){
+  fill(cx-8,y+1,3,4,skin);fill(cx-7,y,2,2,accent);fill(cx+5,y+1,3,4,skin);fill(cx+6,y,2,2,accent);
+  ctx.save();ctx.globalCompositeOperation='destination-over';fill(cx+(side?-11:7),y+10,4,3,accent);fill(cx+(side?-13:9),y+12,3,3,shadow);fill(cx+(side?-14:10),y+14,2,3,accent);ctx.restore();
+ }
+ if(a.body==='skeleton'&&!up){fill(cx-5,y+5,3,3,'#39353b');fill(cx+2,y+5,3,3,'#39353b');fill(cx-5,y+10,10,2,shadeHex(h.skin,.78));fill(cx-3,y+11,6,1,'#39353b');}
+ if(a.body==='demon'){
+  fill(cx-7,y+1,3,4,accent);fill(cx-8,y-1,3,4,accent);fill(cx+4,y+1,3,4,accent);fill(cx+5,y-1,3,4,accent);
+  ctx.save();ctx.globalCompositeOperation='destination-over';fill(cx+(side?-10:7),y+11,4,3,shadow);fill(cx+(side?-12:9),y+13,3,3,accent);for(const sign of [-1,1]){fill(cx+sign*10,y+7,sign<0?3:3,1,shadow);fill(cx+sign*12,y+5,2,3,accent);fill(cx+sign*14,y+3,2,3,shadow);}ctx.restore();
+ }
 }
 function decorate(ctx,source,w,a){
  const fill=(x,y,ww,hh,c)=>{ctx.fillStyle=c;ctx.fillRect(x,y,ww,hh);};
@@ -33,7 +59,9 @@ function decorate(ctx,source,w,a){
   if(top===32)continue;
   for(let y=top;y<top+5;y++)for(let x=4;x<28;x++){const i=((oy+y)*w+ox+x)*4;if(source[i+3]){left=Math.min(left,x);right=Math.max(right,x);}}
   const cx=ox+Math.round((left+right)/2),y=oy+top,up=Math.floor(row/3)===1,side=Math.floor(row/3)===0;
-  const skin=['orc','ogre'].includes(a.body)?'#80a768':skins[a.skin],color=cloths[a.color]||'#9f79c7',headColor=cloths[a.headColor]||color;
+  const skin=DERIVED_HERITAGES[a.body]?.skin||(['orc','ogre'].includes(a.body)?'#80a768':skins[a.skin]),color=cloths[a.color]||'#9f79c7',headColor=cloths[a.headColor]||color;
+  derivedCostume(ctx,a,cx,y,up,fill);
+  heritageLayer(ctx,a,cx,y,up,side,fill);
   if(a.accessory==='cape'){
    ctx.save();ctx.globalCompositeOperation='destination-over';
    const capeShade=shade(cloths[a.color]||'#8871ad',.72).map(v=>v.toString(16).padStart(2,'0')).join('');
@@ -54,8 +82,16 @@ function decorate(ctx,source,w,a){
    const mask=shade(headColor,.8).map(v=>v.toString(16).padStart(2,'0')).join('');
    fill(cx-6,y+7,12,3,'#'+mask);fill(cx-7,y+8,1,1,'#'+mask);fill(cx+6,y+8,1,1,'#'+mask);
   }
+  if(a.headwear==='circlet'){fill(cx-7,y+1,14,2,'#d9b34f');fill(cx-1,y-1,3,3,'#f3d879');}
+  if(a.headwear==='cowl'){fill(cx-8,y-1,16,3,headColor);fill(cx-9,y+2,2,8,headColor);fill(cx+7,y+2,2,8,headColor);fill(cx-6,y+3,12,2,shadeHex(headColor,.72));}
+  if(a.headwear==='pointed'){fill(cx-2,y-6,4,6,headColor);fill(cx-5,y-3,10,3,headColor);fill(cx-8,y,16,2,shadeHex(headColor,.72));}
+  if(a.headwear==='veil'&&!up){fill(cx-7,y+1,14,2,headColor);fill(cx-8,y+3,2,8,shadeHex(headColor,.72));fill(cx+7,y+3,2,8,shadeHex(headColor,.72));}
   if(a.accessory==='hat'){fill(cx-7,y,14,2,'#373737');fill(cx-4,y-4,9,5,color);fill(cx-4,y-1,9,1,'#e6bd63');}
   if(a.accessory==='crown'){fill(cx-5,y,11,2,'#edbb51');for(const x of [-5,0,4])fill(cx+x,y-3,2,4,'#f4d36e');fill(cx,y,2,1,'#c95779');}
+  if(a.accessory==='scarf'){fill(cx-7,y+11,14,3,color);fill(cx+5,y+13,3,6,shadeHex(color,.72));}
+  if(a.accessory==='satchel'){fill(cx+(side?-10:7),y+13,4,7,shadeHex(color,.72));fill(cx+(side?-9:8),y+11,2,3,'#d9b36f');}
+  if(a.accessory==='shoulderpad'){fill(cx-10,y+9,5,4,headColor);fill(cx+5,y+9,5,4,headColor);}
+  if(a.accessory==='ribbon'){fill(cx-7,y+2,14,1,'#d85b83');fill(cx-1,y+2,2,5,'#e78b9f');}
   if(a.accessory==='flower'||a.flower!=='none'&&a.flower){fill(cx+(a.flower==='left'?-6:5),y+1,1,6,'#67945b');fill(cx+(a.flower==='left'?-8:3),y+1,5,3,'#e68bb0');fill(cx+(a.flower==='left'?-7:4),y,3,5,'#e68bb0');fill(cx+(a.flower==='left'?-6:5),y+2,1,1,'#ffe6a0');}
   if((a.accessory==='glasses'||a.eyewear==='glasses')&&!up){fill(cx-5,y+5,4,3,'#302d35');if(!side){fill(cx+1,y+5,4,3,'#302d35');fill(cx-1,y+6,2,1,'#302d35');}fill(cx-4,y+6,2,1,'#a5d7df');if(!side)fill(cx+2,y+6,2,1,'#a5d7df');}
   if(a.facialHair&&a.facialHair!=='none'&&hairVisible(a.headwear)&&!up){
@@ -63,12 +99,14 @@ function decorate(ctx,source,w,a){
    if(a.facialHair==='stubble')fill(cx-3,y+8,6,1,shade(beard,.72).map(v=>v.toString(16).padStart(2,'0')).join('').replace(/^/,'#'));
    if(a.facialHair==='mustache'){fill(cx-3,y+7,3,2,beard);fill(cx+1,y+7,3,2,beard);}
    if(a.facialHair==='beard'){fill(cx-4,y+7,8,3,beard);fill(cx-3,y+10,6,2,beard);}
+   if(a.facialHair==='goatee'){fill(cx-2,y+7,4,2,beard);fill(cx-1,y+9,2,3,beard);}
+   if(a.facialHair==='sideburns'){fill(cx-6,y+6,2,5,beard);fill(cx+4,y+6,2,5,beard);}
   }
  }
 }
 function loadOriginal(outfit,base){const key=base+outfit;if(!originals.has(key))originals.set(key,new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>{originals.delete(key);reject(Error('Character art could not load: '+outfit));};im.src=base+outfit+'.png';}));return originals.get(key);}
 function recolored(im,a){const c=canvas(im.width,im.height),g=c.getContext('2d');g.drawImage(im,0,0);const pixels=g.getImageData(0,0,c.width,c.height);recolorPixels(pixels.data,c.width,a);g.putImageData(pixels,0,0);return c;}
-function addHair(ctx,a){if(!hairVisible(a.headwear)||a.hairStyle==='original')return;const hair=hairs[a.hair],shadow=shade(hair,.68);ctx.fillStyle=hair;
+function addHair(ctx,a){if(!hairVisible(a.headwear)||a.hairStyle==='original')return;const hair=hairs[a.hair],shadow=shadeHex(hair,.68);ctx.fillStyle=hair;
  for(let row=0;row<9;row++)for(let col=0;col<(row%3===0?5:row%3===1?4:2);col++){const ox=col*32,oy=row*32,up=Math.floor(row/3)===1;const pixels=ctx.getImageData(ox,oy,32,32).data;let top=32;for(let y=0;y<17;y++)for(let x=8;x<24;x++){if(pixels[(y*32+x)*4+3])top=Math.min(top,y);}if(top===32)continue;ctx.fillStyle=hair;const x=ox+16,y=oy+top;
   if(a.hairStyle==='cropped'){/* Trim only hair pixels, preserve the native face. */for(let yy=top;yy<top+3;yy++)for(let xx=8;xx<24;xx++){const i=(yy*32+xx)*4;if(pixels[i+3]&&yy<top+2)ctx.clearRect(ox+xx,oy+yy,1,1);}}
   if(['bob','long'].includes(a.hairStyle)){const length=a.hairStyle==='long'?12:8;ctx.fillRect(x-6,y+3,2,length);ctx.fillRect(x+5,y+3,2,length);if(up)ctx.fillRect(x-4,y+6,9,length-3);}
@@ -77,6 +115,10 @@ function addHair(ctx,a){if(!hairVisible(a.headwear)||a.hairStyle==='original')re
   if(a.hairStyle==='braids'){ctx.fillRect(x-7,y+3,2,8);ctx.fillRect(x-8,y+9,2,4);ctx.fillRect(x+5,y+3,2,8);ctx.fillRect(x+6,y+9,2,4);ctx.fillStyle='#493b39';ctx.fillRect(x-7,y+5,2,1);ctx.fillRect(x+5,y+5,2,1);}
   if(a.hairStyle==='mohawk'){ctx.fillRect(x-2,y-4,4,9);ctx.fillRect(x-4,y-1,8,3);}
   if(a.hairStyle==='sidecut'){for(let yy=top;yy<top+5;yy++)for(let xx=8;xx<13;xx++){const i=(yy*32+xx)*4;if(pixels[i+3])ctx.clearRect(ox+xx,oy+yy,1,1);}ctx.fillRect(x+2,y-1,5,4);}
+  if(a.hairStyle==='curly'){for(const [dx,dy] of [[-6,1],[-3,-1],[0,-2],[3,-1],[6,1],[-5,4],[5,4]])ctx.fillRect(x+dx,y+dy,3,3);}
+  if(a.hairStyle==='pixie'){for(let yy=top;yy<top+4;yy++)for(let xx=8;xx<24;xx++){const i=(yy*32+xx)*4;if(pixels[i+3]&&yy>top+1)ctx.clearRect(ox+xx,oy+yy,1,1);}ctx.fillRect(x-5,y-2,10,3);}
+  if(a.hairStyle==='topknot'){ctx.fillRect(x-3,y-5,6,4);ctx.fillRect(x-2,y-7,4,2);ctx.fillRect(x-6,y+2,12,3);}
+  if(a.hairStyle==='sidebraid'){ctx.fillRect(x-7,y+3,2,8);ctx.fillRect(x-8,y+9,2,5);ctx.fillRect(x-7,y+13,3,2);ctx.fillStyle=shadow;ctx.fillRect(x-7,y+6,2,1);ctx.fillRect(x-8,y+11,2,1);}
  }
 }
 export async function appearanceSheet(value,base='/creation/assets/'){
@@ -84,10 +126,10 @@ export async function appearanceSheet(value,base='/creation/assets/'){
  if(variants.has(key)){const v=variants.get(key);variants.delete(key);variants.set(key,v);return v;}
  const result=(async()=>{
   if(valid.version===1){const im=await loadOriginal(valid.outfit,base),c=recolored(im,valid),g=c.getContext('2d');decorate(g,imToPixels(im),c.width,valid);return c;}
-  const special=['robe','dress'].includes(a.outfit),torso=special?'clotharmor':a.outfit;
-  // Hood and mask are derived layers over the existing cloth head frame; all
-  // other headwear continues to use the native Fracture armor sheet.
-  const headSource=['bare','hood','mask'].includes(a.headwear)?'clotharmor':a.headwear;
+  const special=['robe','dress'].includes(a.outfit),torso=special?'clotharmor':(OUTFIT_SOURCES[a.outfit]||a.outfit);
+  // Derived wardrobe pieces stay on the existing cloth frame; all armor
+  // headwear continues to use the native Fracture armor sheet.
+  const headSource=HEADWEAR_SOURCES[a.headwear]||a.headwear;
   const names=[headSource,torso,a.legs,a.boots];
   const images=await Promise.all(names.map(n=>loadOriginal(n,base)));const sheets=images.map((im,i)=>recolored(im,{...a,outfit:names[i],color:[a.headColor,a.color,a.bottomColor,a.bootColor][i]}));
   const c=canvas(160,288),g=c.getContext('2d');

@@ -3,7 +3,7 @@ import {ROLES,validRole,roleName,objectSkillBonus,resolveObjectRoll} from './par
 test('canonical class identifiers and only supported Chaos skill bonuses',()=>{
  assert.deepEqual(Object.keys(ROLES),['rogue','bard','wizard','knight','healer','wildcard']);
  assert.equal(roleName('knight'),'Knight');assert.equal(roleName('unknown'),'Unassigned');
- assert.equal(validRole('barbarian'),true);assert.equal(roleName('paladin'),'Paladin');assert.equal(objectSkillBonus('assassin','attack'),0);
+ assert.equal(validRole('barbarian'),true);assert.equal(roleName('paladin'),'Paladin');assert.equal(objectSkillBonus('assassin','attack'),0);assert.equal(roleName('druid'),'Druid');assert.equal(roleName('warlock'),'Warlock');
  assert.equal(validRole('__proto__'),false);
  assert.equal(objectSkillBonus('rogue','steal'),3);
  assert.equal(objectSkillBonus('knight','break'),3);

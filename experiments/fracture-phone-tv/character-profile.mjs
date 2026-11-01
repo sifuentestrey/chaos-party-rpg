@@ -1,12 +1,20 @@
 // @ts-nocheck
 /** Shared avatar catalog. Appearance never grants native gear or statistics. */
 export const ARMORS=Object.freeze({clotharmor:'Cloth',leatherarmor:'Leather',mailarmor:'Chain mail',platearmor:'Plate',redarmor:'Royal armor',goldenarmor:'Ornate armor'});
-export const OUTFITS=Object.freeze({...ARMORS,robe:'Mage robe',dress:'Village dress'});
-export const BODIES=Object.freeze({human:'Human',elf:'Elf',orc:'Orc',dwarf:'Dwarf',ogre:'Ogre',fairy:'Fairy'});
-export const ACCESSORIES=Object.freeze({none:'None',hat:'Hat',crown:'Crown',flower:'Flower',glasses:'Glasses',cape:'Cape'});
-export const HAIR_STYLES=Object.freeze({original:'Original',cropped:'Cropped',bob:'Bob',long:'Long',ponytail:'Ponytail',bun:'Bun',braids:'Braids',mohawk:'Mohawk',sidecut:'Side cut'});
-export const FACIAL_HAIR=Object.freeze({none:'None',stubble:'Stubble',mustache:'Mustache',beard:'Beard'});
-export const HEADWEAR=Object.freeze({bare:'No helmet',hood:'Hood',mask:'Mask',...ARMORS});
+export const OUTFITS=Object.freeze({...ARMORS,robe:'Mage robe',dress:'Village dress',tunic:'Travel tunic',cloak:'Travel cloak',tabard:'Tabard'});
+export const OUTFIT_SOURCES=Object.freeze({tunic:'clotharmor',cloak:'clotharmor',tabard:'clotharmor'});
+export const BODIES=Object.freeze({human:'Human',elf:'Elf',orc:'Orc',dwarf:'Dwarf',ogre:'Ogre',fairy:'Fairy',vampire:'Vampire',werewolf:'Werewolf',skeleton:'Skeleton',demon:'Demon'});
+export const ACCESSORIES=Object.freeze({none:'None',hat:'Hat',crown:'Crown',flower:'Flower',glasses:'Glasses',cape:'Cape',scarf:'Scarf',satchel:'Satchel',shoulderpad:'Shoulder guard',ribbon:'Ribbon'});
+export const HAIR_STYLES=Object.freeze({original:'Original',cropped:'Cropped',bob:'Bob',long:'Long',ponytail:'Ponytail',bun:'Bun',braids:'Braids',mohawk:'Mohawk',sidecut:'Side cut',curly:'Curly',pixie:'Pixie',topknot:'Top knot',sidebraid:'Side braid'});
+export const FACIAL_HAIR=Object.freeze({none:'None',stubble:'Stubble',mustache:'Mustache',beard:'Beard',goatee:'Goatee',sideburns:'Sideburns'});
+export const HEADWEAR=Object.freeze({bare:'No helmet',hood:'Hood',mask:'Mask',circlet:'Circlet',cowl:'Cowl',pointed:'Pointed cap',veil:'Veil',...ARMORS});
+export const HEADWEAR_SOURCES=Object.freeze({bare:'clotharmor',hood:'clotharmor',mask:'clotharmor',circlet:'clotharmor',cowl:'clotharmor',pointed:'clotharmor',veil:'clotharmor'});
+export const DERIVED_HERITAGES=Object.freeze({
+ vampire:Object.freeze({label:'Vampire',skin:'#eadfea',accent:'#a83b61',layer:'fangs-eyes-cape'}),
+ werewolf:Object.freeze({label:'Werewolf',skin:'#9a714f',accent:'#d0a16e',layer:'ears-tail'}),
+ skeleton:Object.freeze({label:'Skeleton',skin:'#d8d1b8',accent:'#f0e9d2',layer:'skull'}),
+ demon:Object.freeze({label:'Demon',skin:'#bd5260',accent:'#e4a05c',layer:'horns-tail-wings'})
+});
 export const CLOTH_COLORS=['Original','Rose','Lavender','Teal','Blue','Gold','Crimson','Forest','Ivory','Black','Plum','Coral','Mint','Sky','Copper','Silver'];
 export const SKIN_COLORS=['Original','Light','Warm','Tan','Brown','Deep','Porcelain','Olive','Copper','Umber'];
 export const HAIR_COLORS=['Original','Brown','Black','Silver','Purple','Pink','Auburn','White','Blue','Green','Red','Honey'];
@@ -21,7 +29,9 @@ export const STARTERS=Object.freeze({
  healer:{name:'Healer',ability:'Mend',skill:'mend',cooldown:20,description:'Restore up to a quarter of your or a nearby friend’s maximum health. Cannot revive the fallen.'},
  barbarian:{name:'Barbarian',ability:'Frenzy',skill:'frenzy',cooldown:15,description:'Empower your melee attacks for a short engine-controlled window.'},
  paladin:{name:'Paladin',ability:'Bulwark',skill:'bulwark',cooldown:20,description:'Reduce the next damage you take through a self-only engine shield.'},
- assassin:{name:'Assassin',ability:'Ambush',skill:'ambush',cooldown:15,description:'Your first attack after using Ambush deals bonus damage.'}
+ assassin:{name:'Assassin',ability:'Ambush',skill:'ambush',cooldown:15,description:'Your first attack after using Ambush deals bonus damage.'},
+ druid:{name:'Druid',ability:'Entangle',skill:'entangle',cooldown:20,description:'Entangle nearby enemies with the native engine stun effect.'},
+ warlock:{name:'Warlock',ability:'Curse',skill:'curse',cooldown:15,description:'Curse your next attack with an engine-controlled damage bonus.'}
 });
 export function validateAppearance(value){
  if(!value||typeof value!=='object'||Array.isArray(value)||![1,2].includes(value.version))throw Error('Choose a supported character appearance.');

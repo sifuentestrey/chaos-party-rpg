@@ -6,7 +6,7 @@
  * the rules here prevents the two DM adapters from slowly describing
  * different games.
  */
-export const CHAOS_PARTY_KNOWLEDGE_VERSION='chaos-party-fracture.v3';
+export const CHAOS_PARTY_KNOWLEDGE_VERSION='chaos-party-fracture.v4';
 export const CHAOS_PARTY_KNOWLEDGE_SOURCES=Object.freeze([
   'experiments/fracture-phone-tv/action-contract.ts',
   'experiments/fracture-phone-tv/chaos-world.mjs',
@@ -28,7 +28,9 @@ export const CHAOS_PARTY_ABILITIES=Object.freeze([
   {id:'mend',role:'Healer',name:'Mend',effect:'Restores health to a living target; the engine determines the amount.'},
   {id:'frenzy',role:'Barbarian',name:'Frenzy',effect:'Empowers melee attacks for a short engine-controlled window; the engine determines bonus damage and duration.'},
   {id:'bulwark',role:'Paladin',name:'Bulwark',effect:'Reduces the next damage to the actor; the engine determines the reduction.'},
-  {id:'ambush',role:'Assassin',name:'Ambush',effect:'Empowers the first attack after activation; the engine determines bonus damage.'}
+  {id:'ambush',role:'Assassin',name:'Ambush',effect:'Empowers the first attack after activation; the engine determines bonus damage.'},
+  {id:'entangle',role:'Druid',name:'Entangle',effect:'Stuns nearby enemies through the native stun effect; the engine determines targets and duration.'},
+  {id:'curse',role:'Warlock',name:'Curse',effect:'Empowers the next attack with a damage bonus against its target; the engine determines the bonus and duration.'}
 ]);
 
 // Voice text is transcribed from the pinned Fracture source
@@ -94,9 +96,9 @@ SUPPORTED GAME SHAPE
 - Normal intent verbs are ability, use_item, attack, talk, quest, open, loot,
   go, equip, manipulate, enter, exit and creative; an unknown intent stays
   unknown until the engine or a grounded AI proposal can resolve it.
-- The seven optional signatures are Fighter/Power Strike, Rogue/Phase Shift,
-  Mage/Arcane Shock, Healer/Mend, Barbarian/Frenzy, Paladin/Bulwark and
-  Assassin/Ambush. Their effects are defined by the authoritative ability
+- The nine optional signatures are Fighter/Power Strike, Rogue/Phase Shift,
+  Mage/Arcane Shock, Healer/Mend, Barbarian/Frenzy, Paladin/Bulwark,
+  Assassin/Ambush, Druid/Entangle and Warlock/Curse. Their effects are defined by the authoritative ability
   registry above; the actor snapshot decides availability, cooldown, legal
   targets, damage and duration. Never promise an effect from a class
   description, and never invent a number.

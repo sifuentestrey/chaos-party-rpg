@@ -47,9 +47,9 @@ test('wardrobe uses real previews and cancel preserves the recovered appearance'
 
 test('fresh player can preview existing heritage and outfit options before joining',async({page},info)=>{
  await page.setViewportSize({width:375,height:812});await page.goto(base+'/join?key='+room.join);await expect(page.locator('#pair')).toBeVisible();
- expect(await page.locator('#body option').count()).toBe(6);expect(await page.locator('#outfit option').count()).toBe(8);
+ expect(await page.locator('#body option').count()).toBe(10);expect(await page.locator('#outfit option').count()).toBe(11);expect(await page.locator('#role option').count()).toBe(9);
  await page.locator('#body').selectOption('elf');await page.locator('#outfit').selectOption('dress');await page.waitForTimeout(1000);await page.screenshot({path:info.outputPath('creator.png'),fullPage:true});
- expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(375);report(info,'creator.json',{status:'passed',heritages:6,verifiedOutfits:8,newPlayerNotSubmitted:true});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(375);report(info,'creator.json',{status:'passed',heritages:10,verifiedOutfits:11,classes:9,newPlayerNotSubmitted:true});
 });
 
 test('shared TV has readable framing at 1080p and a stable camera on resize',async({page,browser},info)=>{

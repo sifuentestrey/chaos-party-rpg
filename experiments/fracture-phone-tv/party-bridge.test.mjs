@@ -375,7 +375,7 @@ test('saved original Chaos class stays bound to the correct native actor, not ph
 });
 test('new native signature classes pair and stay bound to their actor',async t=>{
  const {app,base,sockets}=await setup(t);
- for(const [i,role] of ['barbarian','paladin','assassin'].entries()){
+ for(const [i,role] of ['barbarian','paladin','assassin','druid','warlock'].entries()){
   const response=await post(base,'/pair',{key:app.room.join,name:'New'+role,role});
   assert.equal(response.status,201);const {token}=await response.json();
   assert.equal(sockets[i].auth.chaosRole,role);
