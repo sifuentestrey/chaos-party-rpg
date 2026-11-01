@@ -1,31 +1,33 @@
-> **Current project entrypoint: [START_HERE.md](START_HERE.md).** This checkout now contains the latest consolidated source. Older status text below is historical; use START_HERE for current scope, limitations, branch and next-chat instructions.
+# Chaos Party
 
-# Chaos Party RPG
+Chaos Party is a private family fantasy party game for one shared TV and individual phone controllers.
 
-Private project for a family TV-and-phones, AI-assisted, chaotic fantasy party game.
+The game-night product is the native **Fracture** world, beginning in the **Refuge** village. The old tavern web prototype remains preserved in the repository, but it is not the current game.
 
-**Local Qwen integration:** the multiplayer server now has an optional local AI action interpreter. [Connection, test evidence and current model-download blocker](docs/LOCAL_AI.md). The model itself has not been installed or verified in this cloud session.
+## What players do
 
-**Status: 0.3 beta candidate — one tavern and a complete cooperative crown heist.** The scene has 46 addressable objects with persistent changes, material-based checks, cover, hazards, NPC health and situational advantage/disadvantage. [Beta notes](docs/BETA.md) explain what is playable and what still needs real hardware testing. Source provenance remains in [docs/PROTOTYPE_IMPORT.md](docs/PROTOTYPE_IMPORT.md).
+Each phone controls a distinct persistent character. Players explore the Refuge and its native surroundings, talk to NPCs, fight real enemies, manipulate supported existing objects, and type open-ended intentions. The TV shows the shared world and short confirmed story events; phones show personal mechanics and dice.
 
-Use Node 22+, run `npm ci`, then `npm start`. Open the host screen on the server machine at port 4747 and join from phone browsers on the same LAN. For a real phone test without the Mac, use the [Codespaces live-game instructions](docs/PHONE_REAL_GAME.md). `npm test` exercises multiplayer and saves; `npm run build` produces the separate static solo preview. No paid API is required, though Codespaces may use an account’s included quota or billable minutes.
+The server is authoritative. The first valid action locks, server-owned dice determine outcomes, and real consequences persist. The AI Dungeon Master interprets and narrates grounded possibilities, but the engine decides what actually happens. Discovery comes from NPCs, observation, and the DM; there are no waypoints, route markers, tracker hand-holding, or fast travel.
 
-## Target experience
-- One shared full-screen 16:9 pixel-art tavern on TV; 12–20+ players connect from phone browsers using a QR or room code.
-- Every player creates and keeps a personalized sprite character, clothing, name, class, equipment and progression.
-- No phone joystick controls. Players type or dictate free-form, chaotic actions. First valid action locks and is announced; others get 8–12 seconds to react. Actions may fail on a fair dice roll and consequences persist.
-- Actual animated character motions, hits, knockback, effects, sound, and short entertaining narration. AI interprets free-text; deterministic server owns game state. Run without paid AI credentials using a transparently labeled fallback.
-- Host on an early-2015 13-inch Intel MacBook Pro (dual-core i5, 8 GB RAM, Iris 6100) via HDMI if performance allows; benchmark before promising it will work.
+Live Groq is optional. When configured, it uses the approved free connection. If it is unavailable, the game continues with a clearly labeled offline fallback. No API key belongs in this repository or in a packaged build.
 
-## Critical development constraint
-**Reuse first. Never blindly generate another generic game-looking website from scratch.** Find and actually run complete existing games, evaluate their licenses and architecture, compare before selecting the playable foundation. Preserve existing working multiplayer code while replacing inadequate visual/gameplay sections. No copyrighted DungeonBox extraction.
+## Run the current game-night build
 
-## Instructions
-1. Read AGENTS.md and docs/REUSE_CANDIDATES.md.
-2. Read docs/CODEX_KICKOFF.md and docs/PROTOTYPE_IMPORT.md. Preserve the recovered source and existing saves. If the original archive becomes available, keep a pristine copy and scan before committing.
-3. Run and visually evaluate both TV and phone experiences; capture screenshots/video.
-4. Make a runnable *visual* tavern spike. Compare it with an actually running licensed game. Favor reusing character animations and world rendering from an established playable game.
-5. Demonstrate a complete 90-second chaotic interaction on two real phone browsers with the TV screen, plus 20-client simulated load tests.
-6. Do not claim the game is finished solely on tests passing. No new costs, public deployments, or changes to unrelated repositories without authorization.
+Use Node 22.18+ LTS or Node 24+, Git, and a local network. On the Mac, run:
 
-Useful foundations and license considerations: see docs/REUSE_CANDIDATES.md.
+```sh
+./experiments/fracture-phone-tv/Start_Fracture_Chaos_Test.command
+```
+
+The launcher keeps the pinned Fracture checkout and its data separate from the original Chaos Party project, starts the native server and phone/TV bridge, and prints the host and phone links. Open the host link, choose the shared TV, then join from phones on the same Wi-Fi.
+
+`npm start` launches the preserved legacy tavern prototype on port 4747. It is not the current Fracture/Refuge game-night entrypoint.
+
+## Source and release rules
+
+`main` is the only active source of truth. Work on `main`; do not revive superseded branches or treat old PRs and packages as current source. Preserve `luna/visual-game-night-release` and all original saves as historical material.
+
+Read [AGENTS.md](AGENTS.md) for development rules, [START_HERE.md](START_HERE.md) for the document map, and [docs/FRACTURE_GAME_NIGHT_RELEASE.md](docs/FRACTURE_GAME_NIGHT_RELEASE.md) for the current acceptance checklist.
+
+The software evidence is useful, but physical 2015 Intel Mac, family Wi-Fi, real-phone, and human game-night acceptance must be verified separately. Do not claim those gates from automated tests alone.
