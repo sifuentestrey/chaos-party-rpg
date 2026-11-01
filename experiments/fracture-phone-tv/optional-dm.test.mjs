@@ -11,6 +11,13 @@ test('creative proposals require existing component IDs and cannot supply game o
  const result=await dm.interpret('make something royal',{nearby:[{name:'Bob',type:'player'}],chaos:{bag:[{id:'item-1'},{id:'item-2'}]}});assert.deepEqual(result,ok?proposal:null);
  }
 });
+test('AI can map an open-ended cosmetic idea to a confirmed defeated source',async t=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-dm-defeat-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+ const proposal={verb:'creative',target:'turn native-defeat-1 into necklace'};
+ const dm=createOptionalDM({dataDir:dir,key:'test-key',enabled:true,fetchImpl:async()=>({ok:true,json:async()=>({choices:[{message:{content:JSON.stringify(proposal)}}]})})});
+ const actor={x:2,y:3,nearby:[{name:'rat',type:'mob',x:2,y:3}],inventory:[],chaos:{defeated:[{id:'native-defeat-1',name:'rat',confirmed:true}]}};
+ assert.deepEqual(await dm.interpret('make something from the rat that I defeated',actor),proposal);
+});
 
 test('DM narration reuses canonical validation, supplied memories and safe fallback',async t=>{
  const receipt={id:'turn-7',status:'failed',player:'Ada',message:'The rug was not stolen. Guard noticed.',event:{attempt:'steal rug'},actor:{chaos:{npcs:[{id:'guard-1',name:'Guard',trust:-2,memory:[{verb:'theft'}]}],story:[{fact:'Guard noticed the attempt.'}]}}};

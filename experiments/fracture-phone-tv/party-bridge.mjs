@@ -88,7 +88,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
   const object=receipt?.object;
   if(object&&status==='succeeded'){
    const target=storyName(object.name);if(!target)return null;
-   const text={move:`${name} shifts the ${target}.`,ignite:`${name} sets the ${target} ablaze.`,extinguish:`${name} quenches the ${target}.`,splash:`${name} quenches the ${target}.`,break:`${name} breaks the ${target}.`,fell:`${name} fells the ${target}.`,repair:`${name} repairs the ${target}.`}[object.verb];
+   const text={move:`${name} shifts the ${target}.`,ignite:`${name} sets the ${target} ablaze.`,extinguish:`${name} quenches the ${target}.`,splash:`${name} quenches the ${target}.`,break:`${name} breaks the ${target}.`,fell:`${name} fells the ${target}.`,repair:`${name} repairs the ${target}.`,improvise:`${name} fashions the ${target}.`,craft:`${name} creates the ${target}.`,attach:`${name} assembles the ${target}.`}[object.verb];
    if(text)return {key:`world:${receipt.id}`,text,scene,major:['ignite','break','fell','repair'].includes(object.verb)};
   }
   if(status==='succeeded'&&['enter','exit'].includes(attempt?.verb))return {key:`door:${receipt.id}`,text:`${name} slips through the doorway.`,scene,major:false};

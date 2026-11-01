@@ -273,6 +273,24 @@ test('native-confirmed mob defeat becomes durable canonical DM memory and witnes
  assert.ok(restored.snapshot(a).story.some(e=>e.id===event.id&&e.outcome==='success'));
  assert.equal(restored.snapshot(a).npcs[0].trust,0,'native fighting is observed, not arbitrarily rewarded with trust');
 });
+test('creative native defeat can become a persistent data-only cosmetic through the real D20 path',t=>{
+ const {a,engine,file}=fixture(t);
+ const mob={id:449,kind:4,type:'mob',name:'rat',x:40,y:211,isDead:true};
+ assert.ok(engine.recordNativeDefeat(a,mob,{before:8,after:0,tile:{x:40,y:211}}));
+ let made;
+ for(let n=0;n<20;n++){made=engine.execute(a,'turn the defeated rat into a necklace');if(made.success)break;assert.equal(made.blocked,false);}
+ assert.ok(made.success,made.text);
+ assert.equal(made.object.cosmeticOnly,true);
+ assert.equal(made.object.cosmeticSlot,'neck');
+ assert.equal(engine.snapshot(a).defeated.length,0,'the confirmed native defeat is consumed once');
+ const item=engine.snapshot(a).bag.find(i=>i.id===made.object.id);assert.ok(item);assert.equal(item.dataOnly,true);assert.equal(item.type,'wearable');assert.equal(item.capabilities.blocking,false);
+ assert.equal(engine.execute(a,'equip '+item.id).success,true);
+ assert.equal(engine.snapshot(a).wearables[0].name,'necklace');
+ const restored=createChaosWorld({file});
+ assert.equal(restored.snapshot(a).wearables[0].id,item.id,'cosmetic survives reconnect');
+ const saved=JSON.parse(fs.readFileSync(file));assert.equal(saved.nativeDefeats['native-defeat-1'].claimedBy,a.characterId);assert.equal(saved.items[item.id].properties.attack,undefined,'no combat stat is invented');
+ assert.equal(engine.execute(a,'turn an unknown rat into a necklace').blocked,true,'an unconfirmed source cannot be substituted');
+});
 test('native combat memory never credits off-zone, distant, dead or unauthenticated characters',t=>{
  const {a,guard,engine,file,world}=npcFixture(t);
  engine.snapshot(a);

@@ -1,5 +1,12 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Grounded creative artifacts — November 1, 2026
+
+**Implemented:** the optional DM and offline parser can now map open-ended cosmetic ideas to one bounded server action. After a native combat hit is confirmed at zero HP, the authenticated fighter can turn that personally confirmed defeated creature into a data-only wearable (for example, “turn the defeated rat into a necklace”). The same original Chaos D20, helper/hinder, ownership, persistence and equip rules apply. The artifact reuses the existing band appearance and exposes no combat stats, native map prop, collision, loot or new artwork. Unknown sources, unconfirmed deaths, distant defeats and invented effects remain blocked with a contextual result.
+
+- [x] Focused object/DM/phone tests cover natural-language variants, source grounding, native defeat claiming, real D20 failure/success, persistence, equip state and the no-stats/no-blocking boundary.
+- [ ] Physical Mac/phone/TV playtest of this new creative path remains open; no live Groq claim is made from this code-only check. The AI remains optional and offline fallback remains authoritative.
+
 ## Game-night finishing pass — October 31, 2026
 
 **Implemented:** atomic admission of fresh inputs across exploration → planning, with server-instance/phase/round fencing and personal STOP; complete-snapshot readiness rather than trusting the login greeting; one bounded search per neighboring destination instead of repeated landing searches; distinct reachable outdoor travel formations whose arrivals require the assigned physical tile; connected native-floor placement for new characters. No actor HP/positions are fabricated to obtain passing gameplay.

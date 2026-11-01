@@ -13,6 +13,6 @@ export function inventoryView(actor){
   groups.get(name).count+=item.count;
  }
  const bag=[...groups.values()];
- for(const item of actor.chaos?.bag||[]){if(typeof item?.id!=='string'||!item.id||item.id.length>160)continue;bag.push({key:'chaos:'+item.id,name:item.name||item.kind||'Belonging',label:item.name||item.kind||'Belonging',asset:null,category:item.carried?'Carrying':item.equipped?'Worn':'Belonging',count:1,actions:[{label:'Inspect',text:'inspect '+item.id},...(item.carried?[{label:'Drop',text:'drop '+item.id}]:[])]});}
+ for(const item of actor.chaos?.bag||[]){if(typeof item?.id!=='string'||!item.id||item.id.length>160)continue;const actions=item.equipped?[{label:'Remove',text:'unequip '+item.id}]:item.dataOnly&&item.type==='wearable'?[{label:'Wear',text:'equip '+item.id}]:[{label:'Inspect',text:'inspect '+item.id}];bag.push({key:'chaos:'+item.id,name:item.name||item.kind||'Belonging',label:item.name||item.kind||'Belonging',asset:null,category:item.carried?'Carrying':item.equipped?'Worn':'Belonging',count:1,actions:[...actions,...(item.carried?[{label:'Drop',text:'drop '+item.id}]:[])]});}
  return {equipped,bag};
 }

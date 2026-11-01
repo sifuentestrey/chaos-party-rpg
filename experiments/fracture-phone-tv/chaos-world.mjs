@@ -31,6 +31,16 @@ export function unsupportedNativeEnvironment(text,view={}){
  return {blocked:true,success:false,text:`I can't interact with that ${kind} as a physical object here. The Fracture map has no verified movable or reactive ${kind} at this position.`};
 }
 const norm=s=>String(s||'').toLowerCase().replace(/^(?:the|a|an|my)\s+/,'').trim();
+const artifactSlot=name=>{
+ const value=String(name||'').toLowerCase();
+ if(/necklace|pendant|amulet|talisman|charm|collar|garland|medallion|earring/.test(value))return {slot:'body',cosmeticSlot:'neck'};
+ if(/ring|bracelet|band/.test(value))return {slot:'hand',cosmeticSlot:'hand'};
+ if(/crown|hat|helmet|headband|mask/.test(value))return {slot:'head',cosmeticSlot:'head'};
+ if(/cape|cloak|belt|badge|brooch|ornament|trophy|token|garb|costume|outfit/.test(value))return {slot:'body',cosmeticSlot:'body'};
+ return null;
+};
+const sourceLabel=value=>String(value||'').trim().replace(/^(?:the|a|an|my)\s+/i,'').replace(/^(?:defeated|dead|fallen)\s+/i,'').replace(/\s+(?:corpse|body)$/i,'').trim();
+const artifactSourceList=value=>String(value||'').split(/\s+and\s+|\s*\+\s*|\s*,\s*/i).map(sourceLabel).filter(Boolean);
 /** Door control uses only existing native map-authored entrances and player sprites. */
 export function nativeDoorAttempt(text){
  const clean=String(text||'').trim().replace(/^(?:please |I (?:want to |try to )?)+/i,'').replace(/[.!?]+$/,'');
@@ -47,7 +57,15 @@ export function creativeAttempt(text){
  const hinder=clean.match(/^(?:hinder|interfere with|sabotage)\s+(.+?)(?:\s+(?:with|on)\s+(?:their|the)\s+(?:roll|check|action))?$/i);if(hinder)return {verb:'hinder',recipient:hinder[1].trim()};
  const entity=parseEntityAttempt(core);
  if(entity&&environmental.has(entity.verb))return {...entity,...(direction?{direction:direction[1].toLowerCase()}:{}),entityAction:true};
- const attempt=parseItemAttempt(clean);return attempt&&verbs.has(attempt.verb)?attempt:null;
+ const attempt=parseItemAttempt(clean);
+ let m=core.match(/^(?:turn|transform|convert)\s+(?:the\s+)?(.+?)\s+into\s+(?:(?:a|an|the)\s+)?(.+)$/i);
+ if(m&&artifactSlot(m[2]))return {verb:'improvise',name:m[2].trim(),sources:artifactSourceList(m[1]),...artifactSlot(m[2])};
+ m=core.match(/^(?:wear|tie|hang|fashion)\s+(?:the\s+)?(.+?)\s+(?:as|into|around)\s+(?:(?:a|an|the)\s+)?(.+)$/i);
+ if(m&&artifactSlot(m[2]))return {verb:'improvise',name:m[2].trim(),sources:artifactSourceList(m[1]),...artifactSlot(m[2])};
+ if(attempt&&verbs.has(attempt.verb))return attempt;
+ m=core.match(/^(?:make|craft|create|fashion|forge|weave|build)\s+(?:(?:a|an|the)\s+)?(.+?)\s+(?:from|out of|using|with)\s+(.+)$/i);
+ if(m&&artifactSlot(m[1])&&artifactSourceList(m[2]).length===1)return {verb:'improvise',name:m[1].trim(),sources:artifactSourceList(m[2]),...artifactSlot(m[1])};
+ return null;
 }
 /** Only a named, visible Chaos-authored fixture can receive scenery commands.
  * Native mobs and unregistered map art always retain their own engine rules. */
@@ -66,7 +84,7 @@ function sceneryObjectAttempt(text,scenery=[]){
  const matches=scenery.filter(o=>[o.kind,o.name,o.id,o.id?.slice(o.scene.length+1)].some(ref=>norm(ref)===target));
  return (matches.length===1||matches.length&&['tree','camp tree'].includes(target))?{attempt:{...attempt,entityAction:true,target:matches[0].id},object:matches[0]}:null;
 }
-export function shouldUseCreative(text,actor){if(findNativeObject(nativeObjectAttempt(text),actor?.chaos?.scenery||[],actor||{x:0,y:0}))return true;if(nativeDoorAttempt(text)||unsupportedNativeEnvironment(text,actor?.chaos))return true;if(sceneryAttempt(text,actor?.chaos?.scenery||[])||sceneryObjectAttempt(text,actor?.chaos?.scenery||[]))return true;const a=creativeAttempt(text);if(!a)return false;if(['craft','attach','give','separate','steal','assist','hinder','appeal'].includes(a.verb))return true;const items=[...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[]),...(actor?.chaos?.npcs||[]).flatMap(n=>n.items||[])];const reference=a.item||a.target;return items.some(i=>i.id===reference||norm(i.name)===norm(reference));}
+export function shouldUseCreative(text,actor){if(findNativeObject(nativeObjectAttempt(text),actor?.chaos?.scenery||[],actor||{x:0,y:0}))return true;if(nativeDoorAttempt(text)||unsupportedNativeEnvironment(text,actor?.chaos))return true;if(sceneryAttempt(text,actor?.chaos?.scenery||[])||sceneryObjectAttempt(text,actor?.chaos?.scenery||[]))return true;const a=creativeAttempt(text);if(!a)return false;if(['improvise','craft','attach','give','separate','steal','assist','hinder','appeal'].includes(a.verb))return true;const items=[...(actor?.chaos?.bag||[]),...(actor?.chaos?.ground||[]),...(actor?.chaos?.defeated||[]),...(actor?.chaos?.npcs||[]).flatMap(n=>n.items||[])];const reference=a.item||a.target;return items.some(i=>i.id===reference||norm(i.name)===norm(reference));}
 
 export const fireCatchup=(last,now)=>({steps:Math.min(3,Math.floor(Math.max(0,now-last)/10000)),next:last+Math.min(3,Math.floor(Math.max(0,now-last)/10000))*10000});
 const distance=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
@@ -98,7 +116,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
  let state=fs.existsSync(file)?JSON.parse(fs.readFileSync(file,'utf8')):{version:1,seed,rng:seed,nextId:1,round:0,items:{},actors:{},camp:null};
  if(state.version!==1||!state.items||!state.actors)throw Error('Unsupported Chaos object save; refusing to overwrite');
  const doorControl=createNativeDoorControl(nativeDoors);
-  state.scenery||={};state.assists||={};state.appeals||={};state.npcs||={};state.fireClock||={};state.dmMemory||={version:1,entries:[],people:{}};
+ state.scenery||={};state.assists||={};state.appeals||={};state.npcs||={};state.fireClock||={};state.nativeDefeats||={};state.dmMemory||={version:1,entries:[],people:{}};
  // A native mob instance can produce only one durable defeat memory. This set
  // is ephemeral; actual canonical story facts live in the separate object save.
  const observedNativeDefeats=new WeakSet();
@@ -233,10 +251,10 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const peers=Object.values(world.players||{}).filter(q=>q.chaosControlled&&!q.chaosSpectator&&q.hasEnteredGame&&!q.isDead&&scene(q)===current&&reachable(p,q));
   if(!peers.includes(p))peers.push(p);
   const players=peers.map(q=>({id:identity(q),name:name(q),hp:q.hitPoints,maxHp:q.maxHitPoints}));
-  const s={current,items:Object.fromEntries(Object.entries(state.items).filter(([,i])=>allowSyntheticFixtures&&(!i.location||(i.location===current&&i.tile&&distance(p,i.tile)<=8&&sameZone(p,i.tile))))),nextId:state.nextId,creatures:Object.fromEntries(npcViews(p).map(n=>[n.id,n])),regions:{},campaign:{day:1,history:[],completed:[]},locations:{[current]:{id:current,name:world.zoneManager?.getZoneAt(p.x,p.y)?.name||'Fracture',exits:[],danger:0}}};
+  const s={current,items:Object.fromEntries(Object.entries(state.items).filter(([,i])=>i.dataOnly?i.ownerId===id:allowSyntheticFixtures&&(!i.location||(i.location===current&&i.tile&&distance(p,i.tile)<=8&&sameZone(p,i.tile))))),nextId:state.nextId,creatures:Object.fromEntries(npcViews(p).map(n=>[n.id,n])),regions:{},campaign:{day:1,history:[],completed:[]},locations:{[current]:{id:current,name:world.zoneManager?.getZoneAt(p.x,p.y)?.name||'Fracture',exits:[],danger:0}}};
   return {room:{seed:state.seed,round:state.round,world:{expedition:s},players},actor:players.find(q=>q.id===id),s};
  }
- const plain=i=>({id:i.id,name:i.name,type:i.type,material:i.material,condition:i.condition,equipped:i.equipped,slot:i.slot,color:i.appearance?.color,visual:i.visual,blocks:objectCapabilities(i).blocking,capabilities:objectCapabilities(i),owner:i.ownerId?state.npcs[i.ownerId]?.name:null,hp:i.hp,maxHp:i.maxHp,tile:i.tile?{...i.tile}:null,components:[...i.components]});
+ const plain=i=>({id:i.id,name:i.name,type:i.type,material:i.material,condition:i.condition,equipped:i.equipped,slot:i.slot,cosmeticSlot:i.cosmeticSlot,dataOnly:!!i.dataOnly,cosmeticOnly:!!i.cosmeticOnly,color:i.appearance?.color,visual:i.visual,blocks:objectCapabilities(i).blocking,capabilities:objectCapabilities(i),owner:i.ownerId?state.npcs[i.ownerId]?.name:null,hp:i.hp,maxHp:i.maxHp,tile:i.tile?{...i.tile}:null,components:[...(i.components||[])]});
  function pulse(p){
   const current=scene(p),now=clock();if(!state.fireClock[current])state.fireClock[current]=now;
   const burning=Object.values(state.items).filter(i=>allowSyntheticFixtures&&i.condition==='burning'&&(i.location===current||state.npcs[i.ownerId]?.location===current||state.actors[i.ownerId]?.scene===current));
@@ -433,6 +451,59 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   if(verb==='drink'&&result.success){try{world.pushToPlayer(p,p.health());}catch{/* The next authenticated state poll also carries native health. */}}
   return result;
  }
+ function creativeSources(p){
+  const id=identity(p),current=scene(p);
+  const items=Object.values(state.items).filter(i=>i.dataOnly&&i.ownerId===id&&!i.parentId&&i.condition==='intact').map(i=>({kind:'item',id:i.id,name:i.name,item:i}));
+  const defeats=Object.values(state.nativeDefeats||{}).filter(d=>d.actorId===id&&!d.claimedBy&&d.scene===current&&d.tile&&distance(p,d.tile)<=2&&sameZone(p,d.tile)).map(d=>({kind:'defeat',id:d.id,name:d.name,defeat:d}));
+  return [...items,...defeats];
+ }
+ function creativeSourceMatches(p,reference){
+  const ref=sourceLabel(reference),sources=creativeSources(p),exact=sources.filter(s=>s.id===ref);
+  if(exact.length===1)return exact;
+  const named=sources.filter(s=>norm(s.name)===norm(ref));
+  return named.length===1?named:[];
+ }
+ function executeImprovisedArtifact(p,attempt,text){
+  if(!identity(p)||!p.chaosControlled||!p.hasEnteredGame||p.isDead)return {blocked:true,success:false,text:'An active living character must attempt the action.'};
+  const shape=artifactSlot(attempt.name);if(!shape)return {blocked:true,success:false,text:'The engine can only improvise a wearable or other supported cosmetic form.'};
+  const refs=(attempt.sources||[]).map(sourceLabel).filter(Boolean);if(!refs.length||refs.length>3)return {blocked:true,success:false,text:'Name one to three real materials or a confirmed defeated creature.'};
+  const resolved=refs.map(ref=>creativeSourceMatches(p,ref));
+  if(resolved.some(matches=>matches.length!==1))return {blocked:true,success:false,text:'That creative idea needs a confirmed nearby source you own or a defeated creature you personally helped bring down.'};
+  const sources=resolved.map(matches=>matches[0]);
+  if(new Set(sources.map(source=>source.id)).size!==sources.length)return {blocked:true,success:false,text:'Use each real source only once.'};
+  if(sources.some(s=>s.kind==='item'&&s.item.equipped))return {blocked:true,success:false,text:'Remove an equipped component before reshaping it.'};
+  const {room,actor}=projection(p);if(!actor)return {blocked:true,success:false,text:'Your character is still connecting.'};
+  const previous=state;state=structuredClone(state);
+  try{
+   const rng=new Rng(state.seed);rng.restore(state.rng);
+   const aid=state.assists[actor.id],helper=aid?.until>now()?Object.values(p.getWorld().players||{}).find(q=>identity(q)===aid.helperId&&q!==p&&q.hasEnteredGame&&!q.isDead&&q.chaosControlled&&!q.chaosSpectator&&reachable(p,q)):null;
+   if(aid)delete state.assists[actor.id];
+   const rolls=helper?[rng.int(1,20),rng.int(1,20)]:null;
+   const mode=helper&&aid.mode===-1?-1:1;
+   const check=resolveObjectRoll({role:p.chaosRole,perk:p.chaosPerk,verb:'craft',dc:10,roll:rolls?selectD20(rolls,mode):rng.int(1,20),rng});
+   state.rng=rng.snapshot();state.round++;
+   const sourceNames=sources.map(s=>s.name).join(' and '),prefix=rolls?`D20 ${mode===-1?'disadvantage':'advantage'} ${rolls.join(' / ')} → `:`D20 `;
+   const modifier=check.bonus?` +${check.bonus}`:'';
+   if(!check.success){
+    const textOut=`${prefix}${check.roll}${modifier} / 10: ${actor.name} tries to fashion ${attempt.name}, but the materials resist. Nothing is consumed.`;
+    const roomResult={round:state.round,world:{expedition:{current:scene(p),creatures:state.npcs}},dmMemory:state.dmMemory,result:{id:'chaos-'+state.round,playerId:actor.id,name:actor.name,action:text,target:{entityId:sources[0].id},blocked:false,success:false,narration:textOut,changes:[],sceneEvents:[]}};
+    recordDMMemory(roomResult);const entry=state.dmMemory.entries.at(-1);if(entry)entry.tile={x:p.x,y:p.y};persist();
+    return {blocked:false,success:false,text:textOut,roll:check.roll,dc:10,bonus:check.bonus,rerolled:check.rerolled,...(rolls?{rolls,...(helper&&mode===1?{assistedBy:name(helper)}:{}),...(helper&&mode===-1?{hinderedBy:name(helper)}:{})}:{}),event:entry};
+   }
+   const id='item-'+state.nextId++,material=sources.find(s=>s.kind==='item'&&MATERIALS[s.item.material])?.item.material||'bone';
+   const nameText=String(attempt.name||'improvised trophy').replace(/[<>\u0000-\u001f\u007f]/g,' ').replace(/\s+/g,' ').trim().slice(0,48)||'improvised trophy';
+   const made=state.items[id]={id,name:nameText,type:'wearable',material,materials:[material],properties:{},slot:attempt.slot||shape.slot,cosmeticSlot:attempt.cosmeticSlot||shape.cosmeticSlot,condition:'intact',hp:1,maxHp:1,ownerId:actor.id,location:null,position:[480,390],components:sources.filter(s=>s.kind==='item').map(s=>s.id),contents:[],equipped:false,portable:true,wearable:true,dataOnly:true,cosmeticOnly:true,appearance:{shape:'band',color:MATERIALS[material].color},history:[],sourceRefs:sources.map(s=>({kind:s.kind,id:s.id,name:s.name}))};
+   for(const source of sources){
+    if(source.kind==='item'){const item=state.items[source.id];if(!item||item.ownerId!==actor.id||item.condition!=='intact')throw Error('Creative source changed before resolution');item.parentId=id;item.ownerId=null;item.location=null;item.equipped=false;item.condition='intact';}
+    else {const defeat=state.nativeDefeats[source.id];if(!defeat||defeat.claimedBy)throw Error('That defeated creature is no longer available');defeat.claimedBy=actor.id;defeat.claimedAt=now();}
+   }
+   const fact=`${actor.name} fashions ${nameText} from ${sourceNames}. It is a cosmetic ${made.cosmeticSlot} piece with no combat stats.`;
+   const canonical=`${prefix}${check.roll}${modifier} / 10: ${fact}`;
+   const roomResult={round:state.round,world:{expedition:{current:scene(p),creatures:state.npcs}},dmMemory:state.dmMemory,result:{id:'chaos-'+state.round,playerId:actor.id,name:actor.name,action:text,target:{entityId:id},blocked:false,success:true,narration:canonical,changes:[fact],sceneEvents:[]}};
+   recordDMMemory(roomResult);const entry=state.dmMemory.entries.at(-1);if(entry)entry.tile={x:p.x,y:p.y};persist();
+   return {blocked:false,success:true,text:canonical,roll:check.roll,dc:10,bonus:check.bonus,rerolled:check.rerolled,...(rolls?{rolls,...(helper&&mode===1?{assistedBy:name(helper)}:{}),...(helper&&mode===-1?{hinderedBy:name(helper)}:{})}:{}),event:entry,item:plain(made),object:{id,name:nameText,tile:{x:p.x,y:p.y},condition:'intact',actorId:identity(p),verb:'improvise',cosmeticOnly:true,cosmeticSlot:made.cosmeticSlot}};
+  }catch(error){state=previous;throw error;}
+ }
  function snapshot(p){
   if(!identity(p))return {bag:[],ground:[],wearables:[]};surroundings(p);pulse(p);syncNative(p);const id=identity(p);
   const bag=Object.values(state.items).filter(i=>i.ownerId===id&&!i.parentId&&i.condition!=='disassembled');
@@ -442,7 +513,9 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const aid=state.assists[id],helper=aid?.until>now()?Object.values(p.getWorld().players||{}).find(q=>identity(q)===aid.helperId&&q.hasEnteredGame&&!q.isDead&&q.chaosControlled&&!q.chaosSpectator&&scene(q)===scene(p)&&reachable(p,q)):null;
   const assistedBy=helper&&aid.mode!==-1?name(helper):null,hinderedBy=helper&&aid.mode===-1?name(helper):null;
   const updates=nativeTrees.filter(t=>t.cells).flatMap(t=>{const o=state.scenery[scene(p)+':'+t.id];return o&&(o.condition!==(t.fireSource?'burning':'intact')||distance(o.tile,t.tile)>0||o.carriedBy)?[{id:t.id,tile:o.tile,condition:o.condition,carriedBy:!!o.carriedBy}]:[];});
-  return {doors:doorControl.view(p),nativeChanges:nativeTrees.filter(t=>state.scenery[scene(p)+':'+t.id]?.condition==='broken').map(t=>t.id),nativeUpdates:updates,bag:[...(allowSyntheticFixtures?bag.map(plain):[]),...sceneScenery(scene(p)).filter(o=>o.carriedBy===id&&o.portable).map(o=>({id:o.id,name:o.name,kind:o.kind,material:o.material,condition:o.condition,scene:o.scene,tile:{x:p.x,y:p.y},nativeOrigin:o.nativeOrigin,nativeAdapter:true,capabilities:nativeCapabilities(o),carried:true}))],ground:allowSyntheticFixtures?ground.map(plain):[],scenery:nearbyScenery(p).map(o=>{if(!o.nativeOrigin)return o;return {id:o.id,scene:o.scene,name:o.name,kind:o.kind,material:o.material,condition:o.condition,tile:o.tile,interactionTile:nativeContact(p,o),nativeOrigin:o.nativeOrigin,aliases:o.aliases,capabilities:nativeCapabilities(o),nativeAdapter:!!o.cells?.length,dc:o.dc,wet:o.wet>0};}),npcs,story,wearables:allowSyntheticFixtures?bag.filter(i=>i.equipped).map(plain):[],camp:allowSyntheticFixtures?state.camp:null,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})};
+  const creativeBag=allowSyntheticFixtures?bag.map(plain):bag.filter(i=>i.dataOnly).map(i=>({...plain(i),carried:true}));
+  const defeated=Object.values(state.nativeDefeats||{}).filter(d=>d.actorId===id&&!d.claimedBy&&d.scene===scene(p)&&d.tile&&distance(p,d.tile)<=2&&sameZone(p,d.tile)).map(d=>({id:d.id,name:d.name,kind:'defeated-creature',tile:{...d.tile},scene:d.scene,confirmed:true,source:'native-combat'}));
+  return {doors:doorControl.view(p),nativeChanges:nativeTrees.filter(t=>state.scenery[scene(p)+':'+t.id]?.condition==='broken').map(t=>t.id),nativeUpdates:updates,bag:[...creativeBag,...sceneScenery(scene(p)).filter(o=>o.carriedBy===id&&o.portable).map(o=>({id:o.id,name:o.name,kind:o.kind,material:o.material,condition:o.condition,scene:o.scene,tile:{x:p.x,y:p.y},nativeOrigin:o.nativeOrigin,nativeAdapter:true,capabilities:nativeCapabilities(o),carried:true}))],ground:allowSyntheticFixtures?ground.map(plain):[],scenery:nearbyScenery(p).map(o=>{if(!o.nativeOrigin)return o;return {id:o.id,scene:o.scene,name:o.name,kind:o.kind,material:o.material,condition:o.condition,tile:o.tile,interactionTile:nativeContact(p,o),nativeOrigin:o.nativeOrigin,aliases:o.aliases,capabilities:nativeCapabilities(o),nativeAdapter:!!o.cells?.length,dc:o.dc,wet:o.wet>0};}),npcs,story,defeated,wearables:allowSyntheticFixtures?bag.filter(i=>i.equipped).map(plain):bag.filter(i=>i.dataOnly&&i.equipped).map(i=>({...plain(i),carried:true})),camp:allowSyntheticFixtures?state.camp:null,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})};
  }
  function apply(p,text){
   if(!identity(p))return {blocked:true,success:false,text:'Your character is still connecting.'};
@@ -670,6 +743,9 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
  }
  function execute(p,text){
   surroundings(p);pulse(p);
+  const creative=creativeAttempt(text);
+  const inferredArtifact=creative?.verb==='craft'&&creative.sources?.length===1&&artifactSlot(creative.name)&&creativeSourceMatches(p,creative.sources[0]).length===1?{verb:'improvise',name:creative.name.trim(),sources:artifactSourceList(creative.sources[0]),...artifactSlot(creative.name)}:creative;
+  if(inferredArtifact?.verb==='improvise')return executeImprovisedArtifact(p,inferredArtifact,text);
   const nativeAttempt=nativeObjectAttempt(text);
   const carried=nativeAttempt?.verb==='drop'?sceneScenery(scene(p)).filter(o=>o.carriedBy===identity(p)):[];
   const nativeTarget=findNativeObject(nativeAttempt,carried.length?carried:nearbyScenery(p),p);
@@ -742,6 +818,8 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   try{
    surroundings(p);
    const actorId=identity(p),mobName=String(mob.chaosName||mob.name||kindName(mob.kind)||'creature').replace(/[\\u0000-\\u001f]/g,' ').slice(0,50);
+   const mobKey=String(mob.id??mob.kind??mobName),defeatKey=`${scene(p)}|${mobKey}|${tile.x},${tile.y}`;
+   if(Object.values(state.nativeDefeats||{}).some(d=>d.key===defeatKey))return null;
    const witnessed=npcViews(p).filter(n=>visible({...p,x:n.tile.x,y:n.tile.y,getWorld:()=>p.getWorld()},tile,6));
    const id='native-defeat-'+(++state.round);
    for(const n of witnessed){
@@ -756,6 +834,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
      sceneEvents:witnessed.map(n=>({type:'witness',entityId:n.id}))}};
    recordDMMemory(room);
    const entry=state.dmMemory.entries.at(-1);if(entry)entry.tile={x:tile.x,y:tile.y};
+   state.nativeDefeats[id]={id,key:defeatKey,actorId,name:mobName,mobId:mobKey,scene:scene(p),tile:{x:tile.x,y:tile.y},at:now(),claimedBy:null};
    persist();observedNativeDefeats.add(mob);
    return {id,fact,witnesses:witnessed.map(n=>n.name)};
   }catch(error){state=previous;throw error;}
