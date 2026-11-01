@@ -271,7 +271,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
  async function preparePacing(s,p,key){
   try{
    const response=await pacingCall(s,{command:'prepare',instanceId:p.instanceId});if(response.roundId!==p.roundId)return;
-   const plans=response.plans||[],unknown=plans.filter(d=>!d.continuation&&d.intent.verb==='unknown');
+   const plans=response.plans||[],dmPlans=plans.map(d=>({...d,actor:d.actor?{...d.actor,situation:gameNightStoryView(room.story)}:d.actor})),unknown=dmPlans.filter(d=>!d.continuation&&d.intent.verb==='unknown');
    const batches=[];for(let i=0;i<unknown.length&&i<20;i+=10)batches.push(unknown.slice(i,i+10));
    const replies=await Promise.all(batches.map(batch=>dm.interpretBatch?.(batch,{signal:AbortSignal.timeout(6000)})||null));
    if(preparingKey!==key||nativePacing?.instanceId!==p.instanceId)return;
@@ -621,7 +621,7 @@ let changes=null;function connectChanges(){if(changes){changes.close();changes=n
     let intent=parseIntent(b.text);if(!['enter','exit','cancel','ability'].includes(intent.verb)&&shouldUseCreative(b.text,s.actor))intent={verb:'creative',target:b.text};const epoch=intent.verb==='cancel'?++s.epoch:s.epoch;
     if(intent.verb==='cancel')cancelPending(s,'Announced action cancelled by STOP before execution.');
     const unresolved=intent.target&&['go','attack','talk','quest','open','loot','equip'].includes(intent.verb)&&!resolveVisibleTarget([...(s.actor.nearby||[]),...(s.actor.inventory||[])],s.actor,intent);
-    const aiActor={...s.actor,partyScene:partyScene()};let interpreted=false;
+    const aiActor={...s.actor,partyScene:partyScene(),situation:gameNightStoryView(room.story)};let interpreted=false;
     // Entrances are native entities, not reactive scenery. Resolve their
     // intentions with the general contract before trying environmental AI.
     if(intent.verb==='unknown'&&s.actor.entrances?.length){interpreted=true;intent=await dm.interpret(b.text,aiActor)||intent;}
