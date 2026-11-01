@@ -13,11 +13,11 @@ const originals=new Map(),variants=new Map();
 const skinSet=new Set(['faa676','c78058','a06244','b57657','ea996b']);
 const hairSet=new Set(['b49320','d5b030','dac273','e1bd3f','e6cd78']);
 const garment={clotharmor:['d1d1d1','ececec','774e2d','92623a','966f4f'],leatherarmor:['774e2d','795335','966f4f','b4785b','896546','9f6448','db9e80','896446','92623a','9c6b54'],mailarmor:['6f6f6f','9c9c9c','b8b8b8','525252','505050','646464','979797','8b8b8b','717171'],platearmor:['9c9c9c','bebebe','ececec','6f6f6f','5c416c','664a77','525252'],redarmor:['f31818','f64f4f','b30a0a','fa9999','d82525','ff5e5e','ba1414','e00c0c'],goldenarmor:['e1cf36','d5b030','fff074','bc9b29','a68821','a98b23','eede59']};
-export const hairVisible=outfit=>['bare','clotharmor','leatherarmor','robe','dress'].includes(outfit);
+export const hairVisible=outfit=>['bare','clotharmor','leatherarmor','robe','dress','mask'].includes(outfit);
 function canvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c;}
 function hex(r,g,b){return [r,g,b].map(n=>n.toString(16).padStart(2,'0')).join('');}
 export function recolorPixels(data,width,a){
- const garmentSet=new Set(garment[a.outfit]);
+ const garmentSet=new Set(garment[a.outfit]||[]);
  for(let i=0;i<data.length;i+=4){if(!data[i+3])continue;const key=hex(data[i],data[i+1],data[i+2]),y=Math.floor(i/4/width)%32;let color=null;
   if(skinSet.has(key)&&(a.skin||['orc','ogre'].includes(a.body))){const base=['orc','ogre'].includes(a.body)?shade(skins[a.skin],0.65).map((v,j)=>Math.round(v*0.5+[106,158,88][j]*0.5)):rgb(skins[a.skin]);const f=key==='c78058'||key==='a06244'?0.76:key==='b57657'?0.88:1;color=base.map(v=>Math.round(v*f));}
   else if(y<18&&hairVisible(a.outfit)&&hairSet.has(key)&&a.hair)color=shade(hairs[a.hair],(data[i]+data[i+1]+data[i+2])/3/161);
@@ -33,15 +33,37 @@ function decorate(ctx,source,w,a){
   if(top===32)continue;
   for(let y=top;y<top+5;y++)for(let x=4;x<28;x++){const i=((oy+y)*w+ox+x)*4;if(source[i+3]){left=Math.min(left,x);right=Math.max(right,x);}}
   const cx=ox+Math.round((left+right)/2),y=oy+top,up=Math.floor(row/3)===1,side=Math.floor(row/3)===0;
-  const skin=['orc','ogre'].includes(a.body)?'#80a768':skins[a.skin],color=cloths[a.color]||'#9f79c7';
+  const skin=['orc','ogre'].includes(a.body)?'#80a768':skins[a.skin],color=cloths[a.color]||'#9f79c7',headColor=cloths[a.headColor]||color;
+  if(a.accessory==='cape'){
+   ctx.save();ctx.globalCompositeOperation='destination-over';
+   const capeShade=shade(cloths[a.color]||'#8871ad',.72).map(v=>v.toString(16).padStart(2,'0')).join('');
+   fill(cx-8,y+5,3,12,'#'+capeShade);fill(cx+6,y+5,3,12,'#'+capeShade);
+   if(up)fill(cx-7,y+4,14,3,'#'+capeShade);
+   ctx.restore();
+  }
   if(['elf','orc','ogre','fairy'].includes(a.body)){
    ctx.save();ctx.globalCompositeOperation='destination-over';
    for(const sign of side?[1]:[-1,1]){fill(cx+sign*6-(sign<0?2:0),y+5,3,2,'#373737');fill(cx+sign*7,y+4,2,2,skin);}ctx.restore();
+  }
+  if(a.headwear==='hood'){
+   fill(cx-8,y-1,16,3,headColor);fill(cx-7,y+1,14,3,headColor);
+   fill(cx-9,y+3,2,7,headColor);fill(cx+7,y+3,2,7,headColor);
+   fill(cx-6,y+2,12,1,shade(headColor,.72).map(v=>v.toString(16).padStart(2,'0')).join('').replace(/^/,'#'));
+  }
+  if(a.headwear==='mask'&&!up){
+   const mask=shade(headColor,.8).map(v=>v.toString(16).padStart(2,'0')).join('');
+   fill(cx-6,y+7,12,3,'#'+mask);fill(cx-7,y+8,1,1,'#'+mask);fill(cx+6,y+8,1,1,'#'+mask);
   }
   if(a.accessory==='hat'){fill(cx-7,y,14,2,'#373737');fill(cx-4,y-4,9,5,color);fill(cx-4,y-1,9,1,'#e6bd63');}
   if(a.accessory==='crown'){fill(cx-5,y,11,2,'#edbb51');for(const x of [-5,0,4])fill(cx+x,y-3,2,4,'#f4d36e');fill(cx,y,2,1,'#c95779');}
   if(a.accessory==='flower'||a.flower!=='none'&&a.flower){fill(cx+(a.flower==='left'?-6:5),y+1,1,6,'#67945b');fill(cx+(a.flower==='left'?-8:3),y+1,5,3,'#e68bb0');fill(cx+(a.flower==='left'?-7:4),y,3,5,'#e68bb0');fill(cx+(a.flower==='left'?-6:5),y+2,1,1,'#ffe6a0');}
   if((a.accessory==='glasses'||a.eyewear==='glasses')&&!up){fill(cx-5,y+5,4,3,'#302d35');if(!side){fill(cx+1,y+5,4,3,'#302d35');fill(cx-1,y+6,2,1,'#302d35');}fill(cx-4,y+6,2,1,'#a5d7df');if(!side)fill(cx+2,y+6,2,1,'#a5d7df');}
+  if(a.facialHair&&a.facialHair!=='none'&&hairVisible(a.headwear)&&!up){
+   const beard=hairs[a.hair]||hairs[0];
+   if(a.facialHair==='stubble')fill(cx-3,y+8,6,1,shade(beard,.72).map(v=>v.toString(16).padStart(2,'0')).join('').replace(/^/,'#'));
+   if(a.facialHair==='mustache'){fill(cx-3,y+7,3,2,beard);fill(cx+1,y+7,3,2,beard);}
+   if(a.facialHair==='beard'){fill(cx-4,y+7,8,3,beard);fill(cx-3,y+10,6,2,beard);}
+  }
  }
 }
 function loadOriginal(outfit,base){const key=base+outfit;if(!originals.has(key))originals.set(key,new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>{originals.delete(key);reject(Error('Character art could not load: '+outfit));};im.src=base+outfit+'.png';}));return originals.get(key);}
@@ -52,6 +74,9 @@ function addHair(ctx,a){if(!hairVisible(a.headwear)||a.hairStyle==='original')re
   if(['bob','long'].includes(a.hairStyle)){const length=a.hairStyle==='long'?12:8;ctx.fillRect(x-6,y+3,2,length);ctx.fillRect(x+5,y+3,2,length);if(up)ctx.fillRect(x-4,y+6,9,length-3);}
   if(a.hairStyle==='ponytail'){ctx.fillStyle=hair;ctx.fillRect(x-8,y+4,3,5);ctx.fillRect(x-9,y+8,3,4);ctx.fillRect(x-8,y+11,2,3);ctx.fillStyle='#493b39';ctx.fillRect(x-9,y+9,1,3);ctx.fillStyle='#d9a76c';ctx.fillRect(x-8,y+4,3,2);}
   if(a.hairStyle==='bun'){ctx.fillRect(x-3,y-3,6,4);ctx.fillRect(x-2,y-4,4,1);}
+  if(a.hairStyle==='braids'){ctx.fillRect(x-7,y+3,2,8);ctx.fillRect(x-8,y+9,2,4);ctx.fillRect(x+5,y+3,2,8);ctx.fillRect(x+6,y+9,2,4);ctx.fillStyle='#493b39';ctx.fillRect(x-7,y+5,2,1);ctx.fillRect(x+5,y+5,2,1);}
+  if(a.hairStyle==='mohawk'){ctx.fillRect(x-2,y-4,4,9);ctx.fillRect(x-4,y-1,8,3);}
+  if(a.hairStyle==='sidecut'){for(let yy=top;yy<top+5;yy++)for(let xx=8;xx<13;xx++){const i=(yy*32+xx)*4;if(pixels[i+3])ctx.clearRect(ox+xx,oy+yy,1,1);}ctx.fillRect(x+2,y-1,5,4);}
  }
 }
 export async function appearanceSheet(value,base='/creation/assets/'){
@@ -60,7 +85,10 @@ export async function appearanceSheet(value,base='/creation/assets/'){
  const result=(async()=>{
   if(valid.version===1){const im=await loadOriginal(valid.outfit,base),c=recolored(im,valid),g=c.getContext('2d');decorate(g,imToPixels(im),c.width,valid);return c;}
   const special=['robe','dress'].includes(a.outfit),torso=special?'clotharmor':a.outfit;
-  const names=[a.headwear==='bare'?'clotharmor':a.headwear,torso,a.legs,a.boots];
+  // Hood and mask are derived layers over the existing cloth head frame; all
+  // other headwear continues to use the native Fracture armor sheet.
+  const headSource=['bare','hood','mask'].includes(a.headwear)?'clotharmor':a.headwear;
+  const names=[headSource,torso,a.legs,a.boots];
   const images=await Promise.all(names.map(n=>loadOriginal(n,base)));const sheets=images.map((im,i)=>recolored(im,{...a,outfit:names[i],color:[a.headColor,a.color,a.bottomColor,a.bootColor][i]}));
   const c=canvas(160,288),g=c.getContext('2d');
   // All six native sheets share the same 32px animation grid. Each piece owns

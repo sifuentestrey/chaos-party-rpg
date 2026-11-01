@@ -237,7 +237,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    if(tile){const previous=state;state=structuredClone(state);try{state.camp.tableId=add(scene(p),{name:'camp table',type:'fixture',material:'wood',portable:true,blocks:true,tile,visual:'table',hp:4,maxHp:4}).id;persist();}catch(error){state=previous;throw error;}}
   }
  }
- function npcViews(p){const present=new Map(nativeNPCs(p).map(n=>[npcKey(p,n),n]));return Object.values(state.npcs).filter(n=>present.has(n.id)&&n.location===scene(p)&&visible(p,n)).map(n=>{n.nativeId=String(present.get(n.id).id);return n;});}
+ function npcViews(p){const present=new Map(nativeNPCs(p).map(n=>[npcKey(p,n),n]));return Object.values(state.npcs).filter(n=>present.has(n.id)&&n.location===scene(p)&&visible(p,n)).map(n=>{const native=present.get(n.id);n.nativeId=String(native.id);n.nativeKind=String(kindName(native.kind)||'').toLowerCase();return n;});}
  function blocked(p,x,y){
   // Persisted NPC ownership is not proof the native NPC is still present.
   // Only currently observed native owners can project their fixtures here.
@@ -508,7 +508,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   if(!identity(p))return {bag:[],ground:[],wearables:[]};surroundings(p);pulse(p);syncNative(p);const id=identity(p);
   const bag=Object.values(state.items).filter(i=>i.ownerId===id&&!i.parentId&&i.condition!=='disassembled');
   const ground=Object.values(state.items).filter(i=>(!i.ownerId&&i.location===scene(p)||state.npcs[i.ownerId]?.location===scene(p))&&!i.parentId&&i.tile&&visible(p,i.tile)&&i.condition!=='disassembled');
-  const npcs=npcViews(p).map(n=>({id:n.id,nativeId:n.nativeId,name:n.name,tile:n.tile,attitude:(n.trust[identity(p)]||0)<0?'hostile':(n.trust[identity(p)]||0)>0?'friendly':'neutral',trust:n.trust[identity(p)]||0,memory:(n.memories?.[identity(p)]||n.history.filter(h=>h.actorId===identity(p))).slice(-3),concern:nativeConcern(p,n)||(allowSyntheticFixtures?propertyConcern(state.items,n,(npc,tile)=>visible({...p,x:npc.tile.x,y:npc.tile.y,getWorld:()=>p.getWorld()},tile,6)):null),items:allowSyntheticFixtures?Object.values(state.items).filter(i=>i.ownerId===n.id&&!i.parentId).map(plain):[]}));
+  const npcs=npcViews(p).map(n=>({id:n.id,nativeId:n.nativeId,nativeKind:n.nativeKind,name:n.name,tile:n.tile,attitude:(n.trust[identity(p)]||0)<0?'hostile':(n.trust[identity(p)]||0)>0?'friendly':'neutral',trust:n.trust[identity(p)]||0,memory:(n.memories?.[identity(p)]||n.history.filter(h=>h.actorId===identity(p))).slice(-3),concern:nativeConcern(p,n)||(allowSyntheticFixtures?propertyConcern(state.items,n,(npc,tile)=>visible({...p,x:npc.tile.x,y:npc.tile.y,getWorld:()=>p.getWorld()},tile,6)):null),items:allowSyntheticFixtures?Object.values(state.items).filter(i=>i.ownerId===n.id&&!i.parentId).map(plain):[]}));
   const story=state.dmMemory.entries.filter(e=>e.location===scene(p)&&(e.actorId===id||e.tile&&visible(p,e.tile))).slice(-3);
   const aid=state.assists[id],helper=aid?.until>now()?Object.values(p.getWorld().players||{}).find(q=>identity(q)===aid.helperId&&q.hasEnteredGame&&!q.isDead&&q.chaosControlled&&!q.chaosSpectator&&scene(q)===scene(p)&&reachable(p,q)):null;
   const assistedBy=helper&&aid.mode!==-1?name(helper):null,hinderedBy=helper&&aid.mode===-1?name(helper):null;

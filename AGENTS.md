@@ -29,7 +29,7 @@ Chaos Party is a private family game: one shared TV shows the native Fracture wo
 - The first valid action locks on the server. Dice are server-owned and fair. Confirmed consequences persist.
 - Discovery comes through NPCs, player observation, and grounded DM narration. Do not add waypoints, route markers, tracker hand-holding, or fast travel.
 - Groq is optional and free-tier only. Every runtime must clearly identify live Groq versus the labeled offline fallback. Keep keys in runtime secrets; never commit or log them.
-- Reuse existing Fracture art, maps, actors, animations, and mechanics. Do not fabricate game-world assets or placeholder outcomes.
+- Reuse existing Fracture art, maps, actors, animations, and mechanics. For character customization only, layered variations, palette swaps, and new layers derived from existing Fracture sprites or animation frames are allowed. Wholly new art styles, external art imports, fabricated game-world assets, and placeholder outcomes remain prohibited.
 
 ## Working procedure
 
