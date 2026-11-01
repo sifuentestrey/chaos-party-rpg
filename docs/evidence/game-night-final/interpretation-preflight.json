@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "createdAt": "2026-10-29T14:25:00.441Z",
+  "sourceCommit": "e3ce6bdc00d8109cb288d895893763953176727f",
+  "sourceDirty": true,
+  "mode": "interpretation",
+  "dryRun": false,
+  "evidence": "live-provider",
+  "inferenceRun": false,
+  "qualified": false,
+  "productionBudgetMs": 5500,
+  "preflight": {
+    "allowed": false,
+    "reason": "The existing shared ledger is missing or invalid; no provider contact is allowed."
+  },
+  "requestBudget": 6,
+  "hardwareIsTargetMac": false,
+  "results": [],
+  "manualReviewRequired": false,
+  "stopped": "The existing shared ledger is missing or invalid; no provider contact is allowed.",
+  "summary": {
+    "completed": 0,
+    "completeCaseSet": false,
+    "passed": 0,
+    "boundedBatchPassed": false,
+    "semanticReviewRequired": false,
+    "qualified": false
+  }
+}

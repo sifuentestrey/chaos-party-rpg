@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { build } from 'esbuild';
+import { createReleaseMetadata } from './release-metadata.mjs';
 const root=process.cwd(),out=path.join(root,'release','Chaos_Party_Mac');
 const downloads=process.env.CHAOS_RUNTIME_DOWNLOADS||path.resolve(root,'../runtime-downloads');
 fs.rmSync(out,{recursive:true,force:true});fs.mkdirSync(out,{recursive:true});
@@ -14,7 +16,8 @@ fs.mkdirSync(path.join(out,'licenses'),{recursive:true});
 fs.copyFileSync(path.join(downloads,'darwin-x64','LICENSE'),path.join(out,'licenses','Node-LICENSE.txt'));
 fs.copyFileSync(path.join(root,'vendor/partyframe/LICENSE'),path.join(out,'licenses','PartyFrame-LICENSE.txt'));
 fs.copyFileSync(path.join(root,'public/assets/ninja/LICENSE.txt'),path.join(out,'licenses','Ninja-Adventure-CC0.txt'));
-let notices='THIRD-PARTY NOTICES — Chaos Party v0.2\n\n';
+for(const name of ['Dungeonz-LICENSE.txt','DnD5e-LICENSE.txt','ROT-LICENSE.txt'])fs.copyFileSync(path.join(root,'public/vendor',name),path.join(out,'licenses',name));
+let notices='THIRD-PARTY NOTICES — Chaos Party v0.3 beta\n\n';
 const seen=new Set();
 function addLicenses(dir){
   if(!fs.existsSync(dir))return;
@@ -33,6 +36,10 @@ addLicenses(path.join(root,'node_modules'));
 notices+='\nPartyFrame — '+fs.readFileSync(path.join(root,'vendor/partyframe/LICENSE'),'utf8');
 fs.writeFileSync(path.join(out,'licenses','THIRD_PARTY_NOTICES.txt'),notices);
 for(const name of ['README.md','CREDITS.md','TEST_REPORT.md','RESEARCH.md','FOUNDATION_AUDIT.md'])if(fs.existsSync(path.join(root,name)))fs.copyFileSync(path.join(root,name),path.join(out,name));
+for(const name of ['BETA.md','BETA_AUDIT.md','LOCAL_AI.md','DAWN_BELL.md'])if(fs.existsSync(path.join(root,'docs',name)))fs.copyFileSync(path.join(root,'docs',name),path.join(out,name));
+if(fs.existsSync(path.join(root,'docs','TEST_BEFORE_GAME_NIGHT.md')))fs.copyFileSync(path.join(root,'docs','TEST_BEFORE_GAME_NIGHT.md'),path.join(out,'TEST_BEFORE_GAME_NIGHT.md'));
+const releaseInfo=createReleaseMetadata({execGit:args=>execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','ignore']})});
+fs.writeFileSync(path.join(out,'release-info.json'),JSON.stringify(releaseInfo,null,2)+'\n');
 const launcher=`#!/bin/bash
 set -eu
 game_dir="$(cd "$(dirname "$0")" && pwd)"
@@ -41,6 +48,13 @@ case "$(uname -m)" in
   x86_64) game_arch="x64" ;;
   *) echo "This build supports Intel and Apple Silicon Macs."; read -r -p "Press Return to close."; exit 1 ;;
 esac
+mac_version="$(sw_vers -productVersion)"
+if [ "\${mac_version%%.*}" -lt 11 ]; then
+  echo "Chaos Party requires macOS 11 (Big Sur) or newer."
+  echo "This copy has not changed your installation or saves."
+  read -r -p "Press Return to close."
+  exit 1
+fi
 export CHAOS_LAUNCH=1
 export CHAOS_OPEN=1
 export CHAOS_DATA_DIR="$HOME/Library/Application Support/Chaos Party"
@@ -52,5 +66,5 @@ if ! "$game_dir/runtime/$game_arch/node" "$game_dir/server.cjs"; then
 fi
 `;
 fs.writeFileSync(path.join(out,'Start Chaos Party.command'),launcher,{mode:0o755});
-fs.writeFileSync(path.join(out,'START_HERE.txt'),'CHAOS PARTY — FIRST PLAYABLE PROTOTYPE\n\n1. Double-click Start Chaos Party.command.\n2. Choose Host a party, then Create a private room.\n3. Show the browser on your TV. Friends join by scanning the QR on the same Wi-Fi.\n4. Start the heist when everyone has a character.\n\nNo installation, account, internet connection, or paid service is needed. Keep the launcher window open while playing.\n\nIf macOS blocks the downloaded launcher, right-click it and choose Open. Review Privacy & Security if your macOS version requires confirmation. Allow local network access for phones.\n\nRead README.md for recovery, troubleshooting, and honest test limits.\n');
+fs.writeFileSync(path.join(out,'START_HERE.txt'),'CHAOS PARTY — 0.3 BETA CANDIDATE\n\n1. Double-click Start Chaos Party.command.\n2. Choose Host a party, then Create a private room.\n3. Show the browser on your TV. Friends join by scanning the QR on the same Wi-Fi.\n4. Start the heist when everyone has a character.\n\nFind three clues, steal the crown, and escape together. Then choose Begin The Dawn Bell for the connected forest / river / town / castle adventure and its own ending. Copy the tavern wall map from phone object controls. Shared Travel / Explore requires majority approval through Help them. Read DAWN_BELL.md for commands, objectives and saving. The host can also begin the expedition between turns using host controls.\n\nThe native adventures need no account, internet connection, or paid service. For AI interpretation, open host controls on the Mac and choose Dungeon Master setup. Use a Groq Free Plan key; it stays private on this computer. Creative narration remains off pending qualification. Keep the launcher window open while playing.\n\nRequires macOS 11 (Big Sur) or newer; the bundled Intel and ARM runtimes both declare this minimum. If macOS blocks the downloaded launcher, right-click it and choose Open. Review Privacy & Security if your macOS version requires confirmation. Allow local network access for phones.\n\nRead BETA.md and BETA_AUDIT.md for supported mechanics and honest test limits. Physical Mac/phone acceptance is still pending.\n');
 console.log(JSON.stringify({release:out,files:fs.readdirSync(out),thirdPartyNotices:seen.size}));

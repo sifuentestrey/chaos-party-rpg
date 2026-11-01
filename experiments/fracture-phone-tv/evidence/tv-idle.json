@@ -1,0 +1,205 @@
+{
+  "status": "passed",
+  "durationSeconds": 960,
+  "checks": [
+    "actual native TV socket remained connected beyond original idle deadline",
+    "no timeout packet",
+    "native website HUD hidden",
+    "no browser errors"
+  ],
+  "samples": [
+    {
+      "elapsedSeconds": 33,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 63,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 93,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 123,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 153,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 183,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 213,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 243,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 273,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 303,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 333,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 363,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 393,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 423,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 453,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 483,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 513,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 543,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 573,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 603,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 633,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 663,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 693,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 723,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 753,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 783,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 813,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 843,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 873,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 903,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 933,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    },
+    {
+      "elapsedSeconds": 960,
+      "sockets": 1,
+      "closedSockets": 0,
+      "timeoutMessages": 0
+    }
+  ],
+  "errors": []
+}

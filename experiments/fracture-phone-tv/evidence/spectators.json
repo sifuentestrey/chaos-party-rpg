@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "checks": [
+    "two real TV connections receive explicit observer-role IDs",
+    "renderer hides all observer roles, preserving real players",
+    "native HUD hidden",
+    "no browser errors"
+  ],
+  "observerCount": 2,
+  "errors": []
+}

@@ -1,0 +1,148 @@
+{
+  "events": [
+    {
+      "check": "six independent phones regrouped through native walking",
+      "actors": [
+        {
+          "name": "Aria",
+          "x": 48,
+          "y": 206
+        },
+        {
+          "name": "Elin",
+          "x": 49,
+          "y": 206
+        },
+        {
+          "name": "Orin",
+          "x": 50,
+          "y": 206
+        },
+        {
+          "name": "Dori",
+          "x": 51,
+          "y": 206
+        },
+        {
+          "name": "Oren",
+          "x": 52,
+          "y": 206
+        },
+        {
+          "name": "Faye",
+          "x": 53,
+          "y": 206
+        }
+      ],
+      "area": {
+        "id": "The Refuge:32,198:32,18",
+        "zone": "The Refuge",
+        "x": 32,
+        "y": 198,
+        "width": 32,
+        "height": 18
+      }
+    },
+    {
+      "check": "actual pause, frozen cooldown, own STOP, ability plus action, shared five-second playback and recap",
+      "remainingMs": 11388
+    },
+    {
+      "check": "majority native travel",
+      "direction": "west",
+      "proposalMs": 107,
+      "uniqueLandings": 6,
+      "arrivals": 6,
+      "area": {
+        "id": "The Refuge:0,198:32,18",
+        "zone": "The Refuge",
+        "x": 0,
+        "y": 198,
+        "width": 32,
+        "height": 18
+      }
+    },
+    {
+      "check": "majority native travel",
+      "direction": "south",
+      "proposalMs": 110,
+      "uniqueLandings": 6,
+      "arrivals": 6,
+      "area": {
+        "id": "The Refuge:0,216:32,18",
+        "zone": "The Refuge",
+        "x": 0,
+        "y": 216,
+        "width": 32,
+        "height": 18
+      }
+    },
+    {
+      "check": "six actual phone forms submit together at the encounter boundary without retries",
+      "sourcePhase": "exploration",
+      "accepted": 6
+    },
+    {
+      "check": "real native rat defeat after planning",
+      "message": "rat defeated. Check nearby loot.",
+      "hpHeldDuringPlanning": 110
+    },
+    {
+      "check": "majority native travel",
+      "direction": "north",
+      "proposalMs": 95,
+      "uniqueLandings": 6,
+      "arrivals": 6,
+      "area": {
+        "id": "The Refuge:0,198:32,18",
+        "zone": "The Refuge",
+        "x": 0,
+        "y": 198,
+        "width": 32,
+        "height": 18
+      }
+    },
+    {
+      "check": "majority native travel",
+      "direction": "north",
+      "proposalMs": 231,
+      "uniqueLandings": 6,
+      "arrivals": 6,
+      "area": {
+        "id": "Glitch Woods:0,180:32,18",
+        "zone": "Glitch Woods",
+        "x": 0,
+        "y": 180,
+        "width": 32,
+        "height": 18
+      }
+    },
+    {
+      "check": "majority native travel",
+      "direction": "south",
+      "proposalMs": 37,
+      "uniqueLandings": 6,
+      "arrivals": 6,
+      "area": {
+        "id": "The Refuge:0,198:32,18",
+        "zone": "The Refuge",
+        "x": 0,
+        "y": 198,
+        "width": 32,
+        "height": 18
+      }
+    },
+    {
+      "check": "complete Refuge Trial through native NPC, combat, majority woods travel and return",
+      "summary": "Home again! The party has completed the trial. Keep exploring, or start another adventure."
+    },
+    {
+      "check": "one silent phone cannot stall the party past the actual 30-second deadline",
+      "waitMs": 36632
+    },
+    {
+      "status": "passed"
+    }
+  ],
+  "errors": []
+}

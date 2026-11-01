@@ -1,0 +1,576 @@
+{
+  "upstream": "642c00a8a2d3a95979e85bbfa3f62deee611a4a6",
+  "requestedActors": 20,
+  "checks": [
+    "20 distinct real authenticated actors",
+    "Concurrent movement: 20/20 moved; other requests truthfully blocked",
+    "Scoped cancellation, immediate override, stable engine position",
+    "Real Socket.IO reconnect preserves character and saved position",
+    "Unknown controller rejected",
+    "1200s real-actor soak"
+  ],
+  "samples": [
+    {
+      "elapsedSeconds": 3,
+      "connected": 20,
+      "requestBatchMs": 55,
+      "bridgeRssMiB": 100,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 18,
+      "connected": 20,
+      "requestBatchMs": 77,
+      "bridgeRssMiB": 103,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 34,
+      "connected": 20,
+      "requestBatchMs": 106,
+      "bridgeRssMiB": 103,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 49,
+      "connected": 20,
+      "requestBatchMs": 43,
+      "bridgeRssMiB": 103,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 64,
+      "connected": 20,
+      "requestBatchMs": 35,
+      "bridgeRssMiB": 104,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 79,
+      "connected": 20,
+      "requestBatchMs": 35,
+      "bridgeRssMiB": 104,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 94,
+      "connected": 20,
+      "requestBatchMs": 25,
+      "bridgeRssMiB": 105,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 109,
+      "connected": 20,
+      "requestBatchMs": 32,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 124,
+      "connected": 20,
+      "requestBatchMs": 24,
+      "bridgeRssMiB": 108,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 139,
+      "connected": 20,
+      "requestBatchMs": 27,
+      "bridgeRssMiB": 108,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 154,
+      "connected": 20,
+      "requestBatchMs": 27,
+      "bridgeRssMiB": 108,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 169,
+      "connected": 20,
+      "requestBatchMs": 39,
+      "bridgeRssMiB": 109,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 184,
+      "connected": 20,
+      "requestBatchMs": 28,
+      "bridgeRssMiB": 105,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 199,
+      "connected": 20,
+      "requestBatchMs": 26,
+      "bridgeRssMiB": 105,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 214,
+      "connected": 20,
+      "requestBatchMs": 26,
+      "bridgeRssMiB": 105,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 229,
+      "connected": 20,
+      "requestBatchMs": 29,
+      "bridgeRssMiB": 106,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 244,
+      "connected": 20,
+      "requestBatchMs": 28,
+      "bridgeRssMiB": 106,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 259,
+      "connected": 20,
+      "requestBatchMs": 27,
+      "bridgeRssMiB": 106,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 274,
+      "connected": 20,
+      "requestBatchMs": 29,
+      "bridgeRssMiB": 106,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 289,
+      "connected": 20,
+      "requestBatchMs": 28,
+      "bridgeRssMiB": 106,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 304,
+      "connected": 20,
+      "requestBatchMs": 40,
+      "bridgeRssMiB": 106,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 319,
+      "connected": 20,
+      "requestBatchMs": 28,
+      "bridgeRssMiB": 106,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 334,
+      "connected": 20,
+      "requestBatchMs": 41,
+      "bridgeRssMiB": 106,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 349,
+      "connected": 20,
+      "requestBatchMs": 36,
+      "bridgeRssMiB": 106,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 364,
+      "connected": 20,
+      "requestBatchMs": 42,
+      "bridgeRssMiB": 106,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 379,
+      "connected": 20,
+      "requestBatchMs": 43,
+      "bridgeRssMiB": 106,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 394,
+      "connected": 20,
+      "requestBatchMs": 37,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 409,
+      "connected": 20,
+      "requestBatchMs": 33,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 424,
+      "connected": 20,
+      "requestBatchMs": 32,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 439,
+      "connected": 20,
+      "requestBatchMs": 40,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 454,
+      "connected": 20,
+      "requestBatchMs": 36,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 469,
+      "connected": 20,
+      "requestBatchMs": 33,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 485,
+      "connected": 20,
+      "requestBatchMs": 38,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 500,
+      "connected": 20,
+      "requestBatchMs": 32,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 515,
+      "connected": 20,
+      "requestBatchMs": 28,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 530,
+      "connected": 20,
+      "requestBatchMs": 41,
+      "bridgeRssMiB": 106,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 545,
+      "connected": 20,
+      "requestBatchMs": 49,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 560,
+      "connected": 20,
+      "requestBatchMs": 53,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 575,
+      "connected": 20,
+      "requestBatchMs": 27,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 590,
+      "connected": 20,
+      "requestBatchMs": 40,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 605,
+      "connected": 20,
+      "requestBatchMs": 32,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 620,
+      "connected": 20,
+      "requestBatchMs": 22,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 635,
+      "connected": 20,
+      "requestBatchMs": 32,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 650,
+      "connected": 20,
+      "requestBatchMs": 31,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 665,
+      "connected": 20,
+      "requestBatchMs": 39,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 680,
+      "connected": 20,
+      "requestBatchMs": 25,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 695,
+      "connected": 20,
+      "requestBatchMs": 23,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 710,
+      "connected": 20,
+      "requestBatchMs": 23,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 725,
+      "connected": 20,
+      "requestBatchMs": 31,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 740,
+      "connected": 20,
+      "requestBatchMs": 23,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 755,
+      "connected": 20,
+      "requestBatchMs": 35,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 770,
+      "connected": 20,
+      "requestBatchMs": 93,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 785,
+      "connected": 20,
+      "requestBatchMs": 83,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 800,
+      "connected": 20,
+      "requestBatchMs": 111,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 816,
+      "connected": 20,
+      "requestBatchMs": 104,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 831,
+      "connected": 20,
+      "requestBatchMs": 83,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 846,
+      "connected": 20,
+      "requestBatchMs": 115,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 861,
+      "connected": 20,
+      "requestBatchMs": 98,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 876,
+      "connected": 20,
+      "requestBatchMs": 96,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 891,
+      "connected": 20,
+      "requestBatchMs": 30,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 906,
+      "connected": 20,
+      "requestBatchMs": 82,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 921,
+      "connected": 20,
+      "requestBatchMs": 23,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 936,
+      "connected": 20,
+      "requestBatchMs": 165,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 951,
+      "connected": 20,
+      "requestBatchMs": 101,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 966,
+      "connected": 20,
+      "requestBatchMs": 98,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 981,
+      "connected": 20,
+      "requestBatchMs": 40,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 997,
+      "connected": 20,
+      "requestBatchMs": 191,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 1012,
+      "connected": 20,
+      "requestBatchMs": 89,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 1027,
+      "connected": 20,
+      "requestBatchMs": 157,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 1042,
+      "connected": 20,
+      "requestBatchMs": 35,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 1057,
+      "connected": 20,
+      "requestBatchMs": 104,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 1072,
+      "connected": 20,
+      "requestBatchMs": 94,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 1087,
+      "connected": 20,
+      "requestBatchMs": 89,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 1102,
+      "connected": 20,
+      "requestBatchMs": 117,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 1117,
+      "connected": 20,
+      "requestBatchMs": 105,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 1133,
+      "connected": 20,
+      "requestBatchMs": 79,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 1148,
+      "connected": 20,
+      "requestBatchMs": 61,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 1163,
+      "connected": 20,
+      "requestBatchMs": 33,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 1178,
+      "connected": 20,
+      "requestBatchMs": 39,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    },
+    {
+      "elapsedSeconds": 1193,
+      "connected": 20,
+      "requestBatchMs": 22,
+      "bridgeRssMiB": 107,
+      "accepted": 20
+    }
+  ],
+  "elapsedSeconds": 1200,
+  "status": "passed"
+}

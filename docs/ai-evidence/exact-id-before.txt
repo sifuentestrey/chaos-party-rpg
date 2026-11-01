@@ -1,0 +1,115 @@
+✔ typed world proposals reject malformed structure and unsupported operation names (42.133209ms)
+✔ unknown targets and unavailable carried item references cannot be validated (8.58235ms)
+✔ unsupported is accepted as a typed no-effect result without interpreting argument text as a command (13.399731ms)
+✔ accepted proposal keeps its structured plan across JSON serialization and resolution (11.787288ms)
+✖ a typed target ID remains bound to that entity when another local entity uses the ID as its display name (7.9388ms)
+✖ a typed give recipient ID cannot be intercepted by a player named after that creature ID (9.417071ms)
+✖ craft resolution blocks if an original source changes owner even when a replacement is named after its ID (2.512328ms)
+✖ typed treatment requires an explicit carried item reference (2.450104ms)
+✖ treatment blocks if the explicit item changes owner even when another carried cloth is named after its ID (9.707834ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 4
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 482.872855
+
+✖ failing tests:
+
+test at ../../exact-id-baseline-r3IzINjK/tests/action-contract-boundaries.test.mjs:43:1
+✖ a typed target ID remains bound to that entity when another local entity uses the ID as its display name (7.9388ms)
+  Error: That entity is not here. Use the displayed name or identity.
+      at validateWorldPlan (file:///workspace/exact-id-baseline-r3IzINjK/public/world-ai.js:30:29)
+      at validateAIPlan (file:///workspace/exact-id-baseline-r3IzINjK/public/ai-plan.js:7:35)
+      at TestContext.<anonymous> (file:///workspace/exact-id-baseline-r3IzINjK/tests/action-contract-boundaries.test.mjs:46:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+
+test at ../../exact-id-baseline-r3IzINjK/tests/action-contract-boundaries.test.mjs:50:1
+✖ a typed give recipient ID cannot be intercepted by a player named after that creature ID (9.417071ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'd6d1b058-b908-4dbc-8f8d-dc6229838cc4'
+  - 'person-clearing'
+  
+      at TestContext.<anonymous> (file:///workspace/exact-id-baseline-r3IzINjK/tests/action-contract-boundaries.test.mjs:58:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'd6d1b058-b908-4dbc-8f8d-dc6229838cc4',
+    expected: 'person-clearing',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../../exact-id-baseline-r3IzINjK/tests/action-contract-boundaries.test.mjs:61:1
+✖ craft resolution blocks if an original source changes owner even when a replacement is named after its ID (2.512328ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///workspace/exact-id-baseline-r3IzINjK/tests/action-contract-boundaries.test.mjs:68:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../../exact-id-baseline-r3IzINjK/tests/action-contract-boundaries.test.mjs:73:1
+✖ typed treatment requires an explicit carried item reference (2.450104ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (file:///workspace/exact-id-baseline-r3IzINjK/tests/action-contract-boundaries.test.mjs:75:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /item|carried/i,
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+test at ../../exact-id-baseline-r3IzINjK/tests/action-contract-boundaries.test.mjs:78:1
+✖ treatment blocks if the explicit item changes owner even when another carried cloth is named after its ID (9.707834ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///workspace/exact-id-baseline-r3IzINjK/tests/action-contract-boundaries.test.mjs:87:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

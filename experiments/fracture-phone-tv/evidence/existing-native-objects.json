@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "checks": [
+    "two distinct authenticated native actors",
+    "no invented props or wood drops",
+    "original D20, class and real teammate advantage",
+    "tree fall, real native trunk movement, river layer preserved by adapter",
+    "original tent shifts with persisted state",
+    "separate native saves"
+  ]
+}

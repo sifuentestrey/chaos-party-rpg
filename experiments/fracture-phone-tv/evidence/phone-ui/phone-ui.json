@@ -1,0 +1,34 @@
+{
+  "status": "passed",
+  "events": [
+    {
+      "viewport": 320,
+      "bodyHeight": 1037
+    },
+    {
+      "viewport": 375,
+      "bodyHeight": 1006
+    },
+    {
+      "viewport": 390,
+      "bodyHeight": 1006
+    },
+    {
+      "status": "cancelled",
+      "message": "Holding still. Your attacks and path are cancelled."
+    },
+    {
+      "status": "cancelled",
+      "message": "Holding still. Your attacks and path are cancelled."
+    },
+    {
+      "status": "succeeded",
+      "message": "sword2 collected."
+    },
+    {
+      "status": "succeeded",
+      "message": "Equipment changed."
+    }
+  ],
+  "errors": []
+}

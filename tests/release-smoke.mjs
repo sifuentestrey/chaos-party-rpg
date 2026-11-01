@@ -11,11 +11,11 @@ const bundle=path.join(dir,'server.cjs');
 fs.copyFileSync(path.resolve('release/Chaos_Party_Mac/server.cjs'),bundle);
 fs.cpSync(path.resolve('release/Chaos_Party_Mac/public'),path.join(dir,'public'),{recursive:true});
 const require=createRequire(import.meta.url),{createGameServer}=require(bundle);
-const app=await createGameServer({port:0,dataDir:path.join(dir,'data')});
+const app=await createGameServer({port:0,host:'127.0.0.1',dataDir:path.join(dir,'data')});
 const clients=[];
 try{
   const origin='http://127.0.0.1:'+app.port;
-  for(const resource of ['/','/app.js','/core.js','/render.js','/ninja.js','/party-client.js','/vendor/partyframe-client.js','/vendor/partyframe-rng.js','/style.css','/assets/kenney/dungeon.png','/assets/ninja/actors/Villager.png','/assets/ninja/fx/slash.png']){
+  for(const resource of ['/','/app.js','/core.js','/content/campaign-text.generated.js','/render.js','/ninja.js','/party-client.js','/vendor/partyframe-client.js','/vendor/partyframe-rng.js','/style.css','/assets/kenney/dungeon.png','/assets/ninja/actors/Villager.png','/assets/ninja/fx/slash.png']){
     assert.equal((await fetch(origin+resource)).status,200,resource);
   }
   const runtime=await fetch(origin+'/runtime.js').then(r=>r.text());assert.ok(runtime.includes('"standalone":false'));assert.ok(runtime.includes('PartyFrame'));

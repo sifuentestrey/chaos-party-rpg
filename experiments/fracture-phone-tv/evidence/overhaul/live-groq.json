@@ -1,0 +1,71 @@
+{
+  "status": "passed",
+  "events": [
+    {
+      "player": 0,
+      "text": "exit",
+      "ackMs": 73,
+      "totalMs": 201,
+      "status": "succeeded",
+      "message": "Travelled through the door into another area.",
+      "id": "8a463f3b-0caa-4d7b-8e44-6a80bdfb8df0"
+    },
+    {
+      "player": 0,
+      "text": "walk south 3",
+      "ackMs": 75,
+      "totalMs": 576,
+      "status": "succeeded",
+      "message": "Walked 3 tiles.",
+      "id": "c5666647-41ab-45a9-b756-6262858e9557"
+    },
+    {
+      "sharedCamera": {
+        "before": "1",
+        "after": "1",
+        "scene": "The Refuge:0,220:40,20:1280,720"
+      }
+    },
+    {
+      "player": 0,
+      "text": "enter door-51-205",
+      "ackMs": 72,
+      "totalMs": 337,
+      "status": "succeeded",
+      "message": "Travelled through the door into another area.",
+      "id": "e3af3fff-c0b2-4367-b1bb-454ad3a716bf"
+    },
+    {
+      "player": 0,
+      "text": "exit",
+      "ackMs": 75,
+      "totalMs": 200,
+      "status": "succeeded",
+      "message": "Travelled through the door into another area.",
+      "id": "000a6c12-eb33-4951-b80a-d2896dec2eaf"
+    },
+    {
+      "player": 0,
+      "text": "Would you get me indoors through the closest entrance?",
+      "ackMs": 656,
+      "totalMs": 790,
+      "status": "succeeded",
+      "message": "Travelled through the door into another area.",
+      "id": "be57d1cf-50e6-4aba-86be-d89cc7baa998"
+    },
+    {
+      "liveGroq": {
+        "nativeEntry": true,
+        "narration": "The door swings open and you step through, finding yourself in a new, unfamiliar chamber. coder: Welcome, Aria—let's see what mysteries await inside."
+      }
+    },
+    {
+      "sixBodies": true,
+      "layeredLooks": true,
+      "savedLook": true,
+      "wardrobeRecovery": true,
+      "nativeArmorUnchanged": true
+    }
+  ],
+  "errors": []
+}

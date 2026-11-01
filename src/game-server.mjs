@@ -1,3 +1,4 @@
+import {readAISettings,writeAISettings,aiRuntimeEnvironment} from './ai-settings.mjs';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -9,6 +10,7 @@ import {WebSocketTransport} from '@colyseus/ws-transport';
 import {ChaosPartyRoom,configureChaosRuntime,currentRooms,PARTY_ROOM,GAME_ID} from './framework.mjs';
 import {openCampaignStore} from './campaign-store.mjs';
 import {VERSION} from '../public/core.js';
+import {createLocalGameMaster} from './local-game-master.mjs';
 
 const equal=(a,b)=>typeof a==='string'&&typeof b==='string'&&a.length===b.length&&timingSafeEqual(Buffer.from(a),Buffer.from(b));
 const local=a=>['127.0.0.1','::1','::ffff:127.0.0.1'].includes(a);
@@ -19,9 +21,22 @@ export async function createGameServer(options={}){
   const publicDir=options.publicDir||path.join(base,'public');
   const dataDir=options.dataDir||process.env.CHAOS_DATA_DIR||path.join(base,'data');
   const store=openCampaignStore(dataDir);if(options.hostKey)store.hostKey=options.hostKey;
+  const aiEnv=options.aiEnvironment||process.env,aiFactory=options.aiFactory||createLocalGameMaster;
+  let savedAI=null,invalidAI=false;try{savedAI=readAISettings(dataDir);}catch{invalidAI=true;}
+  let ai=options.ai||aiFactory({dataDir,env:aiRuntimeEnvironment(invalidAI?{...aiEnv,CHAOS_AI:'off'}:aiEnv,savedAI)});await ai.check();
+  const runtimeServices={store,network:()=>network(),ai};let configuringAI=false;
+  const aiLocked=!!options.ai||aiEnv.CHAOS_AI_NARRATION==='on'||!!aiEnv.CHAOS_AI||!!aiEnv.CHAOS_AI_BASE_URL||!!aiEnv.CHAOS_AI_PROVIDER&&aiEnv.CHAOS_AI_PROVIDER!=='groq-free';
+  const aiSetupStatus=()=>({enabled:savedAI?.enabled??(ai.status().provider==='groq-free'&&!!ai.status().enabled),configured:!!(aiEnv.GROQ_API_KEY||savedAI?.apiKey),managedKey:!!aiEnv.GROQ_API_KEY,locked:aiLocked,invalidSettings:invalidAI,status:ai.status(),narrationQualified:false});
   let port=0,closing=false;
   const addresses=()=>{try{return [...new Set(Object.values(os.networkInterfaces()).flat().filter(n=>n&&n.family==='IPv4'&&!n.internal&&!n.address.startsWith('169.254.')).map(n=>n.address))];}catch{return [];}};
-  const network=()=>({port,addresses:addresses(),version:VERSION,framework:'PartyFrame',serverNow:Date.now()});
+  const publicBaseUrl=()=>{
+    const configured=String(process.env.CHAOS_PUBLIC_URL||'').trim().replace(/\/+$/,'');
+    if(configured)return configured;
+    const codespace=String(process.env.CODESPACE_NAME||'').trim();
+    const domain=String(process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN||'').trim().replace(/^https?:\/\//,'').replace(/\/+$/,'');
+    return codespace&&domain&&port?`https://${codespace}-${port}.${domain}`:'';
+  };
+  const network=()=>({port,addresses:addresses(),publicBaseUrl:publicBaseUrl(),version:VERSION,framework:'PartyFrame',serverNow:Date.now()});
   const pendingLoads=new Map();
   async function lookup(code){
     if(currentRooms().has(code))return currentRooms().get(code);
@@ -34,8 +49,31 @@ export async function createGameServer(options={}){
     res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:; media-src 'self'; frame-ancestors 'self'; object-src 'none'");
     const json=(status,value)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
     try{
-      if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);res.end();return;}
+      if(!['GET','HEAD','POST'].includes(req.method)){res.writeHead(405);res.end();return;}
       let pathname;try{pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);}catch{return json(400,{error:'Invalid address'});}
+      if(pathname==='/api/ai-settings'){
+        const localHost=/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/i.test(req.headers.host||'');
+        const origin='http://'+req.headers.host,site=req.headers['sec-fetch-site'];
+        if(!local(req.socket.remoteAddress)||!localHost||req.headers.origin&&req.headers.origin!==origin||site&&!['same-origin','none'].includes(site)||!equal(req.headers['x-chaos-host'],store.hostKey))return json(403,{error:'Open AI setup on the host computer at localhost.'});
+        if(req.method==='GET')return json(200,aiSetupStatus());
+        if(req.method!=='POST')return json(405,{error:'Use the AI setup form.'});
+        if(aiLocked)return json(409,{error:'The AI connection is managed by this computer’s startup settings.'});
+        if(configuringAI||[...currentRooms().values()].some(r=>['react','reveal'].includes(r.tavern.phase)))return json(409,{error:'Finish the current turn before changing the AI connection.'});
+        if(req.headers['content-type']?.split(';')[0]!=='application/json')return json(415,{error:'Use the AI setup form.'});
+        configuringAI=true;
+        try{
+          let body='',size=0;for await(const chunk of req){size+=chunk.length;if(size>4096)return json(413,{error:'AI setup request is too large.'});body+=chunk.toString('utf8');}
+          let input;try{input=JSON.parse(body);}catch{return json(400,{error:'AI setup request is invalid.'});}
+          try{savedAI=writeAISettings(dataDir,input,{environmentHasKey:!!aiEnv.GROQ_API_KEY});}catch{return json(400,{error:'Check the connection key and Free Plan confirmation. Existing saves and request limits are unchanged.'});}
+          const next=aiFactory({dataDir,env:aiRuntimeEnvironment(aiEnv,savedAI)});await next.check();const previous=ai;ai=next;runtimeServices.ai=next;previous.close();invalidAI=false;
+          return json(200,aiSetupStatus());
+        }catch{return json(500,{error:'The AI connection could not be updated. Game rules remain available.'});}
+        finally{configuringAI=false;}
+      }
+      if(req.method==='POST')return json(405,{error:'Method not allowed.'});
+      if(['/host/','/game/','/join/'].includes(pathname)){
+        res.writeHead(302,{Location:pathname.slice(0,-1)});res.end();return;
+      }
       if(pathname==='/health')return json(200,{ok:true,status:'ok',service:'chaos-party',version:VERSION,framework:'PartyFrame',rooms:currentRooms().size});
       if(pathname==='/api/info')return json(200,network());
       if(pathname==='/api/host-key'){
@@ -64,7 +102,7 @@ export async function createGameServer(options={}){
       if(req.method==='HEAD')return res.end();fs.createReadStream(target).pipe(res);
     }catch(e){console.error('Game request failed:',e.message);if(!res.headersSent)json(500,{error:'The tavern could not load that request.'});else res.end();}
   });
-  configureChaosRuntime({store,network});
+  configureChaosRuntime(runtimeServices);
   const transport=new WebSocketTransport({server,pingInterval:6000,pingMaxRetries:4,maxPayload:16*1024});
   const gameServer=new Server({transport,greet:false,gracefullyShutdown:false});
   gameServer.define(PARTY_ROOM,ChaosPartyRoom);
@@ -73,6 +111,6 @@ export async function createGameServer(options={}){
   port=server.address().port;
   return {server,gameServer,port,hostKey:store.hostKey,network,store,
     rooms:()=>Object.fromEntries([...currentRooms()].map(([code,r])=>[code,structuredClone(r.tavern)])),
-    async close(){if(closing)return;closing=true;for(const r of currentRooms().values())store.checkpoint(r.tavern);await gameServer.gracefullyShutdown(false);}
+    async close(){if(closing)return;closing=true;ai.close();for(const r of currentRooms().values())store.checkpoint(r.tavern);await gameServer.gracefullyShutdown(false);}
   };
 }

@@ -1,0 +1,190 @@
+{
+  "status": "passed",
+  "checks": [
+    "two distinct native actors recovered",
+    "standing tree blocks native path",
+    "rooted tree push truthfully blocked",
+    "real ground item fire spreads to tree",
+    "second phone updates without actions",
+    "player dousing halts saved tree HP damage",
+    "direct ignition uses original D20",
+    "server clock burns tree to zero with no further player commands",
+    "stump rendered on TV",
+    "native actor walks through cleared tile",
+    "tree HP and collision state persisted",
+    "second phone reload agrees",
+    "native NPC warns about actual property fire",
+    "present native NPC autonomously extinguishes owned rug",
+    "NPC owner and fire response history persist",
+    "no browser errors"
+  ],
+  "tree": {
+    "id": "fracture:world1:authored-tree-1",
+    "tile": {
+      "x": 40,
+      "y": 224
+    },
+    "condition": "broken",
+    "hp": 0
+  },
+  "events": [
+    {
+      "text": "walk to 44, 224",
+      "player": "ReactorAsh",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 44,
+      "y": 224
+    },
+    {
+      "text": "walk to 39, 224",
+      "player": "ReactorAsh",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 39,
+      "y": 224
+    },
+    {
+      "text": "walk to 39, 224",
+      "player": "ReactorEmber",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 39,
+      "y": 224
+    },
+    {
+      "text": "walk to 40, 224",
+      "player": "ReactorAsh",
+      "status": "blocked",
+      "message": "No walkable path to that destination.",
+      "x": 39,
+      "y": 224
+    },
+    {
+      "text": "push camp tree east",
+      "player": "ReactorAsh",
+      "status": "blocked",
+      "message": "That fixture is fixed to the ground.",
+      "x": 39,
+      "y": 224
+    },
+    {
+      "text": "drop item-2",
+      "player": "ReactorAsh",
+      "status": "succeeded",
+      "message": "ReactorAsh: drop wood splinter.",
+      "x": 39,
+      "y": 224
+    },
+    {
+      "text": "ignite item-2",
+      "player": "ReactorAsh",
+      "status": "succeeded",
+      "message": "D20 11 / 9: ReactorAsh: ignite wood splinter.",
+      "roll": 11,
+      "x": 39,
+      "y": 224
+    },
+    {
+      "check": "ground fire spreads to tree and second phone updates",
+      "hp": 11
+    },
+    {
+      "text": "put out camp tree",
+      "player": "ReactorEmber",
+      "status": "succeeded",
+      "message": "ReactorEmber: extinguish camp tree.",
+      "x": 39,
+      "y": 224
+    },
+    {
+      "text": "extinguish item-2",
+      "player": "ReactorAsh",
+      "status": "succeeded",
+      "message": "ReactorAsh: extinguish wood splinter.",
+      "x": 39,
+      "y": 224
+    },
+    {
+      "text": "ignite fracture:world1:authored-tree-1",
+      "player": "ReactorAsh",
+      "status": "succeeded",
+      "message": "D20 16 / 9: ReactorAsh: ignite camp tree.",
+      "roll": 16,
+      "x": 39,
+      "y": 224
+    },
+    {
+      "text": "walk to 40, 224",
+      "player": "ReactorAsh",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 40,
+      "y": 224
+    },
+    {
+      "text": "walk to 47, 197",
+      "player": "ReactorAsh",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 47,
+      "y": 197
+    },
+    {
+      "text": "walk to 47, 197",
+      "player": "ReactorEmber",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 47,
+      "y": 197
+    },
+    {
+      "text": "drop item-8",
+      "player": "ReactorEmber",
+      "status": "succeeded",
+      "message": "ReactorEmber: drop cloth strip.",
+      "x": 47,
+      "y": 197
+    },
+    {
+      "text": "ignite item-8",
+      "player": "ReactorEmber",
+      "status": "succeeded",
+      "message": "D20 14 / 9: ReactorEmber: ignite cloth strip.",
+      "roll": 14,
+      "x": 47,
+      "y": 197
+    },
+    {
+      "text": "talk to fracture:world1:npc:40:47:195",
+      "player": "ReactorAsh",
+      "status": "succeeded",
+      "message": "guard: “My guard's rug is on fire! Please extinguish it.” (trust 0)",
+      "x": 47,
+      "y": 196
+    },
+    {
+      "check": "real native NPC fire alarm and autonomous extinguish",
+      "owner": "guard",
+      "itemId": "item-12",
+      "condition": "intact"
+    },
+    {
+      "text": "walk to 40, 224",
+      "player": "ReactorAsh",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 40,
+      "y": 224
+    },
+    {
+      "text": "walk to 39, 224",
+      "player": "ReactorEmber",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 39,
+      "y": 224
+    }
+  ],
+  "errors": []
+}

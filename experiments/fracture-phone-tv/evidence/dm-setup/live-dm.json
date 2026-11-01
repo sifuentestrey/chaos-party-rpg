@@ -1,0 +1,24 @@
+{
+  "status": "passed",
+  "model": "openai/gpt-oss-120b",
+  "startupEnabled": true,
+  "savedEnabled": true,
+  "liveActionRequests": 2,
+  "attempt": "Would you get me indoors through the closest entrance?",
+  "canonical": {
+    "status": "succeeded",
+    "message": "Travelled through the door into another area.",
+    "from": "The Refuge",
+    "to": "The Underdepths"
+  },
+  "story": "You pass through the nearest doorway, emerging into a dimly lit chamber beyond the Underdepths. coder: Come in, Aria—this place feels safer than the tunnels outside.",
+  "checks": [
+    "saved connection validated and enabled without another setup step",
+    "unexpected phone phrasing receives live grounded interpretation",
+    "native engine enters an existing building",
+    "same confirmed action receives live AI narration",
+    "phone and TV display that narration",
+    "private host card renders without browser errors"
+  ],
+  "errors": []
+}

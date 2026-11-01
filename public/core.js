@@ -1,6 +1,14 @@
+import {createWorldScene,worldEntityPosition} from './scene-events.js';
+import {beginExpedition} from './expedition.js';
+import {campaignView} from './campaign.js';
+import {recordDMMemory,redactDMMemory} from './dm-memory.js';
+import {ensureItems,itemPlan,planWorldProposal,resolveItem,currentLocation,advanceWorld} from './world-items.js';
+import {parseEntityAttempt} from './entity-rules.js';
+import {OBJECTS,objectState,environmentTarget,exactEnvironmentTarget,environmentCheck,interactEnvironment,advanceEnvironment} from './environment.js';
+import {selectD20} from './vendor/dnd5e-advantage.js';
 // Authoritative game plugin, shared by PartyFrame and the labeled solo mode.
 import {Rng} from './vendor/partyframe-rng.js';
-export const VERSION = '0.2.0';
+export const VERSION = '0.3.0-beta.2';
 export const ROLES = {
   rogue: { name: 'Rogue', icon: '◆', description: 'Quick hands. Questionable intentions.', skills: ['steal', 'sneak'], color: '#ba9dff' },
   bard: { name: 'Bard', icon: '♫', description: 'Every disaster deserves a soundtrack.', skills: ['social', 'dance'], color: '#f9bd6c' },
@@ -33,9 +41,9 @@ export function avatarSafe(a={}) {
 export function createRoom({ code='SOLO', seed=12345, now=Date.now(), reactionMs=8000 }={}) {
   return { version:VERSION, code, createdAt:now, updatedAt:now, seq:0, revision:0,
     seed: (seed >>> 0) || 12345, phase:'lobby', paused:false, deadline:0, reactionMs:clamp(reactionMs,4000,12000),
-    players:[], turn:null, result:null, events:[], requests:{}, round:0, chaos:0,
+    players:[], turn:null, result:null, events:[], requests:{}, dmMemory:{version:1,entries:[],people:{}}, round:0, chaos:0,
     quest:{ clues:0, crown:false, carrierId:null, escaped:false }, lastActorId:null, priorityUntil:0,
-    world:{ bartender:'wary', guards:'bored', facts:['The Duke has terrible taste in hats.'] }, stats:{ actions:0, rolls:0 } };
+    world:{ bartender:'wary', guards:'bored', facts:['The Duke has terrible taste in hats.'], props:{rug:true} }, stats:{ actions:0, rolls:0 } };
 }
 function touch(r, now) { r.revision++; r.updatedAt=now; }
 function event(r, type, text, now, extra={}) {
@@ -67,16 +75,19 @@ export function editPlayer(r,id,profile,now=Date.now()) {
   touch(r,now); return p;
 }
 export function publicRoom(r) {
-  const {requests,seed,...s}=r;
-  return { ...structuredClone(s), players:r.players.map(({token,pin,...p})=>structuredClone(p)) };
+  if(r.world.expedition)ensureItems(r);
+  const {requests,seed,dmMemory,...s}=r;
+  const projected={...s,world:{...s.world,...(s.world.expedition?{expedition:campaignView(r)}:{})}};
+  return { ...structuredClone(projected), players:r.players.map(({token,pin,...p})=>structuredClone(p)) };
 }
 export function startGame(r,now=Date.now()) {
   if(r.phase!=='lobby') fail('PHASE','This story has already started.');
   if(!r.players.length) fail('EMPTY','At least one adventurer needs to join first.');
-  r.phase='open'; r.deadline=0; event(r,'story',OPENING,now); touch(r,now);
+  ensureItems(r);r.phase='open'; r.deadline=0; event(r,'story',OPENING,now); touch(r,now);
 }
 export function classify(text) {
   const t=text.toLowerCase();
+  if(environmentTarget(t)&&/\b(extinguish|douse|quench|put out|blow out|repair|fix|mend|restore|ignite|light|close|shut|unlock|open|push|shove|drag|move|pull|sit|climb|pour|spill|empty)\b/i.test(t))return 'interact';
   if(/\b(heal|bandage|revive|mend|rest|nap|sleep|drink|eat|snack|potion)\b/.test(t)) return 'heal';
   if(/\b(leave|escape|flee|run|exit|outside|sprint)\b/.test(t)) return 'flee';
   if(/\b(steal|pickpocket|snatch|loot|grab|take|swipe|rob|pocket)\b/.test(t)) return 'steal';
@@ -91,14 +102,26 @@ export function classify(text) {
 }
 function targetFor(r,actor,text) {
   const t=text.toLowerCase();
+  if(classify(text)==='flee')return {kind:'door',name:'the tavern exit'};
+  const attempt=parseEntityAttempt(text);
+  if(attempt&&['ignite','extinguish'].includes(attempt.verb)){
+    const exact=exactEnvironmentTarget(attempt.target);if(exact)return exact;
+  }
+  const aimed=t.match(/\b(?:at|on|against|into|towards?)\s+(?:the\s+)?(.+?)(?:\s+(?:with|using)\b|$)/);
+  if(aimed&&aimed[1]!==t)return targetFor(r,actor,aimed[1]);
   const other=r.players.find(p=>p.id!==actor.id&&t.includes(p.name.toLowerCase()));
   if(other) return {kind:'player',id:other.id,name:other.name};
+  const environmental=environmentTarget(text);
+  const objectIndex=environmental?Math.min(...OBJECTS[environmental.kind].aliases.map(a=>t.indexOf(a)).filter(i=>i>=0)):Infinity;
+  const npcIndex=t.search(/guard|captain|brick|soldier|bartender|marnie|barkeep|barmaid|goblin|fiddler/);
+  if(environmental&&(npcIndex<0||objectIndex<npcIndex))return environmental;
   if(/guard|captain|brick|soldier/.test(t)) return {kind:'guard',name:'Captain Brick'};
   if(/bartender|marnie|barkeep|barmaid/.test(t)) return {kind:'bartender',name:'Marnie'};
+  if(/rug|carpet|mat|runner|tapestry/.test(t)) return {kind:'rug',name:'the tavern rug'};
   if(/crown|chest|box|treasure|drawer/.test(t)) return {kind:'chest',name:'the locked chest'};
-  if(/goblin|bard|musician/.test(t)) return {kind:'goblin',name:'the goblin fiddler'};
+  if(/goblin|bard|musician|fiddler/.test(t)) return {kind:'goblin',name:'the goblin fiddler'};
   if(/chandelier|ceiling/.test(t)) return {kind:'chandelier',name:'the chandelier'};
-  return {kind:'room',name:'the tavern'};
+  return environmental||{kind:'room',name:'the tavern'};
 }
 export function submit(r, playerId, input, now=Date.now()) {
   const p=r.players.find(x=>x.id===playerId); if(!p) fail('PLAYER','Rejoin the tavern first.');
@@ -121,12 +144,14 @@ export function submit(r, playerId, input, now=Date.now()) {
   }
   if(r.phase!=='open') fail('BUSY',r.phase==='react'?'Someone got there first. You can still react!':'Wait for the next opening.');
   if(r.lastActorId===p.id && now<r.priorityUntil && r.players.filter(x=>x.connected&&!x.muted&&!x.isBot).length>1) fail('COOLDOWN','Give someone else a shot — your opening returns in a few seconds.');
-  const intent=classify(text);
+  const dynamic=itemPlan(r,p,text);
+  const intent=dynamic?(dynamic.verb==='rest'?'heal':'world'):classify(text);
   if(p.hp<=0 && intent!=='heal') fail('KNOCKED_OUT','You’re on the floor. Rest, eat, or drink to get back up.');
   const e=event(r,'declaration',text,now,{playerId:p.id,name:p.name});
   r.round++; r.turn={id:uid(),seq:e.id,actorId:p.id,action:text,intent,target:targetFor(r,p,text),at:now,
-    deadline:now+r.reactionMs,reactions:[]};
-  r.phase='react'; r.deadline=r.turn.deadline; r.result=null; p.status='committed';
+    deadline:now+r.reactionMs,reactions:[],travelElectorate:r.players.filter(x=>x.id===p.id||x.connected&&!x.muted&&!x.isBot).map(x=>x.id)};
+  if(dynamic){r.turn.worldAction=true;r.turn.worldLocked=dynamic.verb!=='unsupported'&&!dynamic.unresolvedTarget;if(dynamic.unresolvedTarget)r.turn.worldPendingVerb=dynamic.verb;const key=dynamic.targetId||dynamic.recipientId||dynamic.itemId||dynamic.sourceIds?.[0];const item=r.world.expedition.items[key]||r.world.expedition.creatures?.[key];r.turn.target={kind:'world',entityId:item?.id,name:item?.name||dynamic.destination||dynamic.target||'materials',position:item?worldEntityPosition(r,item):[480,490]};}
+  r.phase='react'; r.deadline=r.turn.deadline; r.result=null; p.status='committed';p.cover=false;
   const ack={ok:true,accepted:true,kind:'action',seq:e.id,at:now,turnId:r.turn.id};
   r.requests[key]=ack;
   const keys=Object.keys(r.requests); if(keys.length>1200) keys.slice(0,300).forEach(k=>delete r.requests[k]);
@@ -140,39 +165,78 @@ const hurt=(p,n)=>{const before=p.hp;p.hp=clamp(p.hp-n,0,p.maxHp);return before-
 const heal=(p,n)=>{const before=p.hp;p.hp=clamp(p.hp+n,0,p.maxHp);return p.hp-before;};
 function resolve(r,now) {
   const t=r.turn,p=r.players.find(x=>x.id===t.actorId); if(!p) return;
+  if(t.ai?.status==='thinking')t.ai={...t.ai,status:'fallback',reason:'The turn resolved before local AI finished. Game rules were used.'};
   const sorted=[...t.reactions].sort((a,b)=>a.id-b.id);
   const helpers=sorted.filter(x=>x.kind==='assist'||(x.kind==='custom'&&!/\b(stop|prevent|block|intervene)\b/i.test(x.text)));
   const blockers=sorted.filter(x=>x.kind==='intervene'||(x.kind==='custom'&&/\b(stop|prevent|block|intervene)\b/i.test(x.text)));
-  const hostile=['attack','steal','magic','break'].includes(t.intent);
-  let roll=1+Math.floor(random(r)*20),rerolled=null;
-  if(p.perk==='lucky'&&roll<=3) {rerolled=roll;roll=1+Math.floor(random(r)*20);}
-  const skill=ROLES[p.role].skills.includes(t.intent)?3:0;
+  const hostile=t.worldAction||['attack','steal','magic','break'].includes(t.intent);
+  const dynamic=t.worldAction?(t.worldProposal?(planWorldProposal(r,p,t.worldProposal)||{verb:'unsupported',error:'The selected action is no longer available.',automatic:true,dc:0,ability:'Interaction'}):itemPlan(r,p,t.rulesText||t.action)):null;
+  if(dynamic&&!dynamic.error&&['travel','explore'].includes(dynamic.verb)){
+    const electorate=t.travelElectorate||r.players.filter(x=>x.connected&&!x.muted&&!x.isBot).map(x=>x.id);
+    const yes=new Set([t.actorId,...sorted.filter(x=>x.kind==='assist').map(x=>x.playerId)]);
+    const votes=electorate.filter(id=>yes.has(id)).length,required=Math.floor(electorate.length/2)+1;
+    t.travelVote={yes:votes,required};
+    if(votes<required)dynamic.error=`The party stays here: travel received ${votes}/${required} required votes. Choose Help them to vote yes during the reaction window.`;
+  }
+  if(dynamic&&t.worldBlueprint)Object.assign(dynamic,t.worldBlueprint);
+  const check=dynamic||environmentCheck(r.world,t.target,t.intent,t.rulesText||t.action);
+  const automatic=!!check?.automatic;
+  const situation=[];
+  let advantage=check?.advantage||0;
+  if(t.intent==='sneak'&&r.world.bartender==='friendly'){advantage=1;situation.push('Marnie covers for you');}
+  if(t.intent==='flee'&&r.world.guards==='distracted'){advantage=1;situation.push('Guards distracted');}
+  if(t.intent==='flee'&&['open','broken'].includes(r.world.props?.door)){advantage=1;situation.push('Exit cleared');}
+  if(t.intent==='steal'&&r.world.guards==='distracted'){advantage=1;situation.push('Guards distracted');}
+  if(['sneak','steal'].includes(t.intent)&&Object.entries(r.world.objects||{}).filter(([id,s])=>OBJECTS[id]?.lit&&s.lit===false).length>=3){advantage=1;situation.push('Room dimmed');}
+  if(['dance','flee','attack','break'].includes(t.intent)&&Object.values(r.world.objects||{}).some(s=>s.spilled)){advantage=-1;situation.push('Slippery floor');}
+  if(p.injuries?.length&&check?.ability==='Athletics'){advantage=-1;situation.push('Injured');}
+  const dice=automatic?[]:[1+Math.floor(random(r)*20)];
+  if(!automatic&&advantage)dice.push(1+Math.floor(random(r)*20));
+  let roll=automatic?0:advantage?selectD20(dice,advantage):dice[0],rerolled=null;
+  if(!automatic&&p.perk==='lucky'&&roll<=3) {rerolled=roll;roll=1+Math.floor(random(r)*20);}
+  const skill=ROLES[p.role].skills.includes(t.intent)||(['interact','world'].includes(t.intent)&&((check?.ability==='Athletics'&&p.role==='knight')||(check?.ability==='Arcana'&&p.role==='wizard')||(check?.ability==='Sleight of hand'&&p.role==='rogue')))?3:0;
   const charm=p.perk==='charming'&&['social','dance'].includes(t.intent)?2:0;
   const assistance=Math.min(4,helpers.length),interference=hostile?Math.min(4,blockers.length):0;
-  const modifier=skill+charm+assistance-interference;
-  const dc=({heal:6,flee:r.quest.crown?12:8,inspect:9,social:10,dance:9,sneak:10,steal:13,magic:12,attack:12,break:11,weird:10})[t.intent];
-  const critical=roll===20,success=critical||(roll!==1&&roll+modifier>=dc);
-  const effects=[],changes=[]; let narration='';
+  const training=Math.min(3,Math.floor((p.level||1)/3));
+  const modifier=skill+charm+assistance-interference+training;
+  const dc=automatic?0:check?.dc??({heal:6,flee:r.quest.crown?12:8,inspect:9,social:10,dance:9,sneak:10,steal:13,magic:12,attack:12,break:11,weird:10,interact:10})[t.intent];
+  const critical=roll===20;let success=automatic||critical||(roll!==1&&roll+modifier>=dc);
+  const effects=[],changes=[],sceneEvents=[]; let narration='',unsupported=false;
   const add=(s)=>changes.push(s);
   const fx=(verb,target=t.target.kind)=>effects.push({verb,actorId:p.id,target,targetId:t.target.id||null});
   const damage=(who,n)=>{let d=hurt(who,n);if(d)add(`${who.name} −${d} HP`);};
   const recovery=(who,n)=>{let h=heal(who,n);if(h)add(`${who.name} +${h} HP`);};
-  p.actions++; r.stats.actions++; r.stats.rolls++; if(critical) p.nat20++;
-  if(success) p.score+=critical?5:2;
+  p.actions++; r.stats.actions++; if(!automatic)r.stats.rolls++; if(critical) p.nat20++;
   const target=r.players.find(x=>x.id===t.target.id);
-  switch(t.intent) {
+  const damageNpc=n=>{if(!['guard','bartender','goblin'].includes(t.target.kind))return;const npcs=r.world.npcs||={},npc=npcs[t.target.kind]||={hp:8,maxHp:8};npc.hp=Math.max(0,npc.hp-n);add(`${t.target.name} ${npc.hp}/8 HP`);if(!npc.hp){npc.status='knocked out';add(`${t.target.name} KNOCKED OUT`);if(t.target.kind==='guard')r.world.guards='distracted';}};
+  const props=r.world.props||(r.world.props={rug:true});
+  const environmental=dynamic?null:interactEnvironment(r.world,t.target,t.intent,success,p,{text:t.rulesText||t.action});
+  if(dynamic){const outcome=resolveItem(r,p,dynamic,success);success=outcome.success;unsupported=outcome.blocked;narration=outcome.text;if(outcome.change)add(outcome.change);const scene=createWorldScene(r,p,dynamic,outcome,t.target);effects.push(...scene.effects);sceneEvents.push(...scene.events);}
+  else if(environmental){success=environmental.success;narration=environmental.text;if(environmental.change)add(environmental.change);fx(({break:'impact',ignite:'fire',extinguish:'smoke',take:'steal',repair:'hearts',push:'impact'})[environmental.verb]||'inspect');r.chaos+=environmental.chaos;if(environmental.damage)damage(p,environmental.damage);if(environmental.cover){p.status='hiding';p.cover=true;}}
+  else switch(t.intent) {
     case 'heal':
       recovery(target||p,success?4:2); fx('hearts',target?'player':'self');
       narration=success?pick(r,[`${p.name} discovers the ancient healing art of sitting down. It works.`,`${p.name} administers tavern medicine. Marnie refuses to list the ingredients.`,`${p.name} takes a well-earned breather. Even the guards respect snack time.`]):`${p.name} drops half the remedy. The remaining half does its best.`;
       r.chaos=Math.max(0,r.chaos-1); break;
     case 'attack':
       fx('melee'); r.chaos+=success?2:1;
-      if(success) {if(target)damage(target,critical?3:2);p.gold++;add(`${p.name} +1 coin`);narration=pick(r,[`${p.name} lands it. ${t.target.name} looks personally offended by the physics.`,`${p.name} connects. A barstool flies past. Nobody admits owning it.`,`${p.name} wins this exchange. The goblin starts playing fight music.`]);}
+      if(success) {if(target)damage(target,critical?3:2);if(['guard','bartender','goblin'].includes(t.target.kind)){const npcs=r.world.npcs||=( {}),npc=npcs[t.target.kind]||={hp:8,maxHp:8};npc.hp=Math.max(0,npc.hp-(critical?4:2));add(`${t.target.name} ${npc.hp}/8 HP`);if(!npc.hp){npc.status='knocked out';add(`${t.target.name} KNOCKED OUT`);if(t.target.kind==='guard')r.world.guards='distracted';}}narration=pick(r,[`${p.name} lands it. ${t.target.name} looks personally offended by the physics.`,`${p.name} connects. A barstool rattles.`,`${p.name} wins this exchange. The goblin starts playing fight music.`]);}
       else {damage(p,2);fx('hit','self');narration=pick(r,[`${p.name} commits fully. Unfortunately, so does the floor.`,`${p.name} misses. Captain Brick calls it “a useful demonstration.”`,`${p.name} swings with confidence and lands with a very different sound.`]);}
       break;
     case 'steal':
       fx('steal'); r.chaos+=2;
-      if(success) {
+      if(t.target.kind==='rug') {
+        if(objectState(r.world,'rug').condition==='taken') {
+          success=false;unsupported=true;
+          narration=`${p.name} reaches for the rug, but the floor is bare. Someone already made off with it.`;
+          add('The rug is already gone');
+        } else if(success) {
+          props.rug=false;(r.world.objects||={}).rug={...objectState(r.world,'rug'),condition:'taken'};p.inventory.push('The Tavern Rug');add('RUG STOLEN');
+          narration=`${p.name} pulls the tavern rug free and rolls it under one arm. Bare floorboards remain where it stood.`;
+        } else {
+          damage(p,1);narration=`${p.name} gets one corner up. The rug snaps back and the tavern keeps its footing.`;fx('hit','self');
+        }
+      } else if(success) {
         if(r.quest.clues>=3&&!r.quest.crown&&['chest','bartender','room'].includes(t.target.kind)) {
           r.quest.crown=true;r.quest.carrierId=p.id;p.inventory.push('The Duke’s Crown');p.score+=5;add('THE CROWN IS YOURS');
           narration=`${p.name} lifts the ridiculous golden crown. It jingles like cutlery. The guards have definitely noticed. Find a way out!`;fx('crown');
@@ -181,7 +245,7 @@ function resolve(r,now) {
       break;
     case 'magic':
       fx('spell');r.chaos+=2;
-      if(success) {narration=pick(r,[`${p.name} bends reality just enough to make everyone extremely uncomfortable.`,`${p.name} casts it. The goblin briefly glows. He charges extra for that.`,`${p.name} makes magic happen. Three guards immediately blame each other.`]);if(target)recovery(target,1);}
+      if(success) {const offensive=/\b(fire|fireball|lightning|bolt|blast|zap|freeze)\b/i.test(t.rulesText||t.action);narration=offensive?`${p.name}'s spell strikes ${t.target.name}. The impact leaves a very real mark.`:pick(r,[`${p.name} bends reality just enough to make everyone extremely uncomfortable.`,`${p.name} casts it. The goblin briefly glows. He charges extra for that.`,`${p.name} makes magic happen. Three guards immediately blame each other.`]);if(offensive){if(target)damage(target,critical?4:2);else damageNpc(critical?4:2);}else if(target)recovery(target,1);if(t.target.kind==='guard'){r.world.guards='distracted';add('GUARDS DISTRACTED');}}
       else {damage(p,2);fx('fire','self');narration=pick(r,[`${p.name} summons a very small problem with very large eyebrows. It explodes.`,`${p.name} gets the spell mostly right. “Mostly” is doing a lot of work here.`,`${p.name} accidentally enchants their own boots. The boots are furious.`]);}
       break;
     case 'break':
@@ -195,11 +259,11 @@ function resolve(r,now) {
       else {damage(p,1);narration=`${p.name} makes for the door. Captain Brick is already standing in it. Awkward.`;} break;
     case 'dance':
       fx('dance');
-      if(success) {r.chaos=Math.max(0,r.chaos-2);p.gold++;add(`${p.name} +1 coin`);narration=pick(r,[`${p.name} steals the show. One guard forgets why he works here.`,`${p.name} performs. The goblin sheds a single professional tear.`,`${p.name} gets the whole tavern involved. Captain Brick has surprisingly good rhythm.`]);}
+      if(success) {r.world.guards='distracted';r.chaos=Math.max(0,r.chaos-2);p.gold++;add(`${p.name} +1 coin`);add('GUARDS DISTRACTED');narration=pick(r,[`${p.name} steals the show. One guard forgets why he works here.`,`${p.name} performs. The goblin sheds a single professional tear.`,`${p.name} gets the whole tavern involved. Captain Brick has surprisingly good rhythm.`]);}
       else {r.chaos++;narration=`${p.name} puts on a show. The silence afterward is somehow louder than the music.`;} break;
     case 'social':
       fx('hearts');
-      if(success) {r.chaos=Math.max(0,r.chaos-1);r.world.bartender='friendly';narration=pick(r,[`${p.name} talks their way into everyone’s good graces. Suspiciously effective.`,`${p.name} says exactly the right thing. Marnie pretends she isn’t impressed.`,`${p.name} wins the room over. The guards lower their guard, which feels redundant.`]);}
+      if(success) {r.chaos=Math.max(0,r.chaos-1);r.world.bartender='friendly';if(t.target.kind==='guard'){r.world.guards='distracted';add('GUARDS DISTRACTED');}narration=pick(r,[`${p.name} talks their way into everyone’s good graces. Suspiciously effective.`,`${p.name} says exactly the right thing. Marnie pretends she isn’t impressed.`,`${p.name} wins the room over. The guards lower their guard, which feels redundant.`]);}
       else {narration=`${p.name} gives it a shot. Marnie raises one eyebrow and the price of everything.`;r.chaos++;} break;
     case 'inspect':
       fx('inspect');
@@ -210,10 +274,15 @@ function resolve(r,now) {
       else {narration=`${p.name} steps on the one floorboard with an opinion. Everyone looks over.`;r.chaos++;}break;
     default:
       fx('weird');
-      if(success) {p.gold++;add(`${p.name} +1 coin`);narration=pick(r,[`${p.name} does something nobody prepared for. Against all good judgment, it works.`,`${p.name} commits to the bit. The universe, briefly, commits back.`,`${p.name} makes an extremely specific choice. The goblin is already writing a song about it.`]);}
-      else {narration=pick(r,[`${p.name} tries it. The tavern goes quiet. Somewhere, a spoon falls over.`,`${p.name} follows the idea to its natural, deeply inconvenient conclusion.`,`${p.name} discovers a new way to disappoint Captain Brick.`]);damage(p,1);}break;
+      success=false;unsupported=true;narration=`${p.name} tries “${t.action}”. This attempt is not supported yet. Name a person or object and try inspecting, moving, taking, breaking, talking, hiding, or casting a spell.`;break;
   }
-  if(success && !r.quest.crown && ['inspect','social','dance','sneak','weird','magic'].includes(t.intent)) {
+  for(const change of advanceWorld(r))add(change);
+  if(success&&!automatic&&!environmental?.blocked)p.score+=critical?5:2;
+  if(currentLocation(r)==='tavern')for(const change of advanceEnvironment(r.world))add(change);
+  if(Object.values(r.world.objects||{}).some(s=>s.condition==='burning'))r.chaos++;
+  // Physical hazards are persisted; risky stunts near spilled ale or glass have consequences.
+  if(!success&&['dance','flee','attack','break'].includes(t.intent)&&Object.entries(r.world.objects||{}).some(([id,s])=>s.spilled||(OBJECTS[id]?.material==='glass'&&s.condition==='broken'))){damage(p,1);add('HAZARD: slippery ale or broken glass');}
+  if(success && (!environmental||(t.intent==='inspect'&&t.target.kind==='counter')) && !r.quest.crown && ['inspect','social','dance','sneak','weird','magic'].includes(t.intent)) {
     if(r.quest.clues<3) {
       r.quest.clues++; const facts=['Marnie saw the Duke hide something behind the bar.','The goblin’s song mentions a chest and a golden hat.','The crown is in the chest behind the bar. Steal it!'];
       const fact=facts[r.quest.clues-1];r.world.facts.push(fact);add(`Clue ${r.quest.clues}/3`);narration+=' '+fact;
@@ -229,32 +298,35 @@ function resolve(r,now) {
   if(helpers.length) narration+=` ${helpers.length===1?r.players.find(x=>x.id===helpers[0].playerId)?.name:helpers.length+' accomplices'} ${helpers.length===1?'helps':'help'} sell it.`;
   if(blockers.length) narration+=` ${blockers.length===1?'One voice of reason tries':'The voices of reason try'} to rein things in.`;
   r.chaos=clamp(r.chaos,0,10);
-  if(r.chaos>=10&&!r.quest.escaped) {
+  if(currentLocation(r)==='tavern'&&r.chaos>=10&&!r.quest.escaped) {
     const exposed=r.players.filter(x=>x.connected&&x.status!=='hiding');
     for(const rp of exposed) hurt(rp,1);
     r.chaos=5;r.world.guards='alert';add('Guard sweep: exposed players −1 HP');
     narration+=' The guards sweep the room. Anyone who stayed in the open takes a hit.';effects.push({verb:'alarm',actorId:p.id,target:'guard'});
   }
+  for(const rp of r.players){const level=Math.min(20,1+Math.floor(rp.score/20));if(level>(rp.level||1)){const gained=level-(rp.level||1);rp.maxHp+=gained*2;rp.hp=Math.min(rp.maxHp,rp.hp+gained*2);add(rp.name+' LEVEL '+level);}rp.level=level;}
   for(const rp of r.players) if(rp.hp===0)rp.status='knocked out';
   if(r.quest.crown)r.world.guards='searching';
   r.lastActorId=p.id;r.priorityUntil=now+12500;
-  r.result={id:t.id,playerId:p.id,name:p.name,action:t.action,intent:t.intent,target:t.target,
-    roll,rerolled,modifier,skill,charm,assistance,interference,total:roll+modifier,dc,success,critical,
-    narration,changes,effects,reactions:sorted.map(x=>({playerId:x.playerId,kind:x.kind,text:x.text,seq:x.id})),at:now};
+  r.result={id:t.id,playerId:p.id,name:p.name,action:t.action,intent:t.intent,target:t.target,ai:t.ai?structuredClone(t.ai):null,
+    roll,rerolled,modifier,skill,charm,assistance,interference,total:automatic?0:roll+modifier,dc,success,critical:critical&&success,automatic,dice,advantage,situation,check:check?.ability||t.intent,blocked:!!environmental?.blocked||unsupported,
+    narration,changes,effects,...(dynamic?{sceneEvents}:{}),reactions:sorted.map(x=>({playerId:x.playerId,kind:x.kind,text:x.text,seq:x.id})),at:now};
   r.phase='reveal';r.deadline=now+6500;
+  recordDMMemory(r);
   event(r,'outcome',narration,now,{playerId:p.id,success,roll,turnId:t.id});touch(r,now);
 }
 export function advance(r,now=Date.now()) {
   if(r.paused)return false;
   if(r.phase==='react'&&now>=r.deadline) {resolve(r,now);return true;}
   if(r.phase==='reveal'&&now>=r.deadline) {
-    r.phase=r.quest.escaped?'ended':'open';r.deadline=0;
-    for(const p of r.players)if(p.hp>0)p.status='ready';
+    r.phase=r.world.expedition?.expedition?.status==='completed'||r.quest.escaped&&!r.world.expedition?.campaign?.continuing?'ended':'open';r.deadline=0;
+    for(const p of r.players)if(p.hp>0)p.status=p.cover?'hiding':'ready';
     touch(r,now);return true;
   }
   return false;
 }
 export function hostCommand(r,command,now=Date.now()) {
+  if(command.type==='continueCampaign'){if(['react','reveal','lobby'].includes(r.phase))fail('PHASE','Finish the current scene before continuing the campaign.');beginExpedition(ensureItems(r));if(r.world.expedition.expedition.status==='completed')r.world.expedition.expedition.status='epilogue';ensureItems(r).campaign.heistCompleted=ensureItems(r).campaign.heistCompleted||r.quest.escaped;ensureItems(r).campaign.continuing=true;r.phase='open';r.quest.escaped=false;r.deadline=0;event(r,'story','The crown job was only the beginning. The road beyond the tavern is open.',now);touch(r,now);return;}
   if(command.type==='start')return startGame(r,now);
   if(command.type==='pause') {
     if(!r.paused) {r.remaining=Math.max(0,r.deadline-now);r.paused=true;} else {r.paused=false;if(r.deadline){r.deadline=now+(r.remaining||0);if(r.turn&&r.phase==='react')r.turn.deadline=r.deadline;}}
@@ -265,15 +337,18 @@ export function hostCommand(r,command,now=Date.now()) {
     const p=r.players.find(x=>x.id===command.playerId);if(!p)fail('PLAYER','No such player.');p.muted=!p.muted;
   } else if(command.type==='resetScene') {
     r.phase='open';r.turn=null;r.result=null;r.deadline=0;r.chaos=0;r.paused=false;
-    for(const p of r.players){p.hp=Math.max(p.hp,4);p.status='ready';}
+    r.world.props={rug:true};r.world.objects={};r.world.npcs={};r.world.guards='bored';
+    for(const p of r.players){p.hp=Math.max(p.hp,4);p.status='ready';p.cover=false;}
     event(r,'story','Marnie claps her hands. “Everyone breathe. We’re starting that bit again.”',now);
   } else if(command.type==='redact') {
     const e=r.events.find(x=>x.id===command.eventId);if(e)e.text='[Hidden by the host]';
     if(r.turn){r.turn.action='[Hidden by the host]';r.turn.reactions.forEach(x=>x.text='[Hidden by the host]');}
-    if(r.result){r.result.action='[Hidden by the host]';r.result.narration='The host moved this scene along.';r.result.reactions.forEach(x=>x.text='[Hidden by the host]');}
+    if(r.result){redactDMMemory(r,r.result.id);r.result.action='[Hidden by the host]';r.result.narration='The host moved this scene along.';r.result.story={status:'fallback'};r.result.reactions.forEach(x=>x.text='[Hidden by the host]');}
+    const turnId=e?.turnId||(e?.type==='declaration'?r.events.find(x=>x.type==='outcome'&&x.playerId===e.playerId&&x.at>=e.at)?.turnId:null);
+    if(turnId){redactDMMemory(r,turnId);for(const row of r.events)if(row.turnId===turnId)row.text='[Hidden by the host]';}
   } else if(command.type==='newStory') {
     const fresh=createRoom({code:r.code,seed:r.seed,now,reactionMs:r.reactionMs});
-    const players=r.players.map(p=>({...p,hp:p.maxHp,gold:3,inventory:['Bent spoon'],actions:0,assists:0,score:0,nat20:0,status:'ready'}));
+    const players=r.players.map(p=>({...p,hp:p.maxHp,gold:3,inventory:['Bent spoon'],actions:0,assists:0,score:0,nat20:0,status:'ready',cover:false}));
     Object.assign(r,fresh,{players,seq:r.seq,revision:r.revision,requests:r.requests});
     event(r,'story','A fresh night. The same terrible judgment.',now);
   } else if(command.type==='window') {

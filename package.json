@@ -1,16 +1,19 @@
 {
   "name": "chaos-party-rpg",
-  "version": "0.2.0",
+  "version": "0.3.0-beta.2",
   "private": true,
   "type": "module",
   "description": "A phone-controlled, first-to-declare tavern adventure for a room full of friends.",
   "scripts": {
     "start": "node server.mjs",
     "dev": "CHAOS_PREVIEW=1 node server.mjs",
-    "test": "node scripts/build-framework.mjs && node --test tests/*.test.mjs",
+    "test": "node scripts/test-offline.mjs",
+    "verify": "node scripts/verify-offline.mjs",
     "build": "node scripts/build-framework.mjs && node scripts/build.mjs",
     "prestart": "node scripts/build-framework.mjs",
-    "predev": "node scripts/build-framework.mjs"
+    "predev": "node scripts/build-framework.mjs",
+    "ai:check": "node scripts/check-local-ai.mjs",
+    "start:free-ai": "node scripts/build-framework.mjs && CHAOS_AI_PROVIDER=groq-free CHAOS_AI_NARRATION=off NODE_USE_ENV_PROXY=1 node server.mjs"
   },
   "dependencies": {
     "@colyseus/core": "0.16.24",
@@ -18,6 +21,7 @@
     "@colyseus/ws-transport": "0.16.5",
     "colyseus.js": "0.16.22",
     "qrcode-generator": "2.0.4",
+    "rot-js": "2.2.1",
     "zod": "4.4.3"
   },
   "devDependencies": {

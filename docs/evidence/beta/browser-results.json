@@ -1,0 +1,180 @@
+{
+  "errors": [],
+  "rounds": [
+    {
+      "action": "Extinguish the fireplace",
+      "success": true,
+      "automatic": true,
+      "changes": [
+        "HEARTH EXTINGUISHED"
+      ]
+    },
+    {
+      "action": "Smash the upper left table",
+      "success": true,
+      "automatic": false,
+      "changes": [
+        "TABLE BROKEN"
+      ]
+    },
+    {
+      "action": "Spill the barrel",
+      "success": true,
+      "automatic": true,
+      "changes": [
+        "BARREL SPILLED"
+      ]
+    },
+    {
+      "action": "Open the tavern door",
+      "success": true,
+      "automatic": true,
+      "changes": [
+        "DOOR OPEN"
+      ]
+    },
+    {
+      "action": "Steal the tavern rug",
+      "success": true,
+      "automatic": false,
+      "changes": [
+        "RUG STOLEN"
+      ]
+    },
+    {
+      "action": "Hide behind the upper right table",
+      "success": true,
+      "automatic": true,
+      "changes": []
+    },
+    {
+      "action": "Inspect the chest behind the bar",
+      "success": true,
+      "automatic": true,
+      "changes": [
+        "Clue 1/3"
+      ]
+    },
+    {
+      "action": "Inspect the chest behind the bar",
+      "success": true,
+      "automatic": true,
+      "changes": [
+        "Clue 2/3"
+      ]
+    },
+    {
+      "action": "Inspect the chest behind the bar",
+      "success": true,
+      "automatic": true,
+      "changes": [
+        "Clue 3/3"
+      ]
+    },
+    {
+      "action": "Steal the crown from the chest",
+      "success": true,
+      "automatic": false,
+      "changes": [
+        "THE CROWN IS YOURS"
+      ]
+    },
+    {
+      "action": "Flee through the door with the crown",
+      "success": true,
+      "automatic": false,
+      "changes": [
+        "PARTY VICTORY"
+      ]
+    }
+  ],
+  "quest": {
+    "clues": 3,
+    "crown": true,
+    "carrierId": "208d0492-ff74-4d60-8042-212825b751da",
+    "escaped": true,
+    "escapedBy": "0a93f628-3c5b-4f70-9939-2de47e6242ad"
+  },
+  "objects": {
+    "hearth": {
+      "condition": "intact",
+      "lit": false,
+      "open": false,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "table": {
+      "condition": "broken",
+      "lit": false,
+      "open": false,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "barrel": {
+      "condition": "intact",
+      "lit": false,
+      "open": false,
+      "offset": [
+        0,
+        0
+      ],
+      "spilled": true
+    },
+    "door": {
+      "condition": "intact",
+      "lit": false,
+      "open": true,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "rug": {
+      "condition": "taken",
+      "lit": false,
+      "open": false,
+      "offset": [
+        0,
+        0
+      ]
+    }
+  },
+  "players": [
+    {
+      "name": "Jinx",
+      "avatar": {
+        "skin": 2,
+        "hair": 0,
+        "hairColor": 1,
+        "outfit": 1,
+        "color": 0,
+        "accessory": 0,
+        "body": "human"
+      },
+      "inventory": [
+        "Bent spoon",
+        "The Tavern Rug"
+      ]
+    },
+    {
+      "name": "Moss",
+      "avatar": {
+        "skin": 2,
+        "hair": 0,
+        "hairColor": 1,
+        "outfit": 2,
+        "color": 0,
+        "accessory": 0,
+        "body": "human"
+      },
+      "inventory": [
+        "Bent spoon",
+        "The Duke’s Crown"
+      ]
+    }
+  ]
+}

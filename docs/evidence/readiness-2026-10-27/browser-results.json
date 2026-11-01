@@ -1,0 +1,54 @@
+{
+  "dateUTC": "2026-10-27",
+  "sourceBaseline": "b2a66128657661ee40317aa9509ca6b1083623e3",
+  "sourceNote": "Readiness packaging and browser fixture changes were also present; recorded in the subsequent readiness commit. No production game rules were changed in this pass.",
+  "realModelInference": false,
+  "physicalDevices": false,
+  "targetMac": false,
+  "tavern": {
+    "controllers": 2,
+    "errors": [],
+    "normalPaceRounds": 6,
+    "normalPaceElapsedMs": 92723,
+    "totalActions": 13,
+    "quest": {
+      "clues": 3,
+      "crown": true,
+      "escaped": true
+    },
+    "victoryBalancesCheckedOnBothPhones": true
+  },
+  "items": {
+    "errors": [],
+    "totalActions": 28,
+    "restart": true,
+    "rejoin": true,
+    "location": "ruins"
+  },
+  "campaign": {
+    "errors": [],
+    "totalActions": 12,
+    "restart": true,
+    "rejoin": true,
+    "questStatus": "completed",
+    "location": "clearing"
+  },
+  "narrator": {
+    "synthetic": true,
+    "realInference": false,
+    "errors": [],
+    "hostViewport": [
+      1280,
+      720
+    ],
+    "phoneViewport": [
+      390,
+      844
+    ],
+    "reactions": 1,
+    "overflow": {
+      "client": 202,
+      "scroll": 202
+    }
+  }
+}

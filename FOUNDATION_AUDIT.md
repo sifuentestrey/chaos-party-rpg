@@ -1,3 +1,7 @@
+# 0.3 beta integration update
+
+Production now also executes selected Dungeonz object mechanics, Foundry D&D5e advantage selection, and ROT.js A* navigation. These are narrow real code extractions, not adoption of an entire RPG engine. [Credits](CREDITS.md) identify original sources and exact reuse boundaries. [Beta audit](docs/BETA_AUDIT.md) records executed checks. The earlier foundation investigation follows.
+
 # Foundation audit and implementation record
 
 Build 0.2.0, October 25–26, 2026. Actual source and asset files were downloaded and inspected before this decision. This document records what is running, rather than a proposed architecture.

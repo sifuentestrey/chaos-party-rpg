@@ -1,0 +1,72 @@
+{
+  "model": "openai/gpt-oss-120b",
+  "productionBudgetMs": 5500,
+  "diagnosticTimeoutMs": 15000,
+  "scope": "Live AI component tests plus normal applyAIPlan/advance. Native locked turns can retain their original interpretation. No forced unlock or production saves.",
+  "rows": [
+    {
+      "id": "fresh-green-headband",
+      "attempt": "Create a green headband from my cloth strip and wood splinter to wear on my head",
+      "expected": {
+        "verb": "craft",
+        "sources": [
+          "item-1",
+          "item-2"
+        ],
+        "itemType": "wearable",
+        "slot": "head",
+        "color": "#83b48a"
+      },
+      "exploratory": false,
+      "nativeLocked": true,
+      "elapsedMs": 720,
+      "actual": {
+        "domain": "world",
+        "verb": "craft",
+        "target": "",
+        "item": "",
+        "sources": [
+          "item-1",
+          "item-2"
+        ],
+        "name": "headband",
+        "itemType": "wearable",
+        "slot": "head",
+        "color": "#83b48a",
+        "summary": "Attempt: Create a green headband from my cloth strip and wood splinter to wear on my head"
+      },
+      "usage": {
+        "promptTokens": 1307,
+        "completionTokens": 161
+      },
+      "correct": true,
+      "checks": {
+        "verb": true,
+        "itemType": true,
+        "slot": true,
+        "color": true,
+        "sources": true
+      },
+      "validated": true,
+      "noPrematureMechanicalMutation": true,
+      "applied": false,
+      "resolution": {
+        "blocked": false,
+        "success": true,
+        "text": "Jinx creates green headband (item-13) from cloth strip and wood splinter.",
+        "changes": [
+          "CREATED: green headband"
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "scored": 1,
+    "matched": 1,
+    "matchedWithinBudget": 1,
+    "errors": 0,
+    "p50Ms": 720,
+    "p95Ms": 720,
+    "narrationRequiresManualReview": true
+  }
+}

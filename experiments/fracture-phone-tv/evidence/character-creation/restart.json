@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "profiles": 4,
+  "appearance": true,
+  "position": true,
+  "equipment": true,
+  "class": true,
+  "perk": true,
+  "cooldown": true
+}

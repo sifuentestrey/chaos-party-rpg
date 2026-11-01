@@ -1,0 +1,155 @@
+✖ repeated puts never duplicate membership or inflate capacity (46.586107ms)
+✖ moving a contained item updates both parents and stale containers cannot steal it (5.730395ms)
+✖ closed ancestors hide descendants even when an inner container is open (10.415707ms)
+✖ corrupt or missing containment ancestors fail closed without hanging (3.756098ms)
+✖ consumed or disassembled container ancestors cannot expose their children (4.356544ms)
+✖ a capacity rejection does not detach the item from its previous container (3.081683ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 0
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 230.270177
+
+✖ failing tests:
+
+test at ../../container-stress-before-dT8qasXr/tests/container-graph-stress.test.mjs:13:1
+✖ repeated puts never duplicate membership or inflate capacity (46.586107ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      'item-1',
+  +   'item-1',
+  +   'item-1',
+  +   'item-1',
+  +   'item-1',
+  +   'item-1',
+  +   'item-1',
+  +   'item-1'
+    ]
+  
+      at TestContext.<anonymous> (file:///workspace/container-stress-before-dT8qasXr/tests/container-graph-stress.test.mjs:16:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.start (node:internal/test_runner/test:1242:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [
+      'item-1', 'item-1',
+      'item-1', 'item-1',
+      'item-1', 'item-1',
+      'item-1', 'item-1'
+    ],
+    expected: [ 'item-1' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at ../../container-stress-before-dT8qasXr/tests/container-graph-stress.test.mjs:18:1
+✖ moving a contained item updates both parents and stale containers cannot steal it (5.730395ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'item-1'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///workspace/container-stress-before-dT8qasXr/tests/container-graph-stress.test.mjs:20:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'item-1' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at ../../container-stress-before-dT8qasXr/tests/container-graph-stress.test.mjs:23:1
+✖ closed ancestors hide descendants even when an inner container is open (10.415707ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///workspace/container-stress-before-dT8qasXr/tests/container-graph-stress.test.mjs:25:53)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../../container-stress-before-dT8qasXr/tests/container-graph-stress.test.mjs:28:1
+✖ corrupt or missing containment ancestors fail closed without hanging (3.756098ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///workspace/container-stress-before-dT8qasXr/tests/container-graph-stress.test.mjs:30:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../../container-stress-before-dT8qasXr/tests/container-graph-stress.test.mjs:34:1
+✖ consumed or disassembled container ancestors cannot expose their children (4.356544ms)
+  AssertionError [ERR_ASSERTION]: consumed
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///workspace/container-stress-before-dT8qasXr/tests/container-graph-stress.test.mjs:40:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../../container-stress-before-dT8qasXr/tests/container-graph-stress.test.mjs:43:1
+✖ a capacity rejection does not detach the item from its previous container (3.081683ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///workspace/container-stress-before-dT8qasXr/tests/container-graph-stress.test.mjs:51:9)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

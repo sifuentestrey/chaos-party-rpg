@@ -1,8 +1,14 @@
+> **Current project entrypoint: [START_HERE.md](START_HERE.md).** This checkout now contains the latest consolidated source. Older status text below is historical; use START_HERE for current scope, limitations, branch and next-chat instructions.
+
 # Chaos Party RPG
 
 Private project for a family TV-and-phones, AI-assisted, chaotic fantasy party game.
 
-**Status: preparation and recovery only. This repository does NOT yet contain the playable prototype.** Work reportedly produced an archive named Chaos_Party_Mac.zip, but it has not been supplied or independently inspected here. Do not pretend the source, screenshots, visual quality or reported tests have been verified.
+**Local Qwen integration:** the multiplayer server now has an optional local AI action interpreter. [Connection, test evidence and current model-download blocker](docs/LOCAL_AI.md). The model itself has not been installed or verified in this cloud session.
+
+**Status: 0.3 beta candidate — one tavern and a complete cooperative crown heist.** The scene has 46 addressable objects with persistent changes, material-based checks, cover, hazards, NPC health and situational advantage/disadvantage. [Beta notes](docs/BETA.md) explain what is playable and what still needs real hardware testing. Source provenance remains in [docs/PROTOTYPE_IMPORT.md](docs/PROTOTYPE_IMPORT.md).
+
+Use Node 22+, run `npm ci`, then `npm start`. Open the host screen on the server machine at port 4747 and join from phone browsers on the same LAN. For a real phone test without the Mac, use the [Codespaces live-game instructions](docs/PHONE_REAL_GAME.md). `npm test` exercises multiplayer and saves; `npm run build` produces the separate static solo preview. No paid API is required, though Codespaces may use an account’s included quota or billable minutes.
 
 ## Target experience
 - One shared full-screen 16:9 pixel-art tavern on TV; 12–20+ players connect from phone browsers using a QR or room code.
@@ -16,7 +22,7 @@ Private project for a family TV-and-phones, AI-assisted, chaotic fantasy party g
 
 ## Instructions
 1. Read AGENTS.md and docs/REUSE_CANDIDATES.md.
-2. Obtain the original Work artifact named Chaos_Party_Mac.zip. Preserve a pristine copy and scan for secrets before committing.
+2. Read docs/CODEX_KICKOFF.md and docs/PROTOTYPE_IMPORT.md. Preserve the recovered source and existing saves. If the original archive becomes available, keep a pristine copy and scan before committing.
 3. Run and visually evaluate both TV and phone experiences; capture screenshots/video.
 4. Make a runnable *visual* tavern spike. Compare it with an actually running licensed game. Favor reusing character animations and world rendering from an established playable game.
 5. Demonstrate a complete 90-second chaotic interaction on two real phone browsers with the TV screen, plus 20-client simulated load tests.

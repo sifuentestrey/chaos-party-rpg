@@ -1,0 +1,34 @@
+{
+  "status": "passed",
+  "checks": [
+    "fresh TV uses corrected registered-asset fallback",
+    "moved table and flame drawn on native map",
+    "rugs drawn at real native NPC positions",
+    "actual ignition and extinguishing through phone forms",
+    "no browser errors"
+  ],
+  "events": [
+    {
+      "text": "walk to 41, 209",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 41,
+      "y": 209
+    },
+    {
+      "text": "ignite camp table",
+      "status": "succeeded",
+      "message": "D20 19 / 9: CoreAsh8wbxe: ignite camp table.",
+      "x": 41,
+      "y": 209
+    },
+    {
+      "text": "extinguish camp table",
+      "status": "succeeded",
+      "message": "CoreAsh8wbxe: extinguish camp table.",
+      "x": 41,
+      "y": 209
+    }
+  ],
+  "errors": []
+}

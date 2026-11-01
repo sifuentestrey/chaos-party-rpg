@@ -1,0 +1,227 @@
+{
+  "status": "passed",
+  "checks": [
+    "real blocking table moved on native tiles",
+    "fire, extinguish, server-clock burn-through and repair",
+    "real guard witnesses theft and refuses quest",
+    "innocent player reputation remains independent",
+    "gift changes trust and restores real native quest access",
+    "NPC memory survives phone reload",
+    "offline canonical DM remains available",
+    "no browser errors"
+  ],
+  "events": [
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "walk to 38, 209",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 38,
+      "y": 209
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "walk to 40, 209",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 40,
+      "y": 209
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "push camp table east",
+      "status": "failed",
+      "message": "D20 2 / 8: CoreAsh8wbxe cannot move camp table this time.",
+      "roll": 2,
+      "x": 40,
+      "y": 209
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "push camp table east",
+      "status": "failed",
+      "message": "D20 5 / 8: CoreAsh8wbxe cannot move camp table this time.",
+      "roll": 5,
+      "x": 40,
+      "y": 209
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "push camp table east",
+      "status": "failed",
+      "message": "D20 5 / 8: CoreAsh8wbxe cannot move camp table this time.",
+      "roll": 5,
+      "x": 40,
+      "y": 209
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "push camp table east",
+      "status": "succeeded",
+      "message": "D20 17 / 8: CoreAsh8wbxe: move camp table.",
+      "roll": 17,
+      "x": 40,
+      "y": 209
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "walk to 42, 209",
+      "status": "blocked",
+      "message": "No walkable path to that destination.",
+      "x": 40,
+      "y": 209
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "walk to 41, 209",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 41,
+      "y": 209
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "ignite camp table",
+      "status": "failed",
+      "message": "D20 6 / 9: CoreAsh8wbxe cannot ignite camp table this time.",
+      "roll": 6,
+      "x": 41,
+      "y": 209
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "ignite camp table",
+      "status": "succeeded",
+      "message": "D20 16 / 9: CoreAsh8wbxe: ignite camp table.",
+      "roll": 16,
+      "x": 41,
+      "y": 209
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "extinguish camp table",
+      "status": "succeeded",
+      "message": "CoreAsh8wbxe: extinguish camp table.",
+      "x": 41,
+      "y": 209
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "ignite camp table",
+      "status": "succeeded",
+      "message": "D20 14 / 9: CoreAsh8wbxe: ignite camp table.",
+      "roll": 14,
+      "x": 41,
+      "y": 209
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "repair camp table",
+      "status": "failed",
+      "message": "D20 9 / 11: CoreAsh8wbxe cannot repair camp table this time.",
+      "roll": 9,
+      "x": 41,
+      "y": 209
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "repair camp table",
+      "status": "failed",
+      "message": "D20 2 / 11: CoreAsh8wbxe cannot repair camp table this time.",
+      "roll": 2,
+      "x": 41,
+      "y": 209
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "repair camp table",
+      "status": "succeeded",
+      "message": "D20 20 / 11: CoreAsh8wbxe: repair camp table.",
+      "roll": 20,
+      "x": 41,
+      "y": 209
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "walk to 41, 196",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 41,
+      "y": 196
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "walk to 41, 196",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 41,
+      "y": 196
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "steal item-123",
+      "status": "succeeded",
+      "message": "D20 13 / 11: CoreAsh8wbxe steals guard's rug from guard. guard notices and remembers.",
+      "roll": 13,
+      "x": 41,
+      "y": 196
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "talk to guard",
+      "status": "succeeded",
+      "message": "guard: “I remember what you did. Make amends before asking for a job.” (trust -2)",
+      "x": 41,
+      "y": 196
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "ask guard for a quest",
+      "status": "blocked",
+      "message": "guard: “I remember what you did. Make amends before asking for a job.” (trust -2)",
+      "x": 41,
+      "y": 196
+    },
+    {
+      "player": "CoreEmber8wc9u",
+      "text": "walk to 41, 196",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 41,
+      "y": 196
+    },
+    {
+      "player": "CoreEmber8wc9u",
+      "text": "ask guard for a quest",
+      "status": "succeeded",
+      "message": "Asked guard for an adventure. Check your quest.",
+      "x": 41,
+      "y": 196
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "give cloth strip to fracture:world1:npc:40:41:195",
+      "status": "succeeded",
+      "message": "CoreAsh8wbxe: give cloth strip → guard.",
+      "x": 41,
+      "y": 196
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "talk to guard",
+      "status": "succeeded",
+      "message": "guard: “Thank you for the gift. I remember your kindness.” (trust 0)",
+      "x": 41,
+      "y": 196
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "ask guard for a quest",
+      "status": "succeeded",
+      "message": "Asked guard for an adventure. Check your quest.",
+      "x": 41,
+      "y": 196
+    }
+  ],
+  "errors": []
+}

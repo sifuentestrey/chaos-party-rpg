@@ -1,0 +1,759 @@
+{
+  "sourceCommit": "840ba5988e6998f9030a275fc4773dc46337a07f",
+  "sourceFileSha256": "0f5ff35e7471a02ffc34258aca4dac31dd931e9e06e9bdcdc2906759c16303bc",
+  "note": "Captured before text extraction from existing seeded generators; no players, UUIDs, model replies or private data. Behavior hashes normalize only editable text and its exact discovery-name echo; raw hashes retain original text.",
+  "seeds": [
+    1,
+    7,
+    73825,
+    305419896
+  ],
+  "regionIds": [
+    "clearing",
+    "ruins",
+    "wild-0-0",
+    "wild-2-1",
+    "wild--3--2",
+    "wild-1-0"
+  ],
+  "samples": [
+    {
+      "seed": 1,
+      "authoritativeSeed": 1,
+      "nextItemId": 53,
+      "stateSha256": "ba6c044a67d1d3f1c332e37e9039aa97326dcdd1d5d85b2c01c5068df7e70736",
+      "behaviorSha256": "fe3512a01b0b4768e9a90a434b53c669bebe31c18fb4c2412e9908540c975fb1",
+      "regions": [
+        {
+          "id": "clearing",
+          "name": "Amber Clearing",
+          "kind": "clearing",
+          "danger": null,
+          "exits": [
+            "tavern",
+            "ruins"
+          ],
+          "quest": {
+            "id": "quest-clearing",
+            "kind": "recover",
+            "objective": "Make the road safe and return the keepsake from the coffer to the wayfarer.",
+            "gateId": "item-16",
+            "title": "A keepsake on the road",
+            "patronId": "person-clearing",
+            "threatId": "beast-clearing",
+            "relicId": "item-14",
+            "chestId": "item-13",
+            "status": "available",
+            "reward": 5,
+            "chapter": 1
+          },
+          "rumor": "Travelers say the next valley remembers every promise.",
+          "patron": "Wren the Wayfarer",
+          "beast": "Bristle Wolf"
+        },
+        {
+          "id": "ruins",
+          "name": "Moonlit Ruins",
+          "kind": "ruins",
+          "danger": null,
+          "exits": [
+            "clearing",
+            "wild-0-0"
+          ],
+          "quest": {
+            "id": "quest-ruins",
+            "kind": "recover",
+            "objective": "Make the road safe and return the keepsake from the coffer to the wayfarer.",
+            "gateId": "item-20",
+            "title": "A keepsake on the road",
+            "patronId": "person-ruins",
+            "threatId": "beast-ruins",
+            "relicId": "item-18",
+            "chestId": "item-17",
+            "status": "available",
+            "reward": 5,
+            "chapter": 1
+          },
+          "rumor": "Someone has been moving the old boundary stones.",
+          "patron": "Ember the Wayfarer",
+          "beast": "Briar Wolf"
+        },
+        {
+          "id": "wild-0-0",
+          "name": "Thorn Village 341",
+          "kind": "village",
+          "danger": 1,
+          "exits": [
+            "wild-1-0",
+            "wild-0-1",
+            "ruins",
+            "wild-0--1"
+          ],
+          "quest": {
+            "id": "quest-wild-0-0",
+            "kind": "recover",
+            "objective": "Make the road safe and return the keepsake from the coffer to the wayfarer.",
+            "gateId": "item-28",
+            "title": "A keepsake on the road",
+            "patronId": "person-wild-0-0",
+            "threatId": "beast-wild-0-0",
+            "relicId": "item-26",
+            "chestId": "item-25",
+            "status": "available",
+            "reward": 5,
+            "chapter": 1
+          },
+          "rumor": "Someone has been moving the old boundary stones.",
+          "patron": "Finch the Wayfarer",
+          "beast": "Bristle Crow"
+        },
+        {
+          "id": "wild-2-1",
+          "name": "Whispering Cavern 752",
+          "kind": "cavern",
+          "danger": 2,
+          "exits": [
+            "wild-3-1",
+            "wild-2-2",
+            "wild-1-1",
+            "wild-2-0"
+          ],
+          "quest": {
+            "id": "quest-wild-2-1",
+            "kind": "rescue",
+            "objective": "Make the road safe and bandage the injured wayfarer.",
+            "gateId": "item-36",
+            "title": "Shelter on the road",
+            "patronId": "person-wild-2-1",
+            "threatId": "beast-wild-2-1",
+            "relicId": "item-34",
+            "chestId": "item-33",
+            "status": "available",
+            "reward": 6,
+            "chapter": 1
+          },
+          "rumor": "The spring runs clear, even in drought.",
+          "patron": "Ember the Wayfarer",
+          "beast": "Mottle Boar"
+        },
+        {
+          "id": "wild--3--2",
+          "name": "Copper Ruins 136",
+          "kind": "ruins",
+          "danger": 2,
+          "exits": [
+            "wild--2--2",
+            "wild--3--1",
+            "wild--4--2",
+            "wild--3--3"
+          ],
+          "quest": {
+            "id": "quest-wild--3--2",
+            "kind": "rescue",
+            "objective": "Make the road safe and bandage the injured wayfarer.",
+            "gateId": "item-44",
+            "title": "Shelter on the road",
+            "patronId": "person-wild--3--2",
+            "threatId": "beast-wild--3--2",
+            "relicId": "item-42",
+            "chestId": "item-41",
+            "status": "available",
+            "reward": 6,
+            "chapter": 1
+          },
+          "rumor": "Travelers say the next valley remembers every promise.",
+          "patron": "Rook the Wayfarer",
+          "beast": "Briar Boar"
+        },
+        {
+          "id": "wild-1-0",
+          "name": "Winding Marsh 870",
+          "kind": "marsh",
+          "danger": 1,
+          "exits": [
+            "wild-2-0",
+            "wild-1-1",
+            "wild-0-0",
+            "wild-1--1"
+          ],
+          "quest": {
+            "id": "quest-wild-1-0",
+            "kind": "restore",
+            "objective": "Make the road safe and repair the broken gate.",
+            "gateId": "item-52",
+            "title": "The broken crossing",
+            "patronId": "person-wild-1-0",
+            "threatId": "beast-wild-1-0",
+            "relicId": "item-50",
+            "chestId": "item-49",
+            "status": "available",
+            "reward": 5,
+            "chapter": 1
+          },
+          "rumor": "Someone has been moving the old boundary stones.",
+          "patron": "Wren the Wayfarer",
+          "beast": "Cinder Crow"
+        }
+      ]
+    },
+    {
+      "seed": 7,
+      "authoritativeSeed": 7,
+      "nextItemId": 53,
+      "stateSha256": "ddcfe58b59e889384e1b111e4a94f8f6ba54eb089da7d557dabae04eec42cf37",
+      "behaviorSha256": "67b891b6090f2f53ba9272b790415060f40ae51cfa5581e516cee4a61244df26",
+      "regions": [
+        {
+          "id": "clearing",
+          "name": "Mossy Clearing",
+          "kind": "clearing",
+          "danger": null,
+          "exits": [
+            "tavern",
+            "ruins"
+          ],
+          "quest": {
+            "id": "quest-clearing",
+            "kind": "recover",
+            "objective": "Make the road safe and return the keepsake from the coffer to the wayfarer.",
+            "gateId": "item-16",
+            "title": "A keepsake on the road",
+            "patronId": "person-clearing",
+            "threatId": "beast-clearing",
+            "relicId": "item-14",
+            "chestId": "item-13",
+            "status": "available",
+            "reward": 5,
+            "chapter": 1
+          },
+          "rumor": "Travelers say the next valley remembers every promise.",
+          "patron": "Ember the Wayfarer",
+          "beast": "Mottle Crow"
+        },
+        {
+          "id": "ruins",
+          "name": "Mossy Ruins",
+          "kind": "ruins",
+          "danger": null,
+          "exits": [
+            "clearing",
+            "wild-0-0"
+          ],
+          "quest": {
+            "id": "quest-ruins",
+            "kind": "recover",
+            "objective": "Make the road safe and return the keepsake from the coffer to the wayfarer.",
+            "gateId": "item-20",
+            "title": "A keepsake on the road",
+            "patronId": "person-ruins",
+            "threatId": "beast-ruins",
+            "relicId": "item-18",
+            "chestId": "item-17",
+            "status": "available",
+            "reward": 5,
+            "chapter": 1
+          },
+          "rumor": "Someone has been moving the old boundary stones.",
+          "patron": "Finch the Wayfarer",
+          "beast": "Cinder Crow"
+        },
+        {
+          "id": "wild-0-0",
+          "name": "Ashen Ruins 341",
+          "kind": "ruins",
+          "danger": 1,
+          "exits": [
+            "wild-1-0",
+            "wild-0-1",
+            "ruins",
+            "wild-0--1"
+          ],
+          "quest": {
+            "id": "quest-wild-0-0",
+            "kind": "recover",
+            "objective": "Make the road safe and return the keepsake from the coffer to the wayfarer.",
+            "gateId": "item-28",
+            "title": "A keepsake on the road",
+            "patronId": "person-wild-0-0",
+            "threatId": "beast-wild-0-0",
+            "relicId": "item-26",
+            "chestId": "item-25",
+            "status": "available",
+            "reward": 5,
+            "chapter": 1
+          },
+          "rumor": "Someone has been moving the old boundary stones.",
+          "patron": "Wren the Wayfarer",
+          "beast": "Cinder Boar"
+        },
+        {
+          "id": "wild-2-1",
+          "name": "Copper Ruins 752",
+          "kind": "ruins",
+          "danger": 2,
+          "exits": [
+            "wild-3-1",
+            "wild-2-2",
+            "wild-1-1",
+            "wild-2-0"
+          ],
+          "quest": {
+            "id": "quest-wild-2-1",
+            "kind": "recover",
+            "objective": "Make the road safe and return the keepsake from the coffer to the wayfarer.",
+            "gateId": "item-36",
+            "title": "A keepsake on the road",
+            "patronId": "person-wild-2-1",
+            "threatId": "beast-wild-2-1",
+            "relicId": "item-34",
+            "chestId": "item-33",
+            "status": "available",
+            "reward": 6,
+            "chapter": 1
+          },
+          "rumor": "Someone has been moving the old boundary stones.",
+          "patron": "Tansy the Wayfarer",
+          "beast": "Bristle Boar"
+        },
+        {
+          "id": "wild--3--2",
+          "name": "Winding Forest 136",
+          "kind": "forest",
+          "danger": 2,
+          "exits": [
+            "wild--2--2",
+            "wild--3--1",
+            "wild--4--2",
+            "wild--3--3"
+          ],
+          "quest": {
+            "id": "quest-wild--3--2",
+            "kind": "recover",
+            "objective": "Make the road safe and return the keepsake from the coffer to the wayfarer.",
+            "gateId": "item-44",
+            "title": "A keepsake on the road",
+            "patronId": "person-wild--3--2",
+            "threatId": "beast-wild--3--2",
+            "relicId": "item-42",
+            "chestId": "item-41",
+            "status": "available",
+            "reward": 6,
+            "chapter": 1
+          },
+          "rumor": "Someone has been moving the old boundary stones.",
+          "patron": "Ember the Wayfarer",
+          "beast": "Briar Crow"
+        },
+        {
+          "id": "wild-1-0",
+          "name": "Starfall Clearing 870",
+          "kind": "clearing",
+          "danger": 1,
+          "exits": [
+            "wild-2-0",
+            "wild-1-1",
+            "wild-0-0",
+            "wild-1--1"
+          ],
+          "quest": {
+            "id": "quest-wild-1-0",
+            "kind": "restore",
+            "objective": "Make the road safe and repair the broken gate.",
+            "gateId": "item-52",
+            "title": "The broken crossing",
+            "patronId": "person-wild-1-0",
+            "threatId": "beast-wild-1-0",
+            "relicId": "item-50",
+            "chestId": "item-49",
+            "status": "available",
+            "reward": 5,
+            "chapter": 1
+          },
+          "rumor": "Travelers say the next valley remembers every promise.",
+          "patron": "Rook the Wayfarer",
+          "beast": "Cinder Crow"
+        }
+      ]
+    },
+    {
+      "seed": 73825,
+      "authoritativeSeed": 73825,
+      "nextItemId": 53,
+      "stateSha256": "642c8254a45269c81f3e9524a6d93e02bf1514b3d1ad0b9e23e9ef0ea5ba7274",
+      "behaviorSha256": "faa09268c4d8b71bd016df0c45ae3e77e1239233aa6b250c1e2fdd865a30c72b",
+      "regions": [
+        {
+          "id": "clearing",
+          "name": "Mossy Clearing",
+          "kind": "clearing",
+          "danger": null,
+          "exits": [
+            "tavern",
+            "ruins"
+          ],
+          "quest": {
+            "id": "quest-clearing",
+            "kind": "recover",
+            "objective": "Make the road safe and return the keepsake from the coffer to the wayfarer.",
+            "gateId": "item-16",
+            "title": "A keepsake on the road",
+            "patronId": "person-clearing",
+            "threatId": "beast-clearing",
+            "relicId": "item-14",
+            "chestId": "item-13",
+            "status": "available",
+            "reward": 5,
+            "chapter": 1
+          },
+          "rumor": "Travelers say the next valley remembers every promise.",
+          "patron": "Tansy the Wayfarer",
+          "beast": "Cinder Wolf"
+        },
+        {
+          "id": "ruins",
+          "name": "Amber Ruins",
+          "kind": "ruins",
+          "danger": null,
+          "exits": [
+            "clearing",
+            "wild-0-0"
+          ],
+          "quest": {
+            "id": "quest-ruins",
+            "kind": "recover",
+            "objective": "Make the road safe and return the keepsake from the coffer to the wayfarer.",
+            "gateId": "item-20",
+            "title": "A keepsake on the road",
+            "patronId": "person-ruins",
+            "threatId": "beast-ruins",
+            "relicId": "item-18",
+            "chestId": "item-17",
+            "status": "available",
+            "reward": 5,
+            "chapter": 1
+          },
+          "rumor": "Someone has been moving the old boundary stones.",
+          "patron": "Finch the Wayfarer",
+          "beast": "Briar Wolf"
+        },
+        {
+          "id": "wild-0-0",
+          "name": "Forgotten Ruins 341",
+          "kind": "ruins",
+          "danger": 1,
+          "exits": [
+            "wild-1-0",
+            "wild-0-1",
+            "ruins",
+            "wild-0--1"
+          ],
+          "quest": {
+            "id": "quest-wild-0-0",
+            "kind": "rescue",
+            "objective": "Make the road safe and bandage the injured wayfarer.",
+            "gateId": "item-28",
+            "title": "Shelter on the road",
+            "patronId": "person-wild-0-0",
+            "threatId": "beast-wild-0-0",
+            "relicId": "item-26",
+            "chestId": "item-25",
+            "status": "available",
+            "reward": 5,
+            "chapter": 1
+          },
+          "rumor": "Someone has been moving the old boundary stones.",
+          "patron": "Finch the Wayfarer",
+          "beast": "Briar Wolf"
+        },
+        {
+          "id": "wild-2-1",
+          "name": "Starfall Ruins 752",
+          "kind": "ruins",
+          "danger": 2,
+          "exits": [
+            "wild-3-1",
+            "wild-2-2",
+            "wild-1-1",
+            "wild-2-0"
+          ],
+          "quest": {
+            "id": "quest-wild-2-1",
+            "kind": "rescue",
+            "objective": "Make the road safe and bandage the injured wayfarer.",
+            "gateId": "item-36",
+            "title": "Shelter on the road",
+            "patronId": "person-wild-2-1",
+            "threatId": "beast-wild-2-1",
+            "relicId": "item-34",
+            "chestId": "item-33",
+            "status": "available",
+            "reward": 6,
+            "chapter": 1
+          },
+          "rumor": "Someone has been moving the old boundary stones.",
+          "patron": "Rook the Wayfarer",
+          "beast": "Briar Wolf"
+        },
+        {
+          "id": "wild--3--2",
+          "name": "Forgotten Clearing 136",
+          "kind": "clearing",
+          "danger": 2,
+          "exits": [
+            "wild--2--2",
+            "wild--3--1",
+            "wild--4--2",
+            "wild--3--3"
+          ],
+          "quest": {
+            "id": "quest-wild--3--2",
+            "kind": "recover",
+            "objective": "Make the road safe and return the keepsake from the coffer to the wayfarer.",
+            "gateId": "item-44",
+            "title": "A keepsake on the road",
+            "patronId": "person-wild--3--2",
+            "threatId": "beast-wild--3--2",
+            "relicId": "item-42",
+            "chestId": "item-41",
+            "status": "available",
+            "reward": 6,
+            "chapter": 1
+          },
+          "rumor": "The spring runs clear, even in drought.",
+          "patron": "Ember the Wayfarer",
+          "beast": "Mottle Boar"
+        },
+        {
+          "id": "wild-1-0",
+          "name": "Thorn Ruins 870",
+          "kind": "ruins",
+          "danger": 1,
+          "exits": [
+            "wild-2-0",
+            "wild-1-1",
+            "wild-0-0",
+            "wild-1--1"
+          ],
+          "quest": {
+            "id": "quest-wild-1-0",
+            "kind": "recover",
+            "objective": "Make the road safe and return the keepsake from the coffer to the wayfarer.",
+            "gateId": "item-52",
+            "title": "A keepsake on the road",
+            "patronId": "person-wild-1-0",
+            "threatId": "beast-wild-1-0",
+            "relicId": "item-50",
+            "chestId": "item-49",
+            "status": "available",
+            "reward": 5,
+            "chapter": 1
+          },
+          "rumor": "Travelers say the next valley remembers every promise.",
+          "patron": "Ember the Wayfarer",
+          "beast": "Briar Boar"
+        }
+      ]
+    },
+    {
+      "seed": 305419896,
+      "authoritativeSeed": 305419896,
+      "nextItemId": 53,
+      "stateSha256": "4197ac40ee0e2355df9bfeeac7262594898e1283e8d8ec3239ea11aa8b99f50a",
+      "behaviorSha256": "14506be40901539615e538e42737dcfefa05b8ea623765de6918e124a9c43dd3",
+      "regions": [
+        {
+          "id": "clearing",
+          "name": "Mossy Clearing",
+          "kind": "clearing",
+          "danger": null,
+          "exits": [
+            "tavern",
+            "ruins"
+          ],
+          "quest": {
+            "id": "quest-clearing",
+            "kind": "recover",
+            "objective": "Make the road safe and return the keepsake from the coffer to the wayfarer.",
+            "gateId": "item-16",
+            "title": "A keepsake on the road",
+            "patronId": "person-clearing",
+            "threatId": "beast-clearing",
+            "relicId": "item-14",
+            "chestId": "item-13",
+            "status": "available",
+            "reward": 5,
+            "chapter": 1
+          },
+          "rumor": "Someone has been moving the old boundary stones.",
+          "patron": "Finch the Wayfarer",
+          "beast": "Mottle Crow"
+        },
+        {
+          "id": "ruins",
+          "name": "Amber Ruins",
+          "kind": "ruins",
+          "danger": null,
+          "exits": [
+            "clearing",
+            "wild-0-0"
+          ],
+          "quest": {
+            "id": "quest-ruins",
+            "kind": "recover",
+            "objective": "Make the road safe and return the keepsake from the coffer to the wayfarer.",
+            "gateId": "item-20",
+            "title": "A keepsake on the road",
+            "patronId": "person-ruins",
+            "threatId": "beast-ruins",
+            "relicId": "item-18",
+            "chestId": "item-17",
+            "status": "available",
+            "reward": 5,
+            "chapter": 1
+          },
+          "rumor": "Travelers say the next valley remembers every promise.",
+          "patron": "Finch the Wayfarer",
+          "beast": "Mottle Crow"
+        },
+        {
+          "id": "wild-0-0",
+          "name": "Silver Clearing 341",
+          "kind": "clearing",
+          "danger": 1,
+          "exits": [
+            "wild-1-0",
+            "wild-0-1",
+            "ruins",
+            "wild-0--1"
+          ],
+          "quest": {
+            "id": "quest-wild-0-0",
+            "kind": "rescue",
+            "objective": "Make the road safe and bandage the injured wayfarer.",
+            "gateId": "item-28",
+            "title": "Shelter on the road",
+            "patronId": "person-wild-0-0",
+            "threatId": "beast-wild-0-0",
+            "relicId": "item-26",
+            "chestId": "item-25",
+            "status": "available",
+            "reward": 5,
+            "chapter": 1
+          },
+          "rumor": "The spring runs clear, even in drought.",
+          "patron": "Wren the Wayfarer",
+          "beast": "Briar Boar"
+        },
+        {
+          "id": "wild-2-1",
+          "name": "Whispering Cavern 752",
+          "kind": "cavern",
+          "danger": 2,
+          "exits": [
+            "wild-3-1",
+            "wild-2-2",
+            "wild-1-1",
+            "wild-2-0"
+          ],
+          "quest": {
+            "id": "quest-wild-2-1",
+            "kind": "recover",
+            "objective": "Make the road safe and return the keepsake from the coffer to the wayfarer.",
+            "gateId": "item-36",
+            "title": "A keepsake on the road",
+            "patronId": "person-wild-2-1",
+            "threatId": "beast-wild-2-1",
+            "relicId": "item-34",
+            "chestId": "item-33",
+            "status": "available",
+            "reward": 6,
+            "chapter": 1
+          },
+          "rumor": "The spring runs clear, even in drought.",
+          "patron": "Wren the Wayfarer",
+          "beast": "Cinder Wolf"
+        },
+        {
+          "id": "wild--3--2",
+          "name": "Forgotten Ruins 136",
+          "kind": "ruins",
+          "danger": 2,
+          "exits": [
+            "wild--2--2",
+            "wild--3--1",
+            "wild--4--2",
+            "wild--3--3"
+          ],
+          "quest": {
+            "id": "quest-wild--3--2",
+            "kind": "recover",
+            "objective": "Make the road safe and return the keepsake from the coffer to the wayfarer.",
+            "gateId": "item-44",
+            "title": "A keepsake on the road",
+            "patronId": "person-wild--3--2",
+            "threatId": "beast-wild--3--2",
+            "relicId": "item-42",
+            "chestId": "item-41",
+            "status": "available",
+            "reward": 6,
+            "chapter": 1
+          },
+          "rumor": "Someone has been moving the old boundary stones.",
+          "patron": "Ember the Wayfarer",
+          "beast": "Bristle Wolf"
+        },
+        {
+          "id": "wild-1-0",
+          "name": "Copper Ruins 870",
+          "kind": "ruins",
+          "danger": 1,
+          "exits": [
+            "wild-2-0",
+            "wild-1-1",
+            "wild-0-0",
+            "wild-1--1"
+          ],
+          "quest": {
+            "id": "quest-wild-1-0",
+            "kind": "recover",
+            "objective": "Make the road safe and return the keepsake from the coffer to the wayfarer.",
+            "gateId": "item-52",
+            "title": "A keepsake on the road",
+            "patronId": "person-wild-1-0",
+            "threatId": "beast-wild-1-0",
+            "relicId": "item-50",
+            "chestId": "item-49",
+            "status": "available",
+            "reward": 5,
+            "chapter": 1
+          },
+          "rumor": "Travelers say the next valley remembers every promise.",
+          "patron": "Finch the Wayfarer",
+          "beast": "Briar Wolf"
+        }
+      ]
+    }
+  ],
+  "catalog": {
+    "locationPrefixes": [
+      "Whispering",
+      "Copper",
+      "Forgotten",
+      "Silver",
+      "Thorn",
+      "Starfall",
+      "Ashen",
+      "Winding"
+    ],
+    "rumors": [
+      "Someone has been moving the old boundary stones.",
+      "The spring runs clear, even in drought.",
+      "Travelers say the next valley remembers every promise."
+    ],
+    "questTitles": {
+      "recover": "A keepsake on the road",
+      "rescue": "Shelter on the road",
+      "restore": "The broken crossing"
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "status": "passed",
+  "receipts": [
+    {
+      "text": "walk south 3",
+      "status": "succeeded",
+      "message": "Walked 3 tiles."
+    },
+    {
+      "text": "walk east 3",
+      "status": "succeeded",
+      "message": "Walked 3 tiles."
+    },
+    {
+      "text": "phase shift",
+      "status": "succeeded",
+      "message": "Phase Shift! Vanish for two seconds, lose enemy attention and slip past enemies. Walls still block you."
+    },
+    {
+      "text": "walk south 2",
+      "status": "succeeded",
+      "message": "Walked 2 tiles."
+    },
+    {
+      "text": "attack rat",
+      "status": "succeeded",
+      "message": "rat defeated. Check nearby loot."
+    },
+    {
+      "text": "stop",
+      "status": "cancelled",
+      "message": "Holding still. Your attacks and path are cancelled."
+    },
+    {
+      "text": "walk west 3",
+      "status": "blocked",
+      "message": "That direction is blocked."
+    },
+    {
+      "text": "walk east 3",
+      "status": "succeeded",
+      "message": "Walked 2 tiles before an obstacle stopped you."
+    }
+  ]
+}

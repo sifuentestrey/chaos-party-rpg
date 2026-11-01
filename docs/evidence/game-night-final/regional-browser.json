@@ -1,0 +1,107 @@
+{
+  "syntheticOnly": true,
+  "liveInference": false,
+  "dataDirIsTemporary": true,
+  "host": "127.0.0.1",
+  "viewports": [
+    {
+      "label": "home-1280x720",
+      "viewport": 1280,
+      "page": 1280
+    },
+    {
+      "label": "host-create-1280x720",
+      "viewport": 1280,
+      "page": 1280
+    },
+    {
+      "label": "host-lobby-1280x720",
+      "viewport": 1280,
+      "page": 1280
+    },
+    {
+      "label": "phone-recovery-dialog-landscape-568x320",
+      "viewport": 568,
+      "page": 568
+    },
+    {
+      "label": "phone1-join-320x568",
+      "viewport": 320,
+      "page": 320
+    },
+    {
+      "label": "phone1-long-name-320x568",
+      "viewport": 320,
+      "page": 320
+    },
+    {
+      "label": "phone1-lobby-320x568",
+      "viewport": 320,
+      "page": 320
+    },
+    {
+      "label": "phone2-join-390x844",
+      "viewport": 390,
+      "page": 390
+    },
+    {
+      "label": "phone2-long-name-390x844",
+      "viewport": 390,
+      "page": 390
+    },
+    {
+      "label": "phone2-lobby-390x844",
+      "viewport": 390,
+      "page": 390
+    },
+    {
+      "label": "phone1-result-390-or-320",
+      "viewport": 320,
+      "page": 320
+    },
+    {
+      "label": "phone2-result-390-or-320",
+      "viewport": 390,
+      "page": 390
+    },
+    {
+      "label": "clearing-1280x720",
+      "viewport": 1280,
+      "page": 1280
+    },
+    {
+      "label": "ruins-1280x720",
+      "viewport": 1280,
+      "page": 1280
+    },
+    {
+      "label": "completed-clearing-1280x720",
+      "viewport": 1280,
+      "page": 1280
+    },
+    {
+      "label": "completed-quest-phone-320x568",
+      "viewport": 320,
+      "page": 320
+    },
+    {
+      "label": "completed-quest-phone-390x844",
+      "viewport": 390,
+      "page": 390
+    },
+    {
+      "label": "host-result-1920x1080",
+      "viewport": 1920,
+      "page": 1920
+    }
+  ],
+  "pageAndConsoleErrors": [],
+  "state": {
+    "declarationAcceptedAndLocked": true,
+    "otherControllerReacted": true,
+    "dieResultDisplayed": true,
+    "twoControllerQuestCompleted": true,
+    "questRevisit": true,
+    "serverRestart": true
+  }
+}

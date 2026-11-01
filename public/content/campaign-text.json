@@ -1,0 +1,13 @@
+{
+  "locationPrefixes": ["Whispering", "Copper", "Forgotten", "Silver", "Thorn", "Starfall", "Ashen", "Winding"],
+  "rumors": [
+    "Someone has been moving the old boundary stones.",
+    "The spring runs clear, even in drought.",
+    "Travelers say the next valley remembers every promise."
+  ],
+  "questTitles": {
+    "recover": "A keepsake on the road",
+    "rescue": "Shelter on the road",
+    "restore": "The broken crossing"
+  }
+}

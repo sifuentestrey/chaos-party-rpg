@@ -1,0 +1,86 @@
+# Sanitized beta evidence — October 29, 2026
+
+These are observations from a disposable Linux x64 cloud checkout, not physical Intel Mac measurements. No credentials, room files, databases, private host URLs or provider keys are included.
+
+- `runtime-20-actors.json`: 1,200 seconds with 20 distinct real authenticated Fracture actors. All 20 moved concurrently in the opening check. Eighty observation batches retained 20 connected actors; HTTP batch maximum 191 ms. This uses lightweight headless Socket.IO actors, not twenty browser iframes. It is a synthetic capacity check, not certification of twenty physical phones or simultaneous twenty-player combat on the Mac.
+- `tv-idle.json`: actual native TV connection held for 960 seconds, beyond the original 15-minute timeout, with no timeout packet, socket close or browser error.
+- `adventure.json`: two recovered browser phones; NPC conversation, native rat quest completed 3/3 with actual reward, real damage/death, sword pickup/equip, grounded scenery rejection, building entry/exit and forest travel. Human game-night pacing/fun is not established by automation.
+- `authority.json`: wrong key, cross-actor identity, expired action, invented damage, arbitrary teleport and replay rejected by the actual server.
+- `presence.json`: cold launcher leaves saved actors logged out; absent phone saves/logs out; returning phone resumes the same character/position.
+- `ordered-save.json`: actual launcher Control-C, save acknowledgment before server stop, SQLite quick_check and exact saved positions/gold/levels of active characters.
+- `runtime-final-receipts.json`: short follow-up with the final smaller result payload; real actions/reconnect/cancellation still pass. The full endurance test preceded the later spectator visibility/install-only refinements; those have separate checks.
+- `spectators.json` and screenshots: two actual TV connections receive explicit observer IDs, and the renderer hides spectator roles while keeping both real players visible. No browser errors; native website HUD hidden. `colors.json` confirms separate Blue/Rose phone joins and feedback above the fold.
+- `cloud-resources.json`: 60-second server-only CPU/RAM sample while the 20-actor run and a TV were active: mean approximately 3.8% of one cloud CPU core, maximum approximately 226.4 MiB server RSS. Bridge RSS in the endurance run was approximately 100–110 MiB. This excludes browser RAM/CPU and must not be extrapolated to the 2015 Mac.
+
+Final automated checks: pinned server/client production builds; 71 upstream/adapter Vitest files, 3,326 passing tests; 21 focused Node checks including the pinned checkout protection test; original Chaos `npm run verify`; extracted source kit on Node 22.23.4 (20 passes, one optional checkout test skipped); actual offline cached-dependency rebuild and unchanged-build restart. `offline-launch.json` records the isolated launcher verification. Private raw logs stay outside the source kit.
+
+The first endurance attempt exposed the real native idle-timer integration bug at fifteen minutes. It was fixed by refreshing Fracture's existing activity deadline for authenticated custom activity, then the full 20-minute run passed. This is not an omitted failed gate or a claim based on twenty phones controlling one character.
+
+Gameplay screenshots are derived from Fracture/BrowserQuest content and are shared under CC BY-SA 3.0. Attribution: George Larson; Mozilla; Little Workshop (Franck and Guillaume Lecollinet). See the parent README and package third-party notices for links and licenses.
+
+## October 30 fusion milestone
+
+- `fusion.json`, `fusion-tv.png`, `fusion-phone.png`: two fresh real characters through browser phone forms. Original Chaos server-D20 craft, wear, nearby gift, recipient wear, drop at the real actor tile, walk away, native auto-approach pickup, equip and phone reload. The TV uses colored wearable bands over native sprites; this does not claim bespoke hat art or native combat bonuses. No browser errors.
+- `fusion-rally.json`: repeat of real native two-actor majority vote and engine-confirmed movement after combining the crafting changes with newer room/rally fixes.
+- `fusion-restart.json`: actual launcher Control-C and restart; both native characters retained exact position, gold, level and gear, and crafted bags/component IDs/worn state matched before shutdown without duplicate starters.
+- `fusion-load.json`: new 60-second, 20-actor check with object snapshots enabled; all twenty actors moved, scoped STOP/reconnect passed and all sampled actors stayed connected. This supplements the earlier 1,200-second baseline; it is not another twenty-minute run or physical Mac capacity evidence.
+- Native full suite now **71 files / 3,329 tests**, focused Node checks **45/45**, production builds and original Chaos offline verification passed. The native consumable regression delegates to the real native inventory/health handler, including keeping healing items at full health; a browser consumption flow is not claimed. Optional creative AI plans were tested with mocked providers only.
+
+The object adapter reuses original Chaos pure rules and dependency modules without starting its old network or generating its old maps. Separate durable character UUID ownership, failed-save rollback, no starter-item duplication and boundary/range checks have focused regressions. Derived screenshots retain the CC BY-SA attribution above.
+
+The fusion change was rebased onto the newer experimental branch (room bench/restore, event buffering, LAN selection, action receipt fences, straight directional movement and local rally). Those changes were preserved. The combined build passed 45 focused checks, 3,329 native tests, production builds, and the real native two-actor majority-rally verification. The 60-second 20-actor report was rerun on that combined build. Original `public`/`src` rules were unchanged by the branch synchronization.
+
+## Core-mechanics follow-through — October 30
+
+- `core.json`: two actual phone browser forms, server D20 misses/successes, table movement and real native path blocking, ignite/extinguish, **burn-through on the server clock without further commands**, repair, real guard rug theft, remembered quest refusal, innocent second player, actual gift and restored native quest access. No browser errors.
+- `core-visual.json`, `core-fire-tv.png`: fresh TV after fixing icon loading; custom table/rug/fire render independently of optional sprite availability. The first screenshot exposed a missing-prop render defect and was replaced only after correction and visual inspection.
+- `core-native-dm.json`, `core-npc-tv.png`, `core-memory-phone.png`: final fresh launch; actual native NPC conversation reflects saved memory, appears in the native speech bubble and produces an offline DM receipt after completion.
+- `core-restart.json`: actual launcher stop/restart preserves native positions/items, moved/repaired table, per-player NPC trust/action memory and canonical DM facts.
+- `core-load.json`: new 60-second 20-actor run with reactive-world snapshots enabled; native independent movement, scoped STOP, reconnect and continued activity. Not a new twenty-minute soak or Mac certification.
+- Original Chaos offline verification passed. Current focused checks **51/51**, native full suite **3,329/71 files**, plus final actor lifecycle regressions after NPC speech integration. Production client/server builds passed. Optional provider narration uses original Chaos instructions/validator and was tested with mocks; no live model or free-plan quality claim.
+
+NPC learning is bounded durable witnessed-action memory/reputation, with real per-player quest-access consequences. It is not an AI training claim or all original NPC routines. Native painted scenery, original campaigns/characters, full advantage/reaction simulation and native character fire damage are not ported. All derived screenshots retain the attribution/license stated above.
+
+Concurrent branch work added original MIT D20 crafting assistance. It was preserved during rebase, including its helper-source fingerprint and license. The combined source passes **54 focused checks**. `core-assist.json` and `core-assist-phone.png` prove two real recovered browser phones, nearby help during the reaction window, two server-owned D20 values, selection of the higher through the original helper, and one-shot consumption. Additional checks retain invalid-craft help and reject self-help, stacking, expiry, distance and dead helpers. The preceding core 20-actor run predates this assistance integration; the new assistance has its own two-actor gameplay proof.
+
+A second concurrent integration added native zone/geometry checks, NPC possession tests and a real-native-object CI gate. Those checks were retained and consolidated with the richer NPC memory/quest/speech path rather than running two NPC rule engines. Current combined focused checks: **59/59**, including data-preserving conversion of older native-ID NPC trust/history/owned items to stable world/kind/position identities. Incoming phone help display was corrected to concatenate strings properly. The original gift changes reputation positively, so theft tests assert its original trust penalty relative to that prior relationship.
+
+## Live DM repair and qualification — October 30
+
+The old live adapter was broken: its hard-coded Llama model returned HTTP 404, proxy-aware Node fetch was not enabled, narration lacked the actual response schema, and a shared 1.5-second cooldown suppressed narration after AI interpretation. Strict case matching also rejected the visible entity `guard` when the model returned `Guard`. These were diagnosed with real provider requests and corrected. The adapter now uses the original approved GPT-OSS model family and canonical narration schema.
+
+- `live-dm.json`, `live-dm-phone.png`, `live-dm-tv.png`: actual configured Groq `openai/gpt-oss-120b`, private-host connection test, unexpected phone wording → grounded AI craft proposal → real native D20 **11 / 10**, green headband made from actual carried wood/rug → validated live narration for the same action on phone and TV. No browser errors. AI was disabled again after verification.
+- `live-dm-failure.json`: live narration of the previously verified D20 **2 / 8** table-movement failure correctly leaves the table unmoved.
+- `live-dm-blocked.json`: live narration preserves a remembered quest refusal, with no invented reward or granted quest. Its initial interpretation exposed the capitalization bug; that bug has a focused regression and was fixed before the successful browser run.
+- Current **69 focused checks** cover immediate interpretation→narration, bounded parallel queueing, cancellation, safe provider/auth/quota/model status, respecting a new rate limit for queued calls, and private key configuration/reload with no credential exposure.
+
+The private host can save an existing Groq key only to the isolated data folder, test it, and enable live AI. The kit contains no keys. The existing free allowance is shared by interpretation and narration, with no automatic retry or paid provider fallback. These live scenarios establish a functioning bounded DM, not universal semantic correctness or untested twenty-player live-AI capacity.
+
+## Independent integration review and reactive-world browser proof — October 30
+
+The latest review retained the other session's remote work through `7a5f4cd`, then fixed native-zone leakage, batched fire ordering, missing player extinguishing of authored scenery, non-atomic scenery saves and displayed-ID grounding.
+
+- `reactive-core.json`, `reactive-table-tv.png`, `reactive-guard-memory-tv.png`: new actual phone-form replay of table movement/collision/fire/repair plus witnessed theft, independent reputation, native quest gating, original Bard social D20, gift recovery and remembered native dialogue. No browser errors.
+- `reactive.json`: two different native actors, ground-fuel → authored-tree propagation, live second-phone update, two-player extinguishing with retained HP, direct original-D20 ignition, unattended server-clock destruction, native walking through the newly cleared tile, real guard alarm and autonomous owned-rug rescue, persisted ownership/history and reload. No browser errors.
+- `reactive-tree-fire-tv.png`, `reactive-tree-stump-tv.png`, `reactive-second-phone.png`, `reactive-npc-alarm-tv.png`: rendered native TV and phone proof, not mock screens. The small camp tree/stump is explicitly Chaos-authored; larger native map trees are not destructible through this adapter.
+- `reactive-restart.json`: actual ordered launcher shutdown and fresh processes retained both native positions/gear/inventories, all Chaos objects, authored destruction/collision state, NPC trust/history and canonical DM memory.
+
+An earlier sequential-extinguishing rehearsal failed its stable-HP assertion because the remaining adjacent fire legitimately relit its neighbor during separate action windows. The successful proof coordinates two real players; propagation was preserved. Regression checks separately prove same-world native-zone isolation, chronological batch/individual tick equivalence, one-hop propagation, rollback on disk failure and rebinding stable NPC IDs to their current native bodies.
+
+Validation: 165 focused Node checks (no skips with the isolated native checkout), native production builds and full existing 3,329 tests, then nine final native actor checks after exact-ID precedence; original `npm run verify`. The final source kit has its own extracted Node 22 check. No new physical Mac/12–20-phone acceptance or full campaign/native weather/terrain/HP integration is implied. Screenshot attribution remains the Fracture CC BY-SA notice above.
+
+## Family beta adventure and native map integration — October 30
+
+`family-night.json` records the successful clean rerun after repairing the real return-travel race. Two actual phone forms controlled separate native actors. It includes original D20 advantage/crafting/equipment, an actual fight-choice vote, ground fire → owned-rug spread, native NPC alarm/rescue, gifts/trust, chopping an existing original-map tree, all native trunk cells becoming walkable, wood collection, a real rat death and majority round-trip travel completing the trial. Corresponding `family-start`, `family-fire-alarm`, `family-native-tree-before/after`, `family-combat`, `family-woods` and `family-completed` PNGs are real TV screenshots. The larger tree in this run was already in the pinned map; it was not drawn as another substitute object.
+
+`family-restart.json` verifies actual shutdown/fresh process restart with both characters standing inside the cleared native trunk footprint. It compares native positions/stats/gear, crafted wearable, wood, all object states, NPC personal histories, canonical DM memory and the completed adventure. Native quest progress remains session-scoped and was not included in a false persistence claim.
+
+Timestamped CDP frames produce a normal-speed full recording of about 3m46s. Edited highlights keep their original timing; cuts are labeled. Earlier recordings encoded arbitrary CDP frame counts at 12fps and should not be treated as realtime performance evidence. These reports/screenshots contain no private controller/host keys or databases. All Fracture-derived artwork retains the CC BY-SA attribution above.
+
+`family-load.json`: supplemental 90-second twenty-native-actor run on the new native-map/guide build. 18 moved concurrently; scoped STOP, reconnect and every twenty-actor observation passed. Request batches 29–63 ms, bridge RSS 101–117 MiB. This measures a disposable Linux server and headless clients, not physical Mac/phone capacity.
+
+## Existing-world native-art acceptance — October 30
+
+`existing-world.json` records the successful two-real-phone/native-TV rehearsal at code `3c6befb`: original tent movement from live AI interpretation, real D20 failures/successes, fire/extinguishing, roof destruction/restoration and actual teammate-assisted boulder movement. `existing-*.png` show only original map art and native characters. `existing-native-dm.json` uses a stubbed interpreter to check the typed proposal/native authority boundary; its live-provider limitation applies to that specific script. The separate browser report contains the real configured free-Groq proof. `existing-native-objects.json` supplies independent native-server object/advantage/trunk-traversal evidence. `existing-world-restart.json` records real ordered restart with exact character/gear/map recovery, including a saved actor in formerly solid boulder ground.
+
+The exact-source pinned [integration run 41138611319](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41138611319) passed all software jobs; Mac packaging was deliberately skipped for physical acceptance. This is neither universal world physics nor a 12–20-physical-phone certification. Fracture art remains CC BY-SA 3.0 under the existing attribution above. No new scenery assets were made. The recordings are 69 seconds of labeled, normal-speed edited highlights and 130 seconds of full normal-speed gameplay. Earlier failed rehearsals were retained privately for diagnosis and are not described as passed.

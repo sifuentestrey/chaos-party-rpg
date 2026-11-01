@@ -1,0 +1,38 @@
+{
+  "status": "passed",
+  "checks": [
+    "two distinct recovered real phone actors",
+    "nearby helper grants one server-owned advantage",
+    "recipient crafts within parallel reaction window",
+    "two real D20 results use original higher-die algorithm",
+    "help consumed once and raw rolls appear in native receipt",
+    "no browser errors"
+  ],
+  "events": [
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "walk to 41, 196",
+      "status": "succeeded",
+      "message": "Reached your destination."
+    },
+    {
+      "player": "CoreAsh8wbxe",
+      "text": "help CoreEmber8wc9u craft",
+      "status": "succeeded",
+      "message": "CoreAsh8wbxe helps CoreEmber8wc9u. Their next valid craft or attachment roll gets D20 advantage for 15 seconds while you stay nearby."
+    },
+    {
+      "player": "CoreEmber8wc9u",
+      "text": "make party badge from cloth strip and wood splinter",
+      "status": "succeeded",
+      "message": "D20 advantage 11 / 12 → 12 / 10 (helped by CoreAsh8wbxe): CoreEmber8wc9u creates party badge (item-165) from cloth strip and wood splinter.",
+      "roll": 12,
+      "rolls": [
+        11,
+        12
+      ],
+      "assistedBy": "CoreAsh8wbxe"
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "checks": [
+    "abandoned phone saves and logs out",
+    "returning phone restores same account and position",
+    "cold launcher does not connect saved actors",
+    "phone activation resumes native character"
+  ]
+}

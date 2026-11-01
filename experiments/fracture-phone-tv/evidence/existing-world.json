@@ -1,0 +1,263 @@
+{
+  "status": "passed",
+  "events": [
+    {
+      "player": "Ash",
+      "text": "walk to 10, 234",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 10,
+      "y": 234
+    },
+    {
+      "player": "Bram",
+      "text": "walk to 9, 234",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 9,
+      "y": 234
+    },
+    {
+      "player": "Ash",
+      "text": "Could you shove the canvas shelter a little farther to the right for me?",
+      "status": "succeeded",
+      "message": "D20 19 +3 / 10: The existing tent shifts one tile to 15,233. Its collision moves with it.",
+      "roll": 19,
+      "dc": 10,
+      "rolls": null,
+      "object": {
+        "id": "fracture:world1:native-tent-11-231",
+        "name": "tent",
+        "tile": {
+          "x": 14,
+          "y": 233
+        },
+        "before": null,
+        "after": null,
+        "condition": "intact",
+        "actorId": 5921,
+        "verb": "move"
+      },
+      "x": 13,
+      "y": 233
+    },
+    {
+      "liveDM": true,
+      "canonical": "D20 19 +3 / 10: The existing tent shifts one tile to 15,233. Its collision moves with it.",
+      "narration": "Ash's push moves the native tent one tile east, now positioned at 15,233 with its collision updated accordingly. octocat: Nice shove, Ash! The tent slides eastward, settling at 15,233."
+    },
+    {
+      "player": "Ash",
+      "text": "ignite tent",
+      "status": "failed",
+      "message": "D20 9 / 10: The attempt fails. The tent stays intact in its current position.",
+      "roll": 9,
+      "dc": 10,
+      "rolls": null,
+      "x": 14,
+      "y": 233
+    },
+    {
+      "player": "Ash",
+      "text": "ignite tent",
+      "status": "succeeded",
+      "message": "D20 14 / 10: The existing tent catches fire.",
+      "roll": 14,
+      "dc": 10,
+      "rolls": null,
+      "object": {
+        "id": "fracture:world1:native-tent-11-231",
+        "name": "tent",
+        "tile": {
+          "x": 15,
+          "y": 233
+        },
+        "before": null,
+        "after": null,
+        "condition": "burning",
+        "actorId": 5921,
+        "verb": "ignite"
+      },
+      "x": 14,
+      "y": 233
+    },
+    {
+      "player": "Ash",
+      "text": "extinguish tent",
+      "status": "succeeded",
+      "message": "You extinguish the existing tent. It is wet; any fire is out.",
+      "object": {
+        "id": "fracture:world1:native-tent-11-231",
+        "name": "tent",
+        "tile": {
+          "x": 15,
+          "y": 233
+        },
+        "before": null,
+        "after": null,
+        "condition": "intact",
+        "actorId": 5921,
+        "verb": "extinguish"
+      },
+      "x": 14,
+      "y": 233
+    },
+    {
+      "player": "Ash",
+      "text": "walk to 11, 235",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 11,
+      "y": 235
+    },
+    {
+      "player": "Ash",
+      "text": "walk to 11, 220",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 11,
+      "y": 220
+    },
+    {
+      "player": "Ash",
+      "text": "break house roof",
+      "status": "failed",
+      "message": "D20 10 +3 / 16: The attempt fails. The house roof stays intact in its current position.",
+      "roll": 10,
+      "dc": 16,
+      "rolls": null,
+      "x": 11,
+      "y": 220
+    },
+    {
+      "player": "Ash",
+      "text": "break house roof",
+      "status": "succeeded",
+      "message": "D20 18 +3 / 16: The upper wooden roof gives way. The original stone walls and doorway remain.",
+      "roll": 18,
+      "dc": 16,
+      "rolls": null,
+      "object": {
+        "id": "fracture:world1:native-house-12-214",
+        "name": "house roof",
+        "tile": {
+          "x": 12,
+          "y": 220
+        },
+        "before": null,
+        "after": null,
+        "condition": "broken",
+        "actorId": 5921,
+        "verb": "break"
+      },
+      "x": 11,
+      "y": 220
+    },
+    {
+      "player": "Ash",
+      "text": "repair house roof",
+      "status": "succeeded",
+      "message": "D20 19 / 12: The existing house roof is repaired. Its original artwork and collision are restored.",
+      "roll": 19,
+      "dc": 12,
+      "rolls": null,
+      "object": {
+        "id": "fracture:world1:native-house-12-214",
+        "name": "house roof",
+        "tile": {
+          "x": 12,
+          "y": 220
+        },
+        "before": null,
+        "after": null,
+        "condition": "intact",
+        "actorId": 5921,
+        "verb": "repair"
+      },
+      "x": 11,
+      "y": 220
+    },
+    {
+      "player": "Ash",
+      "text": "walk to 35, 236",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 35,
+      "y": 236
+    },
+    {
+      "player": "Bram",
+      "text": "walk to 34, 236",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 34,
+      "y": 236
+    },
+    {
+      "player": "Ash",
+      "text": "ignite boulder",
+      "status": "blocked",
+      "message": "The boulder does not have dry, intact fuel to ignite.",
+      "x": 36,
+      "y": 235
+    },
+    {
+      "player": "Bram",
+      "text": "walk to Ash",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 35,
+      "y": 235
+    },
+    {
+      "player": "Bram",
+      "text": "help Ash",
+      "status": "succeeded",
+      "message": "Bram helps Ash. Their next valid Chaos world D20 check gets advantage for 15 seconds while you stay nearby.",
+      "x": 35,
+      "y": 235
+    },
+    {
+      "player": "Ash",
+      "text": "push boulder east",
+      "status": "succeeded",
+      "message": "D20 1 / 16 \u2192 16 +3 / 18: The existing boulder shifts one tile to 39,236. Its collision moves with it.",
+      "roll": 16,
+      "dc": 18,
+      "rolls": [
+        1,
+        16
+      ],
+      "object": {
+        "id": "fracture:world1:native-boulder-36-233",
+        "name": "boulder",
+        "tile": {
+          "x": 37,
+          "y": 235
+        },
+        "before": null,
+        "after": null,
+        "condition": "intact",
+        "actorId": 5921,
+        "verb": "move"
+      },
+      "x": 36,
+      "y": 235
+    }
+  ],
+  "errors": [],
+  "source": "3c6befb14d4c1efc474522df54e169aea3a2c013",
+  "nativeCI": "https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/41138611319",
+  "checks": {
+    "focused": 216,
+    "nativeTests": 3331,
+    "browserErrors": 0,
+    "newProps": 0
+  },
+  "video": {
+    "highlightsSeconds": 69,
+    "fullSeconds": 130.375,
+    "editedHighlights": true,
+    "normalSpeed": true
+  }
+}

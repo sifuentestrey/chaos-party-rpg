@@ -1,0 +1,390 @@
+{
+  "cases": [
+    {
+      "id": "puppet",
+      "setup": "craft",
+      "text": "Assemble my cloth strip and wood splinter into a white finger puppet worn on my hand",
+      "expected": {
+        "verb": "craft",
+        "sources": [
+          "item-1",
+          "item-2"
+        ],
+        "itemType": "wearable",
+        "slot": "hand",
+        "color": "#e4dcc8"
+      }
+    },
+    {
+      "id": "bedtime-story",
+      "setup": "creature",
+      "text": "The wolf looks angry. I improvise a silly bedtime story until it relaxes",
+      "expected": {
+        "verb": "pacify",
+        "target": "beast-clearing"
+      }
+    },
+    {
+      "id": "peace-offering",
+      "setup": "craft",
+      "recipient": true,
+      "text": "I offer Moss my wood splinter as a peace offering, retaining my cloth strip",
+      "expected": {
+        "verb": "give",
+        "item": "item-2",
+        "target": "Moss"
+      }
+    },
+    {
+      "id": "patch-up",
+      "setup": "creature",
+      "text": "Patch up the wayfarer’s sore arm with the strip of fabric in my pocket",
+      "expected": {
+        "verb": "treat",
+        "target": "person-clearing"
+      }
+    },
+    {
+      "id": "remote-chest",
+      "setup": "creature",
+      "text": "From this clearing, lift the tavern’s locked chest straight into my pockets without traveling",
+      "expected": {
+        "verb": "unsupported"
+      }
+    }
+  ],
+  "rows": [
+    {
+      "id": "puppet",
+      "model": "openai/gpt-oss-20b",
+      "attempt": "Assemble my cloth strip and wood splinter into a white finger puppet worn on my hand",
+      "elapsedMs": 942,
+      "correct": false,
+      "error": "AI provider returned HTTP 400 (json_validate_failed)"
+    },
+    {
+      "id": "bedtime-story",
+      "model": "openai/gpt-oss-20b",
+      "attempt": "The wolf looks angry. I improvise a silly bedtime story until it relaxes",
+      "elapsedMs": 561,
+      "actual": {
+        "domain": "world",
+        "verb": "pacify",
+        "target": "beast-clearing",
+        "item": "",
+        "sources": [],
+        "name": "Jinx's bedtime story",
+        "itemType": "tool",
+        "slot": "hand",
+        "color": "#bd88cf",
+        "summary": "Attempt: The wolf looks angry. I improvise a silly bedtime story until it relaxes"
+      },
+      "usage": {
+        "promptTokens": 2047,
+        "completionTokens": 123
+      },
+      "correct": true,
+      "checks": {
+        "verb": true,
+        "target": true
+      },
+      "validated": true,
+      "nativeLocked": false,
+      "applied": true,
+      "resolution": {
+        "success": true,
+        "blocked": false,
+        "text": "Jinx: pacify Cinder Wolf."
+      }
+    },
+    {
+      "id": "peace-offering",
+      "model": "openai/gpt-oss-20b",
+      "attempt": "I offer Moss my wood splinter as a peace offering, retaining my cloth strip",
+      "elapsedMs": 2305,
+      "actual": {
+        "domain": "world",
+        "verb": "give",
+        "target": "5d291ff3-59f8-4981-a77a-c71e547d58e5",
+        "item": "item-2",
+        "sources": [],
+        "name": "wood splinter",
+        "itemType": "tool",
+        "slot": "hand",
+        "color": "#bd88cf",
+        "summary": "Attempt: I offer Moss my wood splinter as a peace offering, retaining my cloth strip"
+      },
+      "usage": {
+        "promptTokens": 2974,
+        "completionTokens": 187
+      },
+      "correct": true,
+      "checks": {
+        "verb": true,
+        "target": true,
+        "item": true
+      },
+      "validated": true,
+      "nativeLocked": false,
+      "applied": true,
+      "resolution": {
+        "success": true,
+        "blocked": false,
+        "text": "Jinx: give wood splinter → Moss."
+      }
+    },
+    {
+      "id": "patch-up",
+      "model": "openai/gpt-oss-20b",
+      "attempt": "Patch up the wayfarer’s sore arm with the strip of fabric in my pocket",
+      "elapsedMs": 776,
+      "actual": {
+        "domain": "world",
+        "verb": "treat",
+        "target": "person-clearing",
+        "item": "item-1",
+        "sources": [],
+        "name": "bandage",
+        "itemType": "fragment",
+        "slot": "hand",
+        "color": "#bd88cf",
+        "summary": "Attempt: Patch up the wayfarer’s sore arm with the strip of fabric in my pocket"
+      },
+      "usage": {
+        "promptTokens": 2051,
+        "completionTokens": 204
+      },
+      "correct": true,
+      "checks": {
+        "verb": true,
+        "target": true
+      },
+      "validated": true,
+      "nativeLocked": false,
+      "applied": true,
+      "resolution": {
+        "success": true,
+        "blocked": false,
+        "text": "Jinx: treat Tansy the Wayfarer."
+      }
+    },
+    {
+      "id": "remote-chest",
+      "model": "openai/gpt-oss-20b",
+      "attempt": "From this clearing, lift the tavern’s locked chest straight into my pockets without traveling",
+      "elapsedMs": 481,
+      "actual": {
+        "domain": "world",
+        "verb": "unsupported",
+        "target": "item-13",
+        "item": "",
+        "sources": [],
+        "name": "",
+        "itemType": "tool",
+        "slot": "hand",
+        "color": "#bd88cf",
+        "summary": "Attempt: From this clearing, lift the tavern’s locked chest straight into my pockets without traveling"
+      },
+      "usage": {
+        "promptTokens": 2053,
+        "completionTokens": 77
+      },
+      "correct": true,
+      "checks": {
+        "verb": true
+      },
+      "validated": true,
+      "nativeLocked": false,
+      "applied": true,
+      "resolution": {
+        "success": false,
+        "blocked": true,
+        "text": "This attempt cannot be represented by the available game actions."
+      }
+    },
+    {
+      "id": "puppet",
+      "model": "openai/gpt-oss-120b",
+      "attempt": "Assemble my cloth strip and wood splinter into a white finger puppet worn on my hand",
+      "elapsedMs": 1109,
+      "actual": {
+        "domain": "world",
+        "verb": "craft",
+        "target": "",
+        "item": "",
+        "sources": [
+          "item-1",
+          "item-2"
+        ],
+        "name": "white finger puppet",
+        "itemType": "wearable",
+        "slot": "hand",
+        "color": "#bd88cf",
+        "summary": "Attempt: Assemble my cloth strip and wood splinter into a white finger puppet worn on my hand"
+      },
+      "usage": {
+        "promptTokens": 2927,
+        "completionTokens": 225
+      },
+      "correct": false,
+      "checks": {
+        "verb": true,
+        "itemType": true,
+        "slot": true,
+        "color": false,
+        "sources": true
+      },
+      "validated": true,
+      "nativeLocked": false,
+      "applied": true,
+      "resolution": {
+        "success": true,
+        "blocked": false,
+        "text": "Jinx creates white finger puppet (item-13) from cloth strip and wood splinter."
+      }
+    },
+    {
+      "id": "bedtime-story",
+      "model": "openai/gpt-oss-120b",
+      "attempt": "The wolf looks angry. I improvise a silly bedtime story until it relaxes",
+      "elapsedMs": 1271,
+      "actual": {
+        "domain": "world",
+        "verb": "pacify",
+        "target": "beast-clearing",
+        "item": "",
+        "sources": [],
+        "name": "",
+        "itemType": "tool",
+        "slot": "hand",
+        "color": "#bd88cf",
+        "summary": "Attempt: The wolf looks angry. I improvise a silly bedtime story until it relaxes"
+      },
+      "usage": {
+        "promptTokens": 2067,
+        "completionTokens": 316
+      },
+      "correct": true,
+      "checks": {
+        "verb": true,
+        "target": true
+      },
+      "validated": true,
+      "nativeLocked": false,
+      "applied": true,
+      "resolution": {
+        "success": true,
+        "blocked": false,
+        "text": "Jinx: pacify Cinder Wolf."
+      }
+    },
+    {
+      "id": "peace-offering",
+      "model": "openai/gpt-oss-120b",
+      "attempt": "I offer Moss my wood splinter as a peace offering, retaining my cloth strip",
+      "elapsedMs": 937,
+      "actual": {
+        "verb": "give",
+        "target": "73a77c9b-0e6d-4703-b307-b9c3ad6cfffb",
+        "summary": "Attempt: I offer Moss my wood splinter as a peace offering, retaining my cloth strip"
+      },
+      "usage": {
+        "promptTokens": 2965,
+        "completionTokens": 295
+      },
+      "correct": false,
+      "checks": {
+        "verb": true,
+        "target": true,
+        "item": false
+      },
+      "error": "Invalid interpretation"
+    },
+    {
+      "id": "patch-up",
+      "model": "openai/gpt-oss-120b",
+      "attempt": "Patch up the wayfarer’s sore arm with the strip of fabric in my pocket",
+      "elapsedMs": 1529,
+      "actual": {
+        "domain": "world",
+        "verb": "treat",
+        "target": "person-clearing",
+        "item": "item-1",
+        "sources": [],
+        "name": "",
+        "itemType": "fragment",
+        "slot": "hand",
+        "color": "#bd88cf",
+        "summary": "Attempt: Patch up the wayfarer’s sore arm with the strip of fabric in my pocket"
+      },
+      "usage": {
+        "promptTokens": 2040,
+        "completionTokens": 459
+      },
+      "correct": true,
+      "checks": {
+        "verb": true,
+        "target": true
+      },
+      "validated": true,
+      "nativeLocked": false,
+      "applied": true,
+      "resolution": {
+        "success": true,
+        "blocked": false,
+        "text": "Jinx: treat Tansy the Wayfarer."
+      }
+    },
+    {
+      "id": "remote-chest",
+      "model": "openai/gpt-oss-120b",
+      "attempt": "From this clearing, lift the tavern’s locked chest straight into my pockets without traveling",
+      "elapsedMs": 1326,
+      "actual": {
+        "domain": "world",
+        "verb": "unsupported",
+        "target": "",
+        "item": "",
+        "sources": [],
+        "name": "",
+        "itemType": "tool",
+        "slot": "hand",
+        "color": "#bd88cf",
+        "summary": "Attempt: From this clearing, lift the tavern’s locked chest straight into my pockets without traveling"
+      },
+      "usage": {
+        "promptTokens": 2041,
+        "completionTokens": 386
+      },
+      "correct": true,
+      "checks": {
+        "verb": true
+      },
+      "validated": true,
+      "nativeLocked": false,
+      "applied": true,
+      "resolution": {
+        "success": false,
+        "blocked": true,
+        "text": "This attempt cannot be represented by the available game actions."
+      }
+    }
+  ],
+  "summary": [
+    {
+      "model": "openai/gpt-oss-20b",
+      "attempted": 5,
+      "passed": 4,
+      "p50Ms": 776,
+      "p95Ms": 2305
+    },
+    {
+      "model": "openai/gpt-oss-120b",
+      "attempted": 5,
+      "passed": 3,
+      "p50Ms": 1271,
+      "p95Ms": 1529
+    }
+  ],
+  "note": "Five fresh cases per explicitly selected model; native locks and outcome resolution recorded. Not a general reliability guarantee."
+}

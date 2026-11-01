@@ -1,0 +1,28 @@
+{
+  "status": "passed",
+  "type": "software native actors; not physical devices",
+  "events": [
+    {
+      "round": 1,
+      "actors": 20,
+      "uniqueNativeActors": 20,
+      "allMoved": true,
+      "allHeldDuringPlanning": true,
+      "acceptedBatchMs": 14
+    },
+    {
+      "round": 2,
+      "actors": 20,
+      "uniqueNativeActors": 20,
+      "allMoved": true,
+      "allHeldDuringPlanning": true,
+      "acceptedBatchMs": 16
+    },
+    {
+      "check": "twenty-person majority travel with distinct reachable landings",
+      "arrivals": 20,
+      "uniqueLandings": 20,
+      "proposalMs": 29
+    }
+  ]
+}

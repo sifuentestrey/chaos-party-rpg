@@ -1,0 +1,210 @@
+{
+  "status": "passed",
+  "checks": [
+    "real blocking table moved on native tiles",
+    "fire, extinguish, server-clock burn-through and repair",
+    "real guard witnesses theft and refuses quest",
+    "innocent player reputation remains independent",
+    "Bard social D20 uses real native NPC and records memory",
+    "gift changes trust and restores real native quest access",
+    "NPC memory survives phone reload",
+    "offline canonical DM remains available",
+    "no browser errors"
+  ],
+  "events": [
+    {
+      "player": "CoreAsh79uhu",
+      "text": "walk to 44, 210",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 44,
+      "y": 210
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "walk to 46, 210",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 46,
+      "y": 210
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "push camp table east",
+      "status": "failed",
+      "message": "D20 5 / 8: CoreAsh79uhu cannot move camp table this time.",
+      "roll": 5,
+      "x": 46,
+      "y": 210
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "push camp table east",
+      "status": "failed",
+      "message": "D20 1 / 8 · Lucky-ish 2 → 1: CoreAsh79uhu cannot move camp table this time.",
+      "roll": 1,
+      "x": 46,
+      "y": 210
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "push camp table east",
+      "status": "succeeded",
+      "message": "D20 18 / 8: CoreAsh79uhu: move camp table.",
+      "roll": 18,
+      "x": 46,
+      "y": 210
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "walk to 48, 210",
+      "status": "blocked",
+      "message": "No walkable path to that destination.",
+      "x": 46,
+      "y": 210
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "walk to 47, 210",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 47,
+      "y": 210
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "ignite camp table",
+      "status": "succeeded",
+      "message": "D20 20 / 9: CoreAsh79uhu: ignite camp table.",
+      "roll": 20,
+      "x": 47,
+      "y": 210
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "extinguish camp table",
+      "status": "succeeded",
+      "message": "CoreAsh79uhu: extinguish camp table.",
+      "x": 47,
+      "y": 210
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "ignite camp table",
+      "status": "failed",
+      "message": "D20 6 / 9: CoreAsh79uhu cannot ignite camp table this time.",
+      "roll": 6,
+      "x": 47,
+      "y": 210
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "ignite camp table",
+      "status": "succeeded",
+      "message": "D20 19 / 9: CoreAsh79uhu: ignite camp table.",
+      "roll": 19,
+      "x": 47,
+      "y": 210
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "repair camp table",
+      "status": "succeeded",
+      "message": "D20 11 / 11: CoreAsh79uhu: repair camp table.",
+      "roll": 11,
+      "x": 47,
+      "y": 210
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "walk to 41, 196",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 41,
+      "y": 196
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "walk to 41, 196",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 41,
+      "y": 196
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "steal item-11",
+      "status": "succeeded",
+      "message": "D20 11 / 11: CoreAsh79uhu steals guard's rug from guard. guard notices and remembers.",
+      "roll": 11,
+      "x": 41,
+      "y": 196
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "talk to guard",
+      "status": "succeeded",
+      "message": "guard: “I remember what you did. Make amends before asking for a job.” (trust -2)",
+      "x": 41,
+      "y": 196
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "ask guard for a quest",
+      "status": "blocked",
+      "message": "guard: “I remember what you did. Make amends before asking for a job.” (trust -2)",
+      "x": 41,
+      "y": 196
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "apologize to fracture:world1:npc:40:41:195",
+      "status": "failed",
+      "message": "D20 10 +3 class / 14: guard is not persuaded. Trust stays -2.",
+      "roll": 10,
+      "x": 41,
+      "y": 196
+    },
+    {
+      "player": "CoreEmber79uy7",
+      "text": "walk to 41, 196",
+      "status": "succeeded",
+      "message": "Reached your destination.",
+      "x": 41,
+      "y": 196
+    },
+    {
+      "player": "CoreEmber79uy7",
+      "text": "ask guard for a quest",
+      "status": "succeeded",
+      "message": "Asked guard for an adventure. Check your quest.",
+      "x": 41,
+      "y": 196
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "give cloth strip to fracture:world1:npc:40:41:195",
+      "status": "succeeded",
+      "message": "CoreAsh79uhu: give cloth strip → guard.",
+      "x": 41,
+      "y": 196
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "talk to guard",
+      "status": "succeeded",
+      "message": "guard: “Thank you for the gift. I remember your kindness.” (trust 0)",
+      "x": 41,
+      "y": 196
+    },
+    {
+      "player": "CoreAsh79uhu",
+      "text": "ask guard for a quest",
+      "status": "succeeded",
+      "message": "Asked guard for an adventure. Check your quest.",
+      "x": 41,
+      "y": 196
+    }
+  ],
+  "errors": []
+}
