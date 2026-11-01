@@ -11,8 +11,8 @@ export function parseIntent(raw: string): Intent {
   const entry=text.match(/^(?:enter|(?:go|walk|head|step|get) (?:in|inside|into|through)|use)(?: (?:the |a |an )?(.+))?$/);
   if(entry&&(!text.startsWith('use')||/door|entrance|building|house|tavern/.test(entry[1]||'')))return {verb:'enter',...(entry[1]?{target:entry[1]}:{})};
   if(/^(?:don't|do not|no more) (?:run|walk|move|attack|fight|keep running|keep moving|keep attacking)(?:\s+.*)?$/.test(text))return {verb:'cancel'};
-  const ability=text.match(/^(?:use (?:my )?(?:class )?ability|power strike|phase shift|arcane shock|mend)(?: (?:on|to) (.+))?$/);
-  if(ability){const skill=text.startsWith('power strike')?'power_strike':text.startsWith('phase shift')?'phase_shift':text.startsWith('arcane shock')?'war_cry':text.startsWith('mend')?'mend':null;return {verb:'ability',...(skill?{skill}:{}),...(ability[1]?{target:ability[1]}:{})};}
+  const ability=text.match(/^(?:use (?:my )?(?:class )?ability|(?:use|activate) (?:my )?(?:power strike|phase shift|arcane shock|mend|frenzy|bulwark|ambush)|power strike|phase shift|arcane shock|mend|frenzy|bulwark|ambush)(?: (?:on|to) (.+))?$/);
+  if(ability){const skill=/power strike/.test(text)?'power_strike':/phase shift/.test(text)?'phase_shift':/arcane shock/.test(text)?'war_cry':/mend/.test(text)?'mend':/frenzy/.test(text)?'frenzy':/bulwark/.test(text)?'bulwark':/ambush/.test(text)?'ambush':null;return {verb:'ability',...(skill?{skill}:{}),...(ability[1]?{target:ability[1]}:{})};}
   const heal=text.match(/^(?:heal|mend) (.+)$/);if(heal)return {verb:'ability',skill:'mend',target:heal[1]};
   const numbers:Record<string,string>={one:'1',two:'2',three:'3',four:'4',five:'5',six:'6',seven:'7',eight:'8',nine:'9',ten:'10',eleven:'11',twelve:'12'};
   text=text.replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b/g,w=>numbers[w]);
@@ -60,7 +60,7 @@ export function validIntent(value: any): value is Intent {
    }
    if(value.judgment!==undefined)return false;
    if(value.verb==='ability'&&Object.keys(value).some(k=>!['verb','skill','target'].includes(k)))return false;
-   if(value.skill!==undefined&&(value.verb!=='ability'||!['power_strike','phase_shift','war_cry','mend'].includes(value.skill)))return false;
+   if(value.skill!==undefined&&(value.verb!=='ability'||!['power_strike','phase_shift','war_cry','mend','frenzy','bulwark','ambush'].includes(value.skill)))return false;
    if(value.target!==undefined && (typeof value.target!=='string'||!value.target.trim()||value.target.length>180))return false;
   if(value.verb==='move')return Number.isInteger(value.dx)&&Number.isInteger(value.dy)&&Math.abs(value.dx)+Math.abs(value.dy)===1&&Number.isInteger(value.steps)&&value.steps>=1&&value.steps<=12;
   if(value.verb==='go' && value.x!==undefined)return Number.isInteger(value.x)&&Number.isInteger(value.y)&&value.x>0&&value.y>0&&value.x<1000&&value.y<1000;

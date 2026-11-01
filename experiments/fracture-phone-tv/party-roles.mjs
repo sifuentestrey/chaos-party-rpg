@@ -1,3 +1,4 @@
+import {isStarter,STARTERS} from './character-profile.mjs';
 /** Original Chaos Party role identifiers and Lucky-ish rule, projected only onto
  * original Chaos object D20 checks. Native Fracture combat/HP/gear are untouched.
  * Source: canonical public/core.js ROLES/PERKS and resolve() skill/luck logic.
@@ -12,9 +13,9 @@ export const ROLES=Object.freeze({
 });
 export const PERKS=Object.freeze({lucky:'Lucky-ish',charming:'Suspiciously charming'});
 export const validPerk=perk=>typeof perk==='string'&&Object.hasOwn(PERKS,perk);
-export function validRole(role){return typeof role==='string'&&Object.hasOwn(ROLES,role);}
-export function roleName(role){return validRole(role)?ROLES[role].name:'Unassigned';}
-export function objectSkillBonus(role,verb){return validRole(role)&&ROLES[role].skills.includes(verb)?3:0;}
+export function validRole(role){return typeof role==='string'&&(Object.hasOwn(ROLES,role)||isStarter(role));}
+export function roleName(role){return validRole(role)?(ROLES[role]?.name||STARTERS[role]?.name||'Unassigned'):'Unassigned';}
+export function objectSkillBonus(role,verb){return validRole(role)&&ROLES[role]?.skills.includes(verb)?3:0;}
 /** A native-authenticated actor receives these properties only from the local
  * bridge, not from a phone command. A legacy actor has no bonus or perk.
  */

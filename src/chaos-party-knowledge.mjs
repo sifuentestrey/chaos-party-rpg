@@ -6,7 +6,7 @@
  * the rules here prevents the two DM adapters from slowly describing
  * different games.
  */
-export const CHAOS_PARTY_KNOWLEDGE_VERSION='chaos-party-fracture.v2';
+export const CHAOS_PARTY_KNOWLEDGE_VERSION='chaos-party-fracture.v3';
 export const CHAOS_PARTY_KNOWLEDGE_SOURCES=Object.freeze([
   'experiments/fracture-phone-tv/action-contract.ts',
   'experiments/fracture-phone-tv/chaos-world.mjs',
@@ -25,7 +25,10 @@ export const CHAOS_PARTY_ABILITIES=Object.freeze([
   {id:'power_strike',role:'Fighter',name:'Power Strike',effect:'Readies the next melee hit for up to five seconds; that hit deals double damage.'},
   {id:'phase_shift',role:'Rogue',name:'Phase Shift',effect:'Becomes phased for two seconds.'},
   {id:'war_cry',role:'Mage',name:'Arcane Shock',effect:'Stuns nearby enemies.'},
-  {id:'mend',role:'Healer',name:'Mend',effect:'Restores health to a living target; the engine determines the amount.'}
+  {id:'mend',role:'Healer',name:'Mend',effect:'Restores health to a living target; the engine determines the amount.'},
+  {id:'frenzy',role:'Barbarian',name:'Frenzy',effect:'Empowers melee attacks for a short engine-controlled window; the engine determines bonus damage and duration.'},
+  {id:'bulwark',role:'Paladin',name:'Bulwark',effect:'Reduces the next damage to the actor; the engine determines the reduction.'},
+  {id:'ambush',role:'Assassin',name:'Ambush',effect:'Empowers the first attack after activation; the engine determines bonus damage.'}
 ]);
 
 // Voice text is transcribed from the pinned Fracture source
@@ -91,13 +94,12 @@ SUPPORTED GAME SHAPE
 - Normal intent verbs are ability, use_item, attack, talk, quest, open, loot,
   go, equip, manipulate, enter, exit and creative; an unknown intent stays
   unknown until the engine or a grounded AI proposal can resolve it.
-- The four optional signatures are Fighter/Power Strike, Rogue/Phase Shift,
-  Mage/Arcane Shock and Healer/Mend. Their engine-observed effect descriptions
-  are: Power Strike readies the next melee hit for up to five seconds and that
-  hit deals double damage; Phase Shift makes the actor phased for two seconds;
-  Arcane Shock stuns nearby enemies; Mend restores health to a living target
-  with the amount chosen by the engine. The actor snapshot decides availability,
-  cooldown and legal targets; never promise an effect from a class description.
+- The seven optional signatures are Fighter/Power Strike, Rogue/Phase Shift,
+  Mage/Arcane Shock, Healer/Mend, Barbarian/Frenzy, Paladin/Bulwark and
+  Assassin/Ambush. Their effects are defined by the authoritative ability
+  registry above; the actor snapshot decides availability, cooldown, legal
+  targets, damage and duration. Never promise an effect from a class
+  description, and never invent a number.
 - The Refuge and Glitch Woods are existing native areas. Doors, travel routes,
   combatants, scenery, NPCs and adventure steps come from the live snapshot;
   names in this reference never create a missing target.

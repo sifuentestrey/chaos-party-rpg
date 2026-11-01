@@ -18,7 +18,10 @@ export const STARTERS=Object.freeze({
  knight:{name:'Fighter',ability:'Power Strike',skill:'power_strike',cooldown:12,description:'Your next attack within five seconds deals double damage.'},
  rogue:{name:'Rogue',ability:'Phase Shift',skill:'phase_shift',cooldown:12,description:'Vanish for two seconds, lose enemy attention and slip past enemies. Walls still block you.'},
  wizard:{name:'Mage',ability:'Arcane Shock',skill:'war_cry',cooldown:20,description:'Stun enemies within three tiles for three seconds.'},
- healer:{name:'Healer',ability:'Mend',skill:'mend',cooldown:20,description:'Restore up to a quarter of your or a nearby friend’s maximum health. Cannot revive the fallen.'}
+ healer:{name:'Healer',ability:'Mend',skill:'mend',cooldown:20,description:'Restore up to a quarter of your or a nearby friend’s maximum health. Cannot revive the fallen.'},
+ barbarian:{name:'Barbarian',ability:'Frenzy',skill:'frenzy',cooldown:15,description:'Empower your melee attacks for a short engine-controlled window.'},
+ paladin:{name:'Paladin',ability:'Bulwark',skill:'bulwark',cooldown:20,description:'Reduce the next damage you take through a self-only engine shield.'},
+ assassin:{name:'Assassin',ability:'Ambush',skill:'ambush',cooldown:15,description:'Your first attack after using Ambush deals bonus damage.'}
 });
 export function validateAppearance(value){
  if(!value||typeof value!=='object'||Array.isArray(value)||![1,2].includes(value.version))throw Error('Choose a supported character appearance.');

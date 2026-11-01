@@ -373,6 +373,15 @@ test('saved original Chaos class stays bound to the correct native actor, not ph
  assert.equal(action.status,202);assert.equal(sockets[0].lastAction.intent.verb,'attack');
  assert.equal(sockets[0].lastAction.role,undefined,'phone cannot override class on action');
 });
+test('new native signature classes pair and stay bound to their actor',async t=>{
+ const {app,base,sockets}=await setup(t);
+ for(const [i,role] of ['barbarian','paladin','assassin'].entries()){
+  const response=await post(base,'/pair',{key:app.room.join,name:'New'+role,role});
+  assert.equal(response.status,201);const {token}=await response.json();
+  assert.equal(sockets[i].auth.chaosRole,role);
+  assert.equal((await(await fetch(base+'/state?token='+token)).json()).role,role);
+ }
+});
 
 test('announced world action waits for a real help/hinder reaction before native execution',async t=>{
  const {app,base,sockets}=await setup(t,{reactionMs:1000});

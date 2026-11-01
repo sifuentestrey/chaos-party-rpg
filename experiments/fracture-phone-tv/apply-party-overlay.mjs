@@ -83,6 +83,8 @@ const pacingEdits={
  'server/ts/player/skill.handler.ts':[],
  'server/ts/player/combat.handler.ts':[],
  'server/ts/combat/combat-system.ts':[],
+ 'shared/ts/skills/skill-data.ts':[],
+ 'shared/ts/skills/index.ts':[],
  'server/ts/mob.ts':[], 'server/ts/mobarea.ts':[], 'server/ts/item.ts':[],
  'server/ts/player.ts':[], 'server/ts/player/inventory.handler.ts':[], 'server/ts/player/loot.handler.ts':[]
 };
@@ -108,12 +110,43 @@ function paceSource(file,source){
  if(imports[file]){const [header,transform]=imports[file];source=header+transform(source);}
  return source;
 }
+function applyChaosClassSkills(file,source){
+ const replace=(needle,value)=>{if(!source.includes(needle))throw Error('Class skill anchor missing: '+file);source=source.replace(needle,value);};
+ if(file==='shared/ts/skills/skill-data.ts'){
+  replace("  WHIRLWIND = 'whirlwind'\n", "  WHIRLWIND = 'whirlwind',\n  FRENZY = 'frenzy',\n  BULWARK = 'bulwark',\n  AMBUSH = 'ambush'\n");
+  replace("export interface WhirlwindParams {\n  type: 'whirlwind';\n  radius: number;         // tiles\n  damagePercent: number;  // % of weapon damage\n}\n", "export interface WhirlwindParams {\n  type: 'whirlwind';\n  radius: number;         // tiles\n  damagePercent: number;  // % of weapon damage\n}\n\nexport interface FrenzyParams {\n  type: 'frenzy';\n  damageMultiplier: number;\n  duration: number;\n}\n\nexport interface BulwarkParams {\n  type: 'bulwark';\n  damageReduction: number;\n  duration: number;\n}\n\nexport interface AmbushParams {\n  type: 'ambush';\n  damageMultiplier: number;\n  duration: number;\n}\n");
+  replace("  | WarCryParams\n  | WhirlwindParams;", "  | WarCryParams\n  | WhirlwindParams\n  | FrenzyParams\n  | BulwarkParams\n  | AmbushParams;");
+  replace("  [SkillId.WHIRLWIND]: {\n    id: SkillId.WHIRLWIND,\n    name: 'Whirlwind',\n    description: 'Deal 75% weapon damage to all enemies within 1 tile',\n    type: SkillType.OFFENSIVE,\n    unlockLevel: 20,\n    cooldown: 15,\n    hotkey: 4,\n    icon: 'skill-whirlwind',\n    params: {\n      type: 'whirlwind',\n      radius: 1,\n      damagePercent: 75\n    }\n  }\n", "  [SkillId.WHIRLWIND]: {\n    id: SkillId.WHIRLWIND,\n    name: 'Whirlwind',\n    description: 'Deal 75% weapon damage to all enemies within 1 tile',\n    type: SkillType.OFFENSIVE,\n    unlockLevel: 20,\n    cooldown: 15,\n    hotkey: 4,\n    icon: 'skill-whirlwind',\n    params: {\n      type: 'whirlwind',\n      radius: 1,\n      damagePercent: 75\n    }\n  },\n\n  [SkillId.FRENZY]: {\n    id: SkillId.FRENZY,\n    name: 'Frenzy',\n    description: 'Empower melee attacks for a short time',\n    type: SkillType.OFFENSIVE,\n    unlockLevel: 20,\n    cooldown: 15,\n    hotkey: 1,\n    icon: 'skill-power-strike',\n    params: { type: 'frenzy', damageMultiplier: 1.25, duration: 5000 }\n  },\n\n  [SkillId.BULWARK]: {\n    id: SkillId.BULWARK,\n    name: 'Bulwark',\n    description: 'Reduce the next damage you take',\n    type: SkillType.UTILITY,\n    unlockLevel: 20,\n    cooldown: 20,\n    hotkey: 2,\n    icon: 'skill-phase',\n    params: { type: 'bulwark', damageReduction: 0.5, duration: 5000 }\n  },\n\n  [SkillId.AMBUSH]: {\n    id: SkillId.AMBUSH,\n    name: 'Ambush',\n    description: 'Empower the first attack after activation',\n    type: SkillType.OFFENSIVE,\n    unlockLevel: 20,\n    cooldown: 15,\n    hotkey: 3,\n    icon: 'skill-power-strike',\n    params: { type: 'ambush', damageMultiplier: 1.5, duration: 5000 }\n  }\n");
+  replace("  phaseShiftExpires: number;           // Timestamp when phasing ends\n", "  phaseShiftExpires: number;           // Timestamp when phasing ends\n  frenzyActive: boolean;                // Timed multi-hit melee modifier\n  frenzyExpires: number;                // Timestamp when Frenzy ends\n  bulwarkActive: boolean;               // Self-only next-hit reduction\n  bulwarkExpires: number;               // Timestamp when Bulwark expires\n  ambushActive: boolean;                // First attack modifier\n  ambushExpires: number;                 // Timestamp when Ambush expires\n");
+  replace("    phaseShiftActive: false,\n    phaseShiftExpires: 0\n", "    phaseShiftActive: false,\n    phaseShiftExpires: 0,\n    frenzyActive: false,\n    frenzyExpires: 0,\n    bulwarkActive: false,\n    bulwarkExpires: 0,\n    ambushActive: false,\n    ambushExpires: 0\n");
+  replace("      [SkillId.WHIRLWIND]: 0\n    },", "      [SkillId.WHIRLWIND]: 0,\n      [SkillId.FRENZY]: 0,\n      [SkillId.BULWARK]: 0,\n      [SkillId.AMBUSH]: 0\n    },");
+ }
+ if(file==='shared/ts/skills/index.ts'){
+  replace("  WhirlwindParams,\n", "  WhirlwindParams,\n  FrenzyParams,\n  BulwarkParams,\n  AmbushParams,\n");
+ }
+ if(file==='server/ts/player/skill.handler.ts'){
+  replace("    case 'whirlwind':\n      return executeWhirlwind(ctx, skill.params.radius, skill.params.damagePercent);\n", "    case 'whirlwind':\n      return executeWhirlwind(ctx, skill.params.radius, skill.params.damagePercent);\n\n    case 'frenzy':\n      return executeFrenzy(ctx, skill.params.damageMultiplier, skill.params.duration);\n\n    case 'bulwark':\n      return executeBulwark(ctx, skill.params.duration);\n\n    case 'ambush':\n      return executeAmbush(ctx, skill.params.damageMultiplier, skill.params.duration);\n");
+  replace("/**\n * Calculate distance between two points\n */\n", "function executeFrenzy(ctx: SkillPlayerContext, _multiplier: number, duration: number): boolean {\n  const expires = gameNow(ctx) + duration;\n  const state = ctx.getSkillState();\n  state.frenzyActive = true;\n  state.frenzyExpires = expires;\n  return true;\n}\n\nfunction executeBulwark(ctx: SkillPlayerContext, duration: number): boolean {\n  const expires = gameNow(ctx) + duration;\n  const state = ctx.getSkillState();\n  state.bulwarkActive = true;\n  state.bulwarkExpires = expires;\n  return true;\n}\n\nfunction executeAmbush(ctx: SkillPlayerContext, _multiplier: number, duration: number): boolean {\n  const expires = gameNow(ctx) + duration;\n  const state = ctx.getSkillState();\n  state.ambushActive = true;\n  state.ambushExpires = expires;\n  return true;\n}\n\n/**\n * Calculate distance between two points\n */\n");
+  replace("  return 1.0; // Normal damage\n}\n", "  return 1.0; // Normal damage\n}\n\nexport function consumeFrenzyBuff(ctx: SkillPlayerContext): number {\n  const state = ctx.getSkillState();\n  if (state.frenzyActive && gameNow(ctx) < state.frenzyExpires) return 1.25;\n  state.frenzyActive = false;\n  state.frenzyExpires = 0;\n  return 1.0;\n}\n\nexport function consumeAmbushBuff(ctx: SkillPlayerContext): number {\n  const state = ctx.getSkillState();\n  if (state.ambushActive && gameNow(ctx) < state.ambushExpires) {\n    state.ambushActive = false;\n    state.ambushExpires = 0;\n    return 1.5;\n  }\n  state.ambushActive = false;\n  state.ambushExpires = 0;\n  return 1.0;\n}\n\nexport function consumeBulwarkReduction(ctx: SkillPlayerContext): number {\n  const state = ctx.getSkillState();\n  if (state.bulwarkActive && gameNow(ctx) < state.bulwarkExpires) {\n    state.bulwarkActive = false;\n    state.bulwarkExpires = 0;\n    return 0.5;\n  }\n  state.bulwarkActive = false;\n  state.bulwarkExpires = 0;\n  return 1.0;\n}\n");
+ }
+ if(file==='server/ts/player.ts'){
+  replace("  consumePowerStrike(): number {\n    return SkillHandler.consumePowerStrikeBuff(this);\n  }\n", "  consumePowerStrike(): number {\n    return SkillHandler.consumePowerStrikeBuff(this);\n  }\n\n  consumeFrenzy(): number {\n    return SkillHandler.consumeFrenzyBuff(this);\n  }\n\n  consumeAmbush(): number {\n    return SkillHandler.consumeAmbushBuff(this);\n  }\n\n  consumeBulwarkReduction(): number {\n    return SkillHandler.consumeBulwarkReduction(this);\n  }\n");
+ }
+ if(file==='server/ts/player/combat.handler.ts'){
+  replace("    const powerStrikeMultiplier = player.consumePowerStrike();\n", "    const powerStrikeMultiplier = player.consumePowerStrike();\n    const frenzyMultiplier = player.consumeFrenzy();\n    const ambushMultiplier = player.consumeAmbush();\n");
+  replace("    const dmg = Math.floor(baseDmg * powerStrikeMultiplier * ascensionMultiplier);\n", "    const dmg = Math.floor(baseDmg * powerStrikeMultiplier * frenzyMultiplier * ambushMultiplier * ascensionMultiplier);\n");
+  replace("    const hpBefore = player.hitPoints;\n    // Nemesis power", "    const hpBefore = player.hitPoints;\n    const bulwarkMultiplier = player.consumeBulwarkReduction();\n    // Nemesis power");
+  replace("    const dmg = Math.floor(Formulas.dmg(mob.weaponLevel, player.armorLevel, mob.level ?? 1) * nemesisMultiplier);\n", "    const dmg = Math.floor(Formulas.dmg(mob.weaponLevel, player.armorLevel, mob.level ?? 1) * nemesisMultiplier * bulwarkMultiplier);\n");
+ }
+ return source;
+}
 // Preflight all files before writing any source. Accept only pristine or exactly our patch.
 const writes=[];
 for(const [file,a,b,c,d] of patches){
  const upstream=execFileSync('git',['show',`HEAD:${file}`],{cwd:root,encoding:'utf8'});
  if(!upstream.includes(a)||!upstream.includes(c))throw Error(`Anchor missing: ${file}`);
  let patched=paceSource(file,upstream.replace(a,b).replace(c,d));
+ patched=applyChaosClassSkills(file,patched);
  if(file==='client/ts/game.ts')patched=patched.replace('  resize() {','  resize() {\n    const sharedCameraOwned = this.camera.chaosSharedOwned;').replace('      this.updater.update();','      if (!(this as any).__chaosPaused) this.updater.update();');
  if(file==='client/ts/world/zoning-manager.ts')patched=patched.replace('  onViewportResize(): void {','  onViewportResize(camera?: Camera): void {\n    if (camera && this.context) this.context.camera = camera;').replace('  enqueueZoningFrom(x: number, y: number): void {','  enqueueZoningFrom(x: number, y: number): void {\n    if (this.context?.camera.chaosSharedOwned) return;');
  if(file==='client/ts/renderer/camera.ts'){patched=patched.replace('  setGridPosition(x, y) {','  setGridPosition(x, y) {\n    if (this.chaosSharedOwned) return;').replace('  setZoneViewport(width: number, height: number, isFixed: boolean): void {','  setZoneViewport(width: number, height: number, isFixed: boolean): void {\n    if (this.chaosSharedOwned) return;');}
