@@ -141,10 +141,11 @@ export function startChaosTV(game:any):void {
     const r=await fetch(u.toString());if(!r.ok){connection.textContent='TV pairing expired. Reopen the TV from the current host page.';return;}const data=await r.json();connection.textContent='';
     const pacing=data.pacing,phase=pacing?.phase,seconds=Math.max(0,Math.ceil(((pacing?.travel?.status==='pending'?pacing.travel.deadline:pacing?.deadline)||0)-Date.now())/1000);
     game.__chaosPaused=!!pacing?.enabled&&['planning','preparation','recap'].includes(phase);
-    pacingPanel.hidden=!pacing?.enabled;pacingPanel.dataset.phase=phase||'live';controls.dataset.pacing=phase||'live';
+    pacingPanel.hidden=!pacing?.enabled&&!data.story?.prompt;pacingPanel.dataset.phase=phase||'live';controls.dataset.pacing=phase||'live';
     const nextObjective=data.adventure?.steps.find((step:any)=>!step.done)?.label||'Explore and experiment together';
     pacingPanel.textContent=pacing?.travel?.status==='pending'?'Travel '+pacing.travel.name+'? · '+pacing.travel.yes+'/'+pacing.travel.required+' yes · '+Math.ceil(seconds)+'s':phase==='planning'?'CHOOSE TOGETHER · '+Math.ceil(seconds)+'s · '+pacing.ready+'/'+pacing.total+' ready\n'+nextObjective:phase==='preparation'?'The party gathers its resolve…':phase==='action'?'ACTION · '+Math.ceil(seconds)+'s':phase==='recap'?'RECAP · The story settles':phase==='travel'?'TRAVELLING TOGETHER · '+(pacing.travel?.arrived||0)+'/'+(pacing.travel?.total||0)+' arrived':(pacing?.area?.zone||'Explore together')+' · '+nextObjective;
 
+    if(!pacing?.enabled&&data.story?.prompt)pacingPanel.textContent=data.story.prompt;
     const connected=data.players.filter((p:any)=>p.actor?.ready);
     const players=connected.filter((p:any)=>!p.actor.dead);
     // Roster changes may leave stale IDs in the browser's renderer state.

@@ -22,6 +22,7 @@ import {OUTFITS,STARTERS,isStarter,validateAppearance} from './character-profile
 import {ROLES,PERKS,validRole,validPerk} from './party-roles.mjs';
 import {startAdventure,replayAdventure,receiptEvidence,zoneEvidence,advanceAdventure,adventureView,proposeTrialChoice,voteTrialChoice,settleTrialChoice,trialChoiceView} from './party-adventure.mjs';
 import {stagedAction,isReaction,publicDeclarations,REACTION_MS} from './party-declaration.mjs';
+import {startGameNightStory,advanceGameNightStory,gameNightStoryView} from './game-night-story.mjs';
 const token=()=>randomBytes(24).toString('hex');
 const STORY_EVENT_MS=7000;
 const STORY_MAJOR_EVENT_MS=12000;
@@ -127,6 +128,11 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
    (e.timelinePublic||(e.timelineScene&&scene&&e.timelineScene.zone===scene.zone&&e.timelineScene.x===scene.x&&e.timelineScene.y===scene.y)))
    .sort((a,b)=>a.at-b.at).slice(-3).map(e=>({id:e.timelineId,at:e.at,expiresAt:e.timelineExpiresAt,text:e.timelineText}));
  };
+ if(room.phase==='playing'&&!room.story){
+  room.story=startGameNightStory();
+  persist();
+  record({player:'Dungeon Master',status:'story',message:'A silver bell has vanished from The Refuge shrine. A strange three-toed trail leads toward the woods.'},{key:`situation:start:${room.story.instanceId}`,text:'A silver bell has vanished from The Refuge shrine. A strange three-toed trail leads toward the woods.',public:true,major:true});
+ }
  function progressAdventure(evidence){
   const change=advanceAdventure(room.adventure,evidence);
   if(!change)return;
@@ -196,10 +202,15 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
    }
    const attempt=session.attempts.get(r.id);
    progressAdventure(receiptEvidence(r,attempt,actor||session.actor,player.name,room.adventure?.instanceId));
+   const storyBeat=advanceGameNightStory(room.story,{player:player.name,attempt,receipt:r,actor:eventActor});
+   if(storyBeat){
+    record({player:'Dungeon Master',status:'story',id:`story:${room.story.beats.at(-1)?.stage}:${r.id}`,message:storyBeat.text},
+     {key:`situation:${room.story.instanceId}:${room.story.beats.at(-1)?.stage}`,text:storyBeat.text,public:true,major:storyBeat.major});
+   }
    const storyEvent=r.event||(attempt&&(meaningful.has(attempt.verb)||['ability','enter','exit'].includes(attempt.verb))?{attempt:attempt.text}:null);
    if(storyEvent&&['succeeded','failed','blocked'].includes(r.status)&&!(actor?.pacing?.enabled&&actor.pacing.phase!=='exploration')){
     session.storyController?.abort();const storyController=new AbortController();session.storyController=storyController;session.story={id:r.id,text:r.message,mode:'offline'};const epoch=session.epoch;
-    void dm.narrate({...r,event:storyEvent,actor:{...(eventActor||{}),partyScene:partyScene()},player:player.name},{signal:storyController.signal}).then(story=>{
+    void dm.narrate({...r,event:storyEvent,story:gameNightStoryView(room.story),actor:{...(eventActor||{}),partyScene:partyScene()},player:player.name},{signal:storyController.signal}).then(story=>{
      if(!story||session.epoch!==epoch||session.story?.id!==r.id)return;
      const message=story.text+(story.dialogue.length?' '+story.dialogue.map(d=>d.name+': '+d.line).join(' '):'');
      session.story={id:r.id,text:message,mode:'optional AI'};if(r.interaction!=='talk')updateTimelineNarration(r.id,story.text);record({player:'DM',status:'story',canonicalId:r.id,message});
@@ -444,9 +455,13 @@ const beginKey=${JSON.stringify(room.host)};async function refreshLobby(){const 
     const b=await body(req);if(b.key!==room.host)return json(res,403,{error:'Private host required'});
     if(room.phase==='playing')return json(res,409,{error:'The adventure has already begun.'});
     if(!liveCount())return json(res,409,{error:'At least one adventurer must be ready.'});
-    room.phase='playing';try{persist();}catch(error){room.phase='creation';throw error;}
+    room.phase='playing';
+    if(!room.story)room.story=startGameNightStory();
+    try{persist();}catch(error){room.phase='creation';throw error;}
     for(const s of sessions.values())if(!s.player.parked){s.lastSeen=Date.now();s.socket.connect();}
-    record({player:'Party',status:'started',message:'The adventure begins!'});return json(res,200,{phase:room.phase});
+    record({player:'Party',status:'started',message:'The adventure begins!'});
+    if(room.story.beats.length===0)record({player:'Dungeon Master',status:'story',message:'A silver bell has vanished from The Refuge shrine. A strange three-toed trail leads toward the woods.'},{key:`situation:start:${room.story.instanceId}`,text:'A silver bell has vanished from The Refuge shrine. A strange three-toed trail leads toward the woods.',public:true,major:true});
+    return json(res,200,{phase:room.phase});
    }
    if(p==='/profile'&&req.method==='POST'){
     const b=await body(req),s=sessions.get(b.token);if(!s||s.player.parked)return json(res,403,{error:'Personal controller required'});
@@ -557,13 +572,13 @@ let changes=null;function connectChanges(){if(changes){changes.close();changes=n
     const s=sessions.get(url.searchParams.get('token'));if(!s)return json(res,403,{error:'Reconnect using your original phone and room link.'});
     if(s.player.parked)return json(res,409,{error:'Your character is benched. Ask the host to restore your slot; your progress is saved.'});
     s.lastSeen=Date.now();if(room.phase==='playing'&&!s.socket.connected&&!s.socket.active)s.socket.connect();
-    return json(res,200,{pacing:publicPacing(s),partyScene:partyScene(),dm:publicDM(),phase:room.phase,readyCount:liveCount(),...publicPlayer(s),guide:familyGuide(s.actor,adventureView(room.adventure,{allowCraft:false})),dialogue:s.dialogue,quest:s.quest,adventure:adventureView(room.adventure,{allowCraft:false}),choiceVote:publicChoice(s.player.token),rally:publicRally(s.player.token),declarations:publicDeclarations(pending),turn:room.turn&&room.turn.deadline>Date.now()?{actor:room.turn.actor,text:room.turn.text,deadline:room.turn.deadline}:null,results:[...s.results.entries()].slice(-12).map(([id,r])=>({id,...r}))});
+    return json(res,200,{pacing:publicPacing(s),partyScene:partyScene(),dm:publicDM(),phase:room.phase,readyCount:liveCount(),...publicPlayer(s),guide:familyGuide(s.actor,adventureView(room.adventure,{allowCraft:false})),dialogue:s.dialogue,quest:s.quest,situation:gameNightStoryView(room.story),adventure:adventureView(room.adventure,{allowCraft:false}),choiceVote:publicChoice(s.player.token),rally:publicRally(s.player.token),declarations:publicDeclarations(pending),turn:room.turn&&room.turn.deadline>Date.now()?{actor:room.turn.actor,text:room.turn.text,deadline:room.turn.deadline}:null,results:[...s.results.entries()].slice(-12).map(([id,r])=>({id,...r}))});
    }
    if(p==='/tv-state'&&req.method==='GET'){
     if(url.searchParams.get('key')!==tvKey)return json(res,403,{error:'Private TV link required'});
     const origin=req.headers.origin;
     if(origin){const u=new URL(origin);if(u.protocol!=='http:'||Number(u.port)!==fracturePort||u.hostname!==(req.headers.host||'').split(':')[0])return json(res,403,{error:'Invalid TV origin'});res.setHeader('access-control-allow-origin',origin);}
-    const scene=sceneForDisplay(url.searchParams.get('actorId'));return json(res,200,{serverNow:Date.now(),timeline:timelineForTV(scene),pacing:publicPacing(),scene,phase:room.phase,players:roster(),adventure:adventureView(room.adventure,{allowCraft:false}),choiceVote:publicChoice(),rally:publicRally(),declarations:publicDeclarations(pending),events:events.slice(-8),lobby:{join:`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`,qr:qrSvg(`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`)},turn:room.turn&&room.turn.deadline>Date.now()?{actor:room.turn.actor,text:room.turn.text,deadline:room.turn.deadline}:null});
+    const scene=sceneForDisplay(url.searchParams.get('actorId'));return json(res,200,{serverNow:Date.now(),timeline:timelineForTV(scene),pacing:publicPacing(),scene,phase:room.phase,players:roster(),story:gameNightStoryView(room.story),adventure:adventureView(room.adventure,{allowCraft:false}),choiceVote:publicChoice(),rally:publicRally(),declarations:publicDeclarations(pending),events:events.slice(-8),lobby:{join:`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`,qr:qrSvg(`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`)},turn:room.turn&&room.turn.deadline>Date.now()?{actor:room.turn.actor,text:room.turn.text,deadline:room.turn.deadline}:null});
    }
    if(p==='/host/pacing-state'&&req.method==='GET'){if(url.searchParams.get('key')!==room.host)return json(res,403,{error:'Private host required'});return json(res,200,publicPacing());}
    if(p==='/pacing'&&req.method==='POST'){

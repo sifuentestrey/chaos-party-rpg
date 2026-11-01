@@ -1,5 +1,11 @@
 # Chaos Party on Fracture — local game-night beta
 
+## The game-night situation — November 1
+
+When the host begins a new room, the shared TV opens on a live mystery: a silver bell has vanished from The Refuge and a strange three-toed trail leads toward the woods. This is a loose situation, not a checklist. Confirmed conversations reveal clues; confirmed theft, fire, combat and exploration raise different kinds of pressure; the server publishes new beats as the party's choices change the situation. The TV shows the public story beat and each phone keeps its private receipt and optional DM narration. Groq can add grounded flavor when enabled, while the offline situation engine remains authoritative.
+
+Players can follow the trail, question people, investigate, help each other, make mischief or split up. The situation never creates a map object, NPC outcome, reward or success that Fracture did not confirm. The existing Refuge Trial remains available as an optional structured objective for groups that want one.
+
 ## Shared adventure rhythm — October 31
 
 New rooms use **Hybrid**: everybody explores the same existing 32×18 scene or native interior. The TV stays on that area. A hostile encounter or the host's **Gather attention** opens one shared planning window. Enemies, movement, damage, fire, native effects and cooldowns pause together; connections and personal STOP still work.

@@ -1,5 +1,15 @@
 # Chaos Party — local Fracture beta acceptance
 
+## Game-night situation layer — November 1, 2026
+
+**Implemented:** new rooms begin with a server-owned Refuge mystery instead of an empty sandbox. The TV announces the missing silver bell and trail; confirmed player receipts advance bounded public beats for clues, alarm, accusations, discoveries and reckoning. The existing native engine remains authoritative for movement, combat, NPC contact and environmental changes. The optional Groq narrator receives the current situation as context, and offline play uses the same durable story state without an AI request.
+
+- [x] Situation state persists with the isolated room and survives bridge restart.
+- [x] Confirmed outcomes can advance the story; failed, duplicate, private or ungrounded attempts cannot.
+- [x] Public beats reuse the disappearing TV timeline and remain separate from phone mechanical receipts.
+- [x] 298 experimental checks (297 pass, 1 existing pinned-overlay skip) and original offline verification (210/210) pass.
+- [ ] Physical Intel Mac, family Wi-Fi and human fun acceptance remain open; software checks do not establish that people will enjoy a two-hour session.
+
 ## Grounded creative artifacts — November 1, 2026
 
 **Implemented:** the optional DM and offline parser can now map open-ended cosmetic ideas to one bounded server action. After a native combat hit is confirmed at zero HP, the authenticated fighter can turn that personally confirmed defeated creature into a data-only wearable (for example, “turn the defeated rat into a necklace”). The same original Chaos D20, helper/hinder, ownership, persistence and equip rules apply. The artifact reuses the existing band appearance and exposes no combat stats, native map prop, collision, loot or new artwork. Unknown sources, unconfirmed deaths, distant defeats and invented effects remain blocked with a contextual result.
