@@ -97,6 +97,15 @@ test('startup validates an existing connection once, remembers ON, and respects 
  const off=createOptionalDM(options);t.after(()=>off.close());
  assert.equal(await off.initialize(),false);assert.equal(off.enabled,false);assert.equal(calls,2);
 });
+test('launcher always-on mode re-enables a saved OFF preference when a key is available',async t=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'dm-always-on-'));let calls=0;
+ const options={dataDir:dir,key:'runtime-test-key',alwaysOn:true,fetchImpl:async(_u,init)=>{calls++;return reply(init);}};
+ const dm=createOptionalDM(options);t.after(()=>{dm.close();fs.rmSync(dir,{recursive:true,force:true});});
+ dm.enabled=false;assert.equal(dm.enabled,true);
+ const fresh=createOptionalDM(options);t.after(()=>fresh.close());
+ assert.equal(await fresh.initialize(),true);assert.equal(fresh.enabled,true);assert.equal(calls,1);
+ fresh.enabled=false;assert.equal(fresh.enabled,true);
+});
 test('missing or rejected startup connections do not enable live AI',async t=>{
  for(const key of ['', 'rejected-test-key']){
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'dm-auto-error-'));let calls=0;

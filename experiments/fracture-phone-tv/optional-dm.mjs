@@ -41,7 +41,7 @@ function groundedIntent(intent,actor){
     return grounded?{...intent,target:grounded.id===undefined?grounded.name:String(grounded.id)}:null;
 
 }
-export function createOptionalDM({dataDir,key,model=process.env.CHAOS_DM_MODEL||'openai/gpt-oss-120b',fetchImpl=fetch,enabled,timeoutMs=7000}={}){
+export function createOptionalDM({dataDir,key,model=process.env.CHAOS_DM_MODEL||'openai/gpt-oss-120b',fetchImpl=fetch,enabled,timeoutMs=7000,alwaysOn=false}={}){
  if(!models.has(model))throw Error('Choose an approved Groq GPT-OSS model for the DM.');
  const budget=createFreeAIBudget(dataDir),file=path.join(dataDir,'dm-config.json');let secret=key??process.env.GROQ_API_KEY??'',problem=null;
  if(key===undefined&&fs.existsSync(file)){try{const config=JSON.parse(fs.readFileSync(file,'utf8'));if(config.version!==1||typeof config.key!=='string')throw Error();secret=config.key;}catch{secret='';problem={code:'configuration',message:'Saved AI connection is unreadable. Re-enter it on the host page.'};}}
@@ -97,10 +97,10 @@ export function createOptionalDM({dataDir,key,model=process.env.CHAOS_DM_MODEL||
   return request(kind,[{role:'system',content:NARRATION_SYSTEM},{role:'user',content:JSON.stringify(context)}],schema,answer=>validateNarration(answer,context),options);
  }
  return {
-  get available(){return !!secret;},get enabled(){return on;},set enabled(value){persistEnabled(value===true);on=value===true;if(!on){generation++;for(const c of controllers)c.abort();for(const entry of [...queued])entry.reject();}},
-  status(){const quota=budget.status();return {available:!!secret,enabled:on,model,state:!secret?'missing_key':!on?(active?'checking':'off'):Date.now()<cooldownUntil?'cooldown':active?'busy':problem?'error':lastSuccessAt?'connected':'ready',message:problem?.message||(!secret?'Connect a Groq key once on this Mac to use the AI DM.':!on?(active?'Checking the saved AI connection…':lastSuccessAt?'AI connection verified. Turn it on when you want to play with AI.':'AI DM is off. Offline play is available.'):lastSuccessAt?'AI DM connected. Type actions normally on your phone.':'AI connection saved. Checking it before play.'),lastError:problem?.code||null,lastSuccessAt,active,queued:queued.length,cooldownUntil,quota};},
+  get available(){return !!secret;},get enabled(){return on;},set enabled(value){const next=alwaysOn?!!secret:value===true;persistEnabled(next);on=next;if(!on){generation++;for(const c of controllers)c.abort();for(const entry of [...queued])entry.reject();}},
+  status(){const quota=budget.status();let message;if(problem?.code==='missing_key')message='Connect a Groq key once on this host to use the AI DM.';else if(alwaysOn&&on)message='AI DM is connected and will stay on for this host.';else if(problem?.message)message=problem.message;else if(!secret)message='Connect a Groq key once on this host to use the AI DM.';else if(!on)message=active?'Checking the saved AI connection…':lastSuccessAt?'AI connection verified. Turn it on when you want to play with AI.':'AI DM is off. Offline play is available.';else message=lastSuccessAt?'AI DM connected. Type actions normally on your phone.':'AI connection saved. Checking it before play.';return {available:!!secret,enabled:on,alwaysOn,model,state:!secret?'missing_key':!on?(active?'checking':'off'):Date.now()<cooldownUntil?'cooldown':active?'busy':problem?'error':lastSuccessAt?'connected':'ready',message,lastError:problem?.code||null,lastSuccessAt,active,queued:queued.length,cooldownUntil,quota};},
   async initialize(){
-   if(!secret||enabled===false||fs.existsSync(preferences)&&!on)return false;
+   if(!secret||enabled===false||!alwaysOn&&fs.existsSync(preferences)&&!on)return false;
    const version=generation,checked=await this.check();
    if(!checked||version!==generation||closed)return false;
    this.enabled=true;return true;
