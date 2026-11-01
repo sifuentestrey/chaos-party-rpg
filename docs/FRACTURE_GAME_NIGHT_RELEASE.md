@@ -514,6 +514,13 @@ The owner's latest direction is to merge the games creatively, with engineering 
 
 Crafted Chaos wearables currently add colored bands to the native sprites; they do **not** grant invented Fracture armor/weapon/spell stats. Native equipment/loot and crafted objects remain distinct inventory systems behind one phone view. Native gear gifting, arbitrary terrain manipulation, the old campaigns and full NPC goals/routines are not ported. The newer bounded NPC/DM memory loop is described above. This is a playable integration slice, not completion of every mechanic in both games.
 
+## Disappearing TV story timeline — November 1
+
+- [x] The authoritative 80-event bridge history now derives a conservative, scene-aware story timeline from confirmed combat, native-object, doorway, adventure and public recap outcomes. It exposes stable IDs, original server timestamps, seven-second ordinary lifetimes and twelve-second major-event lifetimes through `/tv-state` without changing phone receipts or adding AI requests.
+- [x] The TV replaces the raw mechanical recap box with a compact three-row fantasy HUD. Keyed rows enter once, fade for one second when their server expiry arrives, and disappear when empty; connection messages stay in the controls area. Dice, modifiers, damage, commands and private dialogue remain off the TV.
+- [x] Focused bridge coverage verifies filtering, scene privacy, selected follow-scene filtering, independent simultaneous events, three-entry caps, expiry, major timing and DM narration updates without duplicate IDs or lifetime resets. A pinned client build and a real 1920×1080 disposable TV inspection passed with no browser errors.
+- [ ] Physical Mac/phone acceptance remains open; this feature does not change the release gate.
+
 ## Earlier October 30 object/NPC CI checkpoint (source 84d2178)
 
 - **Core authority:** original Chaos crafting/ownership/advantage/theft rules execute in a separate Fracture object store. Native Fracture retains movement/combat authority. Objects cannot cross native zone boundaries or blocked two-step transfer paths. No original saves or Colyseus traffic were modified.
@@ -530,7 +537,7 @@ Crafted Chaos wearables currently add colored bands to the native sprites; they 
 | Personal STOP | Cancels only its actor's path/combat immediately, including during the reaction window. Another phone cannot interrupt it; engine position remains still afterward. Damage already dealt is not rolled back. |
 | Real combat | Rat HP 29 → 0, death, player damage and gold verified. Native formulas/range/stun/death rules retained; no rat-stat nerf. Enemy minimum cooldowns are read from the pinned native client. The earlier physical rat report is not conclusively classified as a single upstream bug versus cadence/balance. |
 | Adventure | Native NPC response, optional rat quest completed 3/3 and awarded its real reward; sword pickup/equip; Western Dwelling entry/exit; Glitch Woods travel. A suggested twenty-minute route is in the adapter README. No forced Crown Job or invented map. |
-| Shared TV | Native renderer/world, automatic read-only spectator, real player colors/names, follow/full-screen controls, corner log. Website HUD hidden; spectators hidden even with two TVs. QR in empty lobby and private host setup. |
+| Shared TV | Native renderer/world, automatic read-only spectator, real player colors/names, follow/full-screen controls, disappearing scene-aware story timeline. Website HUD hidden; spectators hidden even with two TVs. QR in empty lobby and private host setup. |
 | Party pacing | Ten-second declaration/reaction window with parallel actors and immutable declarations. Movement/observation and personal STOP remain available. Native combat randomness retained; Chaos crafting uses server D20 rolls without overriding Fracture combat. |
 | Bounded local rally (experimental) | New opt-in phone vote: strict majority of a frozen electorate (2–20 nearby, living, same-zone actors) approves **native per-character movement** toward the proposer's real location, within twelve tiles. Rejected/expired votes do not move actors. Every character can STOP. Engine receipts, not the vote, establish actual arrival. This is **not** original Dawn Bell major travel or campaign voting parity. |
 | NPC sidecar memory (experimental) | Native NPCs can receive original Chaos-crafted objects; original D20 theft rolls and persistent trust/history are verified with fixtures. The native Fracture NPC dialogue/AI and witnessed visual response do not consult that memory. This is not complete NPC parity. |
@@ -545,6 +552,7 @@ Crafted Chaos wearables currently add colored bands to the native sprites; they 
 - [x] Pinned Fracture `642c00a8a2d3a95979e85bbfa3f62deee611a4a6`, pnpm `10.34.9`, production client/server builds.
 - [x] **71 Vitest files / 3,329 tests**, **69 focused Node checks**, original Chaos offline verification.
 - [x] Actual browser phone/TV flow, recovered phones, real quest completion/reward, screenshots, no browser errors.
+- [x] Disappearing TV story timeline: three-row cap, server-clock expiry, scene/privacy filtering, independent simultaneous events, and DM update deduplication; pinned client/server build passed and the 1920×1080 overlay was visually inspected.
 - [x] Real-server rejection of wrong keys, cross-actor identity, expired/replayed actions, invented damage and arbitrary teleport.
 - [x] **New native majority-rally integration:** in disposable pinned Fracture, two distinct authenticated actors, one real tile movement, rejected outsider vote, strict two-person quorum, and separate native group `go` action **succeeded and reached the proposer**. [GitHub Actions integration run 40977145132](https://github.com/sifuentestrey/chaos-party-rpg/actions/runs/40977145132), October 29 local / October 30 UTC. This is cloud/Linux real-server proof, not a physical Mac playtest.
 - [x] **20 actors / 20 minutes**, plus real reconnect, scoped interruption, smaller final result-payload follow-up and cloud resource sample.

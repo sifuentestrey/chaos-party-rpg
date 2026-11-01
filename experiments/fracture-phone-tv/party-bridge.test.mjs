@@ -40,6 +40,47 @@ test('host may bench and restore registered characters without deleting saves; 2
  assert.ok((fs.statSync(path.join(dir,'room.json')).mode&0o077)===0);
 });
 
+test('TV story timeline filters mechanics, preserves phone receipts, and expires from server time',async t=>{
+ const {app,base,sockets}=await setup(t);const {token}=await(await post(base,'/pair',{key:app.room.join,name:'Ava'})).json();await new Promise(r=>setTimeout(r,20));
+ const s=app.sessions.get(token),scene={id:'Town:0,0:32,18',zone:'Town',x:0,y:0,width:32,height:18};
+ s.actor={...s.actor,ready:true,zone:'Town',x:12,y:12,scene,nearby:[]};sockets[0].mockActor=s.actor;
+ const id='story-move';s.results.set(id,{status:'received'});s.attempts.set(id,{verb:'creative',text:'move the bench'});
+ s.socket.emit('chaos:receipt',{id,status:'succeeded',message:'D20 18 / 10: the bench shifts.',object:{verb:'move',name:'bench'},actor:s.actor});
+ const tv=await(await fetch(base+'/tv-state?key=tv-key')).json();assert.equal(typeof tv.serverNow,'number');assert.equal(tv.timeline.length,1);assert.match(tv.timeline[0].text,/Ava shifts the bench/);assert.equal(/D20|\b10\b|damage/i.test(JSON.stringify(tv.timeline)),false);
+ const phone=await(await fetch(base+'/state?token='+token)).json();assert.match(phone.results.find(r=>r.id===id).message,/D20 18/,'mechanical receipt remains on the phone');
+ const entry=app.room.events.find(e=>e.timelineId===id);assert.equal(entry.timelineExpiresAt-entry.at,7000);const firstAt=tv.timeline[0].at,firstExpiry=tv.timeline[0].expiresAt;entry.timelineExpiresAt=Date.now()-1;
+ const expired=await(await fetch(base+'/tv-state?key=tv-key')).json();assert.deepEqual(expired.timeline,[]);assert.equal(firstAt,tv.timeline[0].at);assert.equal(firstExpiry,tv.timeline[0].expiresAt);
+});
+
+test('TV timeline keeps simultaneous outcomes independent, hides other scenes, caps at three, and marks major changes',async t=>{
+ const {app,base,sockets}=await setup(t);const pair=async name=>(await(await post(base,'/pair',{key:app.room.join,name})).json()).token;const ava=await pair('Ava'),bryn=await pair('Bryn');await new Promise(r=>setTimeout(r,25));
+ const sceneA={id:'Town:0,0:32,18',zone:'Town',x:0,y:0,width:32,height:18},sceneB={id:'Town:32,0:32,18',zone:'Town',x:32,y:0,width:32,height:18};
+ const a=app.sessions.get(ava),b=app.sessions.get(bryn);a.actor={...a.actor,ready:true,zone:'Town',x:12,y:12,scene:sceneA};b.actor={...b.actor,ready:true,zone:'Town',x:34,y:12,scene:sceneB};sockets[0].mockActor=a.actor;sockets[1].mockActor=b.actor;
+ const emit=(s,socket,id,object,attempt)=>{s.results.set(id,{status:'received'});s.attempts.set(id,{verb:'creative',text:attempt});socket.emit('chaos:receipt',{id,status:'succeeded',message:'Confirmed native outcome.',object,actor:s.actor});};
+ emit(a,sockets[0],'event-a',{verb:'move',name:'bench'},'move the bench');
+ emit(b,sockets[1],'event-b',{verb:'ignite',name:'curtains'},'ignite curtains');
+ let tv=await(await fetch(base+'/tv-state?key=tv-key')).json();assert.equal(tv.timeline.length,1,'the displayed scene does not leak the other scene');assert.match(tv.timeline[0].text,/Ava shifts the bench/);assert.equal(tv.timeline[0].id,'event-a');
+ b.actor={...b.actor,scene:sceneA,x:14};emit(b,sockets[1],'event-b-visible',{verb:'ignite',name:'curtains'},'ignite curtains');
+ tv=await(await fetch(base+'/tv-state?key=tv-key&actorId='+encodeURIComponent(b.actor.id))).json();assert.ok(tv.timeline.some(e=>e.id==='event-b-visible'),'the TV can filter against its selected follow target');
+ for(let i=0;i<4;i++)emit(a,sockets[0],'cap-'+i,{verb:'move',name:'crate-'+i},'move crate');
+ tv=await(await fetch(base+'/tv-state?key=tv-key')).json();assert.equal(tv.timeline.length,3);assert.equal(new Set(tv.timeline.map(e=>e.id)).size,3);assert.equal(/D20|damage|difficulty/i.test(JSON.stringify(tv.timeline)),false);
+ const major=app.room.events.find(e=>e.timelineId==='event-b-visible');assert.equal(major.timelineExpiresAt-major.at,12000);
+});
+
+test('TV summarizes confirmed NPC contact without exposing private dialogue',async t=>{
+ const {app,base,sockets}=await setup(t);const {token}=await(await post(base,'/pair',{key:app.room.join,name:'Ava'})).json();await new Promise(r=>setTimeout(r,20));const s=app.sessions.get(token),scene={id:'Town:0,0:32,18',zone:'Town',x:0,y:0,width:32,height:18};
+ s.actor={...s.actor,ready:true,zone:'Town',x:12,y:12,scene,nearby:[{id:'guard-1',name:'guard',type:'npc'}]};sockets[0].mockActor=s.actor;s.results.set('talk-1',{status:'received'});s.attempts.set('talk-1',{verb:'talk',target:'guard-1',text:'talk to guard'});
+ s.socket.emit('chaos:receipt',{id:'talk-1',status:'succeeded',message:'Guard: Keep this private.',interaction:'talk',actor:s.actor});const tv=await(await fetch(base+'/tv-state?key=tv-key')).json();assert.equal(tv.timeline.length,1);assert.equal(tv.timeline[0].text,'Ava speaks with guard.');assert.equal(tv.timeline[0].text.includes('Keep this private'),false);
+});
+
+test('matching DM narration updates a story entry without duplicating or extending it',async t=>{
+ const {app,base,sockets}=await setup(t,{dmFactory:()=>({enabled:true,narrate:async()=>({text:'The rat falls silent.',dialogue:[{name:'Guard',line:'Keep this secret.'}]}),close(){}})});
+ const {token}=await(await post(base,'/pair',{key:app.room.join,name:'Ava'})).json();await new Promise(r=>setTimeout(r,20));const s=app.sessions.get(token),scene={id:'Town:0,0:32,18',zone:'Town',x:0,y:0,width:32,height:18};
+ s.actor={...s.actor,ready:true,zone:'Town',x:12,y:12,scene,nearby:[{id:'rat-1',name:'rat',type:'mob'}]};sockets[0].mockActor=s.actor;s.results.set('combat-1',{status:'received'});s.attempts.set('combat-1',{verb:'attack',text:'attack rat'});
+ s.socket.emit('chaos:receipt',{id:'combat-1',status:'succeeded',message:'D20 19 / 10: rat HP 4 -> 0',combat:{target:'rat-1',before:4,after:0,dead:true},actor:s.actor});
+ const before=await(await fetch(base+'/tv-state?key=tv-key')).json();const original=before.timeline[0];await new Promise(r=>setTimeout(r,30));const after=await(await fetch(base+'/tv-state?key=tv-key')).json();assert.equal(after.timeline.length,1);assert.equal(after.timeline[0].id,original.id);assert.equal(after.timeline[0].at,original.at);assert.equal(after.timeline[0].expiresAt,original.expiresAt);assert.equal(after.timeline[0].text,'The rat falls silent.');assert.equal(after.timeline[0].text.includes('Keep this secret'),false,'private dialogue stays on the acting phone');
+});
+
 test('rapid combat receipts are buffered without losing the event log',async t=>{
  const {app,base,dir}=await setup(t);
  const paired=await post(base,'/pair',{key:app.room.join,name:'Fighter'});

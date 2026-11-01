@@ -14,7 +14,7 @@ import {parseIntent,resolveVisibleTarget} from './action-contract.ts';
 import {proposeRally,proposeExpedition,expeditionEligible,voteRally,settleRally,rallyView} from './party-rally.mjs';
 import {preferredLanIp} from './lan-address.mjs';
 import {familyGuide} from './family-guide.mjs';
-import {chooseScene} from './scene-view.mjs';
+import {chooseScene,sceneAt} from './scene-view.mjs';
 import {ITEM_NAMES,itemAsset} from './phone-items.mjs';
 import {phoneMarkup} from './phone-layout.mjs';
 import {creatorMarkup} from './character-creator.mjs';
@@ -23,6 +23,8 @@ import {ROLES,PERKS,validRole,validPerk} from './party-roles.mjs';
 import {startAdventure,replayAdventure,receiptEvidence,zoneEvidence,advanceAdventure,adventureView,proposeTrialChoice,voteTrialChoice,settleTrialChoice,trialChoiceView} from './party-adventure.mjs';
 import {stagedAction,isReaction,publicDeclarations,REACTION_MS} from './party-declaration.mjs';
 const token=()=>randomBytes(24).toString('hex');
+const STORY_EVENT_MS=7000;
+const STORY_MAJOR_EVENT_MS=12000;
 const lanIp=()=>preferredLanIp();
 const phoneHost=req=>{const host=(req.headers.host||'localhost').split(':')[0];return ['localhost','127.0.0.1'].includes(host)?lanIp():host;};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -61,11 +63,76 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
   if(res.destroyed||!session||session.player.parked){eventClients.delete(res);if(!res.destroyed)res.end();continue;}
   try{res.write('event: change\\ndata: {}\\n\\n'.replaceAll('\\n','\n'));}catch{eventClients.delete(res);res.end();}
  }}
- function record(event){events.push({...event,at:Date.now()});if(events.length>80)events.shift();room.events=events;scheduleEventFlush();notifyClients();}
+ const sceneForActor=actor=>actor?.scene||(
+  actor&&typeof actor.zone==='string'&&Number.isFinite(actor.x)&&Number.isFinite(actor.y)
+   ?sceneAt(actor)
+   :null
+ );
+ const cleanStory=value=>String(value||'').replace(/[\u0000-\u001f\u007f<>]/g,' ').replace(/\s+/g,' ').trim().slice(0,220);
+ const storyName=value=>cleanStory(value).slice(0,48);
+ const combatTargetName=(receipt,actor)=>{
+  const nearby=actor?.nearby?.find(e=>String(e.id)===String(receipt?.combat?.target));
+  if(nearby?.name)return storyName(nearby.name);
+  if(receipt?.combat?.targetName)return storyName(receipt.combat.targetName);
+  const message=String(receipt?.message||'');
+  return storyName(message.match(/^(.+?)(?:\s+HP\b|\s+defeated\b)/i)?.[1]);
+ };
+ const nearbyName=(attempt,actor)=>storyName(actor?.nearby?.find(e=>String(e.id)===String(attempt?.target))?.name||attempt?.target);
+ function storyDescriptor({player,receipt,attempt,actor}){
+  const status=receipt?.status,scene=sceneForActor(actor),name=storyName(player);
+  if(!name||!scene)return null;
+  if(receipt?.combat&&['started','succeeded'].includes(status)&&Number(receipt.combat.before)>Number(receipt.combat.after)){
+   const target=combatTargetName(receipt,actor);if(!target)return null;
+   return {key:`combat:${receipt.id}`,text:receipt.combat.dead?`${name} brings down ${target}.`:`${name} strikes ${target}.`,scene,major:!!receipt.combat.dead};
+  }
+  const object=receipt?.object;
+  if(object&&status==='succeeded'){
+   const target=storyName(object.name);if(!target)return null;
+   const text={move:`${name} shifts the ${target}.`,ignite:`${name} sets the ${target} ablaze.`,extinguish:`${name} quenches the ${target}.`,splash:`${name} quenches the ${target}.`,break:`${name} breaks the ${target}.`,fell:`${name} fells the ${target}.`,repair:`${name} repairs the ${target}.`}[object.verb];
+   if(text)return {key:`world:${receipt.id}`,text,scene,major:['ignite','break','fell','repair'].includes(object.verb)};
+  }
+  if(status==='succeeded'&&['enter','exit'].includes(attempt?.verb))return {key:`door:${receipt.id}`,text:`${name} slips through the doorway.`,scene,major:false};
+  if(status==='succeeded'&&receipt?.interaction==='talk'){const target=nearbyName(attempt,actor);if(!target)return null;return {key:`talk:${receipt.id}`,text:`${name} speaks with ${target}.`,scene,major:false};}
+  if(player==='Adventure'&&['progress','completed'].includes(status)&&receipt.message){
+   const text=cleanStory(receipt.message);if(text)return {key:`adventure:${receipt.id||text}`,text,public:true,major:status==='completed'};
+  }
+  return null;
+ }
+ function record(event,timeline=null){
+  const at=Date.now(),next={...event,at};
+  if(timeline?.text){
+   const existing=events.slice().reverse().find(e=>e.timelineKey===timeline.key&&Number(e.timelineExpiresAt)>at);
+   if(existing){existing.timelineText=cleanStory(timeline.text);if(timeline.major&&!existing.timelineMajor)existing.timelineExpiresAt=Math.max(existing.timelineExpiresAt,existing.at+STORY_MAJOR_EVENT_MS);existing.timelineMajor=!!timeline.major;existing.timelinePublic=!!timeline.public;existing.timelineScene=timeline.scene||existing.timelineScene;}
+   else{
+    next.timelineId=event.timelineId||event.id||randomUUID();
+    next.timelineKey=timeline.key||next.timelineId;
+    next.timelineText=cleanStory(timeline.text);
+    next.timelineMajor=!!timeline.major;
+    next.timelinePublic=!!timeline.public;
+    next.timelineScene=timeline.scene||null;
+    next.timelineExpiresAt=at+(timeline.major?STORY_MAJOR_EVENT_MS:STORY_EVENT_MS);
+   }
+  }
+  events.push(next);if(events.length>80)events.shift();room.events=events;scheduleEventFlush();notifyClients();
+ }
+ function updateTimelineNarration(canonicalId,text){
+  const safe=cleanStory(text);if(!safe)return false;
+  const event=events.slice().reverse().find(e=>e.timelineId===canonicalId||e.id===canonicalId||e.timelineKey===`world:${canonicalId}`||e.timelineKey===`combat:${canonicalId}`||e.timelineKey===`door:${canonicalId}`);
+  if(!event?.timelineText)return false;
+  event.timelineText=safe;room.events=events;scheduleEventFlush();notifyClients();return true;
+ }
+ const timelineForTV=(sceneOverride=null)=>{
+  const now=Date.now(),scene=sceneOverride||partyScene();
+  return events.filter(e=>e.timelineText&&Number(e.timelineExpiresAt)>now&&
+   (e.timelinePublic||(e.timelineScene&&scene&&e.timelineScene.zone===scene.zone&&e.timelineScene.x===scene.x&&e.timelineScene.y===scene.y)))
+   .sort((a,b)=>a.at-b.at).slice(-3).map(e=>({id:e.timelineId,at:e.at,expiresAt:e.timelineExpiresAt,text:e.timelineText}));
+ };
  function progressAdventure(evidence){
   const change=advanceAdventure(room.adventure,evidence);
   if(!change)return;
-  persist();record({player:'Adventure',status:change.completed?'completed':'progress',message:change.change});
+  const status=change.completed?'completed':'progress';
+  const text=cleanStory(change.change);
+  persist();record({player:'Adventure',status,message:text},{key:`adventure:${room.adventure?.instanceId||'trial'}:${text}`,text,public:true,major:change.completed});
  }
  function cancelPending(s,reason='Your announced action was cancelled.'){
   const staged=pending.get(s.player.token);if(!staged)return false;
@@ -114,7 +181,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
   }});
   socket.on('chaos:receipt',r=>{
    if(!session.results.has(r.id)){if(!/^(travel|rejoin)-/.test(String(r.id)))return;session.results.set(r.id,{status:'received'});}
-   const {actor,...outcome}=r;session.results.set(r.id,outcome);if(actor){session.actor=actor;watchPacing(session);}if(['succeeded','failed'].includes(r.status))for(const peer of sessions.values())if(peer!==session&&!peer.player.parked)refresh(peer);
+   const {actor,...outcome}=r;const eventActor=actor?{...session.actor,...actor}:session.actor;session.results.set(r.id,outcome);if(actor){session.actor=eventActor;watchPacing(session);}if(['succeeded','failed'].includes(r.status))for(const peer of sessions.values())if(peer!==session&&!peer.player.parked)refresh(peer);
    // The native engine, not merely receipt of phone text, authorizes the
    // first-valid-action declaration. Rejections never waste a reaction turn.
    const declaration=session.declarations.get(r.id);
@@ -132,13 +199,13 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
    const storyEvent=r.event||(attempt&&(meaningful.has(attempt.verb)||['ability','enter','exit'].includes(attempt.verb))?{attempt:attempt.text}:null);
    if(storyEvent&&['succeeded','failed','blocked'].includes(r.status)&&!(actor?.pacing?.enabled&&actor.pacing.phase!=='exploration')){
     session.storyController?.abort();const storyController=new AbortController();session.storyController=storyController;session.story={id:r.id,text:r.message,mode:'offline'};const epoch=session.epoch;
-    void dm.narrate({...r,event:storyEvent,actor:{...(actor||session.actor),partyScene:partyScene()},player:player.name},{signal:storyController.signal}).then(story=>{
+    void dm.narrate({...r,event:storyEvent,actor:{...(eventActor||{}),partyScene:partyScene()},player:player.name},{signal:storyController.signal}).then(story=>{
      if(!story||session.epoch!==epoch||session.story?.id!==r.id)return;
      const message=story.text+(story.dialogue.length?' '+story.dialogue.map(d=>d.name+': '+d.line).join(' '):'');
-     session.story={id:r.id,text:message,mode:'optional AI'};record({player:'DM',status:'story',canonicalId:r.id,message});
+     session.story={id:r.id,text:message,mode:'optional AI'};if(r.interaction!=='talk')updateTimelineNarration(r.id,story.text);record({player:'DM',status:'story',canonicalId:r.id,message});
     });
    }
-   record({player:player.name,...r,actor:undefined});
+   record({player:player.name,...r,actor:undefined},storyDescriptor({player:player.name,receipt:r,attempt,actor:eventActor}));
   });
   socket.on('chaos:pacing-state',update=>{if(update.actor)session.actor=update.actor;if(!session.actor)return;session.actor.pacing=update.pacing||update;watchPacing(session);});
   socket.on('chaos:position',s=>{session.actor={...session.actor,...s};if(!session.player.parked)progressAdventure(zoneEvidence(session.actor,session.player.name,session.player.token));});
@@ -186,7 +253,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
   if(p.phase==='recap'&&p.recap&&recapKey!==key){recapKey=key;
    void dm.recapRound?.(p.recap,{signal:AbortSignal.timeout(3000)}).then(story=>{
     if(!story||nativePacing?.instanceId!==p.instanceId||nativePacing.roundId!==p.roundId||nativePacing.phase!=='recap')return;
-    sharedRecap={instanceId:p.instanceId,roundId:p.roundId,text:story.text};record({player:'DM',status:'story',message:story.text});
+    sharedRecap={instanceId:p.instanceId,roundId:p.roundId,text:story.text};record({player:'DM',status:'story',message:story.text},{key:`recap:${p.instanceId}:${p.roundId}`,text:story.text,public:true,major:true});
    }).catch(()=>{});
   }
  }
@@ -269,6 +336,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
   }},1000);
  let sharedScene=null;
  const partyScene=()=>{if(nativePacing?.enabled&&nativePacing.area)return nativePacing.area;const view=chooseScene([...sessions.values()].filter(s=>!s.player.parked&&s.socket.connected&&s.actor?.ready).map(s=>s.actor),sharedScene);if(!view)return null;const {id,zone,x,y,width,height}=view;sharedScene={id,zone,x,y,width,height};return sharedScene;};
+ const sceneForDisplay=actorId=>{if(actorId!==null&&actorId!==undefined&&String(actorId)!==''){const watched=[...sessions.values()].find(s=>!s.player.parked&&s.socket.connected&&s.actor?.ready&&String(s.actor.id)===String(actorId));if(watched?.actor?.scene)return watched.actor.scene;}return partyScene();};
  const publicDM=()=>{const status=dm.status?.();return {enabled:dm.enabled===true,state:status?.state||'offline',message:status?.message||'Offline rules are available.'};};
  const publicPlayer=s=>({looks:s.player.looks||[],appearance:s.player.appearance||null,profileReady:true,name:s.player.name,color:s.player.color,role:validRole(s.player.role)?s.player.role:null,perk:validPerk(s.player.perk)?s.player.perk:null,actor:s.actor,error:s.error,story:s.story});
  const roster=()=>[...sessions.values()].filter(s=>!s.player.parked).map(publicPlayer);
@@ -495,7 +563,7 @@ let changes=null;function connectChanges(){if(changes){changes.close();changes=n
     if(url.searchParams.get('key')!==tvKey)return json(res,403,{error:'Private TV link required'});
     const origin=req.headers.origin;
     if(origin){const u=new URL(origin);if(u.protocol!=='http:'||Number(u.port)!==fracturePort||u.hostname!==(req.headers.host||'').split(':')[0])return json(res,403,{error:'Invalid TV origin'});res.setHeader('access-control-allow-origin',origin);}
-    return json(res,200,{pacing:publicPacing(),scene:partyScene(),phase:room.phase,players:roster(),adventure:adventureView(room.adventure,{allowCraft:false}),choiceVote:publicChoice(),rally:publicRally(),declarations:publicDeclarations(pending),events:events.slice(-8),lobby:{join:`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`,qr:qrSvg(`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`)},turn:room.turn&&room.turn.deadline>Date.now()?{actor:room.turn.actor,text:room.turn.text,deadline:room.turn.deadline}:null});
+    const scene=sceneForDisplay(url.searchParams.get('actorId'));return json(res,200,{serverNow:Date.now(),timeline:timelineForTV(scene),pacing:publicPacing(),scene,phase:room.phase,players:roster(),adventure:adventureView(room.adventure,{allowCraft:false}),choiceVote:publicChoice(),rally:publicRally(),declarations:publicDeclarations(pending),events:events.slice(-8),lobby:{join:`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`,qr:qrSvg(`http://${phoneHost(req)}:${server.address().port}/join?key=${room.join}`)},turn:room.turn&&room.turn.deadline>Date.now()?{actor:room.turn.actor,text:room.turn.text,deadline:room.turn.deadline}:null});
    }
    if(p==='/host/pacing-state'&&req.method==='GET'){if(url.searchParams.get('key')!==room.host)return json(res,403,{error:'Private host required'});return json(res,200,publicPacing());}
    if(p==='/pacing'&&req.method==='POST'){

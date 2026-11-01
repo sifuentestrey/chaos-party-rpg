@@ -31,7 +31,7 @@ try{
  assert.notEqual(current.actor.zone,before.actor.zone,'Native engine must actually change buildings');
  const final=await dmStatus(),calls=connected.quota.remaining-final.quota.remaining;assert.ok(calls>=2,'Require actual live interpretation and post-result narration');
  await phone.waitForFunction(()=>document.getElementById('dm-story').textContent.includes('optional AI'));
- await tv.waitForFunction(()=>document.getElementById('chaos-tv-log').textContent.includes('DM:'));
+ await tv.waitForFunction(()=>{const timeline=document.getElementById('chaos-story-timeline');return !!timeline&&!timeline.hidden&&!!timeline.textContent.trim();});
  await phone.screenshot({path:path.join(out,'live-dm-phone.png'),fullPage:true});await tv.screenshot({path:path.join(out,'live-dm-tv.png')});
  // Crop only the AI card: the rest of the private host page contains recovery links and QR codes.
  await host.locator('.card').filter({has:host.locator('#dm-settings')}).screenshot({path:path.join(out,'connected-host-card.png')});
