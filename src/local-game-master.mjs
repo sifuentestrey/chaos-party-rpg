@@ -1,7 +1,7 @@
 import {actionContract,ACTION_SYSTEM,routeActionProposal} from './action-contract.mjs';
 import {createFreeAIBudget} from './free-ai-budget.mjs';
 import {NARRATION_SCHEMA,NARRATION_SYSTEM,narrationContext,validateNarration} from './dm-narrator.mjs';
-import {withChaosPartyKnowledge} from './chaos-party-knowledge.mjs';
+import {CHAOS_PARTY_KNOWLEDGE_VERSION,gameKnowledgeContext,withChaosPartyKnowledge} from './chaos-party-knowledge.mjs';
 import {relevantDMMemory} from '../public/dm-memory.js';
 import {WORLD_PLAN_SCHEMA,voicePacification} from '../public/world-ai.js';
 import {visibleItems,visibleCreatures,currentLocation} from '../public/world-items.js';
@@ -27,7 +27,8 @@ export function localAIConfig(env=process.env){
 }
 export function aiContext(room,actorId){
   const actor=room.players.find(p=>p.id===actorId);
-  return {scene:room.world.expedition?.locations[currentLocation(room)]?.name||'The Tipsy Wyvern tavern',attempt:room.turn.action,actor:{id:actor.id,name:actor.name,role:actor.role,hp:actor.hp,inventory:actor.inventory},
+  const scene=room.world.expedition?.locations[currentLocation(room)]?.name||'The Tipsy Wyvern tavern';
+  return {knowledge:gameKnowledgeContext({scene}),scene,attempt:room.turn.action,actor:{id:actor.id,name:actor.name,role:actor.role,hp:actor.hp,inventory:actor.inventory},
     world:room.world.expedition?{location:currentLocation(room),exits:room.world.expedition.locations[currentLocation(room)].exits,objects:visibleItems(room).map(i=>({id:i.id,name:i.name,type:i.type,material:i.material,condition:i.condition,owner:i.ownerId,parts:i.parts,open:i.open})),creatures:visibleCreatures(room).map(c=>({id:c.id,name:c.name,attitude:c.attitude,hp:c.hp,maxHp:c.maxHp,injuries:c.injuries,parts:c.parts})),adventure:room.world.expedition.regions[currentLocation(room)]?.quest}:null,
     objects:Object.entries(currentLocation(room)==='tavern'?OBJECTS:{}).map(([id,o])=>{const s=objectState(room.world,id);return {id,name:o.name,material:o.material,at:o.position,...(o.portable?{portable:true}:{}),...(o.lit?{lit:s.lit}:{}),...(s.condition!=='intact'?{condition:s.condition}:{}),...(s.open?{open:true}:{}),...(s.spilled?{spilled:true}:{}),...(s.offset.some(n=>n)?{offset:s.offset}:{})};}),
     people:[...Object.entries(currentLocation(room)==='tavern'?{guard:'Captain Brick',bartender:'Marnie',goblin:'the fiddler'}:{}).map(([id,name])=>({id,name,position:landmarks[id],...(room.world.npcs?.[id]||{})})),...room.players.map((p,i)=>({id:p.id,name:p.name,position:seats[i],hp:p.hp,cover:!!p.cover}))],
@@ -39,7 +40,7 @@ export function createLocalGameMaster({env=process.env,fetcher=fetch,maxInferenc
   const config=localAIConfig(env),pending=new Map();let busy=false,narrating=false,closed=false,cooldownUntil=0;
   const hosted=config.provider==='groq-free',contractEnabled=hosted&&env.CHAOS_AI_ACTION_CONTRACT==='on',missingKey=hosted&&!config.apiKey;
   const budget=hosted&&config.apiKey?createFreeAIBudget(dataDir,{now}):null;
-  let status={provider:config.provider||'local',hosted,enabled:config.enabled,narrationEnabled:!!config.narrationEnabled,available:false,model:config.model||null,state:config.enabled?'disconnected':'disabled',message:config.enabled?'AI is not connected. Rules remain available.':'AI is switched off.'};
+  let status={provider:config.provider||'local',hosted,enabled:config.enabled,narrationEnabled:!!config.narrationEnabled,available:false,model:config.model||null,knowledgeVersion:CHAOS_PARTY_KNOWLEDGE_VERSION,state:config.enabled?'disconnected':'disabled',message:config.enabled?'AI is not connected. Rules remain available.':'AI is switched off.'};
   const getStatus=()=>({...status,...(budget?{allowance:budget.status()}:{} )});
   const cancelNarration=()=>{for(const [controller,kind] of pending)if(kind==='narration')controller.abort();};
   const request=async(path,options={},timeout=1200,kind='check')=>{

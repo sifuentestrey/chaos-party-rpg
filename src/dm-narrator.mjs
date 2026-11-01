@@ -1,7 +1,7 @@
 import {currentLocation,visibleItems,visibleCreatures} from '../public/world-items.js';
 import {relevantDMMemory} from '../public/dm-memory.js';
 import {OBJECTS,objectState} from '../public/environment.js';
-import {withChaosPartyKnowledge} from './chaos-party-knowledge.mjs';
+import {gameKnowledgeContext,withChaosPartyKnowledge} from './chaos-party-knowledge.mjs';
 
 export const NARRATION_SCHEMA={type:'object',properties:{turnId:{type:'string'},outcome:{type:'string',enum:['success','failure','blocked']},
   text:{type:'string',maxLength:340},dialogue:{type:'array',maxItems:2,items:{type:'object',properties:{speakerId:{type:'string'},line:{type:'string',maxLength:160}},required:['speakerId','line'],additionalProperties:false}}},
@@ -33,7 +33,8 @@ export function narrationContext(room){
   const target={...(targetId?{id:targetId}:{}),kind:q.target?.kind||'room',name:clean(q.target?.name||'the surroundings',80),
     ...(targetEntity?health(targetEntity):targetNPC?health(targetNPC):targetItem?{...health(targetItem),condition:clean(targetItem.condition,40),owner:targetItem.ownerId,equipped:!!targetItem.equipped}:targetFixture?{condition:targetFixture.condition,lit:!!targetFixture.lit,open:!!targetFixture.open}: {})};
   const actor=room.players.find(p=>p.id===q.playerId);
-  const context={version:1,turnId:q.id,scene:{id:location,name:clean(exp?.locations[location]?.name||'The Tipsy Wyvern tavern',80)},
+  const scene={id:location,name:clean(exp?.locations[location]?.name||'The Tipsy Wyvern tavern',80)};
+  const context={version:1,knowledge:gameKnowledgeContext({scene}),turnId:q.id,scene,
     actor:{id:q.playerId,name:clean(q.name,18),...(actor?{role:clean(actor.role,32),...health(actor)}:{})},target,attempt:clean(q.action,180),
     outcome:{status:q.blocked?'blocked':q.success?'success':'failure',canonical:clean(q.narration,900),changes:q.changes.slice(0,10).map(s=>clean(s,100)),roll:q.roll,check:q.check},
     reactions:q.reactions.slice(0,20).map(r=>({name:clean(room.players.find(p=>p.id===r.playerId)?.name||'A player',18),kind:r.kind,text:clean(r.text,120)})),speakers,

@@ -348,7 +348,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
  let sharedScene=null;
  const partyScene=()=>{if(nativePacing?.enabled&&nativePacing.area)return nativePacing.area;const view=chooseScene([...sessions.values()].filter(s=>!s.player.parked&&s.socket.connected&&s.actor?.ready).map(s=>s.actor),sharedScene);if(!view)return null;const {id,zone,x,y,width,height}=view;sharedScene={id,zone,x,y,width,height};return sharedScene;};
  const sceneForDisplay=actorId=>{if(actorId!==null&&actorId!==undefined&&String(actorId)!==''){const watched=[...sessions.values()].find(s=>!s.player.parked&&s.socket.connected&&s.actor?.ready&&String(s.actor.id)===String(actorId));if(watched?.actor?.scene)return watched.actor.scene;}return partyScene();};
- const publicDM=()=>{const status=dm.status?.();return {enabled:dm.enabled===true,state:status?.state||'offline',message:status?.message||'Offline rules are available.'};};
+ const publicDM=()=>{const status=dm.status?.();return {enabled:dm.enabled===true,state:status?.state||'offline',provider:status?.provider||'groq-free',model:status?.model||null,knowledgeVersion:status?.knowledgeVersion||null,message:status?.message||'Offline rules are available.'};};
  const publicPlayer=s=>({looks:s.player.looks||[],appearance:s.player.appearance||null,profileReady:true,name:s.player.name,color:s.player.color,role:validRole(s.player.role)?s.player.role:null,perk:validPerk(s.player.perk)?s.player.perk:null,actor:s.actor,error:s.error,story:s.story});
  const roster=()=>[...sessions.values()].filter(s=>!s.player.parked).map(publicPlayer);
  const json=(res,code,value)=>{res.writeHead(code,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify(value));};
