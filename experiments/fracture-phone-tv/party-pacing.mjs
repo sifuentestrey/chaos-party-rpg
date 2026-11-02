@@ -3,7 +3,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
-export const PACING_TIMES=Object.freeze({planning:30000,preparation:7000,action:5000,recap:4000,travel:60000});
+// Keep the shared decision window short enough for a large party to stay in
+// the moment. Action remains the full execution window; travel continues to
+// use the planning duration when a group vote opens.
+export const PACING_TIMES=Object.freeze({planning:15000,preparation:3000,action:5000,recap:2000,travel:60000});
 export function createSimulationClock({file=null,wall=()=>Date.now()}={}){
  let offset=0,pausedAt=null,recovered=false;
  if(file&&fs.existsSync(file)){

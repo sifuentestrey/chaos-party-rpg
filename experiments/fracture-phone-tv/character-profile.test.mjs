@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {DEFAULT_APPEARANCE,validateAppearance,randomAppearance,STARTERS,BODIES,OUTFITS,ACCESSORIES,HAIR_STYLES,FACIAL_HAIR,HEADWEAR,DERIVED_HERITAGES} from './character-profile.mjs';import {recolorPixels} from './character-appearance.mjs';import {parseIntent,validIntent} from './action-contract.ts';
+import test from 'node:test';import assert from 'node:assert/strict';import {DEFAULT_APPEARANCE,validateAppearance,randomAppearance,STARTERS,BODIES,OUTFITS,ACCESSORIES,HAIR_STYLES,FACIAL_HAIR,HEADWEAR,DERIVED_HERITAGES} from './character-profile.mjs';import {recolorPixels,appearanceLayerAudit,hairVisible} from './character-appearance.mjs';import {parseIntent,validIntent} from './action-contract.ts';
 test('appearance accepts only the supported cosmetic choices, never paths, powers or stats',()=>{
  for(let n=0;n<50;n++){const appearance=randomAppearance();assert.deepEqual(validateAppearance(appearance),appearance);}
  for(const patch of [{outfit:'../config'},{body:'dragon'},{skin:-1},{hair:1.2},{color:16},{accessory:'weapon'},{damage:999},{version:3}])assert.throws(()=>validateAppearance({...DEFAULT_APPEARANCE,...patch}));
@@ -12,6 +12,16 @@ test('derived heritages and wardrobe layers stay within the validated native she
  for(const key of ['goatee','sideburns'])assert.equal(FACIAL_HAIR[key]!==undefined,true);
  for(const key of ['circlet','cowl','pointed','veil'])assert.equal(HEADWEAR[key]!==undefined,true);
  for(let n=0;n<40;n++)assert.doesNotThrow(()=>validateAppearance(randomAppearance(()=>n/40)));
+});
+test('all heritage, hairstyle, headwear and accessory combinations stay inside one native frame',()=>{
+ const bodies=Object.keys(BODIES),hairstyles=Object.keys(HAIR_STYLES),headwear=Object.keys(HEADWEAR),accessories=Object.keys(ACCESSORIES);
+ for(const body of bodies)for(const hairStyle of hairstyles)for(const head of headwear)for(const accessory of accessories){
+  for(const direction of ['down','left','up','right']){const audit=appearanceLayerAudit({...DEFAULT_APPEARANCE,body,hairStyle,headwear:head,accessory,outfit:'cloak',direction},{top:7,left:10,right:22});
+   for(const layer of Object.values(audit.layers))assert.ok(layer.x>=0&&layer.y>=0&&layer.x+layer.w<=32&&layer.y+layer.h<=32,`${body}/${hairStyle}/${head}/${accessory}/${direction} escaped its frame`);
+   assert.equal(audit.visible,true,`${body}/${hairStyle}/${head}/${accessory}/${direction} produced an invisible derived layer`);
+   if(hairStyle!=='original'&&hairVisible(head))assert.ok(audit.layers.hair.visible,`${body}/${hairStyle}/${head}/${direction} lost its hair layer`);
+  }
+ }
 });
 test('original palette preserves native pixels; selected skin and clothing never recolor the outline',()=>{
  const pixels=new Uint8ClampedArray(32*32*4);pixels.set([250,166,118,255],0);pixels.set([55,55,55,255],4);pixels.set([209,209,209,255],20*32*4);

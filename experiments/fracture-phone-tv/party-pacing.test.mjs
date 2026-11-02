@@ -14,9 +14,9 @@ test('all players choose concurrently; planning freezes simulation and exactly o
  assert.equal(pacing.phase,'preparation');const plans=pacing.prepare();assert.equal(plans.length,3);assert.ok(pacing.commit(1,plans));assert.equal(f.executed.length,3);assert.equal(pacing.phase,'action');assert.equal(pacing.commit(1,plans),false);
  f.advance(5000);assert.equal(pacing.phase,'recap');assert.equal(clock.now()-before,5000);f.advance(4000);assert.equal(pacing.phase,'exploration');assert.equal(clock.now()-before,5000);
 });
-test('silent players hold after 30 seconds; extensions and stale readiness use the actual round',()=>{
- const f=fixture();f.pacing.beginPlanning();f.pacing.extend(1);assert.equal(f.pacing.snapshot(f.people[0]).deadline,145000);f.advance(30000);assert.equal(f.pacing.phase,'planning');
- assert.throws(()=>f.pacing.ready(f.people[0],true,0),/closed/);f.advance(15000);assert.equal(f.pacing.phase,'preparation');f.advance(7000);assert.equal(f.pacing.phase,'action');assert.equal(f.executed.length,0);assert.equal(f.stopped.length,3);
+test('silent players hold after the short planning window; extensions and stale readiness use the actual round',()=>{
+ const f=fixture();f.pacing.beginPlanning();f.pacing.extend(1);assert.equal(f.pacing.snapshot(f.people[0]).deadline,130000);f.advance(14000);assert.equal(f.pacing.phase,'planning');
+ assert.throws(()=>f.pacing.ready(f.people[0],true,0),/closed/);f.advance(16000);assert.equal(f.pacing.phase,'preparation');f.advance(3000);assert.equal(f.pacing.phase,'action');assert.equal(f.executed.length,0);assert.equal(f.stopped.length,3);
 });
 test('STOP during preparation fences late AI, and one actor cannot cancel another choice',()=>{
  const f=fixture();f.pacing.beginPlanning();for(const p of f.people){f.pacing.queue(p,{id:'a'+p.id,intent:{verb:'attack',target:'rat'}});f.pacing.ready(p,true,1);}
