@@ -118,6 +118,13 @@ export function installChaosActor(player:any, connection:any): void {
     return moved;
   };
   const cancel=()=>{player.clearTarget();player.broadcast(new Messages.Move(player),false);};
+  // A lone player has already made the shared decision by submitting an
+  // action. Resolve that planning window immediately; larger parties still
+  // use the normal Ready flow.
+  const settleSoloPlanning=()=>{
+    if(!pacing?.enabled||pacing.phase!=='planning')return false;
+    return pacing.settleSolo?.(player)===true;
+  };
   socket.on('chaos:save',(body:any,ack:any)=>{if(typeof ack!=='function')return;if(!authorized(body))return ack({error:'Unauthorized'});try{player.saveToStorage(world.getStorageService());ack({ok:true});}catch{ack({error:'Save failed'});}});
   socket.on('chaos:state',(body:any,ack:any)=>{if(typeof ack==='function')ack(authorized(body)?{ok:true,actor:state()}:{error:'Unauthorized'});});
   const executeAction=async(body:any,ack:any,planned=false)=>{
@@ -128,16 +135,16 @@ export function installChaosActor(player:any, connection:any): void {
     if(!planned&&seen.has(body.id))return ack({error:'Duplicate action'});
     seen.add(body.id);if(seen.size>256)seen.delete(seen.values().next().value);
     const intent=body.intent,id=body.id;
-    if(intent.verb==='cancel') {if(pacing?.owns(player))pacing.cancel(player);finish('cancelled','Your previous action was cancelled.');cancel();receipt(id,'cancelled','Holding still. Your attacks and path are cancelled.');return ack({ok:true});}
+    if(intent.verb==='cancel') {if(pacing?.owns(player)){pacing.cancel(player);if(pacing.phase==='planning')pacing.settleSolo?.(player);}finish('cancelled','Your previous action was cancelled.');cancel();receipt(id,'cancelled','Holding still. Your attacks and path are cancelled.');return ack({ok:true});}
     if(!planned&&pacing?.owns(player)&&intent.verb!=='look'){
       try{pacing.admitAction(body.context);}catch(error){return ack({error:error.message});}
     }
     if(!planned&&pacing?.owns(player)&&pacing.phase==='planning'&&['enter','exit'].includes(intent.verb)){
-      try{proposeDoorTravel(intent,id);receipt(id,'queued','Vote to travel through the existing doorway. No arrival is claimed yet.');return ack({ok:true});}catch(error){return ack({error:error.message});}
+      try{proposeDoorTravel(intent,id);receipt(id,'queued','Walking through the existing doorway.');return ack({ok:true});}catch(error){return ack({error:error.message});}
     }
     if(!planned&&pacing?.owns(player)&&['preparation','action','recap'].includes(pacing.phase)&&intent.verb!=='look')return ack({error:'Watch this moment play out; STOP is always available.'});
     if(!planned&&pacing?.owns(player)&&pacing.paused&&intent.verb!=='look'){
-      try{pacing.queue(player,{id,intent,text:body.text});receipt(id,'queued','Chosen for the shared planning window. Tap Ready when you are happy with it.');return ack({ok:true});}
+      try{pacing.queue(player,{id,intent,text:body.text});const solo=settleSoloPlanning();receipt(id,'queued',solo?'Action chosen; resolving now.':'Chosen for the shared planning window. Tap Ready when you are happy with it.');return ack({ok:true});}
       catch(error){return ack({error:error.message});}
     }
     if(intent.verb==='respawn'){
@@ -147,7 +154,7 @@ export function installChaosActor(player:any, connection:any): void {
     if(player.isDead)return ack({error:'Your character is knocked out. Use respawn.'});
     if(!planned&&intent.verb==='ability'&&player.chaosRole==='wizard'&&pacing?.owns(player)&&pacing.phase==='exploration'){
       const mob=nearby().find(e=>Types.isMob(e.kind)&&distance(player,e)<=3);
-      if(mob&&pacing.noticeThreat(player,mob)){pacing.queue(player,{id,intent,text:body.text});receipt(id,'queued','Choose your opening action, then tap Ready.');return ack({ok:true});}
+      if(mob&&pacing.noticeThreat(player,mob)){pacing.queue(player,{id,intent,text:body.text});const solo=settleSoloPlanning();receipt(id,'queued',solo?'Action chosen; resolving now.':'Choose your opening action, then tap Ready.');return ack({ok:true});}
     }
     if(intent.verb==='ability'){
       try{if(!chaosObjects?.useAbility)return ack({error:'Class abilities are unavailable on this host.'});
@@ -214,10 +221,10 @@ export function installChaosActor(player:any, connection:any): void {
     }
     let door:any=null;if(['enter','exit'].includes(intent.verb)){try{door=chooseDoor(intent);}catch(error){receipt(id,'blocked',error.message);return ack({ok:true});}}
     if(!planned&&intent.verb==='attack'&&pacing?.owns(player)&&pacing.noticeThreat(player,target)){
-      pacing.queue(player,{id,intent,text:body.text});receipt(id,'queued','The encounter is paused. Choose an action and tap Ready.');return ack({ok:true});
+      pacing.queue(player,{id,intent,text:body.text});const solo=settleSoloPlanning();receipt(id,'queued',solo?'Action chosen; resolving now.':'The encounter is paused. Choose an action and tap Ready.');return ack({ok:true});
     }
     if(pacing?.owns(player)&&['enter','exit'].includes(intent.verb)&&!(planned&&pacing.canTravel(player,body.travelId))){
-      try{proposeDoorTravel(intent,id);receipt(id,'queued','Party travel proposed. The vote approves walking, not an arrival.');return ack({ok:true});}
+      try{proposeDoorTravel(intent,id);receipt(id,'queued','Walking through the existing doorway.');return ack({ok:true});}
       catch(error){receipt(id,'blocked',error.message);return ack({ok:true});}
     }
     if(!planned&&pacing?.owns(player)&&intent.verb==='go'&&Number.isInteger(intent.x)&&Number.isInteger(intent.y)&&!pacing.walkable(player,intent.x,intent.y)){
@@ -400,7 +407,8 @@ export function installChaosActor(player:any, connection:any): void {
           await router.route(player,[Types.Messages.TELEPORT,doorway.tx,doorway.ty]);
           if(active!==action)return;
           player.zoneCallback?.();player.checkZoneChange(player.x,player.y);
-          socket.emit('chaos:position',state());finish('succeeded','Travelled through the door into another area.',{},action);return;
+          const destination=world.zoneManager.getZoneAt(player.x,player.y)?.name;
+          socket.emit('chaos:position',state());finish('succeeded',`Travelled through the door into ${destination||'another area'}.`,{},action);return;
         }
         socket.emit('chaos:position',positionState()); return;
       }
@@ -412,7 +420,8 @@ export function installChaosActor(player:any, connection:any): void {
         await router.route(player,[Types.Messages.TELEPORT,door.tx,door.ty]);
         if(active!==action)return;
         player.zoneCallback?.();player.checkZoneChange(player.x,player.y);
-        socket.emit('chaos:position',state());finish('succeeded','Travelled through the door into another area.',{},action);return;
+        const destination=world.zoneManager.getZoneAt(player.x,player.y)?.name;
+        socket.emit('chaos:position',state());finish('succeeded',`Travelled through the door into ${destination||'another area'}.`,{},action);return;
       }
      if(intent.verb==='environment'){
        try{

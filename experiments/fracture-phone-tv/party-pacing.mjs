@@ -74,6 +74,12 @@ export function createPartyPacing({world,clock,sceneAt,wall=()=>Date.now(),times
   if(!draft){draft={actorId:player.id,id:null,intent:{verb:'cancel'},text:'Hold position',revision:0};drafts.set(String(player.id),draft);}
   draft.ready=value===true;if(draft.ready)draft.confirmed=true;changed();tick();
  }
+ function settleSolo(player){
+  if(phase!=='planning')return false;
+  const eligible=electorate.filter(id=>active().some(p=>String(p.id)===id));
+  if(eligible.length!==1||!eligible.includes(String(player.id)))return false;
+  ready(player,true,round);return true;
+ }
  function cancel(player,stopTravel=true){if(stopTravel&&travel&&['pending','travelling'].includes(travel.status)){if(!travel.stopped.includes(String(player.id)))travel.stopped.push(String(player.id));const r=travel.target.request;if(r&&!r.terminal&&r.actorId===player.id){r.terminal=true;player.chaosReceipt?.(r.id,'cancelled','Your travel action was cancelled. The party can still vote.');}}returning.delete(identity(player));const d=drafts.get(String(player.id));if(d?.ability)player.chaosReceipt?.(d.ability.id,'cancelled','Your planned ability was cancelled.');if(d&&!d.continuation&&d.id)player.chaosReceipt?.(d.id,'cancelled','Your planned action was cancelled.');drafts.delete(String(player.id));changed();}
  function record(player,result){
   if(['blocked','failed','cancelled'].includes(result.status)&&returning.has(identity(player))&&result.id===routes.get(identity(player))?.[0]?.id+'-'+player.id){returning.delete(identity(player));changed();}
@@ -199,7 +205,7 @@ export function createPartyPacing({world,clock,sceneAt,wall=()=>Date.now(),times
   if(!queue.length)throw Error('No approved return route is available. Regroup with the host.');
   player.chaosStopAction?.('Returning to the party.');returning.add(identity(player));player.chaosExecuteTravel?.(queue[0]);changed();
  }
- const api={admitAction,rejoin,canTravel:(p,id)=>routes.get(identity(p))?.some(t=>t.id===id),enable,beginPlanning,queue,ready,cancel,record,noticeThreat,prepare,commit,proposeTravel,voteTravel,walkable,extend,tick,snapshot,
+ const api={admitAction,rejoin,canTravel:(p,id)=>routes.get(identity(p))?.some(t=>t.id===id),enable,beginPlanning,queue,ready,settleSolo,cancel,record,noticeThreat,prepare,commit,proposeTravel,voteTravel,walkable,extend,tick,snapshot,
   get enabled(){return enabled;},get phase(){return phase;},get paused(){return enabled&&['planning','preparation','recap'].includes(phase);},get area(){return area;},get roundId(){return round;},get instanceId(){return instanceId;},get partyId(){return partyId;},
   owns:player=>enabled&&player.chaosPartyId===partyId,
   close(){clock.resume();}};

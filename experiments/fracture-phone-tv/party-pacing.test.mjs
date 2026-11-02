@@ -18,6 +18,11 @@ test('silent players hold after the short planning window; extensions and stale 
  const f=fixture();f.pacing.beginPlanning();f.pacing.extend(1);assert.equal(f.pacing.snapshot(f.people[0]).deadline,130000);f.advance(14000);assert.equal(f.pacing.phase,'planning');
  assert.throws(()=>f.pacing.ready(f.people[0],true,0),/closed/);f.advance(16000);assert.equal(f.pacing.phase,'preparation');f.advance(3000);assert.equal(f.pacing.phase,'action');assert.equal(f.executed.length,0);assert.equal(f.stopped.length,3);
 });
+test('a solo player action resolves its planning window without a stuck Ready prompt',()=>{
+ const f=fixture(1),p=f.people[0];f.pacing.beginPlanning('Return through the doorway');f.pacing.queue(p,{id:'return',intent:{verb:'go',x:1,y:2},text:'Walk back through the doorway'});
+ assert.equal(f.pacing.settleSolo(p),true);assert.equal(f.pacing.phase,'preparation');assert.equal(f.pacing.snapshot(p).ready,1);
+ f.pacing.commit(1,f.pacing.prepare());assert.equal(f.executed[0].id,'return');assert.equal(f.pacing.phase,'action');
+});
 test('STOP during preparation fences late AI, and one actor cannot cancel another choice',()=>{
  const f=fixture();f.pacing.beginPlanning();for(const p of f.people){f.pacing.queue(p,{id:'a'+p.id,intent:{verb:'attack',target:'rat'}});f.pacing.ready(p,true,1);}
  const plans=f.pacing.prepare();f.pacing.cancel(f.people[0]);f.pacing.commit(1,plans.map(d=>({...d,intent:{verb:'ability'}})));assert.deepEqual(f.executed.map(d=>d.actorId),[2,3]);
@@ -68,9 +73,20 @@ test('STOP before travel approval cancels only that actor, without cancelling th
  assert.deepEqual(f.executed.map(r=>r.actor),[2,3]);assert.equal(receipts.at(-1).status,'cancelled');
 });
 test('a doorway request cannot succeed until native positions confirm actual arrival',()=>{
- const f=fixture(),receipts=[];f.people[0].chaosReceipt=(id,status)=>receipts.push({id,status});
+ const f=fixture(),receipts=[];f.people[0].chaosReceipt=(id,status,message)=>receipts.push({id,status,message});
  const v=f.pacing.proposeTravel(f.people[0],{id:'door',area:sceneAt({x:32,y:2,zone:'Refuge'}),intent:{verb:'enter'},request:{id:'entry',actorId:1}});
- f.pacing.voteTravel(f.people[1],v.id,true);assert.equal(receipts.length,0);for(const p of f.people)p.x=32;f.pacing.tick();assert.deepEqual(receipts,[{id:'entry',status:'succeeded'}]);
+ f.pacing.voteTravel(f.people[1],v.id,true);assert.equal(receipts.length,0);for(const p of f.people)p.x=32;f.pacing.tick();assert.equal(receipts.length,1);assert.equal(receipts[0].id,'entry');assert.equal(receipts[0].status,'succeeded');assert.match(receipts[0].message,/existing doorway into Refuge/);
+});
+test('a solo doorway return completes without a second vote',()=>{
+ const f=fixture(1),p=f.people[0],receipts=[];p.chaosReceipt=(id,status,message)=>receipts.push({id,status,message});
+ const target={id:'return-door',name:'The Refuge',area:sceneAt({x:32,y:2,zone:'Refuge'}),intent:{verb:'exit'},request:{id:'return-request',actorId:1}};
+ const travel=f.pacing.proposeTravel(p,target);assert.equal(travel.required,1);assert.equal(f.pacing.phase,'travel');assert.equal(f.executed.length,1);
+ p.x=32;f.pacing.tick();assert.equal(f.pacing.phase,'exploration');assert.deepEqual(receipts,[{id:'return-request',status:'succeeded',message:'Travelled through the existing doorway into Refuge.'}]);
+});
+test('doorway receipts do not describe an arrival as a vote proposal',()=>{
+ const source=fs.readFileSync(new URL('./chaos-actor.ts',import.meta.url),'utf8');
+ assert.doesNotMatch(source,/Party travel proposed|Vote to travel through the existing doorway/);
+ assert.match(source,/Travelled through the door into \$\{destination\|\|'another area'\}/);
 });
 test('approved travel can reroute around a guard through the transition strip, but cannot claim a woods arrival there',()=>{
  const f=fixture(3,20);f.world.zoneManager.getZoneAt=(x,y)=>({name:y>=15?'Refuge':'Woods'});

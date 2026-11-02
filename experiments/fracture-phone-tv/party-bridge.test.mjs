@@ -242,6 +242,13 @@ test('a failed dice declaration consumes the window and refreshes recipient stat
 
 test('offline DM uses terminal native facts and never treats started as success',async t=>{const {app,base,sockets}=await setup(t);const token=(await(await post(base,'/pair',{key:app.room.join,name:'Ada'})).json()).token;await new Promise(r=>setTimeout(r,20));const request=await post(base,'/action',{token,text:'talk to guard'});const {id}=await request.json();let state=await(await fetch(base+'/state?token='+token)).json();assert.equal(state.story,undefined);sockets[0].emit('chaos:receipt',{id,status:'succeeded',message:'Guard remembers the gift.'});state=await(await fetch(base+'/state?token='+token)).json();assert.deepEqual(state.story,{id,text:'Guard remembers the gift.',mode:'offline'});});
 
+test('phone state exposes live Groq and offline fallback modes',async t=>{
+ const offline=await setup(t);const offlineToken=(await(await post(offline.base,'/pair',{key:offline.app.room.join,name:'Ada'})).json()).token;
+ const offlineState=await(await fetch(offline.base+'/state?token='+offlineToken)).json();assert.equal(offlineState.dm.mode,'offline-fallback');
+ const live=await setup(t,{dmFactory:()=>({enabled:true,status:()=>({state:'connected',provider:'groq-free',model:'llama-test'}),close(){}})});
+ const liveToken=(await(await post(live.base,'/pair',{key:live.app.room.join,name:'Bryn'})).json()).token;const liveState=await(await fetch(live.base+'/state?token='+liveToken)).json();assert.equal(liveState.dm.mode,'live-groq');assert.equal(liveState.dm.state,'connected');
+});
+
 test('host can configure, test and enable isolated AI without revealing credentials to phones',async t=>{
  const {app,base,dir}=await setup(t,{dmFactory:({dataDir})=>createOptionalDM({dataDir,key:'',fetchImpl:async(_url,init)=>{const context=JSON.parse(JSON.parse(init.body).messages[1].content);return {ok:true,json:async()=>({choices:[{message:{content:JSON.stringify({turnId:context.turnId,outcome:context.outcome.status,text:context.outcome.canonical,dialogue:[]})}}]})};}})});
  assert.equal((await fetch(base+'/dm/status?key='+app.room.join)).status,403);
