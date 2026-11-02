@@ -37,6 +37,8 @@ export function installChaosActor(player:any, connection:any): void {
   player.chaosControlled=local&&socket.handshake.auth?.chaosActorKey===key;
   if(player.chaosControlled)player.chaosPrepareWorld=async()=>{await chaosReady;chaosObjects?.prepareWorld(world);};
   player.chaosPartyId=player.chaosControlled&&typeof socket.handshake.auth?.chaosPartyId==='string'?socket.handshake.auth.chaosPartyId:null;
+  const spawn=socket.handshake.auth?.chaosSpawn;
+  player.chaosSpawn=player.chaosControlled&&spawn&&typeof spawn==='object'&&typeof spawn.zone==='string'&&Number.isFinite(Number(spawn.x))&&Number.isFinite(Number(spawn.y))?{zone:spawn.zone,x:Number(spawn.x),y:Number(spawn.y)}:null;
   // The bridge authenticates each native actor and supplies a saved class.
   // Never accept a role or perk from a phone action or unauthenticated socket.
   player.chaosRole=player.chaosControlled&&['rogue','bard','wizard','knight','healer','wildcard','barbarian','paladin','assassin','druid','warlock'].includes(socket.handshake.auth?.chaosRole)?socket.handshake.auth.chaosRole:null;
@@ -150,8 +152,8 @@ export function installChaosActor(player:any, connection:any): void {
     if(intent.verb==='ability'){
       try{if(!chaosObjects?.useAbility)return ack({error:'Class abilities are unavailable on this host.'});
         const result=chaosObjects.useAbility(player,intent.target||'',intent.skill);
-        receipt(id,result.blocked?'blocked':result.success?'succeeded':'failed',result.text,{abilityEffect:result.abilityEffect});return ack({ok:true});
-      }catch{receipt(id,'failed','The ability could not be safely completed. Check the host storage.');return ack({ok:true});}
+        receipt(id,result.blocked?'blocked':result.success?'succeeded':'failed',result.text,{abilityEffect:result.abilityEffect,system:!!result.blocked});return ack({ok:true});
+      }catch{receipt(id,'failed','The ability could not be safely completed. Check the host storage.',{system:true});return ack({ok:true});}
     }
     if(intent.verb==='use_item'){
       const inventory=player.getInventory(),slots=inventory.getSlots();const index=slots.findIndex((s:any)=>s&&Types.getKindAsString(s.kind)?.includes(intent.target));

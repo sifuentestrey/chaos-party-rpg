@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {DEFAULT_APPEARANCE,PRESENTATIONS,validateAppearance,normalizeAppearance,randomAppearance,STARTERS,BODIES,OUTFITS,ACCESSORIES,HAIR_STYLES,FACIAL_HAIR,HEADWEAR,DERIVED_HERITAGES} from './character-profile.mjs';import {recolorPixels,appearanceLayerAudit,hairVisible} from './character-appearance.mjs';import {parseIntent,validIntent} from './action-contract.ts';
+import test from 'node:test';import assert from 'node:assert/strict';import {DEFAULT_APPEARANCE,PRESENTATIONS,validateAppearance,normalizeAppearance,randomAppearance,STARTERS,BODIES,OUTFITS,ACCESSORIES,HAIR_STYLES,FACIAL_HAIR,HEADWEAR,DERIVED_HERITAGES} from './character-profile.mjs';import {recolorPixels,appearanceLayerAudit,hairVisible,HERITAGE_LAYER_SCALES} from './character-appearance.mjs';import {parseIntent,validIntent} from './action-contract.ts';
 test('appearance accepts only the supported cosmetic choices, never paths, powers or stats',()=>{
  for(let n=0;n<50;n++){const appearance=randomAppearance();assert.deepEqual(validateAppearance(appearance),appearance);}
  for(const patch of [{outfit:'../config'},{body:'dragon'},{presentation:'masculine'},{skin:-1},{hair:1.2},{color:16},{accessory:'weapon'},{damage:999},{version:3}])assert.throws(()=>validateAppearance({...DEFAULT_APPEARANCE,...patch}));
@@ -40,6 +40,11 @@ test('feminine presentation stays visible and bounded across the complete wardro
   assert.ok(layer.x>=0&&layer.y>=0&&layer.x+layer.w<=32&&layer.y+layer.h<=32,`${body}/${hairStyle}/${head}/${accessory}/${direction} feminine layer escaped its frame`);
   assert.equal(audit.visible,true,`${body}/${hairStyle}/${head}/${accessory}/${direction} produced an invisible feminine layer`);
  }
+});
+test('derived layers scale the larger ogre body while other heritages keep native proportions',()=>{
+ for(const body of Object.keys(BODIES))assert.equal(HERITAGE_LAYER_SCALES[body]||1,body==='ogre'?1.2:1);
+ assert.equal(appearanceLayerAudit({...DEFAULT_APPEARANCE,body:'human',outfit:'cloak',accessory:'satchel'}).layerScale,1);
+ assert.equal(appearanceLayerAudit({...DEFAULT_APPEARANCE,body:'ogre',outfit:'cloak',accessory:'satchel'}).layerScale,1.2);
 });
 test('original palette preserves native pixels; selected skin and clothing never recolor the outline',()=>{
  const pixels=new Uint8ClampedArray(32*32*4);pixels.set([250,166,118,255],0);pixels.set([55,55,55,255],4);pixels.set([209,209,209,255],20*32*4);

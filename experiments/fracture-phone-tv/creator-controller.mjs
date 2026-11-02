@@ -33,7 +33,22 @@ export function bootCreator(controller){
  el('creator-cancel').onclick=close;
  document.querySelectorAll('[data-open-wardrobe]').forEach(button=>button.onclick=()=>{if(!current)return;controller.editing=true;el('pair').hidden=false;el('play').hidden=true;el('creation-wait').hidden=true;el('creator-title').textContent='Your wardrobe';el('name').value=current.name;el('name').disabled=true;el('color').value=current.color;setLook(current.appearance||DEFAULT_APPEARANCE);looks=current.looks||[];document.querySelector('.steps').hidden=true;show(0);});
  el('ability-use').onclick=()=>controller.act('use ability'+(el('ability-target-label').hidden?'':' on '+el('ability-target').value));
- window.addEventListener('chaos-state',event=>{current=event.detail;looks=current.looks||looks;const v=current;if(controller.editing)return;if(v.phase==='creation'){el('ready-summary').textContent=v.name+' · '+(STARTERS[v.role]?.name||v.role)+' · '+v.readyCount+' ready';setLook(v.appearance||DEFAULT_APPEARANCE);}const a=abilityFor(v);el('class-ability').hidden=!a;if(a){el('ability-name').textContent=a.name;el('ability-description').textContent=a.description;const seconds=Math.max(0,Math.ceil((a.readyAt-Date.now())/1000));el('ability-use').disabled=!v.actor?.ready||!!v.actor?.dead||seconds>0;el('ability-use').textContent=seconds?'Ready in '+seconds+'s':'Use '+a.name;el('ability-target-label').hidden=a.id!=='mend';const selected=el('ability-target').value;el('ability-target').replaceChildren();for(const p of a.targets||[]){const option=document.createElement('option');option.value=p.id;option.textContent=p.name+' · '+p.hp+'/'+p.maxHp;el('ability-target').append(option);}if([...el('ability-target').options].some(o=>o.value===selected))el('ability-target').value=selected;}});
+ window.addEventListener('chaos-state',event=>{
+  current=event.detail;looks=current.looks||looks;const v=current;if(controller.editing)return;
+  if(v.phase==='creation'){el('ready-summary').textContent=v.name+' · '+(STARTERS[v.role]?.name||v.role)+' · '+v.readyCount+' ready';setLook(v.appearance||DEFAULT_APPEARANCE);}
+  const a=abilityFor(v);el('class-ability').hidden=!a&&!v.role;
+  if(a){
+   el('ability-name').textContent=a.name;el('ability-description').textContent=a.description;
+   const seconds=Math.max(0,Math.ceil((a.readyAt-Date.now())/1000));
+   const reason=!v.actor?'Your character is not in the game yet.':v.actor.dead?'Knocked out — respawn first.':!v.actor.ready?'Tap Ready to join the game.':seconds?'Ready in '+seconds+'s':'';
+   el('ability-use').disabled=!!reason;el('ability-use').title=reason;el('ability-use').setAttribute('aria-label',reason?a.name+' unavailable: '+reason:'Use '+a.name);el('ability-use').textContent=seconds?'Ready in '+seconds+'s':'Use '+a.name;
+   el('ability-target-label').hidden=a.id!=='mend';const selected=el('ability-target').value;el('ability-target').replaceChildren();
+   for(const p of a.targets||[]){const option=document.createElement('option');option.value=p.id;option.textContent=p.name+' · '+p.hp+'/'+p.maxHp;el('ability-target').append(option);}
+   if([...el('ability-target').options].some(o=>o.value===selected))el('ability-target').value=selected;
+  }else if(v.role){
+   el('ability-name').textContent='No class ability';el('ability-description').textContent='This class has no ability to use.';el('ability-use').disabled=true;el('ability-use').title='This class has no ability to use.';el('ability-use').setAttribute('aria-label','Ability unavailable: this class has no ability to use.');el('ability-use').textContent='Unavailable';el('ability-target-label').hidden=true;
+  }
+ });
  document.querySelectorAll('[data-save-look]').forEach(b=>b.onclick=async()=>{try{const slot=Number(b.dataset.saveLook);while(looks.length<=slot)looks.push(null);looks[slot]=read();if(controller.token)await controller.api('/profile',{token:controller.token,appearance:current.appearance||DEFAULT_APPEARANCE,looks});error('Look '+(slot+1)+' saved.');}catch(e){error(e);}});
  document.querySelectorAll('[data-load-look]').forEach(b=>b.onclick=()=>{const look=looks[Number(b.dataset.loadLook)];if(look)setLook(look);else error('Save an outfit in this slot first.');});
  function animate(at){if(sheet&&!document.hidden){for(const id of ['character-preview','ready-preview']){const c=el(id);if(!c.closest('[hidden]'))drawPreview(c.getContext('2d'),sheet,{animation,direction,time:at,scale:6});}}requestAnimationFrame(animate);}setLook(DEFAULT_APPEARANCE);setBackground('farmhand',defaultBackgroundPoints('farmhand'));show(0);bootPhone(controller);requestAnimationFrame(animate);

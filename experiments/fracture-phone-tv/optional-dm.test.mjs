@@ -1,5 +1,11 @@
-import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import {createOptionalDM} from './optional-dm.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import {createOptionalDM} from './optional-dm.mjs';import {CHAOS_PARTY_KNOWLEDGE,CHAOS_PARTY_KNOWLEDGE_VERSION} from '../../src/chaos-party-knowledge.mjs';
 const actor={nearby:[{name:'rat',type:'mob',x:2,y:3}],inventory:[]};
+test('travel discovery is taught through grounded conversation instead of map markers',()=>{
+ assert.equal(CHAOS_PARTY_KNOWLEDGE_VERSION,'chaos-party-fracture.v5');
+ const travel=CHAOS_PARTY_KNOWLEDGE.slice(CHAOS_PARTY_KNOWLEDGE.indexOf('TRAVEL DISCOVERY THROUGH CONVERSATION'),CHAOS_PARTY_KNOWLEDGE.indexOf('SCOPE LIMITS'));
+ assert.match(travel,/travel vote/i);assert.match(travel,/majority yes/i);assert.match(travel,/Glitch\s+Woods/i);assert.match(travel,/real walk, never a teleport/i);
+ assert.doesNotMatch(travel,/\b\d+\s*,\s*\d+\b/);assert.doesNotMatch(travel,/Shattered Coast|Underdepths/i);
+});
 test('every provider request carries the versioned Chaos Party knowledge and live situation',async t=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chaos-dm-knowledge-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));let request;
  const dm=createOptionalDM({dataDir:dir,key:'test-key',enabled:true,fetchImpl:async(_url,init)=>{request=JSON.parse(init.body);return {ok:true,json:async()=>({choices:[{message:{content:'{"verb":"attack","target":"rat"}'}}]})};}});

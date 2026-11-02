@@ -10,6 +10,10 @@ const cloths=[null,'#df8cae','#aa8bd4','#65b6a5','#679bd3','#d8b65f','#c65a66','
 const rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
 const shade=(color,f)=>rgb(color).map(v=>Math.max(0,Math.min(255,Math.round(v*f))));
 const originals=new Map(),variants=new Map();
+// The native ogre body is larger than the standard Fracture body. Derived
+// wardrobe and heritage layers use this scale so accessories keep the same
+// proportions without introducing a second sprite set.
+export const HERITAGE_LAYER_SCALES=Object.freeze({ogre:1.2});
 const skinSet=new Set(['faa676','c78058','a06244','b57657','ea996b']);
 const hairSet=new Set(['b49320','d5b030','dac273','e1bd3f','e6cd78']);
 const garment={clotharmor:['d1d1d1','ececec','774e2d','92623a','966f4f'],leatherarmor:['774e2d','795335','966f4f','b4785b','896546','9f6448','db9e80','896446','92623a','9c6b54'],mailarmor:['6f6f6f','9c9c9c','b8b8b8','525252','505050','646464','979797','8b8b8b','717171'],platearmor:['9c9c9c','bebebe','ececec','6f6f6f','5c416c','664a77','525252'],redarmor:['f31818','f64f4f','b30a0a','fa9999','d82525','ff5e5e','ba1414','e00c0c'],goldenarmor:['e1cf36','d5b030','fff074','bc9b29','a68821','a98b23','eede59']};
@@ -51,7 +55,7 @@ export function appearanceLayerAudit(value={},metrics={}){
  if(value.accessory&&value.accessory!=='none')features.push(layers.accessory);
  if(DERIVED_HERITAGES[value.body]||value.body==='fairy')features.push(layers.heritage);
  if(value.presentation==='feminine')features.push(layers.presentation);
- return {bounds,layers,features,visible:features.every(f=>f.visible)};
+ return {bounds,layers,features,layerScale:HERITAGE_LAYER_SCALES[value.body]||1,visible:features.every(f=>f.visible)};
 }
 function derivedCostume(ctx,a,cx,y,up,fill){
  const color=cloths[a.color]||'#9f79c7',shadow=shadeHex(color,.62);
@@ -125,7 +129,8 @@ function decorate(ctx,source,w,a){
   if(top===32)continue;
   for(let y=top;y<top+5;y++)for(let x=4;x<28;x++){const i=((oy+y)*w+ox+x)*4;if(source[i+3]){left=Math.min(left,x);right=Math.max(right,x);}}
   const cx=ox+Math.round((left+right)/2),y=oy+top,up=Math.floor(row/3)===1,side=Math.floor(row/3)===0,bounds=frameLayerBounds({top,left,right}),frame={left:ox+bounds.frame.left,top:oy+bounds.frame.top,right:ox+bounds.frame.right,bottom:oy+bounds.frame.bottom};
-  const fill=(x,yy,ww,hh,c)=>frameFill(bounds,ox,oy,x,yy,ww,hh,c);
+  const layerScale=HERITAGE_LAYER_SCALES[a.body]||1;
+  const fill=(x,yy,ww,hh,c)=>frameFill(bounds,ox,oy,Math.round(cx+(x-cx)*layerScale),Math.round(y+(yy-y)*layerScale),Math.max(1,Math.round(ww*layerScale)),Math.max(1,Math.round(hh*layerScale)),c);
   ctx.save();ctx.beginPath();ctx.rect(frame.left,frame.top,32,32);ctx.clip();
   const skin=DERIVED_HERITAGES[a.body]?.skin||(['orc','ogre'].includes(a.body)?'#80a768':skins[a.skin]),color=cloths[a.color]||'#9f79c7',headColor=cloths[a.headColor]||color;
   derivedCostume(ctx,a,cx,y,up,fill);

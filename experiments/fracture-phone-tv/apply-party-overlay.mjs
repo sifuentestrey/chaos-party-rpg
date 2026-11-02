@@ -21,18 +21,22 @@ patches.push(
  ['client/ts/network/gameclient.ts', 'this.connection = io(url, {', "this.connection = io(url, {\n      auth: {chaosTVKey: new URLSearchParams(location.search).has('chaosTV') ? new URLSearchParams(location.search).get('tvKey') : undefined},", 'reconnection: true,','reconnection: true,'],
  ['server/ts/player/auth.handler.ts','  player.updatePosition();\n\n  // Set spawn protection', `  player.updatePosition();
   // Only bridge-authenticated experimental actors resume their real saved position.
-  // Normal Fracture login and the native death/respawn path remain unchanged.
+  // A new actor may receive one validated party spawn hint; normal Fracture login
+  // and the native death/respawn path remain unchanged.
   if ((player as any).chaosControlled) {
     await (player as any).chaosPrepareWorld?.();
     const saved = characterExists ? storage.loadPlayerState(player.name)?.character : null;
     if (saved && world.isValidPosition(saved.x, saved.y)) player.setPosition(saved.x, saved.y);
     if (!characterExists) {
-      const leader = (Object.values(world.players) as any[]).find(p => p.chaosControlled && p.hasEnteredGame && !p.isDead);
-      if (leader) {
-        const activeArea = (world as any).chaosPacing?.enabled ? (world as any).chaosPacing.area : null;\n        const reachable = (leader as any).chaosSpawnTiles?.(activeArea);\n        const offsets: number[][] = [];for(let r=1;r<=(activeArea?Math.max(activeArea.width,activeArea.height):5);r++)for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++)if(Math.max(Math.abs(dx),Math.abs(dy))===r)offsets.push([dx,dy]);
-        const occupied = new Set((Object.values(world.entities) as any[]).filter(e=>e.type!=='item').map(e=>e.x+','+e.y));
-        const spot = offsets.map(([dx,dy])=>({x:leader.x+dx,y:leader.y+dy})).find(p=>world.isValidPosition(p.x,p.y)&&!occupied.has(p.x+','+p.y)&&(!reachable||reachable.has(p.x+','+p.y))&&(!activeArea||(p.x>=activeArea.x&&p.x<activeArea.x+activeArea.width&&p.y>=activeArea.y&&p.y<activeArea.y+activeArea.height&&world.zoneManager.getZoneAt(p.x,p.y)?.name===activeArea.zone)));
-        if (spot) player.setPosition(spot.x,spot.y);
+      const hint = (player as any).chaosSpawn;
+      const x = Number(hint?.x), y = Number(hint?.y), zone = typeof hint?.zone === 'string' ? hint.zone : '';
+      const hintZone = Number.isFinite(x) && Number.isFinite(y) ? world.zoneManager.getZoneAt(x, y)?.name : null;
+      if (zone && hintZone === zone) {
+        const occupied = new Set((Object.values(world.entities) as any[]).filter(e => e.type !== 'item').map(e => e.x + ',' + e.y));
+        const offsets: number[][] = [[0, 0]];
+        for (let radius = 1; radius <= 5; radius++) for (let dx = -radius; dx <= radius; dx++) for (let dy = -radius; dy <= radius; dy++) if (Math.max(Math.abs(dx), Math.abs(dy)) === radius) offsets.push([dx, dy]);
+        const spot = offsets.map(([dx, dy]) => ({x: x + dx, y: y + dy})).find(p => world.isValidPosition(p.x, p.y) && !occupied.has(p.x + ',' + p.y) && world.zoneManager.getZoneAt(p.x, p.y)?.name === zone);
+        if (spot) player.setPosition(spot.x, spot.y);
       }
     }
   }

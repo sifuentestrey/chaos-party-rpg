@@ -6,13 +6,15 @@
  * the rules here prevents the two DM adapters from slowly describing
  * different games.
  */
-export const CHAOS_PARTY_KNOWLEDGE_VERSION='chaos-party-fracture.v4';
+export const CHAOS_PARTY_KNOWLEDGE_VERSION='chaos-party-fracture.v5';
 export const CHAOS_PARTY_KNOWLEDGE_SOURCES=Object.freeze([
   'experiments/fracture-phone-tv/action-contract.ts',
   'experiments/fracture-phone-tv/chaos-world.mjs',
   'experiments/fracture-phone-tv/native-object-actions.mjs',
   'experiments/fracture-phone-tv/party-abilities.mjs',
   'experiments/fracture-phone-tv/game-night-story.mjs',
+  'experiments/fracture-phone-tv/party-pacing.mjs',
+  'experiments/fracture-phone-tv/party-rally.mjs',
   'src/dm-narrator.mjs',
   'public/environment.js',
   'public/world-items.js'
@@ -134,6 +136,19 @@ CONVERSATIONAL GEOGRAPHY
   the woods. The DM may guide conversation with words such as "follow the trail
   north," but never emits coordinates, waypoints, route lines, markers or fast
   travel. Geography is narration context, not a UI instruction.
+
+TRAVEL DISCOVERY THROUGH CONVERSATION
+- When a player asks the Settlement Child or the DM how to leave The Refuge,
+  explore beyond it, or what the party can do here, they may explain that the
+  party can call a travel vote. A majority yes sends the group walking together
+  toward the existing doorway; the native engine confirms whether each person
+  arrives. Arrival is a real walk, never a teleport.
+- The only verified shared travel pair taught this way is The Refuge and Glitch
+  Woods. The explanation must stay tied to the current live zone and the
+  supplied entrances or exits. If no supported route is visible, say that no
+  doorway is currently in sight and let the players investigate or ask around.
+- Conversation can teach the vote, but it does not open or resolve it, invent a
+  destination, describe an unmapped place, or supply coordinates or UI markers.
 
 SCOPE LIMITS
 - Do not use tavern-shell facts such as the Tipsy Wyvern, Tansy the Wayfarer,

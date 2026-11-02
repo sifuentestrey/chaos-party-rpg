@@ -15,8 +15,10 @@ export function createPartyAbilities({file,useNativeSkill,clock=Date.now,display
   return {id:def.skill,name:def.ability,description:def.description,readyAt:at?displayClock()+Math.max(0,at-clock()):0,remainingMs:Math.max(0,at-clock()),phased:!!p.isPhased?.(),phaseUntil:skills?.phaseShiftExpires?displayClock()+Math.max(0,skills.phaseShiftExpires-clock()):0,empowered:!!((skills?.powerStrikeActive&&skills.powerStrikeExpires>clock())||(skills?.frenzyActive&&skills.frenzyExpires>clock())||(skills?.ambushActive&&skills.ambushExpires>clock())),frenzied:!!(skills?.frenzyActive&&skills.frenzyExpires>clock()),bulwark:!!(skills?.bulwarkActive&&skills.bulwarkExpires>clock()),ambushReady:!!(skills?.ambushActive&&skills.ambushExpires>clock()),cursed:def.skill==='curse'&&!!(skills?.powerStrikeActive&&skills.powerStrikeExpires>clock()),...(def.skill==='mend'?{targets:targets.filter(alive).map(q=>({id:String(q.id),name:q===p?'Yourself':label(q),hp:q.hitPoints,maxHp:q.maxHitPoints}))}:{})};
  }
  function use(p,reference='',requestedSkill=null){
-  const blocked=text=>({blocked:true,success:false,text});const def=STARTERS[p?.chaosRole];
-  if(!alive(p)||!actorId(p)||!def)return blocked('Choose a supported class with an active living character.');
+  const blocked=text=>({blocked:true,success:false,system:true,text});const def=STARTERS[p?.chaosRole];
+  if(!p?.chaosControlled||p?.chaosSpectator||!p?.hasEnteredGame||!actorId(p))return blocked('Your character is not in the game yet. Tap Ready and wait for the host to begin.');
+  if(!def)return blocked('This class has no ability to use.');
+  if(p.isDead)return blocked('You are knocked out. Respawn first.');
   if(requestedSkill&&requestedSkill!==def.skill)return blocked('Your class uses '+def.ability+'.');
   const at=readyAt(p,def);if(at>clock())return blocked(def.ability+' is ready in '+Math.ceil((at-clock())/1000)+' seconds.');
   let target=p;

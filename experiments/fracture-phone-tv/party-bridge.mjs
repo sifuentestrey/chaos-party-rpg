@@ -172,12 +172,20 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
   entry.timer=setTimeout(()=>finishPending(s,id),reactionMs);entry.timer.unref?.();
   return id;
  }
- function connect(player){
-  const socket=io(`http://127.0.0.1:${fracturePort}`,{transports:['websocket'],reconnection:true,autoConnect:false,auth:{chaosActorKey:actorKey,chaosPartyId:room.id,chaosHybrid:room.pacingMode==='hybrid',chaosName:player.name,chaosRole:validRole(player.role)?player.role:null,chaosPerk:validPerk(player.perk)?player.perk:null,chaosBackground:validBackground(player.background)?player.background:null,chaosBackgroundPoints:player.backgroundPoints||{}}});
+ function partySpawnHint(excludeToken){
+  const lead=room.players.find(p=>!p.parked&&p.token!==excludeToken);
+  const candidates=[...sessions.values()].filter(s=>!s.player.parked&&s.player.token!==excludeToken&&s.socket.connected&&s.actor?.ready&&!s.actor.dead&&typeof s.actor.zone==='string'&&Number.isFinite(s.actor.x)&&Number.isFinite(s.actor.y));
+  const host=candidates.find(s=>s.player.token===lead?.token)||candidates[0];
+  return host?{zone:host.actor.zone,x:host.actor.x,y:host.actor.y}:null;
+ }
+ function connect(player,spawnOverride=null){
+  const auth={chaosActorKey:actorKey,chaosPartyId:room.id,chaosHybrid:room.pacingMode==='hybrid',chaosName:player.name,chaosRole:validRole(player.role)?player.role:null,chaosPerk:validPerk(player.perk)?player.perk:null,chaosBackground:validBackground(player.background)?player.background:null,chaosBackgroundPoints:player.backgroundPoints||{}};
+  if(spawnOverride)auth.chaosSpawn=spawnOverride;
+  const socket=io(`http://127.0.0.1:${fracturePort}`,{transports:['websocket'],reconnection:true,autoConnect:false,auth});
   const session={player,socket,actor:null,worldFingerprint:null,results:new Map(),declarations:new Map(),attempts:new Map(),lastAction:0,epoch:0,lastSeen:0,suspending:false};sessions.set(player.token,session);
   socket.on('connect_error',()=>{session.error='Fracture is unavailable. The host should check its launcher.';});
   socket.on('connect',()=>{session.error=null;session.actor=null;socket.emit('message',[0,player.account,21,60,0,player.password]);});
-  socket.on('disconnect',()=>{invalidateActorRefresh(session);session.worldFingerprint=null;cancelPending(session,'Announced action cancelled: character disconnected.');session.actor=null;session.epoch++;session.storyController?.abort();session.declarations.clear();session.attempts.clear();for(const [id,result] of session.results)if(['received','started','queued'].includes(result.status))session.results.set(id,{...result,status:'failed',message:'Game connection lost. Reconnect and try again.'});});
+  socket.on('disconnect',()=>{delete socket.auth?.chaosSpawn;invalidateActorRefresh(session);session.worldFingerprint=null;cancelPending(session,'Announced action cancelled: character disconnected.');session.actor=null;session.epoch++;session.storyController?.abort();session.declarations.clear();session.attempts.clear();for(const [id,result] of session.results)if(['received','started','queued'].includes(result.status))session.results.set(id,{...result,status:'failed',message:'Game connection lost. Reconnect and try again.'});});
   socket.on('message',data=>{const messages=Array.isArray(data?.[0])?data:[data];for(const msg of messages){
    if(!Array.isArray(msg))continue;
    if(msg[0]===1){session.actor={id:msg[1],name:player.name,x:msg[3],y:msg[4],hp:msg[5],ready:false};refresh(session);}
@@ -239,7 +247,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
    if(error||r?.error){
     s.declarations.delete(id);
     if(s.results.get(id)?.status==='received'){
-     const result={status:'blocked',message:r?.error||'No engine acknowledgment. Please stop before retrying.'};
+     const result={status:'blocked',message:r?.error||'No engine acknowledgment. Please stop before retrying.',...(intent.verb==='ability'?{system:true}:{})};
      s.results.set(id,result);record({player:s.player.name,id,...result});
     }
    }
@@ -341,7 +349,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
    }
   }
  }});}
- room.players.forEach(connect);
+ room.players.forEach(player=>connect(player));
  const polling=setInterval(()=>{finishRally();finishChoice();for(const s of sessions.values()){
    if(s.player.parked)continue;
    if(s.socket.connected&&s.actor&&Date.now()-s.lastSeen>idleMs&&!s.suspending){s.suspending=true;s.socket.timeout(2000).emit('chaos:save',{key:actorKey},()=>{if(Date.now()-s.lastSeen>idleMs)s.socket.disconnect();s.suspending=false;});}
@@ -507,7 +515,7 @@ el('rally').textContent=v.rally? v.rally.proposer+' proposes '+(v.rally.kind==='
 el('propose-rally').hidden=v.pacing?.enabled||v.rally?.status==='pending';
 el('travel-woods').hidden=v.pacing?.enabled||v.actor?.zone!=='The Refuge'||v.rally?.status==='pending';el('travel-refuge').hidden=v.pacing?.enabled||v.actor?.zone!=='Glitch Woods'||v.rally?.status==='pending';
 el('rally-yes').hidden=el('rally-no').hidden=!v.rally||v.rally.status!=='pending'||!v.rally.eligible||v.rally.voted;
-const r=v.results.find(r=>r.id===pending)||v.results.at(-1);if(!r&&v.actor?.ready)log('Ready — what do you want to do?');if(r){el('log').dataset.outcome=r.status;log(r.message+(r.interaction==='talk'&&v.dialogue&&!r.message.includes(v.dialogue)?'\\n“'+v.dialogue+'”':''));}}catch(e){log(e.message);}}
+const r=v.results.find(r=>r.id===pending)||v.results.at(-1);if(!r&&v.actor?.ready)log('Ready — what do you want to do?');if(r){el('log').dataset.outcome=r.status;log((r.system?'System note: ':'')+r.message+(r.interaction==='talk'&&v.dialogue&&!r.message.includes(v.dialogue)?'\\n“'+v.dialogue+'”':''));}}catch(e){log(e.message);}}
 let changes=null;function connectChanges(){if(changes){changes.close();changes=null;}if(!auth||typeof EventSource==='undefined')return;changes=new EventSource('/changes?token='+encodeURIComponent(auth));changes.addEventListener('change',()=>{if(!document.hidden)void poll();});}connectChanges();setInterval(poll,750);poll();
 </script>`));
    }
@@ -530,7 +538,7 @@ let changes=null;function connectChanges(){if(changes){changes.close();changes=n
     let appearance=null;if(b.appearance!==undefined){try{appearance=validateAppearance(b.appearance);}catch(e){return json(res,400,{error:e.message});}if(!isStarter(b.role))return json(res,400,{error:'Choose one of the nine starter classes.'});}
     let looks=[];if(b.looks!==undefined){if(!Array.isArray(b.looks)||b.looks.length>3)return json(res,400,{error:'Save up to three looks.'});try{looks=b.looks.map(a=>a===null?null:validateAppearance(a));}catch(e){return json(res,400,{error:e.message});}}
     const player={looks,...(appearance?{appearance}:{}),background,backgroundPoints,name,role:validRole(b.role)?b.role:null,perk:validRole(b.role)?(b.perk||'lucky'):null,color:['Amber','Blue','Green','Rose'].includes(b.color)?b.color:'Amber',token:token(),account:name.replace(/[^a-zA-Z0-9]/g,'').slice(0,8)+'_'+randomBytes(3).toString('hex'),password:token()};
-    room.players.push(player);try{persist();}catch(error){room.players.pop();throw error;}const session=connect(player);session.lastSeen=Date.now();if(room.phase==='playing')session.socket.connect();return json(res,201,{token:player.token});
+    room.players.push(player);try{persist();}catch(error){room.players.pop();throw error;}const session=connect(player,room.phase==='playing'?partySpawnHint(player.token):null);session.lastSeen=Date.now();if(room.phase==='playing')session.socket.connect();return json(res,201,{token:player.token});
    }
    if(p==='/adventure/choice/propose'&&req.method==='POST'){
     const b=await body(req),s=sessions.get(b.token);
