@@ -1,8 +1,16 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {DEFAULT_APPEARANCE,validateAppearance,randomAppearance,STARTERS,BODIES,OUTFITS,ACCESSORIES,HAIR_STYLES,FACIAL_HAIR,HEADWEAR,DERIVED_HERITAGES} from './character-profile.mjs';import {recolorPixels,appearanceLayerAudit,hairVisible} from './character-appearance.mjs';import {parseIntent,validIntent} from './action-contract.ts';
+import test from 'node:test';import assert from 'node:assert/strict';import {DEFAULT_APPEARANCE,PRESENTATIONS,validateAppearance,normalizeAppearance,randomAppearance,STARTERS,BODIES,OUTFITS,ACCESSORIES,HAIR_STYLES,FACIAL_HAIR,HEADWEAR,DERIVED_HERITAGES} from './character-profile.mjs';import {recolorPixels,appearanceLayerAudit,hairVisible} from './character-appearance.mjs';import {parseIntent,validIntent} from './action-contract.ts';
 test('appearance accepts only the supported cosmetic choices, never paths, powers or stats',()=>{
  for(let n=0;n<50;n++){const appearance=randomAppearance();assert.deepEqual(validateAppearance(appearance),appearance);}
- for(const patch of [{outfit:'../config'},{body:'dragon'},{skin:-1},{hair:1.2},{color:16},{accessory:'weapon'},{damage:999},{version:3}])assert.throws(()=>validateAppearance({...DEFAULT_APPEARANCE,...patch}));
+ for(const patch of [{outfit:'../config'},{body:'dragon'},{presentation:'masculine'},{skin:-1},{hair:1.2},{color:16},{accessory:'weapon'},{damage:999},{version:3}])assert.throws(()=>validateAppearance({...DEFAULT_APPEARANCE,...patch}));
+ assert.deepEqual(PRESENTATIONS,{neutral:'Neutral',feminine:'Feminine'});
  assert.deepEqual(Object.keys(STARTERS),['knight','rogue','wizard','healer','barbarian','paladin','assassin','druid','warlock']);
+});
+test('old saves remain neutral while feminine presentation is explicit and cosmetic',()=>{
+ const legacy={version:1,body:'elf',outfit:'redarmor',skin:2,hair:3,color:4,accessory:'flower'};
+ assert.equal(normalizeAppearance(legacy).presentation,'neutral');
+ const oldV2={...DEFAULT_APPEARANCE};delete oldV2.presentation;
+ assert.equal(validateAppearance(oldV2).presentation,'neutral');
+ assert.equal(validateAppearance({...DEFAULT_APPEARANCE,presentation:'feminine'}).presentation,'feminine');
 });
 test('derived heritages and wardrobe layers stay within the validated native sheet catalog',()=>{
  for(const body of Object.keys(DERIVED_HERITAGES))assert.equal(validateAppearance({...DEFAULT_APPEARANCE,body}).body,body);
@@ -21,6 +29,16 @@ test('all heritage, hairstyle, headwear and accessory combinations stay inside o
    assert.equal(audit.visible,true,`${body}/${hairStyle}/${head}/${accessory}/${direction} produced an invisible derived layer`);
    if(hairStyle!=='original'&&hairVisible(head))assert.ok(audit.layers.hair.visible,`${body}/${hairStyle}/${head}/${direction} lost its hair layer`);
   }
+ }
+});
+test('feminine presentation stays visible and bounded across the complete wardrobe matrix',()=>{
+ const bodies=Object.keys(BODIES),hairstyles=Object.keys(HAIR_STYLES),headwear=Object.keys(HEADWEAR),accessories=Object.keys(ACCESSORIES);
+ for(const body of bodies)for(const hairStyle of hairstyles)for(const head of headwear)for(const accessory of accessories)for(const direction of ['down','left','up','right']){
+  const audit=appearanceLayerAudit({...DEFAULT_APPEARANCE,presentation:'feminine',body,hairStyle,headwear:head,accessory,outfit:'cloak',direction},{top:7,left:10,right:22});
+  const layer=audit.layers.presentation;
+  assert.ok(layer.visible,`${body}/${hairStyle}/${head}/${accessory}/${direction} lost feminine presentation`);
+  assert.ok(layer.x>=0&&layer.y>=0&&layer.x+layer.w<=32&&layer.y+layer.h<=32,`${body}/${hairStyle}/${head}/${accessory}/${direction} feminine layer escaped its frame`);
+  assert.equal(audit.visible,true,`${body}/${hairStyle}/${head}/${accessory}/${direction} produced an invisible feminine layer`);
  }
 });
 test('original palette preserves native pixels; selected skin and clothing never recolor the outline',()=>{

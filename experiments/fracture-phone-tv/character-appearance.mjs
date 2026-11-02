@@ -43,13 +43,14 @@ export function frameLayerBounds({top=7,left=10,right=22}={}){
 export function appearanceLayerAudit(value={},metrics={}){
  const bounds=frameLayerBounds(metrics),head=bounds.head,body=bounds.body;
  const hairVisibleHere=hairVisible(value.headwear||'bare');
- const layers={hair:inside(head,head.left,head.top,head.right-head.left+1,head.bottom-head.top+1),headwear:inside(head,head.left,head.top,head.right-head.left+1,Math.max(1,head.bottom-head.top)),costume:inside(body,body.left,body.top,body.right-body.left+1,body.bottom-body.top+1),accessory:inside(body,body.left,body.top,body.right-body.left+1,body.bottom-body.top+1),heritage:inside(bounds.frame,bounds.frame.left,bounds.frame.top,32,32)};
+ const layers={hair:inside(head,head.left,head.top,head.right-head.left+1,head.bottom-head.top+1),headwear:inside(head,head.left,head.top,head.right-head.left+1,Math.max(1,head.bottom-head.top)),costume:inside(body,body.left,body.top,body.right-body.left+1,body.bottom-body.top+1),accessory:inside(body,body.left,body.top,body.right-body.left+1,body.bottom-body.top+1),heritage:inside(bounds.frame,bounds.frame.left,bounds.frame.top,32,32),presentation:inside(body,body.left,body.top,body.right-body.left+1,body.bottom-body.top+1)};
  const features=[];
  if(value.hairStyle&&value.hairStyle!=='original'&&hairVisibleHere)features.push(layers.hair);
  if(value.headwear&&value.headwear!=='bare')features.push(layers.headwear);
  if(value.outfit&&['tunic','cloak','tabard'].includes(value.outfit))features.push(layers.costume);
  if(value.accessory&&value.accessory!=='none')features.push(layers.accessory);
  if(DERIVED_HERITAGES[value.body]||value.body==='fairy')features.push(layers.heritage);
+ if(value.presentation==='feminine')features.push(layers.presentation);
  return {bounds,layers,features,visible:features.every(f=>f.visible)};
 }
 function derivedCostume(ctx,a,cx,y,up,fill){
@@ -99,6 +100,22 @@ function heritageLayer(ctx,a,cx,y,up,side,fill){
   fill(cx+(side?-7:7),y+16,2,4,accent);fill(cx+(side?-9:9),y+19,2,2,shadow);
   for(const sign of [-1,1]){fill(cx+sign*8,y+8,2,3,shadow);fill(cx+sign*10,y+10,2,4,accent);fill(cx+sign*11,y+14,2,2,shadow);}
  }
+}
+/**
+ * Feminine presentation is a cosmetic derived layer, not gear or a stat.
+ * A compact sash and collar accent use the existing wardrobe palette and are
+ * painted last so the opt-in presentation remains readable with every native
+ * hairstyle, headwear, outfit and heritage in every facing direction.
+ */
+function presentationLayer(ctx,a,cx,y,up,side,fill){
+ if(a.presentation!=='feminine')return;
+ const accent=DERIVED_HERITAGES[a.body]?.accent||cloths[a.color]||'#df8cae';
+ const highlight=shadeHex(accent,1.2),shadow=shadeHex(accent,.7);
+ fill(cx-6,y+16,12,2,accent);fill(cx-1,y+16,2,2,highlight);
+ fill(cx-4,y+13,8,1,shadow);fill(cx-1,y+13,2,1,highlight);
+ // Keep one small head accent in the native head window so the choice remains
+ // legible even when a cloak or armor hides the torso from a side/back view.
+ fill(cx-3,y+5,6,1,accent);fill(cx-1,y+6,2,1,highlight);
 }
 function decorate(ctx,source,w,a){
  const frameFill=(bounds,ox,oy,x,y,ww,hh,c)=>{const frame=bounds.frame||bounds,left=Math.max(ox+frame.left,x),top=Math.max(oy+frame.top,y),right=Math.min(ox+frame.right+1,x+ww),bottom=Math.min(oy+frame.bottom+1,y+hh);if(right<=left||bottom<=top)return;ctx.fillStyle=c;ctx.fillRect(left,top,right-left,bottom-top);};
@@ -153,6 +170,7 @@ function decorate(ctx,source,w,a){
    if(a.facialHair==='sideburns'){fill(cx-6,y+6,2,5,beard);fill(cx+4,y+6,2,5,beard);}
   }
   heritageLayer(ctx,a,cx,y,up,side,fill);
+  presentationLayer(ctx,a,cx,y,up,side,fill);
   ctx.restore();
  }
 }
