@@ -20,7 +20,7 @@ Use Node 22.18+ LTS or Node 24+, Git, and a local network. On the Mac, run:
 ./experiments/fracture-phone-tv/Start_Fracture_Chaos_Test.command
 ```
 
-The launcher keeps the pinned Fracture checkout and its data separate from the original Chaos Party project, starts the native server and phone/TV bridge, and prints the host and phone links. Open the host link, choose the shared TV, then join from phones on the same Wi-Fi.
+The launcher keeps the pinned Fracture checkout and its data separate from the original Chaos Party project. It opens one local start page; press **Start game** and the shared TV opens automatically. Scan the QR code or enter the short room code on phones connected to the same Wi-Fi.
 
 `npm start` launches the preserved legacy tavern prototype on port 4747. It is not the current Fracture/Refuge game-night entrypoint.
 

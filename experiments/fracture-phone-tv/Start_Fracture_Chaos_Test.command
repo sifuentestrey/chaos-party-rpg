@@ -2,6 +2,26 @@
 # Non-destructive first test: separate Fracture checkout and local phone bridge.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
+
+# The normal double-click entry opens one local start page and keeps all
+# server output out of the player's way.  The page starts this same script
+# again with CHAOS_HEADLESS=1, so the existing isolated worker remains the
+# single source of truth for the game processes.
+if [[ "${CHAOS_HEADLESS:-0}" != 1 ]]; then
+  LAUNCH_LOG_DIR="${CHAOS_LAUNCH_LOG_DIR:-$HOME/Library/Logs/ChaosParty}"
+  mkdir -p "$LAUNCH_LOG_DIR"
+  nohup node "$HERE/launch-page.mjs" "$HERE/Start_Fracture_Chaos_Test.command" >"$LAUNCH_LOG_DIR/launcher.log" 2>&1 &
+  LAUNCH_PID=$!
+  disown "$LAUNCH_PID" 2>/dev/null || true
+  for ((i=0;i<20;i++)); do
+    if curl -fsS --max-time 1 http://127.0.0.1:4747/health -o /dev/null 2>/dev/null; then
+      if command -v open >/dev/null 2>&1; then open http://127.0.0.1:4747/; fi
+      exit 0
+    fi
+    sleep 0.25
+  done
+  exit 1
+fi
 TARGET="${FRACTURE_CHAOS_TARGET:-$HOME/Fracture-Chaos-Spike}"
 PIN=642c00a8a2d3a95979e85bbfa3f62deee611a4a6
 LOG_DIR="$(mktemp -d /tmp/chaos-fracture-test.XXXXXX)"
@@ -16,7 +36,7 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
-fail() { echo "ERROR: $*"; echo 'This launcher has not changed your original Chaos Party project.'; read -r -p 'Press Enter to close... ' _ || true; exit 1; }
+fail() { echo "ERROR: $*"; echo 'This launcher has not changed your original Chaos Party project.'; if [[ "${CHAOS_HEADLESS:-0}" != 1 ]]; then read -r -p 'Press Enter to close... ' _ || true; fi; exit 1; }
 
 command -v git >/dev/null || fail 'Git is required. Install Apple Command Line Tools (xcode-select --install).'
 command -v node >/dev/null || fail 'Node.js 22+ must be installed and available in Terminal.'
