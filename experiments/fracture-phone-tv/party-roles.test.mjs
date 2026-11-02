@@ -1,5 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {ROLES,validRole,roleName,objectSkillBonus,resolveObjectRoll} from './party-roles.mjs';
+import {ROLES,validRole,roleName,objectSkillBonus,resolveObjectRoll,validBackground,backgroundCheckTypes,normalizeBackgroundPoints,backgroundCheckBonus} from './party-roles.mjs';
+import {BACKGROUNDS} from './character-profile.mjs';
 test('canonical class identifiers and only supported Chaos skill bonuses',()=>{
  assert.deepEqual(Object.keys(ROLES),['rogue','bard','wizard','knight','healer','wildcard']);
  assert.equal(roleName('knight'),'Knight');assert.equal(roleName('unknown'),'Unassigned');
@@ -43,4 +44,23 @@ test('Charming is an original +2 social-only perk, not a native combat or theft 
  assert.equal(rogue.bonus,3);assert.equal(rogue.perkBonus,0);assert.equal(rogue.success,true);
  assert.equal(resolveObjectRoll({role:'bard',perk:'charming',verb:'social',dc:2,roll:1}).success,false);
  assert.equal(resolveObjectRoll({role:'bard',perk:'charming',verb:'social',dc:30,roll:20}).success,true);
+});
+test('backgrounds expose a small supported catalog and enforce the two-point pool',()=>{
+ assert.deepEqual(Object.keys(BACKGROUNDS),['farmhand','thief','scholar','soldier','wanderer','artisan']);
+ assert.equal(validBackground('farmhand'),true);assert.equal(validBackground('__proto__'),false);
+ assert.deepEqual(backgroundCheckTypes('thief'),['social','sneak']);
+ assert.deepEqual(normalizeBackgroundPoints('thief',{social:1,sneak:1},{requireFull:true}),{social:1,sneak:1});
+ assert.deepEqual(normalizeBackgroundPoints('farmhand',undefined),{strength:0});
+ assert.throws(()=>normalizeBackgroundPoints('thief',{social:2,sneak:1}),/at most two|exactly two/);
+ assert.throws(()=>normalizeBackgroundPoints('thief',{social:1,attack:1}),/check type/);
+ assert.throws(()=>normalizeBackgroundPoints(null,{strength:2}),/supported background/);
+});
+test('background bonuses are authoritative D20 modifiers and old identities stay neutral',()=>{
+ const farm=resolveObjectRoll({role:'barbarian',perk:null,background:'farmhand',backgroundPoints:{strength:2},ability:'strength',verb:'break',dc:15,roll:10});
+ assert.equal(farm.classBonus,0);assert.equal(farm.backgroundBonus,5);assert.equal(farm.bonus,5);assert.equal(farm.success,true);
+ const thief=resolveObjectRoll({role:null,perk:null,background:'thief',backgroundPoints:{social:1,sneak:1},ability:'social',verb:'social',dc:14,roll:11});
+ assert.equal(thief.backgroundBonus,3);assert.equal(thief.success,true);
+ assert.equal(backgroundCheckBonus('thief',{social:2,sneak:0},{verb:'steal'}),2);
+ const old=resolveObjectRoll({role:null,perk:null,verb:'break',dc:11,roll:10});
+ assert.equal(old.backgroundBonus,0);assert.equal(old.bonus,0);assert.equal(old.success,false);
 });

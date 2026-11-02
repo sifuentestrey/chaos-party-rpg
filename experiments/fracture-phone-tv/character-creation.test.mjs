@@ -8,7 +8,7 @@ test('every class gets a visible ability card even before native cooldown state 
  for(const [role,id] of [['knight','power_strike'],['barbarian','frenzy'],['paladin','bulwark'],['assassin','ambush'],['druid','entangle'],['warlock','curse']]){const ability=abilityFor({role,actor:{ready:true}});assert.equal(ability.id,id);assert.ok(ability.name);assert.ok(ability.description);}
 });
 test('creator keeps the full preview and core appearance controls open',()=>{
- const markup=creatorMarkup();assert.match(markup,/id="character-preview"[^>]+width="256"[^>]+height="256"/);assert.match(markup,/id="presentation"/);assert.ok(markup.indexOf('id="presentation"')<markup.indexOf('<details'));assert.ok((markup.match(/<details open>/g)||[]).length>=4);assert.match(markup,/id="class-ability-preview"/);assert.match(markup,/id="class-ability-name"/);
+ const markup=creatorMarkup();assert.match(markup,/id="character-preview"[^>]+width="256"[^>]+height="256"/);assert.match(markup,/id="presentation"/);assert.match(markup,/id="background"/);assert.match(markup,/id="background-points"/);assert.ok(markup.indexOf('id="presentation"')<markup.indexOf('<details'));assert.ok(markup.indexOf('id="background"')<markup.indexOf('id="creator-summary"'));assert.ok((markup.match(/<details open>/g)||[]).length>=4);assert.match(markup,/id="class-ability-preview"/);assert.match(markup,/id="class-ability-name"/);
 });
 test('feminine presentation persists to the phone state and shared TV roster',async t=>{
  const f=await fixture(t),appearance={...DEFAULT_APPEARANCE,body:'demon',presentation:'feminine',hairStyle:'curly',headwear:'circlet'};
@@ -17,6 +17,18 @@ test('feminine presentation persists to the phone state and shared TV roster',as
  const tv=await(await fetch(f.base+'/tv-state?key=private-tv')).json();
  assert.equal(phone.appearance.presentation,'feminine');
  assert.equal(tv.players[0].appearance.presentation,'feminine');
+});
+test('background and assigned points persist to private phone state and shared TV roster',async t=>{
+ const f=await fixture(t),p=await join(f,'Faye',{background:'thief',backgroundPoints:{social:1,sneak:1}});
+ const phone=await(await fetch(f.base+'/state?token='+p.token)).json();
+ const tv=await(await fetch(f.base+'/tv-state?key=private-tv')).json();
+ assert.equal(phone.background,'thief');assert.deepEqual(phone.backgroundPoints,{social:1,sneak:1});
+ assert.equal(tv.players[0].background,'thief');assert.deepEqual(tv.players[0].backgroundPoints,{social:1,sneak:1});
+});
+test('old character profiles default to no background and no bonus',async t=>{
+ const f=await fixture(t),p=await join(f,'Legacy');
+ const phone=await(await fetch(f.base+'/state?token='+p.token)).json();
+ assert.equal(phone.background,null);assert.deepEqual(phone.backgroundPoints,{});
 });
 test('twenty simultaneous creators reserve distinct slots without spawning or exposing credentials',async t=>{const f=await fixture(t),players=await Promise.all(Array.from({length:20},(_,i)=>join(f,'Hero '+i)));assert.ok(players.every(p=>p.status===201));assert.equal(new Set(players.map(p=>p.token)).size,20);assert.ok(f.sockets.every(s=>!s.connected));assert.equal((await join(f,'Overflow')).status,409);const tv=await(await fetch(f.base+'/tv-state?key=private-tv')).json();assert.equal(tv.players.length,20);assert.ok(tv.players.every(p=>p.actor===null&&p.profileReady));assert.ok(!JSON.stringify(tv).includes('private-actor'));assert.ok(!JSON.stringify(tv).includes('password'));assert.ok(!JSON.stringify(tv).includes(players[0].token));});
 test('wardrobe update is personal, preserves native identity, and cannot change class or stats',async t=>{const f=await fixture(t),p=await join(f),original=f.app.room.players[0];const account=original.account;assert.equal((await f.post('/profile',{token:f.app.room.join,appearance:DEFAULT_APPEARANCE})).status,403);assert.equal((await f.post('/profile',{token:p.token,appearance:DEFAULT_APPEARANCE,role:'knight'})).status,400);assert.equal((await f.post('/profile',{token:p.token,appearance:{...DEFAULT_APPEARANCE,hp:999}})).status,400);assert.equal((await f.post('/profile',{token:p.token,appearance:{...DEFAULT_APPEARANCE,outfit:'goldenarmor'},color:'Rose'})).status,200);assert.equal(original.account,account);assert.equal(original.role,'healer');assert.equal(original.appearance.outfit,'goldenarmor');assert.equal(original.color,'Rose');});

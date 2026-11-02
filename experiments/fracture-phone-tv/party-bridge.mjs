@@ -19,7 +19,7 @@ import {ITEM_NAMES,itemAsset} from './phone-items.mjs';
 import {phoneMarkup} from './phone-layout.mjs';
 import {creatorMarkup} from './character-creator.mjs';
 import {OUTFITS,STARTERS,isStarter,validateAppearance} from './character-profile.mjs';
-import {ROLES,PERKS,validRole,validPerk} from './party-roles.mjs';
+import {ROLES,PERKS,validRole,validPerk,validBackground,normalizeBackgroundPoints} from './party-roles.mjs';
 import {startAdventure,replayAdventure,receiptEvidence,zoneEvidence,advanceAdventure,adventureView,proposeTrialChoice,voteTrialChoice,settleTrialChoice,trialChoiceView} from './party-adventure.mjs';
 import {stagedAction,isReaction,publicDeclarations,REACTION_MS} from './party-declaration.mjs';
 import {startGameNightStory,advanceGameNightStory,gameNightStoryView} from './game-night-story.mjs';
@@ -171,7 +171,7 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
   return id;
  }
  function connect(player){
-  const socket=io(`http://127.0.0.1:${fracturePort}`,{transports:['websocket'],reconnection:true,autoConnect:false,auth:{chaosActorKey:actorKey,chaosPartyId:room.id,chaosHybrid:room.pacingMode==='hybrid',chaosName:player.name,chaosRole:validRole(player.role)?player.role:null,chaosPerk:validPerk(player.perk)?player.perk:null}});
+  const socket=io(`http://127.0.0.1:${fracturePort}`,{transports:['websocket'],reconnection:true,autoConnect:false,auth:{chaosActorKey:actorKey,chaosPartyId:room.id,chaosHybrid:room.pacingMode==='hybrid',chaosName:player.name,chaosRole:validRole(player.role)?player.role:null,chaosPerk:validPerk(player.perk)?player.perk:null,chaosBackground:validBackground(player.background)?player.background:null,chaosBackgroundPoints:player.backgroundPoints||{}}});
   const session={player,socket,actor:null,worldFingerprint:null,results:new Map(),declarations:new Map(),attempts:new Map(),lastAction:0,epoch:0,lastSeen:0,suspending:false};sessions.set(player.token,session);
   socket.on('connect_error',()=>{session.error='Fracture is unavailable. The host should check its launcher.';});
   socket.on('connect',()=>{session.error=null;session.actor=null;socket.emit('message',[0,player.account,21,60,0,player.password]);});
@@ -350,7 +350,8 @@ export function createPartyBridge({root=process.env.FRACTURE_ROOT,actorKey=proce
  const sceneForDisplay=actorId=>{if(actorId!==null&&actorId!==undefined&&String(actorId)!==''){const watched=[...sessions.values()].find(s=>!s.player.parked&&s.socket.connected&&s.actor?.ready&&String(s.actor.id)===String(actorId));if(watched?.actor?.scene)return watched.actor.scene;}return partyScene();};
  const publicDM=()=>{const status=dm.status?.();return {enabled:dm.enabled===true,state:status?.state||'offline',provider:status?.provider||'groq-free',model:status?.model||null,knowledgeVersion:status?.knowledgeVersion||null,message:status?.message||'Offline rules are available.'};};
  const publicAbility=s=>{const def=STARTERS[s.player.role],native=s.actor?.ability;if(!def)return native||null;if(native)return {...native,id:native.id||def.skill,name:native.name||def.ability,description:native.description||def.description};return s.actor?{id:def.skill,name:def.ability,description:def.description,readyAt:0,remainingMs:0,targets:[]}:null;};
- const publicPlayer=s=>({looks:s.player.looks||[],appearance:s.player.appearance||null,profileReady:true,name:s.player.name,color:s.player.color,role:validRole(s.player.role)?s.player.role:null,perk:validPerk(s.player.perk)?s.player.perk:null,actor:s.actor?{...s.actor,ability:publicAbility(s)}:null,error:s.error,story:s.story});
+ const publicBackground=s=>{const background=validBackground(s.player.background)?s.player.background:null;if(!background)return {background:null,backgroundPoints:{}};try{return {background,backgroundPoints:normalizeBackgroundPoints(background,s.player.backgroundPoints)}}catch{return {background,backgroundPoints:{}};}};
+ const publicPlayer=s=>({...publicBackground(s),looks:s.player.looks||[],appearance:s.player.appearance||null,profileReady:true,name:s.player.name,color:s.player.color,role:validRole(s.player.role)?s.player.role:null,perk:validPerk(s.player.perk)?s.player.perk:null,actor:s.actor?{...s.actor,ability:publicAbility(s)}:null,error:s.error,story:s.story});
  const roster=()=>[...sessions.values()].filter(s=>!s.player.parked).map(publicPlayer);
  const json=(res,code,value)=>{res.writeHead(code,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify(value));};
  const body=async req=>{let chunks='',bytes=0;for await(const c of req){bytes+=c.length;if(bytes>4096)throw Error('Body too large');chunks+=c;}return JSON.parse(chunks);};
@@ -515,9 +516,13 @@ let changes=null;function connectChanges(){if(changes){changes.close();changes=n
     if(room.players.some(p=>p.name.toLowerCase()===name.toLowerCase()))return json(res,409,{error:'That name is taken. Reconnect with the same phone or choose another.'});
     if(b.role!==undefined&&!validRole(b.role))return json(res,400,{error:'Choose a valid Chaos character class.'});
     if(b.perk!==undefined&&(!validRole(b.role)||!validPerk(b.perk)))return json(res,400,{error:'Choose a supported Chaos perk with a character class.'});
+    if(b.background!==undefined&&b.background!==null&&!validBackground(b.background))return json(res,400,{error:'Choose a supported character background.'});
+    let background=null,backgroundPoints={};
+    if(b.background!==undefined&&b.background!==null){background=b.background;try{backgroundPoints=normalizeBackgroundPoints(background,b.backgroundPoints,{requireFull:true});}catch(e){return json(res,400,{error:e.message});}}
+    else if(b.backgroundPoints!==undefined){try{normalizeBackgroundPoints(null,b.backgroundPoints);}catch(e){return json(res,400,{error:e.message});}}
     let appearance=null;if(b.appearance!==undefined){try{appearance=validateAppearance(b.appearance);}catch(e){return json(res,400,{error:e.message});}if(!isStarter(b.role))return json(res,400,{error:'Choose one of the nine starter classes.'});}
     let looks=[];if(b.looks!==undefined){if(!Array.isArray(b.looks)||b.looks.length>3)return json(res,400,{error:'Save up to three looks.'});try{looks=b.looks.map(a=>a===null?null:validateAppearance(a));}catch(e){return json(res,400,{error:e.message});}}
-    const player={looks,...(appearance?{appearance}:{}),name,role:validRole(b.role)?b.role:null,perk:validRole(b.role)?(b.perk||'lucky'):null,color:['Amber','Blue','Green','Rose'].includes(b.color)?b.color:'Amber',token:token(),account:name.replace(/[^a-zA-Z0-9]/g,'').slice(0,8)+'_'+randomBytes(3).toString('hex'),password:token()};
+    const player={looks,...(appearance?{appearance}:{}),background,backgroundPoints,name,role:validRole(b.role)?b.role:null,perk:validRole(b.role)?(b.perk||'lucky'):null,color:['Amber','Blue','Green','Rose'].includes(b.color)?b.color:'Amber',token:token(),account:name.replace(/[^a-zA-Z0-9]/g,'').slice(0,8)+'_'+randomBytes(3).toString('hex'),password:token()};
     room.players.push(player);try{persist();}catch(error){room.players.pop();throw error;}const session=connect(player);session.lastSeen=Date.now();if(room.phase==='playing')session.socket.connect();return json(res,201,{token:player.token});
    }
    if(p==='/adventure/choice/propose'&&req.method==='POST'){

@@ -17,6 +17,8 @@ import {resolveObjectRoll} from './party-roles.mjs';
 import {validateEnvironmentJudgment} from './dm-environment-adjudication.mjs';
 import {reconcileNativeMap,nativeContact,nativeCells} from './native-map-state.ts';
 import {nativeObjectAttempt,findNativeObject,nativeCapabilities,nativeDestination} from './native-object-actions.mjs';
+const checkAbility=(ability,verb)=>{const value=String(ability||'').trim().toLowerCase(),fallback=String(verb||'').trim().toLowerCase();if(value==='athletics'||value==='strength'||value==='break'||value==='move'||fallback==='break'||fallback==='move')return 'strength';if(value==='sleight of hand'||value==='sleight_of_hand'||value==='dexterity'||value==='repair'||fallback==='repair')return 'dexterity';if(value==='arcana'||value==='wisdom'||value==='medicine'||value==='recovery'||value==='ignite'||fallback==='ignite')return 'wisdom';if(value==='persuasion'||value==='social')return 'social';if(value==='craft')return 'dexterity';return value||fallback;};
+const checkModifier=check=>`${check?.classBonus?` +${check.classBonus} class`:''}${check?.backgroundBonus?` +${check.backgroundBonus} background`:''}`;
 const verbs=new Set(['take','drop','craft','attach','give','equip','unequip','separate','inspect','break','steal']);
 const environmental=new Set(['move','ignite','extinguish','repair']);
 // A capability is never inferred from a painted Fracture tile. These
@@ -423,7 +425,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
     if(aid)delete state.assists[identity(p)];
     rolls=helper?[rng.int(1,20),rng.int(1,20)]:null;
     if(helper){if(aid.mode===-1)hinderedBy=name(helper);else assistedBy=name(helper);}
-    check=resolveObjectRoll({role:p.chaosRole,perk:p.chaosPerk,verb:['break','move'].includes(verb)?'break':verb,dc,roll:rolls?selectD20(rolls,aid.mode===-1?-1:1):rng.int(1,20),rng});state.rng=rng.snapshot();
+    check=resolveObjectRoll({role:p.chaosRole,perk:p.chaosPerk,background:p.chaosBackground,backgroundPoints:p.chaosBackgroundPoints,ability:checkAbility(verb,verb),verb:['break','move'].includes(verb)?'break':verb,dc,roll:rolls?selectD20(rolls,aid.mode===-1?-1:1):rng.int(1,20),rng});state.rng=rng.snapshot();
    }
    const success=!check||check.success;let fact;
    if(!success)fact=`The attempt fails. The ${o.name} stays ${o.condition} in its current position.`;
@@ -442,11 +444,11 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
     n.trust[identity(p)]=Math.max(-10,Math.min(10,(n.trust[identity(p)]||0)+delta));
     const observation={verb,actorId:identity(p),itemId:o.id,round,success};n.memories||={};n.memories[identity(p)]=[...(n.memories[identity(p)]||[]),observation].slice(-4);n.history=[...(n.history||[]),observation].slice(-12);
    }
-   const canonical=(check?`D20 ${rolls?rolls.join(' / ')+' → ':''}${check.roll}${check.bonus?' +'+check.bonus:''} / ${dc}: `:'')+fact;
+   const canonical=(check?`D20 ${rolls?rolls.join(' / ')+' → ':''}${check.roll}${checkModifier(check)} / ${dc}: `:'')+fact;
    const room={round,world:{expedition:{current:scene(p),creatures:state.npcs}},dmMemory:state.dmMemory,result:{id:'chaos-'+round,playerId:identity(p),name:name(p),action:text,target:{entityId:o.id},blocked:false,success,narration:canonical,changes:success?[fact]:[],sceneEvents:witnessed.map(n=>({type:'witness',entityId:n.id}))}};
    recordDMMemory(room);const event=state.dmMemory.entries.at(-1);if(event)event.tile={...(verb==='take'?{x:p.x,y:p.y}:verb==='drop'?destination:contact)};
    persist();syncNative(p);
-   result={blocked:false,success,text:canonical,event,...(check?{roll:check.roll,dc,bonus:check.bonus,rerolled:check.rerolled,rolls,assistedBy,hinderedBy}:{}),...(success?{object:{id:o.id,name:o.name,tile:{...(verb==='take'?{x:p.x,y:p.y}:nativeContact(p,o))},before:null,after:null,condition:o.condition,actorId:p.id,verb}}:{})};
+   result={blocked:false,success,text:canonical,event,...(check?{roll:check.roll,dc,bonus:check.bonus,classBonus:check.classBonus,backgroundBonus:check.backgroundBonus,rerolled:check.rerolled,rolls,assistedBy,hinderedBy}:{}),...(success?{object:{id:o.id,name:o.name,tile:{...(verb==='take'?{x:p.x,y:p.y}:nativeContact(p,o))},before:null,after:null,condition:o.condition,actorId:p.id,verb}}:{})};
   }catch(error){p.hitPoints=priorHP;state=previous;throw error;}
   if(verb==='drink'&&result.success){try{world.pushToPlayer(p,p.health());}catch{/* The next authenticated state poll also carries native health. */}}
   return result;
@@ -480,15 +482,15 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    if(aid)delete state.assists[actor.id];
    const rolls=helper?[rng.int(1,20),rng.int(1,20)]:null;
    const mode=helper&&aid.mode===-1?-1:1;
-   const check=resolveObjectRoll({role:p.chaosRole,perk:p.chaosPerk,verb:'craft',dc:10,roll:rolls?selectD20(rolls,mode):rng.int(1,20),rng});
+   const check=resolveObjectRoll({role:p.chaosRole,perk:p.chaosPerk,background:p.chaosBackground,backgroundPoints:p.chaosBackgroundPoints,ability:'dexterity',verb:'craft',dc:10,roll:rolls?selectD20(rolls,mode):rng.int(1,20),rng});
    state.rng=rng.snapshot();state.round++;
    const sourceNames=sources.map(s=>s.name).join(' and '),prefix=rolls?`D20 ${mode===-1?'disadvantage':'advantage'} ${rolls.join(' / ')} → `:`D20 `;
-   const modifier=check.bonus?` +${check.bonus}`:'';
+    const modifier=checkModifier(check);
    if(!check.success){
     const textOut=`${prefix}${check.roll}${modifier} / 10: ${actor.name} tries to fashion ${attempt.name}, but the materials resist. Nothing is consumed.`;
     const roomResult={round:state.round,world:{expedition:{current:scene(p),creatures:state.npcs}},dmMemory:state.dmMemory,result:{id:'chaos-'+state.round,playerId:actor.id,name:actor.name,action:text,target:{entityId:sources[0].id},blocked:false,success:false,narration:textOut,changes:[],sceneEvents:[]}};
     recordDMMemory(roomResult);const entry=state.dmMemory.entries.at(-1);if(entry)entry.tile={x:p.x,y:p.y};persist();
-    return {blocked:false,success:false,text:textOut,roll:check.roll,dc:10,bonus:check.bonus,rerolled:check.rerolled,...(rolls?{rolls,...(helper&&mode===1?{assistedBy:name(helper)}:{}),...(helper&&mode===-1?{hinderedBy:name(helper)}:{})}:{}),event:entry};
+    return {blocked:false,success:false,text:textOut,roll:check.roll,dc:10,bonus:check.bonus,classBonus:check.classBonus,backgroundBonus:check.backgroundBonus,rerolled:check.rerolled,...(rolls?{rolls,...(helper&&mode===1?{assistedBy:name(helper)}:{}),...(helper&&mode===-1?{hinderedBy:name(helper)}:{})}:{}),event:entry};
    }
    const id='item-'+state.nextId++,material=sources.find(s=>s.kind==='item'&&MATERIALS[s.item.material])?.item.material||'bone';
    const nameText=String(attempt.name||'improvised trophy').replace(/[<>\u0000-\u001f\u007f]/g,' ').replace(/\s+/g,' ').trim().slice(0,48)||'improvised trophy';
@@ -501,7 +503,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    const canonical=`${prefix}${check.roll}${modifier} / 10: ${fact}`;
    const roomResult={round:state.round,world:{expedition:{current:scene(p),creatures:state.npcs}},dmMemory:state.dmMemory,result:{id:'chaos-'+state.round,playerId:actor.id,name:actor.name,action:text,target:{entityId:id},blocked:false,success:true,narration:canonical,changes:[fact],sceneEvents:[]}};
    recordDMMemory(roomResult);const entry=state.dmMemory.entries.at(-1);if(entry)entry.tile={x:p.x,y:p.y};persist();
-   return {blocked:false,success:true,text:canonical,roll:check.roll,dc:10,bonus:check.bonus,rerolled:check.rerolled,...(rolls?{rolls,...(helper&&mode===1?{assistedBy:name(helper)}:{}),...(helper&&mode===-1?{hinderedBy:name(helper)}:{})}:{}),event:entry,item:plain(made),object:{id,name:nameText,tile:{x:p.x,y:p.y},condition:'intact',actorId:identity(p),verb:'improvise',cosmeticOnly:true,cosmeticSlot:made.cosmeticSlot}};
+   return {blocked:false,success:true,text:canonical,roll:check.roll,dc:10,bonus:check.bonus,classBonus:check.classBonus,backgroundBonus:check.backgroundBonus,rerolled:check.rerolled,...(rolls?{rolls,...(helper&&mode===1?{assistedBy:name(helper)}:{}),...(helper&&mode===-1?{hinderedBy:name(helper)}:{})}:{}),event:entry,item:plain(made),object:{id,name:nameText,tile:{x:p.x,y:p.y},condition:'intact',actorId:identity(p),verb:'improvise',cosmeticOnly:true,cosmeticSlot:made.cosmeticSlot}};
   }catch(error){state=previous;throw error;}
  }
  function snapshot(p){
@@ -533,13 +535,13 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   // One reusable original Chaos advantage check for any legitimate world D20
   // action, including social checks. Only an actual roll consumes assistance.
   // Projection includes ONLY living, nearby, connected actors in this zone.
-  const assistedCheck=(verb,dc,rng)=>{
+  const assistedCheck=(verb,dc,rng,ability=verb)=>{
    const aid=state.assists[actor.id];
    const helper=aid?.until>now()?room.players.find(q=>q.id===aid.helperId&&q.id!==actor.id):null;
    if(aid)delete state.assists[actor.id];
    const rolls=helper?[rng.int(1,20),rng.int(1,20)]:null;
    const mode=helper&&aid.mode===-1?-1:1;
-   const check=resolveObjectRoll({role:p.chaosRole,perk:p.chaosPerk,verb,dc,
+   const check=resolveObjectRoll({role:p.chaosRole,perk:p.chaosPerk,background:p.chaosBackground,backgroundPoints:p.chaosBackgroundPoints,ability:checkAbility(ability,verb),verb,dc,
     roll:rolls?selectD20(rolls,mode):rng.int(1,20),rng});
    return {check,rolls,assistedBy:helper&&mode===1?helper.name:null,hinderedBy:helper&&mode===-1?helper.name:null};
   };
@@ -563,7 +565,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    const observation={verb:'appeal',actorId:actor.id,round:state.round,success:check.success};
    npc.memories||={};npc.memories[actor.id]=[...(npc.memories[actor.id]||[]),observation].slice(-4);
    npc.history.push(observation);npc.history=npc.history.slice(-12);
-   const bonus=check.bonus?` +${check.bonus} class`:'';
+   const bonus=checkModifier(check);
    const charming=check.perkBonus?` +${check.perkBonus} Charming`:'';
    const lucky=check.rerolled!==null?` · Lucky-ish ${check.rerolled} → ${check.roll}`:'';
    const resultText=check.success?`${npc.name} accepts your apology. Trust ${prior} → ${npc.trust[actor.id]}.${npc.trust[actor.id]<0?' More amends are needed before asking for a job.':' You may ask for a job again.'}`:`${npc.name} is not persuaded. Trust stays ${prior}.`;
@@ -572,7 +574,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    room.result={id:'chaos-'+state.round,playerId:actor.id,name:actor.name,action:text,target:{entityId:npc.id},blocked:false,success:check.success,narration:outcomeText,changes:check.success?[`Trust ${prior} → ${npc.trust[actor.id]}`]:[],sceneEvents:[{type:'witness',entityId:npc.id}]};
    recordDMMemory(room);const entry=state.dmMemory.entries.at(-1);if(entry)entry.tile={x:p.x,y:p.y};
    persist();
-   return {blocked:false,success:check.success,text:outcomeText,roll:check.roll,dc,bonus:check.bonus,perkBonus:check.perkBonus,rerolled:check.rerolled,...(rolls?{rolls,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})}:{}),event:entry};
+   return {blocked:false,success:check.success,text:outcomeText,roll:check.roll,dc,bonus:check.bonus,classBonus:check.classBonus,backgroundBonus:check.backgroundBonus,perkBonus:check.perkBonus,rerolled:check.rerolled,...(rolls?{rolls,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})}:{}),event:entry};
   }
   if(attempt.verb==='assist'||attempt.verb==='hinder'){
    // A second real character must be nearby, alive and connected. No phone can
@@ -615,7 +617,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   const rng=new Rng(state.seed);rng.restore(state.rng);
   let roll=null,rolls=null,assistedBy=null,hinderedBy=null,check=null;
   if(!plan.automatic){
-   ({check,rolls,assistedBy,hinderedBy}=assistedCheck(attempt.verb,plan.dc,rng));
+   ({check,rolls,assistedBy,hinderedBy}=assistedCheck(attempt.verb,plan.dc,rng,plan.ability));
    roll=check.roll;
   }
   const success=plan.automatic||check.success;
@@ -646,13 +648,13 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    }
   }
   const changes=[];
-  const modifier=check?.bonus?` +${check.bonus} class`:'';
+  const modifier=checkModifier(check);
   const lucky=check?.rerolled!==null&&check?.rerolled!==undefined?` · Lucky-ish ${check.rerolled} → ${roll}`:'';
   const canonical=(rolls?`D20 ${hinderedBy?'disadvantage':'advantage'} ${rolls.join(' / ')} → ${roll}${modifier} / ${plan.dc} (${hinderedBy?'hindered by '+hinderedBy:'helped by '+assistedBy}${lucky}): `:roll!==null?`D20 ${roll}${modifier} / ${plan.dc}${lucky}: `:'')+result.text+(changes.length?' '+changes.join('. ')+'.':'');
   room.dmMemory=state.dmMemory;room.result={id:'chaos-'+state.round,playerId:actor.id,name:actor.name,action:text,target:{entityId:item?.id},blocked:false,success:result.success,narration:canonical,changes:[result.change,...changes].filter(Boolean),sceneEvents:witnesses.map(n=>({type:'witness',entityId:n.id}))};
   recordDMMemory(room);const entry=state.dmMemory.entries.at(-1);if(entry)entry.tile={x:p.x,y:p.y};
   persist();
-  return {...result,...(result.success&&item?.tile?{object:{id:item.id,name:item.name,tile:item.tile,before:null,after:item.hp,condition:item.condition,actorId:p.id,verb:attempt.verb}}:{}),...(roll!==null?{roll,dc:plan.dc,bonus:check.bonus,...(check.rerolled!==null?{rerolled:check.rerolled}:{}),...(rolls?{rolls,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})}:{}),text:canonical}:{text:canonical}),witnesses:witnesses.map(n=>n.name),event:entry};
+  return {...result,...(result.success&&item?.tile?{object:{id:item.id,name:item.name,tile:item.tile,before:null,after:item.hp,condition:item.condition,actorId:p.id,verb:attempt.verb}}:{}),...(roll!==null?{roll,dc:plan.dc,bonus:check.bonus,classBonus:check.classBonus,backgroundBonus:check.backgroundBonus,...(check.rerolled!==null?{rerolled:check.rerolled}:{}),...(rolls?{rolls,...(assistedBy?{assistedBy}:{}),...(hinderedBy?{hinderedBy}:{})}:{}),text:canonical}:{text:canonical}),witnesses:witnesses.map(n=>n.name),event:entry};
  }
  function registerScenery(sceneId,id,kind,tile){
    if(!allowSyntheticFixtures)throw Error('Cannot register new scenery without a validated native Fracture asset');
@@ -677,11 +679,11 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
     // One original-Chaos D20 check for deliberate tree felling, not a
     // visible sequence of HP-bar attacks. The native map remains authoritative.
     const rng=new Rng(state.seed);rng.restore(state.rng);
-    check=resolveObjectRoll({role:p.chaosRole,perk:p.chaosPerk,verb:'break',dc:14,roll:rng.int(1,20),rng});
+    check=resolveObjectRoll({role:p.chaosRole,perk:p.chaosPerk,background:p.chaosBackground,backgroundPoints:p.chaosBackgroundPoints,ability:'strength',verb:'break',dc:14,roll:rng.int(1,20),rng});
     state.rng=rng.snapshot();
     if(!check.success){
      state.round++;persist();
-     return {changed:false,attempted:true,roll:check.roll,dc:14,bonus:check.bonus,rerolled:check.rerolled,error:'The tree holds fast. It is still standing.'};
+     return {changed:false,attempted:true,roll:check.roll,dc:14,bonus:check.bonus,classBonus:check.classBonus,backgroundBonus:check.backgroundBonus,rerolled:check.rerolled,error:'The tree holds fast. It is still standing.'};
     }
    }
    const before=obj.hp;
@@ -695,7 +697,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
     result.event=state.dmMemory.entries.at(-1);persist();syncNative(p);
     result.feedback={id:obj.id,name:obj.name,tile:obj.tile,before:fell?null:before,after:fell?null:result.object.hp,condition:result.object.condition,actorId:p.id,verb:fell?'fell':'chop'};
    }
-   if(fell&&check)Object.assign(result,{attempted:true,roll:check.roll,dc:14,bonus:check.bonus,rerolled:check.rerolled});
+   if(fell&&check)Object.assign(result,{attempted:true,roll:check.roll,dc:14,bonus:check.bonus,classBonus:check.classBonus,backgroundBonus:check.backgroundBonus,rerolled:check.rerolled});
    return result;
   }catch(error){state=previous;throw error;}
  }
@@ -732,7 +734,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
   if(decision.action==='break'){
    const result=strikeScenery(p,target.id.slice(scene(p).length+1),3,{fell:true});
    return {blocked:!result.changed&&!result.attempted,success:!!result.changed,
-    ...(result.attempted?{roll:result.roll,dc:result.dc,bonus:result.bonus,rerolled:result.rerolled}:{}),
+    ...(result.attempted?{roll:result.roll,dc:result.dc,bonus:result.bonus,classBonus:result.classBonus,backgroundBonus:result.backgroundBonus,rerolled:result.rerolled}:{}),
     event:result.event,object:result.feedback,
     text:result.changed?'The existing tree falls and its native trunk no longer blocks the path.':
      (result.error||'The tree remains standing.')};
@@ -764,10 +766,10 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    const previous=state;state=structuredClone(state);
    try{
     const rng=new Rng(state.seed);rng.restore(state.rng);
-    const check=resolveObjectRoll({role:p.chaosRole,perk:p.chaosPerk,verb:'break',dc:12,roll:rng.int(1,20),rng});
+    const check=resolveObjectRoll({role:p.chaosRole,perk:p.chaosPerk,background:p.chaosBackground,backgroundPoints:p.chaosBackgroundPoints,ability:'strength',verb:'break',dc:12,roll:rng.int(1,20),rng});
     state.rng=rng.snapshot();state.round++;persist();
     const result=doorControl.use(p,entry,'force',{success:check.success});
-    return {...result,roll:check.roll,dc:12,bonus:check.bonus,rerolled:check.rerolled,text:`D20 ${check.roll}${check.bonus?' +'+check.bonus+' Knight':''} / 12: ${result.text}`};
+    return {...result,roll:check.roll,dc:12,bonus:check.bonus,classBonus:check.classBonus,backgroundBonus:check.backgroundBonus,rerolled:check.rerolled,text:`D20 ${check.roll}${checkModifier(check)} / 12: ${result.text}`};
    }catch(error){state=previous;throw error;}
   }
   const scenery=sceneryAttempt(text,sceneScenery(scene(p)).filter(o=>visible(p,o.tile,o.nativeOrigin?18:8,o.nativeOrigin?o.footprint:false)).sort((a,b)=>distance(p,a.tile)-distance(p,b.tile)));
@@ -776,7 +778,7 @@ export function createChaosWorld({file,seed=randomInt(1,0xffffffff),clock=Date.n
    const result=strikeScenery(p,scenery.id.slice(scene(p).length+1),3,{fell});
    const description=scenery.name||scenery.kind;
    return {blocked:!result.changed&&!result.attempted,success:result.changed,event:result.event,object:result.feedback,
-    ...(result.attempted?{roll:result.roll,dc:result.dc,bonus:result.bonus,rerolled:result.rerolled}:{}),
+    ...(result.attempted?{roll:result.roll,dc:result.dc,bonus:result.bonus,classBonus:result.classBonus,backgroundBonus:result.backgroundBonus,rerolled:result.rerolled}:{}),
     text:result.changed?(fell?'You bring down the '+description+'. Its old trunk no longer blocks the path.':
     result.object.condition==='broken'?'The '+description+' falls. The route is clear.':
      'You strike the '+description+'. '+result.object.hp+' HP remains.'):

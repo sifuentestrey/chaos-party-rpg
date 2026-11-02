@@ -20,6 +20,8 @@ import {MessageRouter} from './player/message-router';
 import {validIntent, shortestPath, extractNativeAttackRates,resolveVisibleTarget,describeVisibleScene,formationTiles} from './chaos-action-contract';
 const router = new MessageRouter(Messages,Formulas,Utils,Chest);
 const nativeRates=extractNativeAttackRates(fs.readFileSync('client/ts/entity/character/character.ts','utf8'),fs.readFileSync('client/ts/entity/character/mob/mobs.ts','utf8'));
+const chaosBackgrounds=new Set(['farmhand','thief','scholar','soldier','wanderer','artisan']);
+const chaosBackgroundChecks=new Set(['strength','social','sneak','wisdom','inspect','attack','break','dexterity','craft','repair']);
 const plateaus=new Set(geometry.plateau);
 const plateau=(x:number,y:number)=>plateaus.has(y*geometry.width+x);
 const distance=(a:any,b:any)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
@@ -39,6 +41,10 @@ export function installChaosActor(player:any, connection:any): void {
   // Never accept a role or perk from a phone action or unauthenticated socket.
   player.chaosRole=player.chaosControlled&&['rogue','bard','wizard','knight','healer','wildcard','barbarian','paladin','assassin','druid','warlock'].includes(socket.handshake.auth?.chaosRole)?socket.handshake.auth.chaosRole:null;
   player.chaosPerk=player.chaosControlled&&['lucky','charming'].includes(socket.handshake.auth?.chaosPerk)?socket.handshake.auth.chaosPerk:null;
+  const background=socket.handshake.auth?.chaosBackground;
+  player.chaosBackground=player.chaosControlled&&chaosBackgrounds.has(background)?background:null;
+  const points=socket.handshake.auth?.chaosBackgroundPoints;
+  player.chaosBackgroundPoints=player.chaosBackground&&points&&typeof points==='object'&&!Array.isArray(points)?Object.fromEntries(Object.entries(points).filter(([key,value])=>chaosBackgroundChecks.has(key)&&Number.isInteger(value)&&value>=0&&value<=2)):{};
   if(player.chaosControlled&&typeof socket.handshake.auth.chaosName==='string'&&/^[\p{L}\p{N} _-]{2,18}$/u.test(socket.handshake.auth.chaosName))player.chaosName=socket.handshake.auth.chaosName;
   const listen=connection.listenCallback;
   connection.listenCallback=(message:any[])=>{

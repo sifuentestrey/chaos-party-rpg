@@ -562,6 +562,12 @@ test('authored tree: phone action routes to persistent damage, TV snapshot, shar
  assert.equal(restored.execute(a,'attack tree').blocked,true,'a destroyed tree cannot be damaged again');
  assert.equal(restored.execute(a,'attack native tree').blocked,true,'unregistered native art is not invented');
 });
+test('farmhand background modifies the real object movement D20 check',t=>{
+ const {a,engine}=fixture(t);a.chaosBackground='farmhand';a.chaosBackgroundPoints={strength:2};
+ const table=engine.snapshot(a).ground.find(i=>i.visual==='table');a.x=table.tile.x-1;a.y=table.tile.y;
+ const outcome=engine.execute(a,'push camp table east');
+ assert.equal(outcome.backgroundBonus,5);assert.equal(outcome.bonus,5);assert.equal(outcome.success,true);
+});
 test('no walkable authored-tree tile means no scenery or fabricated destruction',t=>{
  const {a,engine,world}=fixture(t);
  world.isValidPosition=(x,y)=>x===a.x&&y===a.y;

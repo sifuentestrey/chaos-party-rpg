@@ -19,6 +19,16 @@ export const CLOTH_COLORS=['Original','Rose','Lavender','Teal','Blue','Gold','Cr
 export const SKIN_COLORS=['Original','Light','Warm','Tan','Brown','Deep','Porcelain','Olive','Copper','Umber'];
 export const HAIR_COLORS=['Original','Brown','Black','Silver','Purple','Pink','Auburn','White','Blue','Green','Red','Honey'];
 export const PRESENTATIONS=Object.freeze({neutral:'Neutral',feminine:'Feminine'});
+/** Small, appearance-independent origin choices. Their bonuses are applied
+ * only by the server's existing Chaos D20 resolver. */
+export const BACKGROUNDS=Object.freeze({
+ farmhand:Object.freeze({name:'Farmhand',description:'You know hard work and steady hands. +3 on Strength checks.',baseBonus:3,checks:Object.freeze(['strength'])}),
+ thief:Object.freeze({name:'Thief',description:'You learned to read a room and slip past trouble. +2 on social and sneak checks.',baseBonus:2,checks:Object.freeze(['social','sneak'])}),
+ scholar:Object.freeze({name:'Scholar',description:'You studied old clues and careful observation. +2 on Wisdom and inspect checks.',baseBonus:2,checks:Object.freeze(['wisdom','inspect'])}),
+ soldier:Object.freeze({name:'Soldier',description:'You held a line when others ran. +2 on attack and break checks.',baseBonus:2,checks:Object.freeze(['attack','break'])}),
+ wanderer:Object.freeze({name:'Wanderer',description:'You learned to cross uncertain ground quietly. +2 on Dexterity and sneak checks.',baseBonus:2,checks:Object.freeze(['dexterity','sneak'])}),
+ artisan:Object.freeze({name:'Artisan',description:'You make useful things from what the world leaves behind. +2 on Craft and repair checks.',baseBonus:2,checks:Object.freeze(['craft','repair'])})
+});
 export const DEFAULT_APPEARANCE=Object.freeze({version:2,body:'human',presentation:'neutral',outfit:'clotharmor',skin:0,hair:0,color:0,accessory:'none',legs:'clotharmor',boots:'clotharmor',headwear:'bare',hairStyle:'original',facialHair:'none',bottomColor:0,bootColor:0,headColor:0,eyewear:'none',flower:'none'});
 const legacyKeys=['version','body','outfit','skin','hair','color','accessory'];
 export function normalizeAppearance(value){const a=validateAppearance(value);if(a.version===2)return a;return {...DEFAULT_APPEARANCE,...a,version:2,legs:a.outfit,boots:a.outfit,headwear:['clotharmor','leatherarmor'].includes(a.outfit)?'bare':a.outfit,bottomColor:a.color,bootColor:a.color,headColor:a.color};}
